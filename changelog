@@ -1,2 +1,20 @@
 2022/3/20:
-    1. 拉取xv6源代码，修改README。
+    1. 拉取xv6源代码，修改README
+
+2022/3/26
+    1. 装载rustsbi-qemu
+        kernel.l 将entry起始点放在了0x80200000（通过指定text.entry）
+        entry.S  将跳转点从start改为了main
+        start.c  移除
+        trap.c   修改devintr相关处理函数，修改trapinithart函数，增加RESET_TIMER宏
+        sbi.h    增加sbi调用接口
+        main.c   将start.c中定义的内核栈移动到main.c中
+        vm.c     增加对CLINT_MTIME地址的直接映射
+        riscv.h  增加些许寄存器读写内联函数
+
+    2. 添加doc目录
+    3. 添加bootloader目录
+    4. 修改Makefile（后续可能改用cmake）
+        增加些许注释
+        修改gdb调试端口，使其更加简洁（固定为了1234）
+        由于加载sbi需要，对qemu的内存扩容至130M，并将bios设置为了rustsbi

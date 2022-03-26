@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+#define RESET_TIMER() sbi_legacy_set_timer(*(uint64 *)CLINT_MTIME + CLOCK_FREQ)
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -26,7 +28,12 @@ trapinit(void)
 void
 trapinithart(void)
 {
+  // 设置中断向量
   w_stvec((uint64)kernelvec);
+  // 使能中断
+  w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
+  // 重置计时器
+  RESET_TIMER();
 }
 
 //
@@ -137,7 +144,7 @@ kerneltrap()
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  
+
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
   if(intr_get() != 0)
@@ -200,18 +207,27 @@ devintr()
       plic_complete(irq);
 
     return 1;
-  } else if(scause == 0x8000000000000001L){
-    // software interrupt from a machine-mode timer interrupt,
-    // forwarded by timervec in kernelvec.S.
+  } 
+  // else if(scause == 0x8000000000000001L){
+  //   // software interrupt from a machine-mode timer interrupt,
+  //   // forwarded by timervec in kernelvec.S.
 
+  //   if(cpuid() == 0){
+  //     clockintr();
+  //   }
+    
+  //   // acknowledge the software interrupt by clearing
+  //   // the SSIP bit in sip.
+  //   w_sip(r_sip() & ~2);
+
+  //   return 2;
+  // } 
+  else if(scause == 0x8000000000000005L){ // 时钟中断
     if(cpuid() == 0){
       clockintr();
+      RESET_TIMER();
     }
-    
-    // acknowledge the software interrupt by clearing
-    // the SSIP bit in sip.
-    w_sip(r_sip() & ~2);
-
+    w_sip(r_sip() & ~0x10000);
     return 2;
   } else {
     return 0;

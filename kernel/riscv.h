@@ -1,3 +1,6 @@
+#ifndef _H_RISCV_
+#define _H_RISCV_
+
 // which hart (core) is this?
 static inline uint64
 r_mhartid()
@@ -269,6 +272,34 @@ r_time()
   return x;
 }
 
+static inline uint64
+r_a0()
+{
+  uint64 x;
+  asm volatile("mv %0, a0" : "=r" (x) );
+  return x;
+}
+
+static inline void
+w_a0(uint64 x)
+{
+  asm volatile("mv a0, %0" : :"r" (x) );
+}
+
+static inline uint64
+r_a1()
+{
+  uint64 x;
+  asm volatile("mv %0, a1" : "=r" (x) );
+  return x;
+}
+
+static inline void
+w_a1(uint64 x)
+{
+  asm volatile("mv a1, %0" : :"r" (x) );
+}
+
 // enable device interrupts
 static inline void
 intr_on()
@@ -297,6 +328,12 @@ r_sp()
   uint64 x;
   asm volatile("mv %0, sp" : "=r" (x) );
   return x;
+}
+
+static inline void 
+w_sp(uint64 x)
+{
+  asm volatile("mv sp, %0" : : "r" (x));
 }
 
 // read and write tp, the thread pointer, which holds
@@ -364,3 +401,6 @@ sfence_vma()
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+
+
+#endif

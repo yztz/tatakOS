@@ -1,0 +1,3 @@
+[submodule "bootloader/rustsbi-qemu"]
+	path = bootloader/rustsbi-qemu
+	url = https://github.com/rustsbi/rustsbi-qemu.git
