@@ -29,6 +29,7 @@ platform ?= qemu
 
 CFLAGS := -I$(P)/$(platform)/include
 include $(SCRIPT)/cflags.mk
+include $(SCRIPT)/functions.mk
 
 LDFLAGS := -z max-page-size=4096
 
@@ -59,6 +60,7 @@ $(BUILD_DIR)/kernel: $(SUB_DIRS) $(SRC)
 clean: 
 	-rm -rf build
 	-rm -rf fs.img
+	-rm -rf $(SCRIPT)/mkfs
 
 $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
 	gcc -Werror -Wall -Iinclude -o $@ $<
@@ -66,7 +68,7 @@ $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
 # 磁盘映像制作
 U_PROG := $(wildcard $(U_PROG_DIR)/_*)
 fs.img: $(SCRIPT)/mkfs README $(U_PROG)
-	$(SCRIPT)/mkfs fs.img README $(U_PROG)
+	$(SCRIPT)/mkfs fs.img README $(shell find $(U_PROG_DIR) -name "_*")
 
 
 QEMUOPTS = -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_DIR)/kernel -m 130M -smp $(CPUS) -nographic

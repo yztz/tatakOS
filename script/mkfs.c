@@ -140,6 +140,7 @@ main(int argc, char *argv[])
     } else {
       shortname += 1;
     }
+    printf("shortname = %s\n", shortname);
     
     assert(index(shortname, '/') == 0);
 
