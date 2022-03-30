@@ -3,6 +3,25 @@
         "sbi.h": "c",
         "riscv.h": "c",
         "types.h": "c",
-        "defs.h": "c"
+        "defs.h": "c",
+        "elf.h": "c",
+        "stdarg.h": "c",
+        "assert.h": "c",
+        "stdlib.h": "c",
+        "string.h": "c",
+        "fcntl.h": "c",
+        "stat.h": "c",
+        "fs.h": "c",
+        "param.h": "c",
+        "syscall.h": "c",
+        "user.h": "c",
+        "memlayout.h": "c",
+        "spinlock.h": "c",
+        "sleeplock.h": "c",
+        "file.h": "c",
+        "array": "c",
+        "*.tcc": "c",
+        "functional": "c",
+        "tuple": "c"
     }
 }
