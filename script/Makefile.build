@@ -1,0 +1,74 @@
+export SHELL = /bin/bash
+# 伪目标
+PHONY := __build
+__build:
+
+# 清空需要的变量
+# obj-y :=
+# subdir-y :=
+# EXTRA_CFLAGS :=
+
+# 构建目录
+BUILD_DIR := $(subst $(SOURCE_ROOT),$(OBJ_DIR),$(shell pwd))
+PHONY += $(BUILD_DIR)
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+# 包含同级目录Makefile
+# 这里要注意，相对路径为 执行本 Makefile.build 的路径
+include Makefile
+
+# 额外的CFLAGS允许向下继承，方便传递-I
+export EXTRA_CFLAGS
+
+# 获取当前 Makefile 需要编译的子目录的目录名
+# obj-y := a.o b.o c/ d/
+# $(filter %/, $(obj-y))   : c/ d/
+# __subdir-y  : c d
+# subdir-y    : c d
+__subdir-y	:= $(patsubst %/,%,$(filter %/, $(obj-y)))
+subdir-y	+= $(__subdir-y)
+
+# 把子目录的目标定为以下注释
+# built-in.o -> $(BUILD_DIR)/$(sub)/built-in.o
+subdir_objs := $(foreach sub,$(subdir-y),$(BUILD_DIR)/$(sub)/built-in.o)
+
+# 获取当前目录需要编进程序的文件名作为，并写为目标
+# b.o -> $(BUILD_DIR)/b.o
+cur_objs := $(foreach obj, $(filter-out %/, $(obj-y)), $(BUILD_DIR)/$(obj)) 
+# 使修改头文件 .h 后，重新make后可以重新编译（重要）
+dep_files := $(foreach f,$(cur_objs),$(f).d)
+# 列出存在的文件
+dep_files := $(wildcard $(dep_files))
+
+ifneq ($(dep_files),)
+  include $(dep_files)
+endif
+
+
+PHONY += $(subdir-y)
+
+# 第一个目标
+__build : $(subdir-y) $(BUILD_DIR) $(BUILD_DIR)/built-in.o
+	
+# 优先编译 子目录的内容
+$(subdir-y):
+	@make -C $@ -f $(SCRIPT)/Makefile.build
+
+# 链接成 目标 -r: --relocatable [partial linking]
+$(BUILD_DIR)/built-in.o : $(cur_objs) $(subdir_objs)
+	@$(LD) -r -o $@ $^
+
+dep_file = $@.d
+
+# 生成 cur_objs 目标
+$(BUILD_DIR)/%.o : %.c
+	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	@echo -e "CC\t\t$<"
+
+$(BUILD_DIR)/%.o : %.S
+	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	@echo -e "CC\t\t$<"
+
+.PHONY : $(PHONY)

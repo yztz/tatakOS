@@ -1,1 +1,2 @@
-include $(SCRIPT)/make_c.mk
+obj-y += kalloc.o
+obj-y += vm.o

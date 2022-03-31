@@ -1,1 +1,0 @@
-include $(SCRIPT)/make_c.mk

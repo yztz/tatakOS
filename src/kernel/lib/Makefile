@@ -1,1 +1,2 @@
-include $(SCRIPT)/make_c.mk
+obj-y += printf.o
+obj-y += string.o
