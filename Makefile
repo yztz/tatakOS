@@ -29,7 +29,6 @@ platform ?= qemu
 
 CFLAGS := -I$(P)/$(platform)/include
 include $(SCRIPT)/cflags.mk
-include $(SCRIPT)/functions.mk
 
 LDFLAGS := -z max-page-size=4096
 

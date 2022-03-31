@@ -20,7 +20,6 @@ $(SUB_DIRS):ECHO
 $(U_PROG_DIR)/_% : $(BUILD_DIR)/%.o
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $< $(ULIB_OBJ)
 
-
 $(BUILD_DIR)/%.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 	
@@ -36,11 +35,11 @@ $(BUILD_DIR)/%.o : %.c
 # 生成initcode程序
 $(BUILD_DIR)/initcode: initcode.S
 	# rv64g=rv64imafd（i=integer m=mul/div a=atom f=float d=double）
-	$(CC) $(CFLAGS) -march=rv64g -nostdinc -I. -Ikernel -c initcode.S -o $(BUILD_DIR)/initcode.o
+	@$(CC) $(CFLAGS) -march=rv64g -nostdinc -I. -Ikernel -c initcode.S -o $(BUILD_DIR)/initcode.o
 	# -N=Do not page align data, do not make text readonly
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
-	$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
-	$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_DIR)/initcode.asm
+	@$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
+	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
+	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_DIR)/initcode.asm
 
 ECHO:
-	@echo $(SUB_DIRS)
+	@echo FOUND $(SUB_DIRS)
