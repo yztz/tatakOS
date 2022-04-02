@@ -1,4 +1,4 @@
-export SHELL = /bin/bash
+export SHELL := /bin/bash
 # 伪目标
 PHONY := __build
 __build:

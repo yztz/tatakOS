@@ -69,14 +69,21 @@ export LDFLAGS CFLAGS
 #===========================RULES BEGIN============================#
 all: kernel
 
-kernel: 
-	@make -C src/kernel
-	@echo -e "\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
+# 注意：若修改了系统调用，（虽然已有依赖支持，但保险起见）请重新编译：make clean && make 
+syscall_hdr := include/kernel/syscall.h
 
-user:
+kernel: $(syscall_hdr)
+	@make -C src/kernel
+	@echo -e "\n\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
+
+user: $(syscall_hdr)
 	@if [ ! -d $(U_PROG_DIR) ]; then mkdir -p $(U_PROG_DIR); fi
 	@make -C src/user
-	@echo -e "\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
+	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
+
+$(syscall_hdr): entry/syscall.tbl
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $@
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $K/include/syscall_tbl.h -t tbl
 
 qemu: $(TARGET) fs.img
 	$(QEMU) $(QEMUOPTS)
@@ -86,9 +93,11 @@ qemu-gdb: $(TARGET) .gdbinit fs.img
 	$(QEMU) $(QEMUOPTS) -S -gdb tcp::1234
 
 clean: 
-	-rm -rf build
-	-rm -rf fs.img
-	-rm -rf $(SCRIPT)/mkfs
+	-@rm -rf build
+	-@rm -rf fs.img
+	-@rm -rf $(SCRIPT)/mkfs
+	-@rm -rf $K/__bin__initcode
+	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
 $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
 	gcc -Werror -Wall -Iinclude -o $@ $<
@@ -103,6 +112,6 @@ $(TARGET): kernel
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: fs.img qemu clean all user kernel
+.PHONY: fs.img qemu clean all user kernel entry
 
 #===========================RULES END==============================#
