@@ -2,106 +2,106 @@
 #include "kernel/syscall.h"
 .global fork
 fork:
- li a7, SYS_fork
+ li a7, sys_fork
  ecall
  ret
 .global exit
 exit:
- li a7, SYS_exit
+ li a7, sys_exit
  ecall
  ret
 .global wait
 wait:
- li a7, SYS_wait
+ li a7, sys_wait
  ecall
  ret
 .global pipe
 pipe:
- li a7, SYS_pipe
+ li a7, sys_pipe
  ecall
  ret
 .global read
 read:
- li a7, SYS_read
+ li a7, sys_read
  ecall
  ret
 .global write
 write:
- li a7, SYS_write
+ li a7, sys_write
  ecall
  ret
 .global close
 close:
- li a7, SYS_close
+ li a7, sys_close
  ecall
  ret
 .global kill
 kill:
- li a7, SYS_kill
+ li a7, sys_kill
  ecall
  ret
 .global exec
 exec:
- li a7, SYS_exec
+ li a7, sys_exec
  ecall
  ret
 .global open
 open:
- li a7, SYS_open
+ li a7, sys_open
  ecall
  ret
 .global mknod
 mknod:
- li a7, SYS_mknod
+ li a7, sys_mknod
  ecall
  ret
 .global unlink
 unlink:
- li a7, SYS_unlink
+ li a7, sys_unlink
  ecall
  ret
 .global fstat
 fstat:
- li a7, SYS_fstat
+ li a7, sys_fstat
  ecall
  ret
 .global link
 link:
- li a7, SYS_link
+ li a7, sys_link
  ecall
  ret
 .global mkdir
 mkdir:
- li a7, SYS_mkdir
+ li a7, sys_mkdir
  ecall
  ret
 .global chdir
 chdir:
- li a7, SYS_chdir
+ li a7, sys_chdir
  ecall
  ret
 .global dup
 dup:
- li a7, SYS_dup
+ li a7, sys_dup
  ecall
  ret
 .global getpid
 getpid:
- li a7, SYS_getpid
+ li a7, sys_getpid
  ecall
  ret
 .global sbrk
 sbrk:
- li a7, SYS_sbrk
+ li a7, sys_sbrk
  ecall
  ret
 .global sleep
 sleep:
- li a7, SYS_sleep
+ li a7, sys_sleep
  ecall
  ret
 .global uptime
 uptime:
- li a7, SYS_uptime
+ li a7, sys_uptime
  ecall
  ret

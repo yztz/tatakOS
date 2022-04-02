@@ -23,5 +23,6 @@
         "*.tcc": "c",
         "functional": "c",
         "tuple": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }

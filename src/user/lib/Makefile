@@ -20,5 +20,6 @@ obj-y += umalloc.o
 obj-y += usys.o
 
 # usys规则
-usys.S : $(SCRIPT)/usys.pl
+usys.S : $(SCRIPT)/usys.pl $(ROOT)/entry/syscall.tbl
 	@perl $(SCRIPT)/usys.pl > usys.S
+	@echo -e "GEN\t\tusys.S"
