@@ -69,14 +69,21 @@ export LDFLAGS CFLAGS
 #===========================RULES BEGIN============================#
 all: kernel
 
-kernel: 
-	@make -C src/kernel
-	@echo -e "\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
+syscall := include/kernel/syscall_gen.h
 
-user:
+kernel: $(syscall)
+	@make -C src/kernel
+	@echo -e "\n\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
+
+user: $(syscall)
 	@if [ ! -d $(U_PROG_DIR) ]; then mkdir -p $(U_PROG_DIR); fi
 	@make -C src/user
-	@echo -e "\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
+	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
+
+$(syscall): entry/syscall.tbl
+	@echo -e "GEN\t\tsyscall"
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall_gen.h -t tbl
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall.h -t hdr
 
 qemu: $(TARGET) fs.img
 	$(QEMU) $(QEMUOPTS)
@@ -86,9 +93,12 @@ qemu-gdb: $(TARGET) .gdbinit fs.img
 	$(QEMU) $(QEMUOPTS) -S -gdb tcp::1234
 
 clean: 
-	-rm -rf build
-	-rm -rf fs.img
-	-rm -rf $(SCRIPT)/mkfs
+	-@rm -rf build
+	-@rm -rf fs.img
+	-@rm -rf $(SCRIPT)/mkfs
+	-@rm -rf include/kernel/syscall_gen.h
+	-@rm -rf include/kernel/syscall.h
+	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
 $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
 	gcc -Werror -Wall -Iinclude -o $@ $<
@@ -103,6 +113,6 @@ $(TARGET): kernel
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: fs.img qemu clean all user kernel
+.PHONY: fs.img qemu clean all user kernel entry
 
 #===========================RULES END==============================#

@@ -24,3 +24,11 @@
     2. 重构Makefile
     3. 修改部分gitignore内容以适应新的工程目录
     4. 更新文档
+
+2022/4/3
+    1. 自动化系统调用
+    2. 自动化生成插入initcode代码
+    3. 添加相关处理脚本（bin2array.py sys_tbl.py）
+    4. 修复.d文件的依赖错误bug
+    5. 优化make clean
+    6. 更新文档
