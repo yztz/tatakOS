@@ -69,21 +69,21 @@ export LDFLAGS CFLAGS
 #===========================RULES BEGIN============================#
 all: kernel
 
-# 注意：若修改了系统调用，（虽然已有依赖支持，但保险起见）请重新编译：make clean && make 
-syscall_hdr := include/kernel/syscall.h
+syscall := include/kernel/syscall_gen.h
 
-kernel: $(syscall_hdr)
+kernel: $(syscall)
 	@make -C src/kernel
 	@echo -e "\n\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
 
-user: $(syscall_hdr)
+user: $(syscall)
 	@if [ ! -d $(U_PROG_DIR) ]; then mkdir -p $(U_PROG_DIR); fi
 	@make -C src/user
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
-$(syscall_hdr): entry/syscall.tbl
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $@
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $K/include/syscall_tbl.h -t tbl
+$(syscall): entry/syscall.tbl
+	@echo -e "GEN\t\tsyscall"
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall_gen.h -t tbl
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall.h -t hdr
 
 qemu: $(TARGET) fs.img
 	$(QEMU) $(QEMUOPTS)
@@ -96,7 +96,8 @@ clean:
 	-@rm -rf build
 	-@rm -rf fs.img
 	-@rm -rf $(SCRIPT)/mkfs
-	-@rm -rf $K/__bin__initcode
+	-@rm -rf include/kernel/syscall_gen.h
+	-@rm -rf include/kernel/syscall.h
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
 $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
