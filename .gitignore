@@ -2,5 +2,4 @@
 build/
 fs.img
 mkfs
-syscall.h
-syscall_gen.h
+include/kernel/syscall*
