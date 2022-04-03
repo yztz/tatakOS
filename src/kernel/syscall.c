@@ -82,8 +82,8 @@ argstr(int n, char *buf, int max)
   return fetchstr(addr, buf, max);
 }
 
-#define __SYS_CALL(NUM, FUNC) extern uint64 FUNC(void);
-#include "syscall_tbl.h"
+#define __SYS_CALL(NUM, NAME, FUNC) extern uint64 FUNC(void);
+#include "syscall_gen.h"
 #undef __SYS_CALL
 
 uint64 sys_test(void) {
@@ -103,10 +103,11 @@ uint64 sys_test(void) {
   return 0;
 }
 
-#define __SYS_CALL(NUM, FUNC) [NUM] FUNC,
+#define __SYS_CALL(NUM, NAME, FUNC) [NUM] FUNC,
 static uint64 (*syscalls[])(void) = {
-  #include "syscall_tbl.h"
+  #include "syscall_gen.h"
 };
+#undef __SYS_CALL
 
 void
 syscall(void)

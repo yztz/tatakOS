@@ -5,13 +5,13 @@ void write(int fd, char *addr, int size);
 void exit();
 
 void entry() {
-    syscall(99);
+    syscall(NR_test);
     for(;;);
 }
 
 
 void exit() {
-    syscall(sys_exit);
+    syscall(NR_exit);
 }
 
 void syscall(int num) {

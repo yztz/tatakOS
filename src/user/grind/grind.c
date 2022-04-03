@@ -8,7 +8,6 @@
 #include "user.h"
 #include "kernel/fs.h"
 #include "kernel/fcntl.h"
-#include "kernel/syscall.h"
 #include "memlayout.h"
 #include "kernel/riscv.h"
 

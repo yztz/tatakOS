@@ -19,4 +19,4 @@
 19     link      sys_link   
 20     mkdir     sys_mkdir  
 21     close     sys_close  
-99     test      sys_test
+88     test      sys_test
