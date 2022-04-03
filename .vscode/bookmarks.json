@@ -1,0 +1,19 @@
+{
+	"files": [
+		{
+			"path": "src/kernel/syscall.c",
+			"bookmarks": [
+				{
+					"line": 84,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 105,
+					"column": 0,
+					"label": ""
+				}
+			]
+		}
+	]
+}

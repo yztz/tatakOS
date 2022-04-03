@@ -2,3 +2,4 @@
 build/
 fs.img
 mkfs
+include/kernel/syscall*

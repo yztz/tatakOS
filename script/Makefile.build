@@ -1,4 +1,4 @@
-export SHELL = /bin/bash
+export SHELL := /bin/bash
 # 伪目标
 PHONY := __build
 __build:
@@ -65,10 +65,12 @@ dep_file = $@.d
 # 生成 cur_objs 目标
 $(BUILD_DIR)/%.o : %.c
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
 	@echo -e "CC\t\t$<"
 
 $(BUILD_DIR)/%.o : %.S
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
 	@echo -e "CC\t\t$<"
 
 .PHONY : $(PHONY)
