@@ -32,3 +32,7 @@
     4. 修复.d文件的依赖错误bug
     5. 优化make clean
     6. 更新文档
+
+2022/4/4
+    1. doc下「装载rustabi.md」重命名为「装载rustsbi.md」
+    2. 回滚测试PR时修改的README
