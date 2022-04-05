@@ -1,6 +1,7 @@
 export SHELL := /bin/bash
 EXTRA_CFLAGS := -I$(ROOT)/include/kernel
 EXTRA_CFLAGS += -I$K/include
+TARGET := $(BUILD_ROOT)/kernel
 
 obj-y += console.o
 obj-y += exec.o
@@ -33,7 +34,7 @@ start_recursive_build:
 # 生成内核程序
 $(TARGET): $(BUILD_DIR)/built-in.o
 	@echo -e "LD\t\tkernel"
-	@$(LD) $(LDFLAGS) -T $(SCRIPT)/kernel.ld -o $(TARGET) $<
+	@$(LD) $(LDFLAGS) -T $(SCRIPT)/kernel-$(platform).ld -o $(TARGET) $<
 	@$(OBJDUMP) -S $(TARGET) > $(TARGET).asm
 	@$(OBJDUMP) -t $(TARGET) | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(TARGET).sym
 
@@ -41,8 +42,8 @@ $(TARGET): $(BUILD_DIR)/built-in.o
 initcode_bin := include/initcode_bin.h
 $(initcode_bin): initcode.c $(ROOT)/entry/syscall.tbl
 	@mkdir -p $(BUILD_DIR)
-	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -c $< -o $(BUILD_DIR)/initcode.o
-	@$(LD) $(LDFLAGS) -N -e entry -Ttext 0 -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -c $< -o $(BUILD_DIR)/initcode.o
+	$(LD) $(LDFLAGS) -T $(SCRIPT)/initcode.ld -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
 	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_ROOT)/initcode.asm
 	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 7 -O $@

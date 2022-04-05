@@ -1,5 +1,5 @@
 # -fno-omit-frame-pointer:不优化栈帧指针  -O=-O1
-CFLAGS += -Wall -Werror -O2 -fno-omit-frame-pointer -ggdb
+CFLAGS += -Wall -Werror -Og -fno-omit-frame-pointer -ggdb
 # medany=PC±2G medlow=+2G&-2G
 CFLAGS += -mcmodel=medany -march=rv64g
 # 独立程序，不会额外链接其他标准库
