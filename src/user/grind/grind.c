@@ -8,7 +8,7 @@
 #include "user.h"
 #include "kernel/fs.h"
 #include "kernel/fcntl.h"
-#include "memlayout.h"
+#include "kernel/memlayout.h"
 #include "kernel/riscv.h"
 
 // from FreeBSD.

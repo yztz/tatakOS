@@ -1,3 +1,6 @@
+#ifndef _H_PROC_
+#define _H_PROC_
+
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -26,7 +29,9 @@ struct cpu {
   int intena;                 // Were interrupts enabled before push_off()?
 };
 
-extern struct cpu cpus[NCPU];
+#include "platform.h"
+
+extern struct cpu cpus[NUM_CORES];
 
 // per-process data for the trap handling code in trampoline.S.
 // sits in a page by itself just under the trampoline page in the
@@ -106,3 +111,6 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 };
+
+
+#endif

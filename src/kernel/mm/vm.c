@@ -1,6 +1,6 @@
 #include "param.h"
 #include "types.h"
-#include "memlayout.h"
+#include "platform.h"
 #include "elf.h"
 #include "riscv.h"
 #include "defs.h"
@@ -25,7 +25,7 @@ kvmmake(void)
   memset(kpgtbl, 0, PGSIZE);
 
   // uart registers
-  kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+  kvmmap(kpgtbl, UART, UART, PGSIZE, PTE_R | PTE_W);
 
   // virtio mmio disk interface
   kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
@@ -34,7 +34,7 @@ kvmmake(void)
   kvmmap(kpgtbl, CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R);
 
   // PLIC
-  kvmmap(kpgtbl, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+  kvmmap(kpgtbl, PLIC_BASE_ADDR, PLIC_BASE_ADDR, 0x400000, PTE_R | PTE_W);
 
   // map kernel text executable and read-only.
   kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
@@ -434,4 +434,30 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+
+static char* indents[] = {
+  "..",
+  ".. ..",
+  ".. .. ..",
+};
+
+void
+_vmprint(pagetable_t pagetable, int level) {
+  char *indent = indents[level];
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    pagetable_t pa = (pagetable_t)PTE2PA(pte);
+    if(pte & PTE_V){  // 存在且非叶子
+      printf("%s%d: pte %p pa %p\n", indent, i, pte, pa);
+      if((pte & (PTE_R|PTE_W|PTE_X)) == 0) _vmprint(pa, level + 1);
+    }
+  }
+}
+
+void 
+vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  _vmprint(pagetable, 0);
 }

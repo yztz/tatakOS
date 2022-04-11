@@ -1,0 +1,14 @@
+#ifndef _H_SCAUSE_
+#define _H_SCAUSE_
+
+#define INTERRUPT 0x8000000000000000UL
+#define EXCEPTION 0x0000000000000000UL
+
+#define INTR_SOFT   (INTERRUPT  + 1)
+#define INTR_TIMER  (INTERRUPT  + 5)
+#define INTR_EXT    (INTERRUPT  + 9) // NOT SUPPORT ON K210
+
+#define EXCP_SYSCALL (EXCEPTION  + 8)
+// ...
+
+#endif

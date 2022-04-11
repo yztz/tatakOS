@@ -1,12 +1,16 @@
-export SHELL := /bin/bash
-EXTRA_CFLAGS := -I$(ROOT)/include/kernel
-EXTRA_CFLAGS += -I$K/include
+SHELL = /bin/bash
+CFLAGS += -I$(ROOT)/include
+CFLAGS += -I$(ROOT)/include/kernel # deprecated
+CFLAGS += -I$K/include
+CFLAGS += -I$P/$(platform)/include
+
 TARGET := $(BUILD_ROOT)/kernel
+
+obj-y += driver/
 
 obj-y += console.o
 obj-y += exec.o
 obj-y += main.o
-obj-y += plic.o
 obj-y += proc.o
 obj-y += sleeplock.o
 obj-y += spinlock.o
@@ -14,6 +18,10 @@ obj-y += syscall.o
 obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += trap.o
+
+ifeq ("$(platform)", "k210")
+obj-y += sdcardtest.o
+endif
 
 obj-y += platform/
 obj-y += asm/
@@ -29,6 +37,7 @@ all: start_recursive_build  $(TARGET)
 .PHONY: start_recursive_build
 
 start_recursive_build:
+	@echo -e "\n\e[37;1mCFLAGS = $(CFLAGS)\e[0m\n"	
 	@make -C ./ -f $(SCRIPT)/Makefile.build
 
 # 生成内核程序
@@ -42,8 +51,8 @@ $(TARGET): $(BUILD_DIR)/built-in.o
 initcode_bin := include/initcode_bin.h
 $(initcode_bin): initcode.c $(ROOT)/entry/syscall.tbl
 	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -c $< -o $(BUILD_DIR)/initcode.o
-	$(LD) $(LDFLAGS) -T $(SCRIPT)/initcode.ld -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
+	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -c $< -o $(BUILD_DIR)/initcode.o
+	@$(LD) $(LDFLAGS) -T $(SCRIPT)/initcode.ld -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
 	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_ROOT)/initcode.asm
 	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 7 -O $@
