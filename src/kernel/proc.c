@@ -357,6 +357,7 @@ exit(int status)
 
   release(&wait_lock);
 
+  printf("pid: %d exited %d\n", p->pid, status);
   // Jump into the scheduler, never to return.
   sched();
   panic("zombie exit");
