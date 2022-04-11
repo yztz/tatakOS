@@ -1,7 +1,6 @@
 SHELL := /bin/bash
 CFLAGS += -I$(U)/include
 CFLAGS += -I$(ROOT)/include
-export CFLAGS
 
 BUILD_DIR := $(subst $(SOURCE_ROOT),$(OBJ_DIR),$(shell pwd))
 

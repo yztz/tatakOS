@@ -1,3 +1,6 @@
+#ifndef _H_DEFS_
+#define _H_DEFS_
+
 #include "sbi.h"
 struct buf;
 struct context;
@@ -78,12 +81,12 @@ int             piperead(struct pipe*, uint64, int);
 int             pipewrite(struct pipe*, uint64, int);
 
 // printf.c
-void            printf(char*, ...);
-void            panic(char*) __attribute__((noreturn));
-void            printfinit(void);
+// void            printf(char*, ...);
+// void            printfinit(void);
+// void            panic(char*) __attribute__((noreturn));
+#include "printf.h"
 
 // proc.c
-int             cpuid(void);
 void            exit(int);
 int             fork(void);
 int             growproc(int);
@@ -126,6 +129,7 @@ void            initsleeplock(struct sleeplock*, char*);
 // string.c
 int             memcmp(const void*, const void*, uint);
 void*           memmove(void*, const void*, uint);
+void*           memcpy(void*, const void*, uint);
 void*           memset(void*, int, uint);
 char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);
@@ -147,12 +151,11 @@ void            trapinithart(void);
 extern struct spinlock tickslock;
 void            usertrapret(void);
 
-// uart.c
-void            uartinit(void);
-void            uartintr(void);
-void            uartputc(int);
-void            uartputc_sync(int);
-int             uartgetc(void);
+// // uart.c
+// void            uartinit(void);
+// void            uartputc(int);
+// void            uartputc_sync(int);
+// int             uartgetc(void);
 
 // vm.c
 void            kvminit(void);
@@ -172,16 +175,19 @@ int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 
-// plic.c
-void            plicinit(void);
-void            plicinithart(void);
-int             plic_claim(void);
-void            plic_complete(int);
+// // plic.c
+// void            plicinit(void);
+// void            plicinithart(void);
+// int             plic_claim(void);
+// void            plic_complete(int);
 
 // virtio_disk.c
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
-void            virtio_disk_intr(void);
+// void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+
+#endif

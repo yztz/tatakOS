@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "scause.h"
 
 #define RESET_TIMER() sbi_legacy_set_timer(*(uint64 *)CLINT_MTIME + CLOCK_FREQ)
 
@@ -43,26 +44,25 @@ trapinithart(void)
 void
 usertrap(void)
 {
-  int which_dev = 0;
-
+  int scause = r_scause();
   if((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
   // send interrupts and exceptions to kerneltrap(),
   // since we're now in the kernel.
   w_stvec((uint64)kernelvec);
+  // write_csr(stvec, (uint64)kernelvec);
 
   struct proc *p = myproc();
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
-  if(r_scause() == 8){
-    // system call
+  // p->trapframe->epc = read_csr(sepc);
 
-    if(p->killed)
+  if (scause == EXCP_SYSCALL) {
+    if(p->killed) {
       exit(-1);
-
+    }
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
     p->trapframe->epc += 4;
@@ -72,21 +72,19 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  } else if(devintr(scause) == 0) {
     // ok
   } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
-    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
+    printf("sepc=%p stval=%p ra=%x\n", r_sepc(), r_stval(), p->trapframe->ra);
     p->killed = 1;
   }
 
   if(p->killed)
     exit(-1);
 
-  // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
-
+  if (scause == INTR_TIMER) yield();
+    
   usertrapret();
 }
 
@@ -140,7 +138,6 @@ usertrapret(void)
 void 
 kerneltrap()
 {
-  int which_dev = 0;
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
@@ -150,15 +147,19 @@ kerneltrap()
   if(intr_get() != 0)
     panic("kerneltrap: interrupts enabled");
 
-  if((which_dev = devintr()) == 0){
+  // printf("scause %p\n", scause);
+  // printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
+  if(devintr(scause) == -1) {
     printf("scause %p\n", scause);
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");
   }
 
-  // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
-    yield();
+  if(scause == INTR_TIMER) {
+    // give up the CPU if this is a timer interrupt.
+      if(myproc() != 0 && myproc()->state == RUNNING)
+        yield();
+  }
 
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.
@@ -175,62 +176,87 @@ clockintr()
   release(&tickslock);
 }
 
-// check if it's an external interrupt or software interrupt,
-// and handle it.
-// returns 2 if timer interrupt,
-// 1 if other device,
-// 0 if not recognized.
-int
-devintr()
-{
-  uint64 scause = r_scause();
+// for ext
+extern int handle_ext_irq();
 
-  if((scause & 0x8000000000000000L) &&
-     (scause & 0xff) == 9){
-    // this is a supervisor external interrupt, via PLIC.
-
-    // irq indicates which device interrupted.
-    int irq = plic_claim();
-
-    if(irq == UART0_IRQ){
-      uartintr();
-    } else if(irq == VIRTIO0_IRQ){
-      virtio_disk_intr();
-    } else if(irq){
-      printf("unexpected interrupt irq=%d\n", irq);
-    }
-
-    // the PLIC allows each device to raise at most one
-    // interrupt at a time; tell the PLIC the device is
-    // now allowed to interrupt again.
-    if(irq)
-      plic_complete(irq);
-
-    return 1;
-  } 
-  // else if(scause == 0x8000000000000001L){
-  //   // software interrupt from a machine-mode timer interrupt,
-  //   // forwarded by timervec in kernelvec.S.
-
-  //   if(cpuid() == 0){
-  //     clockintr();
-  //   }
-    
-  //   // acknowledge the software interrupt by clearing
-  //   // the SSIP bit in sip.
-  //   w_sip(r_sip() & ~2);
-
-  //   return 2;
-  // } 
-  else if(scause == 0x8000000000000005L){ // 时钟中断
+int devintr(uint64 scause) {
+  if (scause == INTR_SOFT) { // k210 ext passby soft
+    // todo:
+  } else if (scause == INTR_EXT) { // only qemu
+    #ifdef QEMU
+    if(handle_ext_irq() != 0) return -1;
+    #endif
+  } else if (scause == INTR_TIMER) {
+    // printf("clock...\n");
     if(cpuid() == 0){
       clockintr();
       RESET_TIMER();
     }
     w_sip(r_sip() & ~0x10000);
-    return 2;
-  } else {
-    return 0;
+  } else { // unknow
+    return -1;
   }
+  return 0;
 }
+
+
+/** @deprecated */
+// check if it's an external interrupt or software interrupt,
+// and handle it.
+// returns 2 if timer interrupt,
+// 1 if other device,
+// 0 if not recognized.
+// int
+// old_devintr()
+// {
+//   uint64 scause = r_scause();
+
+//   if((scause & 0x8000000000000000L) &&
+//      (scause & 0xff) == 9){
+//     // this is a supervisor external interrupt, via PLIC.
+
+//     // irq indicates which device interrupted.
+//     int irq = plic_claim();
+
+//     if(irq == UART0_IRQ){
+//       uartintr();
+//     } else if(irq == VIRTIO0_IRQ){
+//       virtio_disk_intr();
+//     } else if(irq){
+//       printf("unexpected interrupt irq=%d\n", irq);
+//     }
+
+//     // the PLIC allows each device to raise at most one
+//     // interrupt at a time; tell the PLIC the device is
+//     // now allowed to interrupt again.
+//     if(irq)
+//       plic_complete(irq);
+
+//     return 1;
+//   } 
+//   // else if(scause == 0x8000000000000001L){
+//   //   // software interrupt from a machine-mode timer interrupt,
+//   //   // forwarded by timervec in kernelvec.S.
+
+//   //   if(cpuid() == 0){
+//   //     clockintr();
+//   //   }
+    
+//   //   // acknowledge the software interrupt by clearing
+//   //   // the SSIP bit in sip.
+//   //   w_sip(r_sip() & ~2);
+
+//   //   return 2;
+//   // } 
+//   else if(scause == 0x8000000000000005L){ // 时钟中断
+//     if(cpuid() == 0){
+//       clockintr();
+//       RESET_TIMER();
+//     }
+//     w_sip(r_sip() & ~0x10000);
+//     return 2;
+//   } else {
+//     return 0;
+//   }
+// }
 

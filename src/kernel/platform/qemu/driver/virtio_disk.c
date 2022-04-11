@@ -10,12 +10,13 @@
 #include "riscv.h"
 #include "defs.h"
 #include "param.h"
-#include "memlayout.h"
+#include "qemu.h"
 #include "spinlock.h"
 #include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
 #include "virtio.h"
+#include "driver/plic.h"
 
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
@@ -73,12 +74,16 @@ static struct disk {
   
 } __attribute__ ((aligned (PGSIZE))) disk;
 
+int virtio_disk_intr(void);
+
 void
 virtio_disk_init(void)
 {
   uint32 status = 0;
 
   initlock(&disk.vdisk_lock, "virtio_disk");
+
+  plic_register_handler(VIRTIO0_IRQ, (plic_irq_callback_t)virtio_disk_intr, NULL);
 
   if(*R(VIRTIO_MMIO_MAGIC_VALUE) != 0x74726976 ||
      *R(VIRTIO_MMIO_VERSION) != 1 ||
@@ -278,10 +283,11 @@ virtio_disk_rw(struct buf *b, int write)
 
   release(&disk.vdisk_lock);
 }
-
-void
+#include "printf.h"
+int
 virtio_disk_intr()
 {
+  // printf("virtual disk handler start!\n");
   acquire(&disk.vdisk_lock);
 
   // the device won't raise another interrupt until we tell it
@@ -310,6 +316,7 @@ virtio_disk_intr()
 
     disk.used_idx += 1;
   }
-
+  // printf("virtual disk handle end!\n");
   release(&disk.vdisk_lock);
+  return 0;
 }

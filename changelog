@@ -36,3 +36,9 @@
 2022/4/4
     1. doc下「装载rustabi.md」重命名为「装载rustsbi.md」
     2. 回滚测试PR时修改的README
+
+2022/4/7
+    1. 改善Makefile脚本，添加run-*.sh
+    2. 添加tools，内含常用工具
+    3. 将kernel内的EXTRA_CLAGS合并到CFLAGS内
+    4. 添加SD卡驱动支持（不完备）

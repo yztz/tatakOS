@@ -1,8 +1,19 @@
-#define syscall(NUM) {\
-    asm ("mv a7, %0"::"r"(NUM):"a7");\
-    asm ("ecall");}
+#include "types.h"
+#define syscall(num, arg0, arg1, arg2, arg3) ({ \
+    register uint64 a0 asm ("a0") = (uint64)(arg0); \
+    register uint64 a1 asm ("a1") = (uint64)(arg1); \
+    register uint64 a2 asm ("a2") = (uint64)(arg2); \
+    register uint64 a3 asm ("a3") = (uint64)(arg3); \
+    register uint64 a7 asm ("a7") = (uint64)(num); \
+    asm volatile ("ecall" \
+        : "+r" (a0) \
+        : "r" (a1), "r" (a2), "r" (a3), "r" (a7) \
+        : "memory"); \
+    a0; \
+})
 
 #include "syscall.h"
+void test();
 void write(int fd, char *addr, int size);
 void exec(char *path, char** argv);
 
@@ -10,7 +21,6 @@ void exec(char *path, char** argv);
 char* path = "/init";
 
 __attribute__((section(".startup"))) void main() {
-    syscall(NR_test);
     char *argv[2];
     // set arg
     argv[0] = path;
@@ -27,10 +37,13 @@ __attribute__((section(".startup"))) void main() {
 // }
 
 void exec(char *path, char** argv) {
-    syscall(NR_test);
-    syscall(NR_exec);
+    syscall(NR_exec, path, argv, 0, 0);
 }
 
-void exit() {
-    syscall(NR_exit);
+void test() {
+    syscall(NR_test, 0, 0, 0, 0);
 }
+
+// void exit() {
+//     syscall(NR_exit);
+// }
