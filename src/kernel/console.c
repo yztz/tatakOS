@@ -21,9 +21,19 @@
 #include "riscv.h"
 #include "defs.h"
 #include "proc.h"
+#include "platform.h"
+#include "driver/uart.h"
 
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x
+
+static void (* __putchar)(char c) = (void (*)(char c))sbi_putchar;
+
+/* used by printf */
+void _putchar(char c) 
+{
+  __putchar(c);
+}
 
 //
 // send one character to the uart.
@@ -35,9 +45,9 @@ consputc(int c)
 {
   if(c == BACKSPACE){
     // if the user typed backspace, overwrite with a space.
-    uartputc_sync('\b'); uartputc_sync(' '); uartputc_sync('\b');
+    __putchar('\b'); __putchar(' '); __putchar('\b');
   } else {
-    uartputc_sync(c);
+    __putchar(c);
   }
 }
 
@@ -131,6 +141,7 @@ consoleread(int user_dst, uint64 dst, int n)
 // uartintr() calls this for input character.
 // do erase/kill processing, append to cons.buf,
 // wake up consoleread() if a whole line has arrived.
+// 基于中断，用于字符回显，以及存储字符到缓存
 //
 void
 consoleintr(int c)
@@ -183,10 +194,11 @@ consoleinit(void)
 {
   initlock(&cons.lock, "cons");
 
-  uartinit();
+  uartinit((uart_intr_handler_t)consoleintr);
 
+  __putchar = uartputc_sync;
   // connect read and write system calls
   // to consoleread and consolewrite.
-  devsw[CONSOLE].read = consoleread;
-  devsw[CONSOLE].write = consolewrite;
+  devs[CONSOLE].read = consoleread;
+  devs[CONSOLE].write = consolewrite;
 }

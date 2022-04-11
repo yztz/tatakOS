@@ -4,7 +4,7 @@
 #include "user.h"
 #include "kernel/fs.h"
 #include "kernel/fcntl.h"
-#include "memlayout.h"
+#include "kernel/platform.h"
 #include "kernel/riscv.h"
 
 //
@@ -2746,7 +2746,7 @@ countfree()
         exit(1);
       }
     }
-
+    printf("normal exit...\n");
     exit(0);
   }
 

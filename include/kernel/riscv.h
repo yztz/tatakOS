@@ -49,6 +49,38 @@ w_mepc(uint64 x)
 #define SSTATUS_SIE (1L << 1)  // Supervisor Interrupt Enable
 #define SSTATUS_UIE (1L << 0)  // User Interrupt Enable
 
+
+#define read_csr(reg) ({ unsigned long __tmp; \
+  asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
+  __tmp; })
+
+#define write_csr(reg, val) ({ \
+  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
+    asm volatile ("csrw " #reg ", %0" :: "i"(val)); \
+  else \
+    asm volatile ("csrw " #reg ", %0" :: "r"(val)); })
+
+#define swap_csr(reg, val) ({ unsigned long __tmp; \
+  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
+    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "i"(val)); \
+  else \
+    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "r"(val)); \
+  __tmp; })
+
+#define set_csr(reg, bit) ({ unsigned long __tmp; \
+  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
+    asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
+  else \
+    asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
+  __tmp; })
+
+#define clear_csr(reg, bit) ({ unsigned long __tmp; \
+  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
+    asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
+  else \
+    asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
+  __tmp; })
+
 static inline uint64
 r_sstatus()
 {
@@ -346,6 +378,9 @@ r_tp()
   return x;
 }
 
+// called with intr_off
+#define cpuid() (r_tp())
+
 static inline void 
 w_tp(uint64 x)
 {
@@ -398,9 +433,6 @@ sfence_vma()
 // Sv39, to avoid having to sign-extend virtual addresses
 // that have the high bit set.
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
-
-typedef uint64 pte_t;
-typedef uint64 *pagetable_t; // 512 PTEs
 
 
 #endif

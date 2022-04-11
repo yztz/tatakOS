@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "Makefile.*": "makefile",
         "sbi.h": "c",
         "riscv.h": "c",
         "types.h": "c",
@@ -22,7 +23,33 @@
         "array": "c",
         "*.tcc": "c",
         "functional": "c",
-        "tuple": "c"
+        "tuple": "c",
+        "stdint.h": "c",
+        "sdcard.h": "c",
+        "sysctl.h": "c",
+        "gpiohs.h": "c",
+        "fpioa.h": "c",
+        "stdio.h": "c",
+        "spi.h": "c",
+        "dmac.h": "c",
+        "stdbool.h": "c",
+        "utils.h": "c",
+        "printf.h": "c",
+        "cstdio": "c",
+        "encoding.h": "c",
+        "k210.h": "c",
+        "cstddef": "cpp",
+        "type_traits": "cpp",
+        "cmath": "cpp",
+        "limits": "cpp",
+        "device.h": "c",
+        "platform.h": "c",
+        "stddef.h": "c",
+        "cstdint": "c",
+        "stdint-gcc.h": "c",
+        "qemu.h": "c",
+        "plic.h": "c",
+        "virtio.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
