@@ -4,16 +4,17 @@
 
 #include "types.h"
 #include "param.h"
-#include "memlayout.h"
-#include "riscv.h"
+#include "platform.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "driver/plic.h"
+#include "driver/uart.h"
 #include "defs.h"
 
 // the UART control registers are memory-mapped
 // at address UART0. this macro returns the
 // address of one of the registers.
-#define Reg(reg) ((volatile unsigned char *)(UART0 + reg))
+#define Reg(reg) ((volatile unsigned char *)(UART + reg))
 
 // the UART control registers.
 // some have different meanings for
@@ -45,15 +46,21 @@ char uart_tx_buf[UART_TX_BUF_SIZE];
 uint64 uart_tx_w; // write next to uart_tx_buf[uart_tx_w % UART_TX_BUF_SIZE]
 uint64 uart_tx_r; // read next from uart_tx_buf[uart_tx_r % UART_TX_BUF_SIZE]
 
-extern volatile int panicked; // from printf.c
+extern volatile int panicked; // from panic.c
+static uart_intr_handler_t uart_intr_handler;
 
-void uartstart();
+void uartstart(void);
+int uartintr(void);
 
 void
-uartinit(void)
+uartinit(uart_intr_handler_t handler)
 {
   // disable interrupts.
   WriteReg(IER, 0x00);
+
+  uart_intr_handler = handler;
+
+  plic_register_handler(UART_IRQ, (plic_irq_callback_t)uartintr, NULL);
 
   // special mode to set baud rate.
   WriteReg(LCR, LCR_BAUD_LATCH);
@@ -75,6 +82,7 @@ uartinit(void)
   WriteReg(IER, IER_TX_ENABLE | IER_RX_ENABLE);
 
   initlock(&uart_tx_lock, "uart");
+
 }
 
 // add a character to the output buffer and tell the
@@ -84,7 +92,7 @@ uartinit(void)
 // from interrupts; it's only suitable for use
 // by write().
 void
-uartputc(int c)
+uartputc(char c)
 {
   acquire(&uart_tx_lock);
 
@@ -113,10 +121,9 @@ uartputc(int c)
 // to echo characters. it spins waiting for the uart's
 // output register to be empty.
 void
-uartputc_sync(int c)
+uartputc_sync(char c)
 {
   push_off();
-
   if(panicked){
     for(;;)
       ;
@@ -176,7 +183,7 @@ uartgetc(void)
 // handle a uart interrupt, raised because input has
 // arrived, or the uart is ready for more output, or
 // both. called from trap.c.
-void
+int
 uartintr(void)
 {
   // read and process incoming characters.
@@ -184,11 +191,12 @@ uartintr(void)
     int c = uartgetc();
     if(c == -1)
       break;
-    consoleintr(c);
+    if(uart_intr_handler) uart_intr_handler(c);
   }
 
   // send buffered characters.
   acquire(&uart_tx_lock);
   uartstart();
   release(&uart_tx_lock);
+  return 0;
 }

@@ -6,7 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 
-struct cpu cpus[NCPU];
+struct cpu cpus[NUM_CORES];
 
 struct proc proc[NPROC];
 
@@ -54,16 +54,6 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->kstack = KSTACK((int) (p - proc));
   }
-}
-
-// Must be called with interrupts disabled,
-// to prevent race with process being moved
-// to a different CPU.
-int
-cpuid()
-{
-  int id = r_tp();
-  return id;
 }
 
 // Return this CPU's cpu struct.

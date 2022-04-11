@@ -48,3 +48,7 @@ static inline struct sbiret sbi_legacy_set_timer(uint64 stime_value) {
 static inline struct sbiret sbi_putchar(int ch) {
     return SBI_CALL_1(CONSOLE_PUT_CHAR_EXT, 0, ch);
 }
+
+static inline struct sbiret sbi_emulate_ext(uint64 func) {
+    return SBI_CALL_1(0x0A000004, 0x210, func);
+}
