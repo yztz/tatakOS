@@ -2,7 +2,6 @@ SHELL = /bin/bash
 CFLAGS += -I$(ROOT)/include
 CFLAGS += -I$(ROOT)/include/kernel # deprecated
 CFLAGS += -I$K/include
-CFLAGS += -I$P/$(platform)/include
 
 TARGET := $(BUILD_ROOT)/kernel
 
@@ -18,10 +17,6 @@ obj-y += syscall.o
 obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += trap.o
-
-ifeq ("$(platform)", "k210")
-obj-y += sdcardtest.o
-endif
 
 obj-y += platform/
 obj-y += asm/

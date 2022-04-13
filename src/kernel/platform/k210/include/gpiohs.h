@@ -19,7 +19,8 @@
 #include "k210.h"
 #include <stddef.h>
 #include "gpio_common.h"
-#include "plic.h"
+#include "driver/plic.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -22,17 +22,15 @@
 #include "defs.h"
 #include "proc.h"
 #include "platform.h"
-#include "driver/uart.h"
+#include "driver/plic.h"
 
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x
 
-static void (* __putchar)(char c) = (void (*)(char c))sbi_putchar;
-
 /* used by printf */
 void _putchar(char c) 
 {
-  __putchar(c);
+  sbi_putchar(c);
 }
 
 //
@@ -45,9 +43,9 @@ consputc(int c)
 {
   if(c == BACKSPACE){
     // if the user typed backspace, overwrite with a space.
-    __putchar('\b'); __putchar(' '); __putchar('\b');
+    sbi_putchar('\b'); sbi_putchar(' '); sbi_putchar('\b');
   } else {
-    __putchar(c);
+    sbi_putchar(c);
   }
 }
 
@@ -74,7 +72,7 @@ consolewrite(int user_src, uint64 src, int n)
     char c;
     if(either_copyin(&c, user_src, src+i, 1) == -1)
       break;
-    uartputc(c);
+    consputc(c);
   }
 
   return i;
@@ -144,7 +142,7 @@ consoleread(int user_dst, uint64 dst, int n)
 // 基于中断，用于字符回显，以及存储字符到缓存
 //
 void
-consoleintr(int c)
+consoleintr(char c)
 {
   acquire(&cons.lock);
 
@@ -168,7 +166,12 @@ consoleintr(int c)
     break;
   default:
     if(c != 0 && cons.e-cons.r < INPUT_BUF){
-      c = (c == '\r') ? '\n' : c;
+      #ifndef QEMU // refer xv6-k210
+			if (c == '\r') break;
+			#else
+			c = (c == '\r') ? '\n' : c;
+			#endif
+
 
       // echo back to the user.
       consputc(c);
@@ -189,14 +192,21 @@ consoleintr(int c)
   release(&cons.lock);
 }
 
+int cons_irq_callback(void *ctx) {
+  char c = sbi_getchar();
+  if (c < 0) return 0;
+  consoleintr(c);
+  return 0;
+}
+
+
 void
 consoleinit(void)
 {
   initlock(&cons.lock, "cons");
-
-  uartinit((uart_intr_handler_t)consoleintr);
-
-  __putchar = uartputc_sync;
+  plic_register_handler(UART_IRQ, cons_irq_callback, NULL);
+  // console_init(consoleintr, NULL);
+  cons.e = cons.w = cons.r = 0;
   // connect read and write system calls
   // to consoleread and consolewrite.
   devs[CONSOLE].read = consoleread;

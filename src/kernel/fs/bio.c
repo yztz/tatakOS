@@ -23,6 +23,15 @@
 #include "fs.h"
 #include "buf.h"
 
+void virtio_disk_rw(struct buf *, int);
+
+#ifdef K210
+/* pacify old fs */
+void virtio_disk_rw(struct buf * buffer, int rw) {
+    // nothing...
+}
+#endif
+
 struct {
   struct spinlock lock;
   struct buf buf[NBUF];

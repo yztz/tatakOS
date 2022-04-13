@@ -1,6 +1,3 @@
-obj-y += uart.o
-obj-y += virtio_disk.o
-
 # obj-y += dmac.o
 # obj-y += gpio.o
 obj-y += sdcard.o
@@ -11,3 +8,4 @@ obj-y += gpiohs.o
 obj-y += ff.o
 obj-y += diskio.o
 obj-y += ccsbcs.o
+obj-y += uarths.o

@@ -2746,7 +2746,6 @@ countfree()
         exit(1);
       }
     }
-    printf("normal exit...\n");
     exit(0);
   }
 

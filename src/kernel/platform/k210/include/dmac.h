@@ -19,7 +19,7 @@
 #include "io.h"
 #include "k210.h"
 #include "stdbool.h"
-#include "plic.h"
+#include "driver/plic.h"
 #include <stddef.h>
 
 #ifdef __cplusplus

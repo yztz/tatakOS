@@ -25,6 +25,7 @@ __attribute__((section(".startup"))) void main() {
     // set arg
     argv[0] = path;
     argv[1] = 0;
+    test();
     exec(path, argv);
     for(;;);
 }

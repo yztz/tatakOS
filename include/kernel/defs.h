@@ -23,8 +23,8 @@ void            bunpin(struct buf*);
 
 // console.c
 void            consoleinit(void);
-void            consoleintr(int);
-void            consputc(int);
+// void            consoleintr(int);
+// void            consputc(int);
 
 // exec.c
 int             exec(char*, char**);
@@ -182,8 +182,8 @@ int             copyinstr(pagetable_t, char *, uint64, uint64);
 // void            plic_complete(int);
 
 // virtio_disk.c
-void            virtio_disk_init(void);
-void            virtio_disk_rw(struct buf *, int);
+// void            virtio_disk_init(void);
+// void            virtio_disk_rw(struct buf *, int);
 // void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array

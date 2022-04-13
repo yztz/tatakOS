@@ -10,10 +10,13 @@
 #define PLIC_MCLAIM(hart) (PLIC_BASE_ADDR + 0x200004 + (hart)*0x2000)
 #define PLIC_SCLAIM(hart) (PLIC_BASE_ADDR + 0x201004 + (hart)*0x2000)
 
-typedef struct _plic_instance_t {
-    plic_irq_callback_t callback;
-    void *ctx;
-} plic_instance_t;
+#ifndef PLIC_MODE
+#error PLIC_MODE IS NOT DETERMINED!
+#endif
+
+typedef enum _plic_irq_mode_t{
+    S_MODE=0x01, M_MODE=0x10,
+}plic_irq_mode_t;
 
 static plic_instance_t plic_instances[IRQN_MAX];
 
@@ -30,15 +33,17 @@ void plic_init(void) {
     
 }
 
+void _plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode);
+void _plic_set_threshold(uint32_t threshould, plic_irq_mode_t mode);
 void plic_init_hart(void) {
     int i;
 
     /* Disable all interrupts for the current core. */
     for (i = 1; i < IRQN_MAX; i++) {
-        plic_irq_disable(i, S_MODE);
+        _plic_irq_disable(i, S_MODE | M_MODE);
     }
     /* Set the threshold to zero. */
-    plic_set_threshold(0, S_MODE);
+    _plic_set_threshold(0, S_MODE | M_MODE);
 
 
     /*
@@ -58,7 +63,7 @@ void plic_set_priority(plic_irq_t source, uint32_t priority) {
     *(uint32_t*)(PLIC_PRIORITY + source*4) = priority;
 }
 
-void plic_irq_enable(plic_irq_t source, plic_irq_mode_t mode) {
+void _plic_irq_enable(plic_irq_t source, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     int offset = source / 32;
     int bit = source % 32;
@@ -70,7 +75,11 @@ void plic_irq_enable(plic_irq_t source, plic_irq_mode_t mode) {
     }
 }
 
-void plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode) {
+void plic_irq_enable(plic_irq_t source) {
+    _plic_irq_enable(source, PLIC_MODE);
+}
+
+void _plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     int offset = source / 32;
     int bit = source % 32;
@@ -82,7 +91,11 @@ void plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode) {
     }
 }
 
-void plic_set_threshold(uint32_t threshould, plic_irq_mode_t mode) {
+void plic_irq_disable(plic_irq_t source) {
+    _plic_irq_disable(source, PLIC_MODE);
+}
+
+void _plic_set_threshold(uint32_t threshould, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     if (mode & S_MODE) {
         *(uint32*)PLIC_SPRIORITY(core_id) = threshould;
@@ -90,19 +103,41 @@ void plic_set_threshold(uint32_t threshould, plic_irq_mode_t mode) {
     if (mode & M_MODE) {
         *(uint32*)PLIC_MPRIORITY(core_id) = threshould;
     }
-
 }
 
-int plic_claim(void) {
+void plic_set_threshold(uint32_t threshould) {
+    _plic_set_threshold(threshould, PLIC_MODE);
+}
+
+int _plic_claim(plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
-    int irq = *(uint32*)PLIC_SCLAIM(core_id);
+    int irq = 0;
+    if (mode & S_MODE) {
+        irq = *(uint32*)PLIC_SCLAIM(core_id);
+    }
+    if (mode & M_MODE) {
+        irq = *(uint32*)PLIC_MCLAIM(core_id);
+    }
     return irq;
 }
 
+int plic_claim() {
+    return _plic_claim(PLIC_MODE);
+}
+
+void _plic_complete(plic_irq_t source, plic_irq_mode_t mode) {
+    uint64_t core_id = cpuid();
+    if (mode & S_MODE) {
+        *(uint32*)PLIC_SCLAIM(core_id) = source;
+    }
+    if (mode & M_MODE) {
+        *(uint32*)PLIC_MCLAIM(core_id) = source;
+    }
+    
+}
 
 void plic_complete(plic_irq_t source) {
-    uint64_t core_id = cpuid();
-    *(uint32*)PLIC_SCLAIM(core_id) = source;
+    _plic_complete(source, PLIC_MODE);
 }
 
 void plic_register_handler(plic_irq_t source, plic_irq_callback_t callback, void *ctx) {
@@ -113,27 +148,22 @@ void plic_register_handler(plic_irq_t source, plic_irq_callback_t callback, void
 }
 
 #include "printf.h"
-int handle_ext_irq() {   
+int handle_ext_irq() {
     int ret;
     /* Get current IRQ num */
     uint32_t int_num = plic_claim();
-    // static int flag = 0;
+    if (int_num == 0) return 0;
 
+    // printf("IRQ: %d\n", int_num);
     if (plic_instances[int_num].callback) {
-        // if(flag < 5) printf("call handler...\n");
         ret = plic_instances[int_num].callback(plic_instances[int_num].ctx);
     } else {
-        printf("no handler...\n");
+        printf("no handler for IRQ: %d...\n", int_num);
         ret = -1;
     }
 
     /* Perform IRQ complete */
     plic_complete(int_num);
-    // if(ret != 0 || flag++ < 20) {
-    //     printf("IRQ NUM is: %d ret = %d \n", int_num, ret);
-    //     printf("sip: %x\n", r_sip());
-    // }
-    // plic->targets.target[core_id][PLIC_CTX].claim_complete = int_num;
     
     return ret;
 }

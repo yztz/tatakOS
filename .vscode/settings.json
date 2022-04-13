@@ -49,7 +49,10 @@
         "stdint-gcc.h": "c",
         "qemu.h": "c",
         "plic.h": "c",
-        "virtio.h": "c"
+        "virtio.h": "c",
+        "uart.h": "c",
+        "uarths.h": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

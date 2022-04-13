@@ -106,10 +106,13 @@ $(syscall): entry/syscall.tbl
 	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall_gen.h -t tbl
 	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall.h -t hdr
 
-SBI_TARGET_PATH := bootloader/rustsbi-k210/target/riscv64imac-unknown-none-elf/debug
+SBI_TARGET_PATH := target/riscv64imac-unknown-none-elf/debug
 sbi-k210:
 	@cd bootloader/rustsbi-k210 && cargo make
-	cp $(SBI_TARGET_PATH)/rustsbi-k210 bootloader/$@
+	cp bootloader/rustsbi-k210/$(SBI_TARGET_PATH)/rustsbi-k210 bootloader/$@
+sbi-qemu:
+	@cd bootloader/rustsbi-qemu && cargo make
+	cp bootloader/rustsbi-qemu/$(SBI_TARGET_PATH)/rustsbi-qemu bootloader/$@
 
 clean: 
 	-@rm -rf build

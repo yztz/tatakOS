@@ -19,6 +19,8 @@
 #define CLINT 0x2000000L
 #define CLINT_MTIME (CLINT + 0xBFF8)
 
+#define PLIC_MODE S_MODE
+
 /* supported source is platform-specific */
 enum _plic_irq {
     VIRTIO0_IRQ = 1,
