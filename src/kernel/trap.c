@@ -45,20 +45,20 @@ extern void vmprint(pagetable_t pagetable);
 void
 usertrap(void)
 {
-  uint64 scause = r_scause();
+  uint64 scause = read_csr(scause);
   if((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
   // send interrupts and exceptions to kerneltrap(),
   // since we're now in the kernel.
-  w_stvec((uint64)kernelvec);
-  // write_csr(stvec, (uint64)kernelvec);
+  // w_stvec((uint64)kernelvec);
+  write_csr(stvec, (uint64)kernelvec);
 
   struct proc *p = myproc();
   
   // save user program counter.
-  p->trapframe->epc = r_sepc();
-  // p->trapframe->epc = read_csr(sepc);
+  // p->trapframe->epc = r_sepc();
+  p->trapframe->epc = read_csr(sepc);
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
@@ -77,7 +77,7 @@ usertrap(void)
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
-    printf("sepc=%p stval=%p", r_sepc(), r_stval());
+    printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
     p->killed = 1;
   }
 
@@ -182,14 +182,21 @@ extern int handle_ext_irq();
 
 int devintr(uint64 scause) {
   if (scause == INTR_SOFT) { // k210 ext passby soft
-    // todo:
+    #ifdef K210
+    // printf("caught software intr!\n");
+    if(handle_ext_irq() != 0) return -1;
+    clear_csr(sip, SIP_SSIP);
+    sbi_set_mext();
+    #endif
   } else if (scause == INTR_EXT) { // only qemu
     #ifdef QEMU
     if(handle_ext_irq() != 0) return -1;
+    clear_csr(sip, SIP_SSIP);
     #endif
   } else if (scause == INTR_TIMER) {
-    // printf("clock...\n");
+    
     if(cpuid() == 0){
+      // printf("clock...\n");
       clockintr();
       RESET_TIMER();
     }

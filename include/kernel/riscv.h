@@ -132,6 +132,12 @@ w_sie(uint64 x)
 #define MIE_MEIE (1L << 11) // external
 #define MIE_MTIE (1L << 7)  // timer
 #define MIE_MSIE (1L << 3)  // software
+
+// SIP
+#define SIP_SSIP (1L << 1)
+#define SIP_STIP (1L << 5)
+#define SIP_SEIP (1L << 9)
+
 static inline uint64
 r_mie()
 {

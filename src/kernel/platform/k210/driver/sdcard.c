@@ -348,6 +348,16 @@ static uint8_t sd_get_cardinfo(SD_CardInfo *cardinfo)
 	return 0;
 }
 
+void io_mux_init(void)
+{
+    fpioa_set_function(27, FUNC_SPI0_SCLK);
+    fpioa_set_function(28, FUNC_SPI0_D0);
+    fpioa_set_function(26, FUNC_SPI0_D1);
+	// fpioa_set_function(32, FUNC_GPIOHS7);
+    // 注意比赛平台片选功能为SS0！！！
+    fpioa_set_function(29, FUNC_SPI0_SS3);
+}
+
 /*
  * @brief  Initializes the SD/SD communication.
  * @param  None
@@ -358,6 +368,8 @@ static uint8_t sd_get_cardinfo(SD_CardInfo *cardinfo)
 uint8_t sd_init(void)
 {
 	uint8_t frame[10], index, result;
+	/* 设置功能管脚 */
+	io_mux_init();
 	/*!< Initialize SD_SPI */
 	sd_lowlevel_init(0); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */

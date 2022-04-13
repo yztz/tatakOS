@@ -27,8 +27,10 @@ kvmmake(void)
   // uart registers
   kvmmap(kpgtbl, UART, UART, PGSIZE, PTE_R | PTE_W);
 
+  #ifdef QEMU // 到时要使用ioremap
   // virtio mmio disk interface
   kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+  #endif
 
   // CLINT_MTIME 暂时直接映射
   kvmmap(kpgtbl, CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R);

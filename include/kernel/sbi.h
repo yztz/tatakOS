@@ -10,6 +10,7 @@ extern void panic(char *s);
 #define CONSOLE_GET_CHAR_EXT 0x02L
 #define LEGACY_SET_TIMER 0x00L
 
+
 struct sbiret {
     uint64 error;
     uint64 value;
@@ -49,6 +50,10 @@ static inline struct sbiret sbi_putchar(int ch) {
     return SBI_CALL_1(CONSOLE_PUT_CHAR_EXT, 0, ch);
 }
 
-static inline struct sbiret sbi_emulate_ext(uint64 func) {
-    return SBI_CALL_1(0x0A000004, 0x210, func);
+static inline char sbi_getchar() {
+    return SBI_CALL_0(CONSOLE_GET_CHAR_EXT, 0).error;
+}
+
+static inline struct sbiret sbi_set_mext() {
+    return SBI_CALL_0(0x0A000009, 0x210);
 }
