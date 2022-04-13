@@ -1,6 +1,0 @@
-[submodule "bootloader/rustsbi-qemu"]
-	path = bootloader/rustsbi-qemu
-	url = https://github.com/rustsbi/rustsbi-qemu.git
-[submodule "bootloader/rustsbi-k210"]
-	path = bootloader/rustsbi-k210
-	url = https://github.com/rustsbi/rustsbi-k210.git
