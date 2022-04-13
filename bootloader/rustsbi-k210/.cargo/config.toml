@@ -1,0 +1,7 @@
+[alias]
+xtask = "run --package xtask --"
+make = "xtask make"
+k210 = "xtask k210"
+asm = "xtask asm"
+size = "xtask size"
+detect = "xtask detect"
