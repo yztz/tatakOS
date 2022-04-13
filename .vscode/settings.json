@@ -54,5 +54,8 @@
         "uarths.h": "c",
         "random": "c"
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "files.exclude": {
+        "**/.git": false
+    }
 }
