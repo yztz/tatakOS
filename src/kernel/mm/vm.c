@@ -148,8 +148,8 @@ map_large_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int pe
   uint64 a, last;
   pte_t *pte;
 
-  if((pa & (PGSIZE_LARGE - 1)) > 0) 
-    panic("pa misaligned!");
+  // if((pa & (PGSIZE_LARGE - 1)) > 0) 
+  //   panic("pa misaligned!");
 
   if(size == 0)
     panic("mappages: size");
@@ -163,7 +163,7 @@ map_large_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int pe
     if(*pte & PTE_V)
       panic("mappages: remap");
     // printf("patpte: %p\n", PA2PTE(pa));
-    *pte = PA2PTE(pa) | perm | PTE_V;
+    *pte = PA2PTE_SPEC(pa, PGSPEC_LARGE) | perm | PTE_V;
     if(a == last)
       break;
     a += PGSIZE_LARGE;
