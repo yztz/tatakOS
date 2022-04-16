@@ -3,6 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
+#include "mm.h"
 #include "platform.h"
 #include "driver/plic.h"
 
@@ -22,6 +23,9 @@ main()
     printf("\nOS TATAKAI!\n\n");
     /* PM */
     kinit();         // physical page allocator
+    /* VM */
+    kvminit();       // create kernel page table
+    kvminithart();   // turn on paging
     /* TRAP */
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector
@@ -35,11 +39,8 @@ main()
     platform_dirver_init(); // driver
     /* CONSOLE */
     consoleinit(); // console
-
     printf("console init success!\n");
-    /* VM */
-    kvminit();       // create kernel page table
-    kvminithart();   // turn on paging
+
     procinit();      // process table
     /* FILE SYSTEM */
     binit();         // buffer cache

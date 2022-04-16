@@ -6,8 +6,13 @@
 #include "proc.h"
 #include "defs.h"
 #include "scause.h"
+#include "io.h"
 
-#define RESET_TIMER() sbi_legacy_set_timer(*(uint64 *)CLINT_MTIME + CLOCK_FREQ)
+static uint64_t *clint_mtime;
+// #define RESET_TIMER() sbi_set_timer(*clint_mtime + CLOCK_FREQ)
+#define READ_TIME() (*clint_mtime)
+#define RESET_TIMER() sbi_legacy_set_timer(READ_TIME() + CLOCK_FREQ)
+// #define RESET_TIMER() sbi_legacy_set_timer(read_csr(mtime) + CLOCK_FREQ)
 
 struct spinlock tickslock;
 uint ticks;
@@ -19,10 +24,13 @@ void kernelvec();
 
 extern int devintr();
 
+extern pagetable_t kernel_pagetable;
 void
 trapinit(void)
 {
   initlock(&tickslock, "time");
+  // clint_mtime = (uint64_t *)(ioremap(CLINT_MTIME, 2 * PGSIZE));
+  clint_mtime = (uint64_t *)(ioremap(CLINT, 0x10000) + 0Xbff8);
 }
 
 // set up to take exceptions and traps while in the kernel.
@@ -30,9 +38,11 @@ void
 trapinithart(void)
 {
   // 设置中断向量
-  w_stvec((uint64)kernelvec);
+  write_csr(stvec, (uint64)kernelvec);
+  // w_stvec();
   // 使能中断
-  w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
+  write_csr(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
+  // w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
   // 重置计时器
   RESET_TIMER();
 }
@@ -191,15 +201,14 @@ int devintr(uint64 scause) {
   } else if (scause == INTR_EXT) { // only qemu
     #ifdef QEMU
     if(handle_ext_irq() != 0) return -1;
-    clear_csr(sip, SIP_SSIP);
     #endif
   } else if (scause == INTR_TIMER) {
-    
     if(cpuid() == 0){
       // printf("clock...\n");
+      // printf("time is: %X\n", READ_TIME());
       clockintr();
-      RESET_TIMER();
     }
+    RESET_TIMER();
     w_sip(r_sip() & ~0x10000);
   } else { // unknow
     return -1;

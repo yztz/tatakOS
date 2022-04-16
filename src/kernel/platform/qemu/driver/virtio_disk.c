@@ -17,9 +17,11 @@
 #include "buf.h"
 #include "virtio.h"
 #include "driver/plic.h"
+#include "io.h"
 
 // the address of virtio mmio register r.
-#define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
+static uint64 virtio_base_address;
+#define R(r) ((volatile uint32 *)(virtio_base_address + (r)))
 
 static struct disk {
   // the virtio driver and device mostly communicate through a set of
@@ -82,6 +84,9 @@ virtio_disk_init(void)
   uint32 status = 0;
 
   initlock(&disk.vdisk_lock, "virtio_disk");
+  // we need to remap io to virt addr
+  virtio_base_address = ioremap(VIRTIO0, PGSIZE);
+  printf("virtio_base_address is: %p\n", virtio_base_address);
 
   plic_register_handler(VIRTIO0_IRQ, (plic_irq_callback_t)virtio_disk_intr, NULL);
 

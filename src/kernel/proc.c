@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "mm.h"
 
 struct cpu cpus[NUM_CORES];
 
@@ -30,7 +31,7 @@ struct spinlock wait_lock;
 // Map it high in memory, followed by an invalid
 // guard page.
 void
-proc_mapstacks(pagetable_t kpgtbl) {
+proc_mapstacks() {
   struct proc *p;
   
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -38,7 +39,7 @@ proc_mapstacks(pagetable_t kpgtbl) {
     if(pa == 0)
       panic("kalloc");
     uint64 va = KSTACK((int) (p - proc));
-    kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+    kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W, PGSPEC_NORMAL);
   }
 }
 
@@ -503,7 +504,7 @@ forkret(void)
     first = 0;
     fsinit(ROOTDEV);
   }
-  
+
   usertrapret();
 }
 

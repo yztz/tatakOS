@@ -52,10 +52,11 @@
         "virtio.h": "c",
         "uart.h": "c",
         "uarths.h": "c",
-        "random": "c"
+        "random": "c",
+        "mm.h": "c",
+        "io.h": "c",
+        "proc.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
-    "files.exclude": {
-        "**/.git": false
-    }
-}
+    
+}   

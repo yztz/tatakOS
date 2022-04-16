@@ -1071,6 +1071,9 @@ uint64_t sysctl_get_time_us(void);
  */
 sysctl_reset_enum_status_t sysctl_get_reset_status(void);
 
+
+void sysctl_init();
+
 #ifdef __cplusplus
 }
 #endif
