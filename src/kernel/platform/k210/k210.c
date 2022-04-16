@@ -1,6 +1,7 @@
 #include "k210.h"
 #include "driver/plic.h"
 #include "fpioa.h"
+#include "spi.h"
 #include "sbi.h"
 #include "printf.h"
 #include "uarths.h"
@@ -38,7 +39,8 @@ void platform_dirver_init() {
     sysctl_init();
     /* FPIOA */
     fpioa_init();
-        
+    /* SPI */
+	spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     /* SDCARD */
     sd_status = sd_init();
 

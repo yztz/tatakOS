@@ -212,7 +212,7 @@ typedef struct _spi_data_t
     bool fill_mode;
 } spi_data_t;
 
-extern volatile spi_t *const spi[4];
+extern volatile spi_t *spi[4];
 
 /**
  * @brief       Set spi configuration

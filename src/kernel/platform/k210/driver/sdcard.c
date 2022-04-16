@@ -55,7 +55,7 @@ void SD_HIGH_SPEED_ENABLE(void)
 
 static void sd_lowlevel_init(uint8_t spi_index)
 {
-    gpiohs_set_drive_mode(7, GPIO_DM_OUTPUT);
+    // gpiohs_set_drive_mode(7, GPIO_DM_OUTPUT);
     // spi_set_clk_rate(SPI_DEVICE_0, 200000);     /*set clk rate*/
 }
 
@@ -370,8 +370,6 @@ uint8_t sd_init(void)
 	uint8_t frame[10], index, result;
 	/* 设置功能管脚 */
 	io_mux_init();
-	/* SPI init */
-	spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
 	/*!< Initialize SD_SPI */
 	sd_lowlevel_init(0); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */

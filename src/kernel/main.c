@@ -30,13 +30,13 @@ main()
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector
     /* PLIC */
-    plic_init();      // set up interrupt controller
-    platform_plic_init();
-    plic_init_hart();  // ask PLIC for device interrupts
-    platform_plic_init_hart();
+    plic_init();     // set all sources' priorities to 0
+    platform_plic_init(); // platform enable source as required
+    plic_init_hart();  // disable all interrupts and set ctx threshould to 0 for hart
+    platform_plic_init_hart(); // enable for current hart as required
     printf("plic init success!\n");
     /* DRIVER */
-    platform_dirver_init(); // driver
+    platform_dirver_init(); // platform driver init
     /* CONSOLE */
     consoleinit(); // console
     printf("console init success!\n");

@@ -843,7 +843,7 @@ typedef struct _fpioa
 /**
  * @brief       FPIOA object instanse
  */
-extern volatile fpioa_t *const fpioa;
+extern volatile fpioa_t *fpioa;
 
 /**
  * @brief       Initialize FPIOA user custom default settings

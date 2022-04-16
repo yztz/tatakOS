@@ -872,7 +872,7 @@ typedef struct _sysctl_general_pll
 /**
  * @brief       System controller object instanse
  */
-extern volatile sysctl_t *const sysctl;
+extern volatile sysctl_t *sysctl;
 
 /**
  * @brief       Enable clock for peripheral
