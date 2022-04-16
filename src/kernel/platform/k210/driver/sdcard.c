@@ -61,14 +61,14 @@ static void sd_lowlevel_init(uint8_t spi_index)
 
 static void sd_write_data(uint8_t *data_buff, uint32_t length)
 {
-    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
+    // spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_send_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 }
 
 static void sd_read_data(uint8_t *data_buff, uint32_t length)
 {
 
-    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
+    // spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_receive_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 
 }
@@ -370,6 +370,8 @@ uint8_t sd_init(void)
 	uint8_t frame[10], index, result;
 	/* 设置功能管脚 */
 	io_mux_init();
+	/* SPI init */
+	spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
 	/*!< Initialize SD_SPI */
 	sd_lowlevel_init(0); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */

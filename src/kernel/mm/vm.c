@@ -4,62 +4,68 @@
 #include "elf.h"
 #include "riscv.h"
 #include "defs.h"
+#include "mm.h"
+#include "printf.h"
 #include "fs.h"
+#include "io.h"
 
+/* Normal_page_size by default */
+#define walk(pagetable, va, alloc) _walk(pagetable, va, alloc, PGSPEC_NORMAL)
+#define walk_large(pagetable, va, alloc) _walk(pagetable, va, alloc, PGSPEC_LARGE)
 /*
  * the kernel's page table.
  */
 pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
+extern char end[];
 
 extern char trampoline[]; // trampoline.S
-
-// Make a direct-map page table for the kernel.
-pagetable_t
-kvmmake(void)
-{
-  pagetable_t kpgtbl;
-
-  kpgtbl = (pagetable_t) kalloc();
-  memset(kpgtbl, 0, PGSIZE);
-
-  // uart registers
-  kvmmap(kpgtbl, UART, UART, PGSIZE, PTE_R | PTE_W);
-
-  #ifdef QEMU // 到时要使用ioremap
-  // virtio mmio disk interface
-  kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
-  #endif
-
-  // CLINT_MTIME 暂时直接映射
-  kvmmap(kpgtbl, CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R);
-
-  // PLIC
-  kvmmap(kpgtbl, PLIC_BASE_ADDR, PLIC_BASE_ADDR, 0x400000, PTE_R | PTE_W);
-
-  // map kernel text executable and read-only.
-  kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
-
-  // map kernel data and the physical RAM we'll make use of.
-  kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W);
-
-  // map the trampoline for trap entry/exit to
-  // the highest virtual address in the kernel.
-  kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
-
-  // map kernel stacks
-  proc_mapstacks(kpgtbl);
-  
-  return kpgtbl;
-}
 
 // Initialize the one kernel_pagetable
 void
 kvminit(void)
 {
-  kernel_pagetable = kvmmake();
+  kernel_pagetable = (pagetable_t)kalloc();
+  memset(kernel_pagetable, 0, PGSIZE);
+
+  ioremap(CLINT, 0x10000);
+  ioremap(PLIC_BASE_ADDR, 0x4000000);
+  ioremap(VIRTIO0, PGSIZE);
+  kvmmap(CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R, PGSPEC_NORMAL);
+  vmprint(kernel_pagetable);
+
+  for(;;);
+
+  // uart registers
+  // kvmmap(UART, UART, PGSIZE, PTE_R | PTE_W);
+
+  // #ifdef QEMU // 到时要使用ioremap
+  // // virtio mmio disk interface
+  // kvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+  // #endif
+
+  // CLINT_MTIME 暂时直接映射
+  // kvmmap(CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R);
+
+  // PLIC
+  // kvmmap(PLIC_BASE_ADDR, PLIC_BASE_ADDR, 0x400000, PTE_R | PTE_W);
+
+  // map kernel text executable and read-only.
+  kvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X, PGSPEC_NORMAL);
+
+  // map kernel data and the physical RAM we'll make use of.
+  kvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W, PGSPEC_NORMAL);
+  // printf("etext is: %p\ntext size is: %X\nend is %p\n", etext, (uint64)etext-KERNBASE, end);
+  // map the trampoline for trap entry/exit to
+  // the highest virtual address in the kernel.
+  kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X, PGSPEC_NORMAL);
+
+  // map kernel stacks
+  proc_mapstacks();
 }
+
+
 
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
@@ -83,12 +89,12 @@ kvminithart()
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
 pte_t *
-walk(pagetable_t pagetable, uint64 va, int alloc)
+_walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
 {
   if(va >= MAXVA)
     panic("walk");
 
-  for(int level = 2; level > 0; level--) {
+  for(int level = 2; level > pg_spec; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
     if(*pte & PTE_V) {
       pagetable = (pagetable_t)PTE2PA(*pte);
@@ -99,7 +105,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
       *pte = PA2PTE(pagetable) | PTE_V;
     }
   }
-  return &pagetable[PX(0, va)];
+  return &pagetable[PX(pg_spec, va)];
 }
 
 // Look up a virtual address, return the physical address,
@@ -129,10 +135,41 @@ walkaddr(pagetable_t pagetable, uint64 va)
 // only used when booting.
 // does not flush TLB or enable paging.
 void
-kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
+kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int pg_spec)
 {
-  if(mappages(kpgtbl, va, sz, pa, perm) != 0)
+  if(pg_spec == PGSPEC_NORMAL && mappages(kernel_pagetable, va, sz, pa, perm) != 0)
     panic("kvmmap");
+  if(pg_spec == PGSPEC_LARGE && map_large_pages(kernel_pagetable, va, sz, pa, perm) != 0)
+    panic("kvmmap");
+}
+
+int
+map_large_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm) {
+  uint64 a, last;
+  pte_t *pte;
+
+  if((pa & (PGSIZE_LARGE - 1)) > 0) 
+    panic("pa misaligned!");
+
+  if(size == 0)
+    panic("mappages: size");
+  
+  a = PGROUNDDOWN_LARGE(va);
+  last = PGROUNDDOWN_LARGE(va + size - 1);
+  // printf("va is: %p a is: %p pa is: %p\n", va, a, pa);
+  for(;;){
+    if((pte = _walk(pagetable, a, 1, PGSPEC_LARGE)) == 0)
+      return -1;
+    if(*pte & PTE_V)
+      panic("mappages: remap");
+    // printf("patpte: %p\n", PA2PTE(pa));
+    *pte = PA2PTE(pa) | perm | PTE_V;
+    if(a == last)
+      break;
+    a += PGSIZE_LARGE;
+    pa += PGSIZE_LARGE;
+  }
+  return 0;
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
@@ -438,28 +475,12 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   }
 }
 
-
-static char* indents[] = {
-  "..",
-  ".. ..",
-  ".. .. ..",
-};
-
-void
-_vmprint(pagetable_t pagetable, int level) {
-  char *indent = indents[level];
-  for(int i = 0; i < 512; i++){
-    pte_t pte = pagetable[i];
-    pagetable_t pa = (pagetable_t)PTE2PA(pte);
-    if(pte & PTE_V){  // 存在且非叶子
-      printf("%s%d: pte %p pa %p\n", indent, i, pte, pa);
-      if((pte & (PTE_R|PTE_W|PTE_X)) == 0) _vmprint(pa, level + 1);
-    }
+void backtrace(void) {
+  uint64 fp, top;
+  fp = r_fp();
+  top = PGROUNDUP(fp);
+  while(fp < top) {
+    printf("%p\n", *(uint64*)(fp-8));
+    fp = *(uint64*)(fp-16);
   }
-}
-
-void 
-vmprint(pagetable_t pagetable) {
-  printf("page table %p\n", pagetable);
-  _vmprint(pagetable, 0);
 }

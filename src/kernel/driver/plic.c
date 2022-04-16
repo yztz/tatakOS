@@ -1,14 +1,17 @@
 #include "driver/plic.h"
 #include "riscv.h"
+#include "io.h"
 
-#define PLIC_PRIORITY (PLIC_BASE_ADDR + 0x0)
-#define PLIC_PENDING (PLIC_BASE_ADDR + 0x1000)
-#define PLIC_MENABLE(hart) (PLIC_BASE_ADDR + 0x2000 + (hart)*0x100)
-#define PLIC_SENABLE(hart) (PLIC_BASE_ADDR + 0x2080 + (hart)*0x100)
-#define PLIC_MPRIORITY(hart) (PLIC_BASE_ADDR + 0x200000 + (hart)*0x2000)
-#define PLIC_SPRIORITY(hart) (PLIC_BASE_ADDR + 0x201000 + (hart)*0x2000)
-#define PLIC_MCLAIM(hart) (PLIC_BASE_ADDR + 0x200004 + (hart)*0x2000)
-#define PLIC_SCLAIM(hart) (PLIC_BASE_ADDR + 0x201004 + (hart)*0x2000)
+static uint64_t plic_virt_base_addr;
+#define __PLIC_BASE_ADDRESS plic_virt_base_addr
+#define PLIC_PRIORITY (__PLIC_BASE_ADDRESS + 0x0)
+#define PLIC_PENDING (__PLIC_BASE_ADDRESS + 0x1000)
+#define PLIC_MENABLE(hart) (__PLIC_BASE_ADDRESS + 0x2000 + (hart)*0x100)
+#define PLIC_SENABLE(hart) (__PLIC_BASE_ADDRESS + 0x2080 + (hart)*0x100)
+#define PLIC_MPRIORITY(hart) (__PLIC_BASE_ADDRESS + 0x200000 + (hart)*0x2000)
+#define PLIC_SPRIORITY(hart) (__PLIC_BASE_ADDRESS + 0x201000 + (hart)*0x2000)
+#define PLIC_MCLAIM(hart) (__PLIC_BASE_ADDRESS + 0x200004 + (hart)*0x2000)
+#define PLIC_SCLAIM(hart) (__PLIC_BASE_ADDRESS + 0x201004 + (hart)*0x2000)
 
 #ifndef PLIC_MODE
 #error PLIC_MODE IS NOT DETERMINED!
@@ -21,6 +24,7 @@ typedef enum _plic_irq_mode_t{
 static plic_instance_t plic_instances[IRQN_MAX];
 
 void plic_init(void) {
+    plic_virt_base_addr = ioremap(PLIC_BASE_ADDR, 0x4000000);
     int i;
     // set NULL for every callback
     for (i = 0; i < IRQN_MAX; i++) {

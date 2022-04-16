@@ -16,8 +16,9 @@
 #include <stdint.h>
 #include "sysctl.h"
 #include "fpioa.h"
+#include "io.h"
 
-volatile fpioa_t *const fpioa = (volatile fpioa_t *)FPIOA_BASE_ADDR;
+volatile fpioa_t *const fpioa;
 
 /**
  * @brief      Internal used FPIOA function initialize cell
@@ -5193,7 +5194,8 @@ static const fpioa_assign_t function_config[FUNC_MAX] =
 int fpioa_init(void)
 {
     int i = 0;
-
+    /* remap FPIOA MMIO */
+    fpioa = (volatile fpioa_t *)ioremap(FPIOA_BASE_ADDR, 0x10000);
     /* Enable fpioa clock in system controller */
     sysctl_clock_enable(SYSCTL_CLOCK_FPIOA);
 

@@ -1,5 +1,5 @@
 /**
- * This file defines the interface thac paltform should implement.
+ * This file defines the interface that paltform should implement.
  * In order to compile your platform(assume it's name PLAT_XXX) with kernel:
  * 1. mkdir kernel/platform/PLAT_XXX and code there
  * 2. impl PLAT_XXX.h header file which defines all MACRO symbol below
@@ -42,6 +42,16 @@
 #ifndef UART_IRQ
 #define UART_IRQ
 #endif
+#ifndef KERNBASE
+#define KERNBASE
+#endif
+#ifndef PHYSTOP
+#define PHYSTOP
+#endif
+#ifndef CLOCK_FREQ
+#define CLOCK_FREQ
+#endif
+
 /* supported source */
 enum _plic_irq;
 /////////////////////////////////////////////////

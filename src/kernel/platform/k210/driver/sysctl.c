@@ -17,6 +17,7 @@
 // #include <math.h>
 // #include <stdio.h>
 #include "sysctl.h"
+#include "io.h"
 // #include "string.h"
 // #include "encoding.h"
 // #include "bsp.h"
@@ -51,6 +52,10 @@ const uint8_t get_source_aclk[] =
 };
 
 volatile sysctl_t *const sysctl = (volatile sysctl_t *)SYSCTL_BASE_ADDR;
+
+void sysctl_init() {
+    sysctl = (volatile sysctl_t *)ioremap(SYSCTL_BASE_ADDR, 0x10000);
+}
 
 uint32_t sysctl_get_git_id(void)
 {

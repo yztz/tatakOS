@@ -1,6 +1,7 @@
 #ifndef _H_RISCV_
 #define _H_RISCV_
 
+#include "types.h"
 // which hart (core) is this?
 static inline uint64
 r_mhartid()
@@ -311,6 +312,15 @@ r_time()
 }
 
 static inline uint64
+r_fp()
+{
+  uint64 x;
+  asm volatile("mv %0, fp" : "=r" (x) );
+  return x;
+}
+
+
+static inline uint64
 r_a0()
 {
   uint64 x;
@@ -402,43 +412,47 @@ r_ra()
 }
 
 // flush the TLB.
-static inline void
-sfence_vma()
+static inline void sfence_vma(void)
 {
-  // the zero, zero means flush all TLB entries.
-  asm volatile("sfence.vma zero, zero");
+    __asm__ __volatile__ ("fence\nfence.i\nsfence.vma" : : : "memory");
 }
 
 
-#define PGSIZE 4096 // bytes per page
-#define PGSHIFT 12  // bits of offset within a page
+/* PGSIZE */
+#define PGSIZE 0x1000 // 4KB
+#define PGSIZE_LARGE 0x200000 // 2MB
 
-#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+/* equal with page level */
+#define PGSPEC_NORMAL 0
+#define PGSPEC_LARGE  1
+#define PGSPEC_SUPER  2 // unused
 
-#define PTE_V (1L << 0) // valid
-#define PTE_R (1L << 1)
-#define PTE_W (1L << 2)
-#define PTE_X (1L << 3)
-#define PTE_U (1L << 4) // 1 -> user can access
+#define PGROUNDUP_SPEC(sz, psz) (((sz)+(psz)-1) & ~((psz)-1))
+#define PGROUNDDOWN_SPEC(sz, psz) ((sz) & ~((psz)-1))
+
+#define PGROUNDUP(sz)  PGROUNDUP_SPEC(sz, PGSIZE)
+#define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC(sz, PGSIZE)
+#define PGROUNDUP_LARGE(sz) PGROUNDUP_SPEC(sz, PGSIZE_LARGE)
+#define PGROUNDDOWN_LARGE(sz) PGROUNDDOWN_SPEC(sz, PGSIZE_LARGE)
 
 // shift a physical address to the right place for a PTE.
-#define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
+#define PA2PTE_SPEC(pa, level) (((((uint64)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
+#define PA2PTE(pa) PA2PTE_SPEC(pa, PGSPEC_NORMAL)
 
-#define PTE2PA(pte) (((pte) >> 10) << 12)
+#define PTE2PA_SPEC(pte, level) (((pte) >> 10) << (12 + 9 * (level)))
+#define PTE2PA(pte) PTE2PA_SPEC(pte, PGSPEC_NORMAL)
 
-#define PTE_FLAGS(pte) ((pte) & 0x3FF)
-
+#define PGSHIFT 12  // bits of offset within a page
 // extract the three 9-bit page table indices from a virtual address.
 #define PXMASK          0x1FF // 9 bits
 #define PXSHIFT(level)  (PGSHIFT+(9*(level)))
 #define PX(level, va) ((((uint64) (va)) >> PXSHIFT(level)) & PXMASK)
 
-// one beyond the highest possible virtual address.
-// MAXVA is actually one bit less than the max allowed by
-// Sv39, to avoid having to sign-extend virtual addresses
-// that have the high bit set.
-#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
-
+#define PTE_FLAGS(pte) ((pte) & 0x3FF)
+#define PTE_V (1L << 0) // valid
+#define PTE_R (1L << 1)
+#define PTE_W (1L << 2)
+#define PTE_X (1L << 3)
+#define PTE_U (1L << 4) // 1 -> user can access
 
 #endif

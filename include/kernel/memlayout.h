@@ -1,18 +1,11 @@
-// map the trampoline page to the highest address,
-// in both user and kernel space.
+/** 
+ * This file defines public memlayout
+ */
+
+/* use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
+#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
+#define IO_BASE_ADDRESS 0x1F00000000
 #define TRAMPOLINE (MAXVA - PGSIZE)
-
-// map kernel stacks beneath the trampoline,
-// each surrounded by invalid guard pages.
 #define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
-
-// User memory layout.
-// Address zero first:
-//   text
-//   original data and bss
-//   fixed-size stack
-//   expandable heap
-//   ...
-//   TRAPFRAME (p->trapframe, used by the trampoline)
-//   TRAMPOLINE (the same page as in the kernel)
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
+

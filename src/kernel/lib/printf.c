@@ -34,6 +34,7 @@
 #include <stdint.h>
 
 #include "printf.h"
+#include "mm.h"
 
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
@@ -911,4 +912,33 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
   const int ret = _vsnprintf(_out_fct, (char*)(uintptr_t)&out_fct_wrap, (size_t)-1, format, va);
   va_end(va);
   return ret;
+}
+
+static char* indents[] = {
+  ".. .. ..",
+  ".. ..",
+  "..",
+};
+
+void
+_vmprint(pagetable_t pagetable, int level) {
+  char *indent = indents[level];
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    pagetable_t pa = (pagetable_t)PTE2PA(pte);
+    if(pte & PTE_V){  // 存在
+      if((pte & (PTE_R|PTE_W|PTE_X)) > 0) // 打印叶节点
+        printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA_SPEC(pte, level));
+      else {// 打印下级页表地址 
+        printf("%s %-3d: pte %p pa %p\n", indent, i, pte, pa);
+        _vmprint(pa, level - 1);
+      }
+    }
+  }
+}
+
+void 
+vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  _vmprint(pagetable, 2);
 }

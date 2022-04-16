@@ -4,6 +4,7 @@
 #include "sbi.h"
 #include "printf.h"
 #include "uarths.h"
+#include "sysctl.h"
 
 #include "sdcard.h"
 #include "ff.h"
@@ -29,24 +30,15 @@ void platform_plic_init() {
 #define PLIC_SCLAIM(hart) (PLIC_BASE_ADDR + 0x201004 + (hart)*0x2000)
 
 void platform_plic_init_hart() {
-    // uarths_enable_irq(UARTHS_RECEIVE);
     plic_irq_enable(UART_IRQ);
-    // int hart = cpuid();
-    // uint32 *hart_m_enable = (uint32*)PLIC_MENABLE(hart);
-	// uint32 *hart0_m_int_enable_hi = hart_m_enable + 1;
-	// *(hart0_m_int_enable_hi) = (*(uint32 *)(hart0_m_int_enable_hi)) | (1 << (UART_IRQ % 32));
-
-	// uint32 *hart1_m_enable = (uint32*)PLIC_MENABLE(1);
-	// uint32 *hart1_m_enable_hi = hart1_m_enable + 1;
-	// *(hart1_m_enable) = 0;
-	// *(hart1_m_enable_hi) = 0;
-
 }
 
 void platform_dirver_init() {
+    /* SYSCTL */
+    sysctl_init();
     /* FPIOA */
     fpioa_init();
-
+        
     /* SDCARD */
     sd_status = sd_init();
 

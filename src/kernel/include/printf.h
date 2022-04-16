@@ -34,6 +34,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include "riscv.h"
 
 
 #ifdef __cplusplus
@@ -110,6 +111,9 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
 
 
 void panic(char*) __attribute__((noreturn));
+
+void vmprint(pagetable_t pagetable);
+
 
 #ifdef __cplusplus
 }

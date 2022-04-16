@@ -5,6 +5,7 @@
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
+#include "mm.h"
 #include "param.h"
 #include "fs.h"
 #include "spinlock.h"
