@@ -522,7 +522,8 @@ typedef struct {
 #if _VOLUMES < 1 || _VOLUMES > 9
 #error Wrong _VOLUMES setting
 #endif
-static FATFS *FatFs[_VOLUMES];	/* Pointer to the file system objects (logical drives) */
+// +K210内存初始化坑
+static FATFS *FatFs[_VOLUMES] = {0};	/* Pointer to the file system objects (logical drives) */
 static WORD Fsid;				/* File system mount ID */
 
 #if _FS_RPATH != 0 && _VOLUMES >= 2
@@ -3188,6 +3189,11 @@ FRESULT validate (	/* Returns FR_OK or FR_INVALID_OBJECT */
 
 ----------------------------------------------------------------------------*/
 
+void f_init() {
+	for(int i = 0; i < _VOLUMES; i++) {
+		FatFs[i] = 0;
+	}
+}
 
 
 /*-----------------------------------------------------------------------*/

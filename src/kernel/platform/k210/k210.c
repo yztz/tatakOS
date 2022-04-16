@@ -89,7 +89,7 @@ static int sdcard_test(void)
     printf("CardBlockSize:%d\n", cardinfo.CardBlockSize);
     return 0;
 }
-
+extern void f_init();
 static int fs_test(void)
 {
     static FATFS sdcard_fs;
@@ -98,6 +98,7 @@ static int fs_test(void)
     FILINFO fno;
 
     printf("/********************fs test*******************/\n");
+    f_init();
     status = f_mount(&sdcard_fs, _T("0:"), 1);
     printf("mount sdcard:%d\n", status);
     if (status != FR_OK)

@@ -55,6 +55,11 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->kstack = KSTACK((int) (p - proc));
   }
+  for(int i = 0; i < NUM_CORES; i++) {
+    cpus[i].intena = 0;
+    cpus[i].noff = 0;
+    cpus[i].proc = NULL;
+  }
 }
 
 // Return this CPU's cpu struct.

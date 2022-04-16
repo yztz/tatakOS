@@ -31,6 +31,7 @@ trapinit(void)
   initlock(&tickslock, "time");
   // clint_mtime = (uint64_t *)(ioremap(CLINT_MTIME, 2 * PGSIZE));
   clint_mtime = (uint64_t *)(ioremap(CLINT, 0x10000) + 0Xbff8);
+  ticks = 0;
 }
 
 // set up to take exceptions and traps while in the kernel.
