@@ -21,7 +21,7 @@ prog += _usertests
 prog += _wc
 prog += _zombie
 
-# 目标可执行程序
+# 带有路径的目标可执行程序
 target_prog := $(foreach p, $(prog), $(U_PROG_DIR)/$(p))
 # 程序构建路径
 src_dir := $(patsubst _%, $(shell pwd)/%, $(prog))
@@ -38,7 +38,6 @@ $(target_prog) : $(U_PROG_DIR)/_% : $(BUILD_DIR)/%/built-in.o $(ulib_obj)
 $(src_dir):
 	@make -C $@ -f $(SCRIPT)/Makefile.build
 
-.PHONY: $(ulib_obj)
 $(ulib_obj) : 
 	@make -C lib -f $(SCRIPT)/Makefile.build
 

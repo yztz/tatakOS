@@ -3,3 +3,4 @@ build/
 fs.img
 mkfs
 include/kernel/syscall*
+src/kernel/include/initcode_bin.h
