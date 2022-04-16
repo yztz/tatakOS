@@ -40,7 +40,9 @@ main()
     /* CONSOLE */
     consoleinit(); // console
     printf("console init success!\n");
-
+    #ifdef K210
+    for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
+    #endif
     procinit();      // process table
     /* FILE SYSTEM */
     binit();         // buffer cache
