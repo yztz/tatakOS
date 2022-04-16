@@ -29,13 +29,13 @@ kvminit(void)
   kernel_pagetable = (pagetable_t)kalloc();
   memset(kernel_pagetable, 0, PGSIZE);
 
-  ioremap(CLINT, 0x10000);
-  ioremap(PLIC_BASE_ADDR, 0x4000000);
-  ioremap(VIRTIO0, PGSIZE);
-  kvmmap(CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R, PGSPEC_NORMAL);
-  vmprint(kernel_pagetable);
+  // ioremap(CLINT, 0x10000);
+  // ioremap(PLIC_BASE_ADDR, 0x4000000);
+  // ioremap(VIRTIO0, PGSIZE);
+  // kvmmap(CLINT_MTIME, CLINT_MTIME, PGSIZE, PTE_R, PGSPEC_NORMAL);
+  // vmprint(kernel_pagetable);
 
-  for(;;);
+  // for(;;);
 
   // uart registers
   // kvmmap(UART, UART, PGSIZE, PTE_R | PTE_W);

@@ -24,8 +24,8 @@ typedef enum _plic_irq_mode_t{
 static plic_instance_t plic_instances[IRQN_MAX];
 
 void plic_init(void) {
-    plic_virt_base_addr = ioremap(PLIC_BASE_ADDR, 0x4000000);
     int i;
+    plic_virt_base_addr = ioremap(PLIC_BASE_ADDR, 0x4000000);
     // set NULL for every callback
     for (i = 0; i < IRQN_MAX; i++) {
         plic_instances[i].callback = 0;
@@ -64,7 +64,7 @@ void plic_init_hart(void) {
 }
 
 void plic_set_priority(plic_irq_t source, uint32_t priority) {
-    *(uint32_t*)(PLIC_PRIORITY + source*4) = priority;
+    writel(priority, PLIC_PRIORITY + source*4);
 }
 
 void _plic_irq_enable(plic_irq_t source, plic_irq_mode_t mode) {
@@ -72,10 +72,10 @@ void _plic_irq_enable(plic_irq_t source, plic_irq_mode_t mode) {
     int offset = source / 32;
     int bit = source % 32;
     if (mode & S_MODE) {
-        *(uint32_t*)(PLIC_SENABLE(core_id) + 4 * offset) |= (1 << bit);
+        setl(1 << bit, PLIC_SENABLE(core_id) + 4 * offset);
     }
     if (mode & M_MODE) {
-        *(uint32_t*)(PLIC_MENABLE(core_id) + 4 * offset) |= (1 << bit);
+        setl(1 << bit, PLIC_MENABLE(core_id) + 4 * offset);
     }
 }
 
@@ -88,10 +88,10 @@ void _plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode) {
     int offset = source / 32;
     int bit = source % 32;
     if (mode & S_MODE) {
-        *(uint32*)(PLIC_SENABLE(core_id) + 4 * offset) &= ~(1 << bit);
+        clearl(1 << bit, PLIC_SENABLE(core_id) + 4 * offset);
     }
     if (mode & M_MODE) {
-        *(uint32*)(PLIC_MENABLE(core_id) + 4 * offset) &= ~(1 << bit);
+        clearl(1 << bit, PLIC_MENABLE(core_id) + 4 * offset);
     }
 }
 
@@ -102,10 +102,10 @@ void plic_irq_disable(plic_irq_t source) {
 void _plic_set_threshold(uint32_t threshould, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     if (mode & S_MODE) {
-        *(uint32*)PLIC_SPRIORITY(core_id) = threshould;
+        writel(threshould, PLIC_SPRIORITY(core_id));
     }
     if (mode & M_MODE) {
-        *(uint32*)PLIC_MPRIORITY(core_id) = threshould;
+        writel(threshould, PLIC_MPRIORITY(core_id));
     }
 }
 
@@ -117,10 +117,10 @@ int _plic_claim(plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     int irq = 0;
     if (mode & S_MODE) {
-        irq = *(uint32*)PLIC_SCLAIM(core_id);
+        irq = readl(PLIC_SCLAIM(core_id));
     }
     if (mode & M_MODE) {
-        irq = *(uint32*)PLIC_MCLAIM(core_id);
+        irq = readl(PLIC_MCLAIM(core_id));
     }
     return irq;
 }
@@ -132,10 +132,12 @@ int plic_claim() {
 void _plic_complete(plic_irq_t source, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     if (mode & S_MODE) {
-        *(uint32*)PLIC_SCLAIM(core_id) = source;
+        writel(source, PLIC_SCLAIM(core_id));
+        // *(uint32*)PLIC_SCLAIM(core_id) = source;
     }
     if (mode & M_MODE) {
-        *(uint32*)PLIC_MCLAIM(core_id) = source;
+        writel(source, PLIC_MCLAIM(core_id));
+        // *(uint32*)PLIC_MCLAIM(core_id) = source;
     }
     
 }

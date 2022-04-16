@@ -51,7 +51,7 @@ const uint8_t get_source_aclk[] =
     [1] = SYSCTL_SOURCE_PLL0,
 };
 
-volatile sysctl_t *const sysctl = (volatile sysctl_t *)SYSCTL_BASE_ADDR;
+volatile sysctl_t *sysctl = (volatile sysctl_t *)SYSCTL_BASE_ADDR;
 
 void sysctl_init() {
     sysctl = (volatile sysctl_t *)ioremap(SYSCTL_BASE_ADDR, 0x10000);

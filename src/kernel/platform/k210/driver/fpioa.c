@@ -18,7 +18,7 @@
 #include "fpioa.h"
 #include "io.h"
 
-volatile fpioa_t *const fpioa;
+volatile fpioa_t *fpioa;
 
 /**
  * @brief      Internal used FPIOA function initialize cell

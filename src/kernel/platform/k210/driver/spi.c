@@ -26,7 +26,7 @@
 // #include <string.h>
 // #include <bsp.h>
 
-volatile spi_t *const spi[4] =
+volatile spi_t *spi[4] =
 {
     (volatile spi_t *)SPI0_BASE_ADDR,
     (volatile spi_t *)SPI1_BASE_ADDR,
