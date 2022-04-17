@@ -9,6 +9,9 @@
 #include "fs.h"
 #include "io.h"
 
+
+
+
 /* Normal_page_size by default */
 #define walk(pagetable, va, alloc) _walk(pagetable, va, alloc, PGSPEC_NORMAL)
 #define walk_large(pagetable, va, alloc) _walk(pagetable, va, alloc, PGSPEC_LARGE)
@@ -62,7 +65,7 @@ kvminit(void)
   kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X, PGSPEC_NORMAL);
 
   // map kernel stacks
-  proc_mapstacks();
+  // proc_mapstacks();
 }
 
 
@@ -238,6 +241,7 @@ uvmcreate()
   if(pagetable == 0)
     return 0;
   memset(pagetable, 0, PGSIZE);
+  // todo: copy kernel pagetable
   return pagetable;
 }
 
@@ -330,7 +334,7 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 {
   if(sz > 0)
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
-  freewalk(pagetable);
+  freewalk(pagetable); // todo: cannot free kernel page
 }
 
 // Given a parent process's page table, copy

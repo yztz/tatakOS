@@ -3,6 +3,9 @@
 
 #include "types.h"
 
+typedef struct 
+
+
 void        kvminit(void);
 void        kvminithart(void);
 void        kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int pg_spec);
