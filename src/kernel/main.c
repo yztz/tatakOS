@@ -63,6 +63,5 @@ main()
     plic_init_hart();   // ask PLIC for device interrupts
     platform_plic_init_hart();
   }
-
   scheduler();        
 }

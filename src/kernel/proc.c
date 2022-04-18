@@ -4,6 +4,7 @@
 #include "riscv.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "utils.h"
 #include "defs.h"
 #include "mm.h"
 
@@ -30,18 +31,18 @@ struct spinlock wait_lock;
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
-void
-proc_mapstacks() {
-  struct proc *p;
+// void
+// proc_mapstacks() {
+//   struct proc *p;
   
-  for(p = proc; p < &proc[NPROC]; p++) {
-    char *pa = kalloc();
-    if(pa == 0)
-      panic("kalloc");
-    uint64 va = KSTACK((int) (p - proc));
-    kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W, PGSPEC_NORMAL);
-  }
-}
+//   for(p = proc; p < &proc[NPROC]; p++) {
+//     char *pa = kalloc();
+//     if(pa == 0)
+//       panic("kalloc");
+//     uint64 va = KSTACK((int) (p - proc));
+//     kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W, PGSPEC_NORMAL);
+//   }
+// }
 
 // initialize the proc table at boot time.
 void
@@ -158,9 +159,10 @@ freeproc(struct proc *p)
     kfree((void*)p->kstack);
   p->trapframe = 0;
   p->kstack = 0;
-  if(p->pagetable)
+  if(p->pagetable){
     proc_freepagetable(p->pagetable, p->sz);
-  p->pagetable = 0;
+    p->pagetable = 0;
+  } 
   p->sz = 0;
   p->pid = 0;
   p->parent = 0;
@@ -182,7 +184,10 @@ proc_pagetable(struct proc *p)
   pagetable = uvmcreate();
   if(pagetable == 0)
     return 0;
-
+  if(setupkvm(pagetable) == -1) {
+    uvmfree(pagetable, 0);
+    return 0;
+  }
   // map the trampoline code (for system call return)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
@@ -196,14 +201,15 @@ proc_pagetable(struct proc *p)
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
               (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
-    // uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+    erasekvm(pagetable);
     uvmfree(pagetable, 0);
     return 0;
   }
 
   if(mappages(pagetable, KSTACK, PGSIZE,
               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
-    // uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+    erasekvm(pagetable);
+    uvmunmap(pagetable, TRAPFRAME, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
   }
@@ -216,9 +222,9 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
-  // uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmunmap(pagetable, KSTACK, 1, 0);
+  erasekvm(pagetable);
   uvmfree(pagetable, sz);
 }
 
@@ -236,7 +242,7 @@ userinit(void)
 
   p = allocproc();
   initproc = p;
-  
+
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
@@ -461,8 +467,9 @@ scheduler(void)
         p->state = RUNNING;
         c->proc = p;
         // todo: change pagetable
+        switchuvm(p);
         swtch(&c->context, &p->context);
-
+        switchkvm();
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;

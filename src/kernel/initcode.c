@@ -21,8 +21,9 @@ void exec(char *path, char** argv);
 char* path = "/init";
 
 __attribute__((section(".startup"))) void main() {
-    char *argv[2];
+    __attribute__((unused)) char *argv[2];
     // set arg
+    // for(;;);
     argv[0] = path;
     argv[1] = 0;
     test();

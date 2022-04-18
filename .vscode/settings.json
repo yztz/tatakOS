@@ -55,7 +55,10 @@
         "random": "c",
         "mm.h": "c",
         "io.h": "c",
-        "proc.h": "c"
+        "proc.h": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

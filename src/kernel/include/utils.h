@@ -2,7 +2,10 @@
 #define _H_UTILS_
 
 #include "types.h"
-#include "defs.h"
+#include "mm.h"
+#include "sbi.h"
+
+#define LOOP() {while(1) continue;}
 
 static inline void set_bit(volatile uint32_t *bits, uint32_t mask, uint32_t value)
 {
@@ -38,8 +41,11 @@ static inline uint32_t get_gpio_bit(volatile uint32_t *bits, size_t offset)
         for (;;)                                        \
             ;                                           \
     }
-
-
+    
+void vmprint(pagetable_t pagetable);
+void backtrace(void);
+void print_map(kmap_t map);
+void print_sbiret(sbiret_t ret);
 
 
 #endif
