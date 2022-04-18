@@ -418,22 +418,23 @@ static inline void sfence_vma(void)
 }
 
 
-/* PGSIZE */
-#define PGSIZE 0x1000 // 4KB
-#define PGSIZE_LARGE 0x200000 // 2MB
-
 /* equal with page level */
 #define PGSPEC_NORMAL 0
 #define PGSPEC_LARGE  1
 #define PGSPEC_SUPER  2 // unused
 
-#define PGROUNDUP_SPEC(sz, psz) (((sz)+(psz)-1) & ~((psz)-1))
-#define PGROUNDDOWN_SPEC(sz, psz) ((sz) & ~((psz)-1))
+/* PGSIZE */
+#define PGSIZE_SPEC(spec) (1 << (12 + 9 * (spec)))
+#define PGSIZE PGSIZE_SPEC(PGSPEC_NORMAL) // 4KB 2^12
+#define PGSIZE_LARGE PGSIZE_SPEC(PGSPEC_LARGE) // 2MB 2^21
 
-#define PGROUNDUP(sz)  PGROUNDUP_SPEC(sz, PGSIZE)
-#define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC(sz, PGSIZE)
-#define PGROUNDUP_LARGE(sz) PGROUNDUP_SPEC(sz, PGSIZE_LARGE)
-#define PGROUNDDOWN_LARGE(sz) PGROUNDDOWN_SPEC(sz, PGSIZE_LARGE)
+#define PGROUNDUP_SPEC(sz, sepc) (((sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
+#define PGROUNDDOWN_SPEC(sz, sepc) ((sz) & ~((PGSIZE_SPEC(sepc))-1))
+
+#define PGROUNDUP(sz)  PGROUNDUP_SPEC(sz, PGSPEC_NORMAL)
+#define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_NORMAL)
+#define PGROUNDUP_LARGE(sz) PGROUNDUP_SPEC(sz, PGSPEC_LARGE)
+#define PGROUNDDOWN_LARGE(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_LARGE)
 
 // shift a physical address to the right place for a PTE.
 #define PA2PTE_SPEC(pa, level) (((((uint64)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
