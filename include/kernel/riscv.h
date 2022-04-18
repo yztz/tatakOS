@@ -418,7 +418,7 @@ static inline void sfence_vma(void)
 }
 
 
-/* equal with page level */
+/* Equal with page level */
 #define PGSPEC_NORMAL 0
 #define PGSPEC_LARGE  1
 #define PGSPEC_SUPER  2 // unused
@@ -428,15 +428,22 @@ static inline void sfence_vma(void)
 #define PGSIZE PGSIZE_SPEC(PGSPEC_NORMAL) // 4KB 2^12
 #define PGSIZE_LARGE PGSIZE_SPEC(PGSPEC_LARGE) // 2MB 2^21
 
+/* Kinds of round */
 #define PGROUNDUP_SPEC(sz, sepc) (((sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
 #define PGROUNDDOWN_SPEC(sz, sepc) ((sz) & ~((PGSIZE_SPEC(sepc))-1))
 
 #define PGROUNDUP(sz)  PGROUNDUP_SPEC(sz, PGSPEC_NORMAL)
 #define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_NORMAL)
+
 #define PGROUNDUP_LARGE(sz) PGROUNDUP_SPEC(sz, PGSPEC_LARGE)
 #define PGROUNDDOWN_LARGE(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_LARGE)
 
-// shift a physical address to the right place for a PTE.
+/* Calculate page numbers (round-up) */
+#define ROUND_COUNT_SPEC(sz, spec) (PGROUNDUP_SPEC(sz, spec) / PGSIZE_SPEC(spec))
+#define ROUND_COUNT(sz) ROUND_COUNT_SPEC(sz, PGSPEC_NORMAL)
+#define ROUND_COUNT_LARGE(sz) ROUND_COUNT_SPEC(sz, PGSPEC_LARGE)
+
+/* Shift a physical address to the right place for a PTE. */
 #define PA2PTE_SPEC(pa, level) (((((uint64)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
 #define PA2PTE(pa) PA2PTE_SPEC(pa, PGSPEC_NORMAL)
 
@@ -444,7 +451,7 @@ static inline void sfence_vma(void)
 #define PTE2PA(pte) PTE2PA_SPEC(pte, PGSPEC_NORMAL)
 
 #define PGSHIFT 12  // bits of offset within a page
-// extract the three 9-bit page table indices from a virtual address.
+/* Extract the three 9-bit page table indices from a virtual address. */
 #define PXMASK          0x1FF // 9 bits
 #define PXSHIFT(level)  (PGSHIFT+(9*(level)))
 #define PX(level, va) ((((uint64) (va)) >> PXSHIFT(level)) & PXMASK)

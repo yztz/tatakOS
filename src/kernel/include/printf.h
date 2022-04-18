@@ -111,8 +111,6 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
 
 
 void panic(char*) __attribute__((noreturn));
-void _vmprint(pagetable_t pagetable, int level, int ignore_level);
-void vmprint(pagetable_t pagetable);
 
 
 #ifdef __cplusplus

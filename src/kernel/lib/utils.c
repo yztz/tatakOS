@@ -30,3 +30,24 @@ vmprint(pagetable_t pagetable) {
   printf("page table %p\n", pagetable);
   _vmprint(pagetable, 2, -1);
 }
+
+void 
+backtrace(void) {
+  uint64 fp, top;
+  fp = r_fp();
+  top = PGROUNDUP(fp);
+  while(fp < top) {
+    printf("%p\n", *(uint64*)(fp-8));
+    fp = *(uint64*)(fp-16);
+  }
+}
+
+void
+print_map(kmap_t map) {
+  printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
+}
+
+void
+print_sbiret(sbiret_t ret) {
+  printf("sbiret{err: %d, val: %d}\n", ret.error, ret.value);
+}

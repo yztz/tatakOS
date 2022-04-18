@@ -1,3 +1,6 @@
+#ifndef _H_SBI_
+#define _H_SBI_
+
 #include "types.h"
 #include "riscv.h"
 
@@ -6,15 +9,16 @@ extern void panic(char *s);
 #define BASE_EXT 0x10L
 #define TIMER_EXT 0x54494D45L
 #define HSM_EXT 0x48534DL
+#define PMU_EXT 0x504D55L
 #define CONSOLE_PUT_CHAR_EXT 0x01L
 #define CONSOLE_GET_CHAR_EXT 0x02L
 #define LEGACY_SET_TIMER 0x00L
 
 
-struct sbiret {
+typedef struct sbiret {
     uint64 error;
     uint64 value;
-};
+}sbiret_t;
 
 #define SBI_CALL(module, funct, arg0, arg1, arg2, arg3) ({ \
     register uint64 a0 asm ("a0") = (uint64)(arg0); \
@@ -57,3 +61,11 @@ static inline char sbi_getchar() {
 static inline struct sbiret sbi_set_mext() {
     return SBI_CALL_0(0x0A000009, 0x210);
 }
+
+/* Not implemented */
+static inline struct sbiret sbi_pmu_num_counters() {
+    return SBI_CALL_0(PMU_EXT, 0);
+}
+
+
+#endif

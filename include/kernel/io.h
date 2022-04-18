@@ -2,6 +2,7 @@
 #define _H_IO_
 
 #include "types.h"
+#include "param.h"
 
 #define readb(addr) (*(volatile uint8_t *)(addr))
 #define readw(addr) (*(volatile uint16_t *)(addr))
