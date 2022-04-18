@@ -135,49 +135,47 @@ walkaddr(pagetable_t pagetable, uint64 va)
 // only used when booting.
 // does not flush TLB or enable paging.
 void
-kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int pg_spec)
+kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
 {
-  if(pg_spec == PGSPEC_NORMAL && mappages(kernel_pagetable, va, sz, pa, perm) != 0)
-    panic("kvmmap");
-  if(pg_spec == PGSPEC_LARGE && map_large_pages(kernel_pagetable, va, sz, pa, perm) != 0)
+  if(_mappages(kernel_pagetable, va, sz, pa, perm, spec) != 0)
     panic("kvmmap");
 }
 
-int
-map_large_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm) {
-  uint64 a, last;
-  pte_t *pte;
+// int
+// map_large_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm) {
+//   uint64 a, last;
+//   pte_t *pte;
 
-  // if((pa & (PGSIZE_LARGE - 1)) > 0) 
-  //   panic("pa misaligned!");
+//   // if((pa & (PGSIZE_LARGE - 1)) > 0) 
+//   //   panic("pa misaligned!");
 
-  if(size == 0)
-    panic("mappages: size");
+//   if(size == 0)
+//     panic("mappages: size");
   
-  a = PGROUNDDOWN_LARGE(va);
-  last = PGROUNDDOWN_LARGE(va + size - 1);
-  // printf("va is: %p a is: %p pa is: %p\n", va, a, pa);
-  for(;;){
-    if((pte = _walk(pagetable, a, 1, PGSPEC_LARGE)) == 0)
-      return -1;
-    if(*pte & PTE_V)
-      panic("mappages: remap");
-    // printf("patpte: %p\n", PA2PTE(pa));
-    *pte = PA2PTE_SPEC(pa, PGSPEC_LARGE) | perm | PTE_V;
-    if(a == last)
-      break;
-    a += PGSIZE_LARGE;
-    pa += PGSIZE_LARGE;
-  }
-  return 0;
-}
+//   a = PGROUNDDOWN_LARGE(va);
+//   last = PGROUNDDOWN_LARGE(va + size - 1);
+//   // printf("va is: %p a is: %p pa is: %p\n", va, a, pa);
+//   for(;;){
+//     if((pte = _walk(pagetable, a, 1, PGSPEC_LARGE)) == 0)
+//       return -1;
+//     if(*pte & PTE_V)
+//       panic("mappages: remap");
+//     // printf("patpte: %p\n", PA2PTE(pa));
+//     *pte = PA2PTE_SPEC(pa, PGSPEC_LARGE) | perm | PTE_V;
+//     if(a == last)
+//       break;
+//     a += PGSIZE_LARGE;
+//     pa += PGSIZE_LARGE;
+//   }
+//   return 0;
+// }
 
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int
-mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
+_mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int spec)
 {
   uint64 a, last;
   pte_t *pte;
@@ -185,18 +183,18 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   if(size == 0)
     panic("mappages: size");
   
-  a = PGROUNDDOWN(va);
-  last = PGROUNDDOWN(va + size - 1);
+  a = PGROUNDDOWN_SPEC(va, spec);
+  last = PGROUNDDOWN_SPEC(va + size - 1, spec);
   for(;;){
-    if((pte = walk(pagetable, a, 1)) == 0)
+    if((pte = _walk(pagetable, a, 1, spec)) == 0)
       return -1;
     if(*pte & PTE_V)
       panic("mappages: remap");
-    *pte = PA2PTE(pa) | perm | PTE_V;
+    *pte = PA2PTE_SPEC(pa, spec) | perm | PTE_V;
     if(a == last)
       break;
-    a += PGSIZE;
-    pa += PGSIZE;
+    a += PGSIZE_SPEC(spec);
+    pa += PGSIZE_SPEC(spec);
   }
   return 0;
 }
