@@ -55,7 +55,8 @@
         "random": "c",
         "mm.h": "c",
         "io.h": "c",
-        "proc.h": "c"
+        "proc.h": "c",
+        "sys.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

@@ -13,7 +13,7 @@
 })
 
 #include "syscall.h"
-void test();
+void ktest();
 void write(int fd, char *addr, int size);
 void exec(char *path, char** argv);
 
@@ -25,7 +25,7 @@ __attribute__((section(".startup"))) void main() {
     // set arg
     argv[0] = path;
     argv[1] = 0;
-    test();
+    ktest();
     exec(path, argv);
     for(;;);
 }
@@ -41,8 +41,8 @@ void exec(char *path, char** argv) {
     syscall(NR_exec, path, argv, 0, 0);
 }
 
-void test() {
-    syscall(NR_test, 0, 0, 0, 0);
+void ktest() {
+    syscall(NR_ktest, 0, 0, 0, 0);
 }
 
 // void exit() {
