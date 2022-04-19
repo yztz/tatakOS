@@ -4,9 +4,12 @@
 
 int main() {
     uint64 start, end;
-    start = timetag();
-    for(int i = 0; i < 100000; i++) ktest();
-    end = timetag();
-    printf("\nstart: %x, end: %x, time: %x\n", start, end, end - start);
+    for(int time = 0; time < 10; time++) {
+        start = timetag();
+        for(int i = 0; i < 100000; i++) ktest();
+        end = timetag();
+        printf("start: %d, end: %d, time: %d\n", start, end, end - start);
+    }
+    
     exit(0);
 }

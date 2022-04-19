@@ -15,7 +15,7 @@ static uint64_t *clint_mtime;
 // #define RESET_TIMER() sbi_legacy_set_timer(read_csr(mtime) + CLOCK_FREQ)
 
 struct spinlock tickslock;
-uint ticks;
+uint64 ticks;
 
 extern char trampoline[], uservec[], userret[];
 
