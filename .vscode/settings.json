@@ -58,7 +58,8 @@
         "proc.h": "c",
         "string_view": "c",
         "initializer_list": "c",
-        "utility": "c"
+        "utility": "c",
+        "sys.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     
