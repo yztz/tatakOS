@@ -20,6 +20,7 @@ prog += _stressfs
 prog += _usertests
 prog += _wc
 prog += _zombie
+prog += _ctxswitch
 
 # 带有路径的目标可执行程序
 target_prog := $(foreach p, $(prog), $(U_PROG_DIR)/$(p))
