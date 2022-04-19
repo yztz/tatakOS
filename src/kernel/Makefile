@@ -17,6 +17,7 @@ obj-y += syscall.o
 obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += trap.o
+obj-y += sys.o
 
 obj-y += platform/
 obj-y += asm/

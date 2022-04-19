@@ -6,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sys.h"
 
 // Fetch the uint64 at addr from the current process.
 int
@@ -87,22 +88,6 @@ argstr(int n, char *buf, int max)
 #include "syscall_gen.h"
 #undef __SYS_CALL
 
-uint64 sys_test(void) {
-  sbi_putchar('H');
-  sbi_putchar('E');
-  sbi_putchar('L');
-  sbi_putchar('L');
-  sbi_putchar('O');
-  sbi_putchar('W');
-  sbi_putchar(' ');
-  sbi_putchar('W');
-  sbi_putchar('O');
-  sbi_putchar('R');
-  sbi_putchar('L');
-  sbi_putchar('D');
-  sbi_putchar('\n');
-  return 0;
-}
 
 #define __SYS_CALL(NUM, NAME, FUNC) [NUM] FUNC,
 static uint64 (*syscalls[])(void) = {
