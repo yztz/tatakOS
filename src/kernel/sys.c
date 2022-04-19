@@ -2,9 +2,7 @@
 #include "defs.h"
 
 uint64 sys_timetag(void) {
-    uint64 addr;
-    argaddr(0, &addr);
-    return read_csr(cycle);
+    return ticks;
 }
 
 
