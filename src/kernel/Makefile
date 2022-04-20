@@ -1,56 +1,26 @@
-SHELL = /bin/bash
-CFLAGS += -I$(ROOT)/include
-CFLAGS += -I$(ROOT)/include/kernel # deprecated
-CFLAGS += -I$K/include
-
-TARGET := $(BUILD_ROOT)/kernel
-
-obj-y += driver/
-
 obj-y += console.o
 obj-y += exec.o
 obj-y += main.o
 obj-y += proc.o
-obj-y += sleeplock.o
-obj-y += spinlock.o
 obj-y += syscall.o
 obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += trap.o
 obj-y += sys.o
 
-obj-y += platform/
 obj-y += asm/
-obj-y += fs/
-obj-y += lib/
-obj-y += mm/
 
-#================GEN kernel=================#
-BUILD_DIR := $(subst $(SOURCE_ROOT),$(OBJ_DIR),$(shell pwd))
-
-all: start_recursive_build  $(TARGET)
-
-.PHONY: start_recursive_build
-
-start_recursive_build:
-	@echo -e "\n\e[37;1mCFLAGS = $(CFLAGS)\e[0m\n"	
-	@make -C ./ -f $(SCRIPT)/Makefile.build
-
-# 生成内核程序
-$(TARGET): $(BUILD_DIR)/built-in.o
-	@echo -e "LD\t\tkernel"
-	@$(LD) $(LDFLAGS) -T $(SCRIPT)/kernel-$(platform).ld -o $(TARGET) $<
-	@$(OBJDUMP) -S $(TARGET) > $(TARGET).asm
-	@$(OBJDUMP) -t $(TARGET) | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(TARGET).sym
 
 # initcode
-initcode_bin := include/initcode_bin.h
+kernel_include_dir := $K/include/generated
+initcode_bin := $(kernel_include_dir)/initcode_bin.h
 $(initcode_bin): initcode.c $(ROOT)/entry/syscall.tbl
 	@mkdir -p $(BUILD_DIR)
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -c $< -o $(BUILD_DIR)/initcode.o
 	@$(LD) $(LDFLAGS) -T $(SCRIPT)/initcode.ld -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
 	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_ROOT)/initcode.asm
+	@mkdir -p $(kernel_include_dir)
 	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 7 -O $@
 	@echo -e "GEN\t\tinit_code"
 

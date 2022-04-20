@@ -9,7 +9,8 @@ subdir-y :=
 EXTRA_CFLAGS :=
 
 # 构建目录
-BUILD_DIR := $(subst $(SOURCE_ROOT),$(OBJ_DIR),$(shell pwd))
+BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))
+BUILD_DIR := $(subst $U,$(U_OBJ_DIR),$(BUILD_DIR))
 PHONY += $(BUILD_DIR)
 
 $(BUILD_DIR):

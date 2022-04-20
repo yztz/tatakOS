@@ -4,8 +4,8 @@
 #include "date.h"
 #include "param.h"
 #include "memlayout.h"
-#include "spinlock.h"
-#include "proc.h"
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
 
 uint64
 sys_exit(void)

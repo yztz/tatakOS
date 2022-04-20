@@ -1,12 +1,12 @@
 #include "types.h"
-#include "mm.h"
+#include "mm/vm.h"
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "spinlock.h"
-#include "proc.h"
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
+#include "kernel/sys.h"
 #include "defs.h"
-#include "sys.h"
 
 // Fetch the uint64 at addr from the current process.
 int
@@ -85,13 +85,13 @@ argstr(int n, char *buf, int max)
 }
 
 #define __SYS_CALL(NUM, NAME, FUNC) extern uint64 FUNC(void);
-#include "syscall_gen.h"
+#include "generated/syscall_gen.h"
 #undef __SYS_CALL
 
 
 #define __SYS_CALL(NUM, NAME, FUNC) [NUM] FUNC,
 static uint64 (*syscalls[])(void) = {
-  #include "syscall_gen.h"
+  #include "generated/syscall_gen.h"
 };
 #undef __SYS_CALL
 
