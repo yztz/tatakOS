@@ -2,12 +2,12 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "spinlock.h"
-#include "proc.h"
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
 #include "defs.h"
 #include "utils.h"
 #include "scause.h"
-#include "io.h"
+#include "mm/io.h"
 
 static uint64_t *clint_mtime;
 // #define RESET_TIMER() sbi_set_timer(*clint_mtime + CLOCK_FREQ)

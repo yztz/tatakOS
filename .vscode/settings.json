@@ -59,7 +59,11 @@
         "string_view": "c",
         "initializer_list": "c",
         "utility": "c",
-        "sys.h": "c"
+        "sys.h": "c",
+        "algorithm": "c",
+        "page.h": "c",
+        "vm.h": "c",
+        "copy.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

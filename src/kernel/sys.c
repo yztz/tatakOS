@@ -1,4 +1,4 @@
-#include "sys.h"
+#include "kernel/sys.h"
 #include "defs.h"
 
 uint64 sys_timetag(void) {

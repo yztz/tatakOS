@@ -2,11 +2,11 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "spinlock.h"
-#include "proc.h"
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
+#include "kernel/elf.h"
 #include "defs.h"
-#include "mm.h"
-#include "elf.h"
+#include "mm/vm.h"
 
 static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uint sz);
 

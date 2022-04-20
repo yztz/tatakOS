@@ -1,7 +1,7 @@
 #ifndef _H_PROC_
 #define _H_PROC_
 
-#include "spinlock.h"
+#include "atomic/spinlock.h"
 
 // Saved registers for kernel context switches.
 struct context {

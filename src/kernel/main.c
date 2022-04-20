@@ -3,7 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
-#include "mm.h"
+#include "mm/vm.h"
 #include "platform.h"
 #include "driver/plic.h"
 

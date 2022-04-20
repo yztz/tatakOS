@@ -12,7 +12,7 @@
     a0; \
 })
 
-#include "syscall.h"
+#include "generated/syscall.h"
 void ktest();
 void write(int fd, char *addr, int size);
 void exec(char *path, char** argv);

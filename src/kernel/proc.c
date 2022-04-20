@@ -2,11 +2,11 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "spinlock.h"
-#include "proc.h"
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
 #include "utils.h"
 #include "defs.h"
-#include "mm.h"
+#include "mm/vm.h"
 
 struct cpu cpus[NUM_CORES];
 
@@ -231,7 +231,7 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 // a user program that calls exec("/init")
 // od -t xC initcode
 uchar initcode[] = {
-  #include "initcode_bin.h"
+  #include "generated/initcode_bin.h"
 };
 
 // Set up first user process.

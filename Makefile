@@ -17,16 +17,15 @@ arch := riscv64
 
 #==========================DIR INFO================================#
 ROOT 	:= $(shell pwd)
-SOURCE_ROOT := $(shell pwd)/src
 SCRIPT	:= $(ROOT)/script
 TOOL    := $(ROOT)/tools
 BUILD_ROOT 	:= $(ROOT)/build
 U_PROG_DIR	:= $(BUILD_ROOT)/user_prog
 OBJ_DIR 	:= $(BUILD_ROOT)/objs
-K := $(ROOT)/src/kernel
-U := $(ROOT)/src/user
-P := $(ROOT)/src/kernel/platform
-A := $(ROOT)/src/kernel/arch
+U_OBJ_DIR 	:= $(BUILD_ROOT)/u_objs
+K := $(ROOT)/src
+U := $(ROOT)/user
+P := $(ROOT)/src/platform
 
 #==========================TOOLCHAINS==============================#
 TOOLPREFIX := riscv64-unknown-elf-
@@ -38,7 +37,7 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 #=============================EXPORT===============================#
 
-export ROOT SCRIPT OBJ_DIR SOURCE_ROOT U_PROG_DIR K U P A BUILD_ROOT TOOL
+export ROOT SCRIPT OBJ_DIR U_OBJ_DIR U_PROG_DIR K U P BUILD_ROOT TOOL
 export CC AS LD OBJCOPY OBJDUMP
 export debug platform arch
 
@@ -65,7 +64,7 @@ export LDFLAGS CFLAGS
 #============================QEMU==================================#
 QEMU = qemu-system-riscv64
 QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 130M -smp $(CPUS) -nographic
-QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
+QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
@@ -85,26 +84,18 @@ else # others
 	@echo -e "\n\033[31;1mUNSUPPORT PLATFORM!\033[0m\n"
 endif
 
-ifeq ("$(platform)", "qemu")
-run: fs.img
-endif
-
-
-syscall := include/kernel/syscall_gen.h
+syscall_dir := $(ROOT)/include/generated
+syscall := $(syscall_dir)/syscall_gen.h
 
 kernel: $(syscall)
-	@make -C src/kernel
+	@make -C $K
 	@echo -e "\n\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
-
-user: $(syscall)
-	@mkdir -p $(U_PROG_DIR)
-	@make -C src/user
-	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
 $(syscall): entry/syscall.tbl
 	@echo -e "GEN\t\tsyscall"
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall_gen.h -t tbl
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o include/kernel/syscall.h -t hdr
+	@mkdir -p $(syscall_dir)
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $(syscall_dir)/syscall_gen.h -t tbl
+	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $(syscall_dir)/syscall.h -t hdr
 
 SBI_TARGET_PATH := target/riscv64imac-unknown-none-elf/debug
 sbi-k210:
@@ -115,25 +106,33 @@ sbi-qemu:
 	cp bootloader/rustsbi-qemu/$(SBI_TARGET_PATH)/rustsbi-qemu bootloader/$@
 
 clean: 
-	-@rm -rf build
-	-@rm -rf fs.img
+	-@rm -rf $(BUILD_ROOT)
 	-@rm -rf $(SCRIPT)/mkfs
-	-@rm -rf include/kernel/syscall_gen.h
-	-@rm -rf include/kernel/syscall.h
-	-@rm -rf $K/include/initcode_bin.h
+	-@rm -rf $(syscall_dir)
+	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
-$(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/kernel/fs.h include/kernel/param.h
-	gcc -Werror -Wall -Iinclude -o $@ $<
+fs.img = $(BUILD_ROOT)/fs.img
+
+ifeq ("$(platform)", "qemu")
+run: $(fs.img)
+endif
 
 # 磁盘映像制作
-fs.img: user $(SCRIPT)/mkfs
-	@$(SCRIPT)/mkfs fs.img README $(shell find $(U_PROG_DIR) -name "_*")
+$(fs.img): $(SCRIPT)/mkfs user 
+	@$< $@ README $(shell find $(U_PROG_DIR) -name "_*")
 
+$(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
+	gcc -Werror -Wall -Iinclude -o $@ $<
+
+user: $(syscall)
+	@mkdir -p $(U_PROG_DIR)
+	@make -C $U
+	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: fs.img qemu clean all user kernel entry sbi-k210
+.PHONY: qemu clean all user kernel entry sbi-k210
 
 #===========================RULES END==============================#
