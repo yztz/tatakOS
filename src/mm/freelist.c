@@ -10,7 +10,7 @@
 #include "defs.h"
 #include "mm/vm.h"
 
-void freerange(void *pa_start, void *pa_end);
+static void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
@@ -25,14 +25,14 @@ struct {
 } kmem;
 
 void
-kinit()
+freelist_init()
 {
   initlock(&kmem.lock, "kmem");
   kmem.freelist = 0;
   freerange(end, (void*)PHYSTOP);
 }
 
-void
+static void
 freerange(void *pa_start, void *pa_end)
 {
   char *p;
@@ -46,7 +46,7 @@ freerange(void *pa_start, void *pa_end)
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
 void
-kfree(void *pa)
+freelist_free(void *pa)
 {
   struct run *r;
 
@@ -68,7 +68,7 @@ kfree(void *pa)
 // Returns a pointer that the kernel can use.
 // Returns 0 if the memory cannot be allocated.
 void *
-kalloc(void)
+freelist_alloc(void)
 {
   struct run *r;
 

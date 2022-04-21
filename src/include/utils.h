@@ -45,6 +45,10 @@ void vmprint(pagetable_t pagetable);
 void backtrace(void);
 void print_map(kmap_t map);
 void print_sbiret(sbiret_t ret);
+int luaO_log2 (unsigned int x);
+void print_page(int pgnum);
+
+#define get_order(x) luaO_log2(x)
 
 
 #endif

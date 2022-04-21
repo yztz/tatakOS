@@ -2,6 +2,7 @@
  * This file define the basic operations for pages.
 */
 #include "mm/page.h"
+#include "mm/alloc.h"
 #include "defs.h"
 #include "printf.h"
 #include "param.h"
@@ -77,8 +78,10 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
       //printf("a is %p\n", a);
       panic("uvmunmap: walk");
     }
-    if((*pte & PTE_V) == 0)
+    if((*pte & PTE_V) == 0){
+      printf("va is: %p\n", a);
       panic("uvmunmap: not mapped");
+    }
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
