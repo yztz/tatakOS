@@ -64,9 +64,9 @@ void            itrunc(struct inode*);
 // void            ramdiskrw(struct buf*);
 
 // kalloc.c
-void*           kalloc(void);
-void            kfree(void *);
-void            kinit(void);
+// void*           kalloc(void);
+// void            kfree(void *);
+// void            kinit(void);
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -113,12 +113,12 @@ void            procdump(void);
 void            swtch(struct context*, struct context*);
 
 // spinlock.c
-void            acquire(struct spinlock*);
-int             holding(struct spinlock*);
-void            initlock(struct spinlock*, char*);
-void            release(struct spinlock*);
-void            push_off(void);
-void            pop_off(void);
+// void            acquire(struct spinlock*);
+// int             holding(struct spinlock*);
+// void            initlock(struct spinlock*, char*);
+// void            release(struct spinlock*);
+// void            push_off(void);
+// void            pop_off(void);
 
 // sleeplock.c
 void            acquiresleep(struct sleeplock*);

@@ -1,0 +1,29 @@
+死循环：empty处错误
+发现潜在的互斥问题，order比较 交叉锁可能导致死锁，因此采用invalid机制
+free处的alloc位也应该被保护，原因同上
+
+性能测试
+
+freelist: (benchmark)
+free: 32276, tick1: 23, tick2: 69, ticks: 46
+free: 32276, tick1: 69, tick2: 113, ticks: 44
+free: 32276, tick1: 113, tick2: 155, ticks: 42
+free: 32276, tick1: 155, tick2: 199, ticks: 44
+free: 32276, tick1: 199, tick2: 238, ticks: 39
+free: 32276, tick1: 238, tick2: 277, ticks: 39
+free: 32276, tick1: 277, tick2: 320, ticks: 43
+free: 32276, tick1: 320, tick2: 362, ticks: 42
+free: 32276, tick1: 362, tick2: 402, ticks: 40
+free: 32276, tick1: 402, tick2: 443, ticks: 41
+
+buddy:
+free: 32275, tick1: 27, tick2: 84, ticks: 57
+free: 32275, tick1: 84, tick2: 133, ticks: 49
+free: 32275, tick1: 133, tick2: 182, ticks: 49
+free: 32275, tick1: 182, tick2: 236, ticks: 54
+free: 32275, tick1: 236, tick2: 283, ticks: 47
+free: 32275, tick1: 283, tick2: 337, ticks: 54
+free: 32275, tick1: 337, tick2: 387, ticks: 50
+free: 32275, tick1: 387, tick2: 436, ticks: 49
+free: 32275, tick1: 436, tick2: 484, ticks: 48
+free: 32275, tick1: 484, tick2: 529, ticks: 45

@@ -57,7 +57,23 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PTE_X (1L << 3)
 #define PTE_U (1L << 4) // 1 -> user can access
 
-#include "types.h"
+#include "platform.h"
+
+// 8MB/PAGESIZE = 2K
+typedef struct _page_t {
+    uint8_t refcnt;
+    struct {
+        uint8_t order : 4; // use lowest 4 bits only: 0..10
+        uint8_t alloc : 1;
+    };
+} page_t;
+
+#define PAGE_NUMS (MEM_SIZE/PGSIZE)
+#define PAGE2NUM(va) (((uint64_t)(va) - KERNBASE)/PGSIZE)
+#define NUM2PAGE(num) ((uint64 *)((num) * PGSIZE + KERNBASE))
+
+extern page_t pages[PAGE_NUMS];
+
 int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int perm, int spec);
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);

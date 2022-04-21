@@ -10,8 +10,12 @@ obj-y+=fs/
 obj-y+=kernel/
 obj-y+=mm/
 obj-y+=platform/
-obj-y+=misc/
 obj-y+=atomic/
+
+obj-y += printf.o
+obj-y += string.o
+obj-y += panic.o
+obj-y += utils.o
 
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))

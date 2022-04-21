@@ -63,7 +63,10 @@
         "algorithm": "c",
         "page.h": "c",
         "vm.h": "c",
-        "copy.h": "c"
+        "copy.h": "c",
+        "common.h": "c",
+        "list.h": "c",
+        "alloc.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     
