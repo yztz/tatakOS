@@ -3,9 +3,45 @@
 */
 #include "mm/page.h"
 #include "mm/alloc.h"
+#include "atomic/spinlock.h"
 #include "defs.h"
 #include "printf.h"
 #include "param.h"
+
+page_t pages[PAGE_NUMS];
+struct spinlock reflock;
+
+void page_init(void) {
+  initlock(&reflock, "reflock");
+  for(int i = 0; i < PAGE_NUMS; i++) {
+    pages[i].refcnt = 0;
+    #ifdef BUDDY
+    pages[i].order = 0;
+    pages[i].alloc = 1;
+    #endif
+  }
+}
+
+pgref_t ref_page(uint64_t pa) {
+  pgref_t ret;
+  acquire(&reflock);
+  ret = ++pages[PAGE2NUM(pa)].refcnt;
+  release(&reflock);
+  return ret;
+}
+
+pgref_t deref_page(uint64_t pa) {
+  pgref_t ret;
+  acquire(&reflock);
+  ret = --pages[PAGE2NUM(pa)].refcnt;
+  release(&reflock);
+  return ret;
+}
+
+pgref_t page_ref(uint64_t pa) {
+  return pages[PAGE2NUM(pa)].refcnt;
+}
+
 
 pte_t *
 _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
@@ -75,14 +111,12 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
-      //printf("a is %p\n", a);
       panic("uvmunmap: walk");
     }
     if((*pte & PTE_V) == 0){
-      printf("va is: %p\n", a);
       panic("uvmunmap: not mapped");
     }
-    if(PTE_FLAGS(*pte) == PTE_V)
+    if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
       panic("uvmunmap: not a leaf");
     if(do_free){
       uint64 pa = PTE2PA_SPEC(*pte, spec);

@@ -2907,8 +2907,9 @@ main(int argc, char *argv[])
       }
     }
   }
-
+  uint64_t tick1, tick2;
   printf("usertests starting\n");
+  tick1 = timetag();
   int free0 = countfree();
   int free1 = 0;
   int fail = 0;
@@ -2926,7 +2927,8 @@ main(int argc, char *argv[])
     printf("FAILED -- lost some free pages %d (out of %d)\n", free1, free0);
     exit(1);
   } else {
-    printf("ALL TESTS PASSED\n");
+    tick2 = timetag();
+    printf("ALL TESTS PASSED time: %d\n", tick2 - tick1);
     exit(0);
   }
 }

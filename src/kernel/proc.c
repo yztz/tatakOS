@@ -466,7 +466,6 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        // todo: change pagetable
         switchuvm(p);
         swtch(&c->context, &p->context);
         switchkvm();

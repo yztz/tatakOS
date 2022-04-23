@@ -1,0 +1,48 @@
+1. fork
+2. page fault exception
+3. PTE_COW
+4. read only
+5. unmap
+...
+
+bugs：
+1.
+scause 000000000000000D
+sepc=00000000802097A4 stval=0000000080121D40
+panic: kerneltrap
+backtrace: 
+0000000080201B78
+0000000080208390
+00000000802085A4
+00000000802099C0
+0000000080209264
+0000000080205ABC
+000000008020564C
+00000000802079E0
+0000000080206B4C
+00000000802081E0
+PAGE2NUM：没有使用pa，使用了va
+
+2. forkfailed
+因为内存没有被释放->ref操作需要在alloc与free中进行
+
+3. copyout MAXVA walf panic
+加入判断
+
+4. FAILED -- lost some free pages 32143 (out of 32260)
+cow_copy没有free
+
+5. preempt write error
+6. cowtest ......
+error: read the wrong value 0 need 1
+error: read the wrong value 1 need 2
+error: read the wrong value 2 need 3
+error: read the wrong value 3 need 4
+
+sfence.vma!
+）有时buddy性能较高
+
+性能测试
+                COW ENABLED      COW DISABLED
+FREELIST            1819             1922
+BUDDY               1962             1927

@@ -16,6 +16,7 @@ obj-y += printf.o
 obj-y += string.o
 obj-y += panic.o
 obj-y += utils.o
+obj-y += main.o
 
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))

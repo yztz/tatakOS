@@ -9,6 +9,7 @@
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
+#include "kernel/proc.h"
 #include "param.h"
 #include "qemu.h"
 #include "atomic/spinlock.h"
@@ -86,7 +87,6 @@ virtio_disk_init(void)
   initlock(&disk.vdisk_lock, "virtio_disk");
   // we need to remap io to virt addr
   virtio_base_address = ioremap(VIRTIO0, PGSIZE);
-  printf("virtio_base_address is: %p\n", virtio_base_address);
 
   plic_register_handler(VIRTIO0_IRQ, (plic_irq_callback_t)virtio_disk_intr, NULL);
 

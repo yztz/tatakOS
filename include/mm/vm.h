@@ -1,7 +1,6 @@
 #ifndef _H_MM_
 #define _H_MM_
 
-#include "types.h"
 #include "mm/page.h"
 #include "mm/alloc.h"
 
@@ -31,8 +30,7 @@ uint64      walkaddr(pagetable_t, uint64);
 int         copyout(pagetable_t, uint64, char *, uint64);
 int         copyin(pagetable_t, char *, uint64, uint64);
 int         copyinstr(pagetable_t, char *, uint64, uint64);
-
-// void *      kalloc(void);
+int         cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte);
 
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);

@@ -42,6 +42,7 @@
 #ifndef UART_IRQ
 #define UART_IRQ
 #endif
+/* KERNBASE and PHYSTOP must be page-aligned! */
 #ifndef KERNBASE
 #define KERNBASE
 #endif

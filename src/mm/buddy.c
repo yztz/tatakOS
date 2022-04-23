@@ -6,10 +6,8 @@
 #include "common.h"
 #include "mm/page.h"
 #include "mm/buddy.h"
-// #include "list.h"
 
-#define MAX_ORDER 10
-#define INVAIL_ORDER ((1 << 4) - 1)
+#define INVAIL_ORDER (0xf)
 
 #define PARTNER_NO(pgnum, order) ((pgnum) ^ (1 << (order)))
 #define MERGE_NO(pgnum, order) ((pgnum) & ~(1 << (order)))
@@ -27,7 +25,6 @@ typedef struct _buddy_list_t {
 
 extern char end[];
 
-page_t pages[PAGE_NUMS];
 buddy_list_t lists[MAX_ORDER];
 
 void buddy_init() {
@@ -36,12 +33,6 @@ void buddy_init() {
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);
     initlock(&lists[i].lock, "buddy list");
-  }
-
-  for(int i = 0; i < PAGE_NUMS; i++) {
-    pages[i].refcnt = 0;
-    pages[i].order = 0;
-    pages[i].alloc = 1;
   }
 
   for(int i = knum; i < PAGE_NUMS; i++) {
