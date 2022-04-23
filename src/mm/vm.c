@@ -1,4 +1,4 @@
-#include "param.h"
+#include "common.h"
 #include "types.h"
 #include "platform.h"
 #include "elf.h"
@@ -18,7 +18,6 @@ static int nxt_mapid = 0; // maybe add a lock for nxt_mapid?
 pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
-extern char end[];
 
 extern char trampoline[]; // trampoline.S
 
@@ -221,14 +220,14 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 // Copies both the page table and the
 // physical memory.
 // returns 0 on success, -1 on failure.
-// frees any allocated pages on failure.
+// frees any allocated pages on failure.'
+#include "kernel/proc.h"
 int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
 
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
@@ -236,18 +235,33 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte);
+
+    #ifdef COW
+    *pte |= PTE_COW;  // mark cow
+    *pte &= ~PTE_W; // read only
+    /* IMPORTANT!
+      We have changed origin pte, so we need to flash the TLB to make it effective */
+    sfence_vma_addr(i);
+    ref_page(pa);
+    #else
+    char *mem;
     if((mem = kalloc()) == 0)
       goto err;
     memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
+    pa = (uint64_t)mem;
+    #endif
+
+    flags = PTE_FLAGS(*pte);
+    if(mappages(new, i, PGSIZE, pa, flags) != 0){
+      /* Free pa here is ok for COW, because we have added refcnt for it */
+      kfree((void *)pa);
       goto err;
     }
   }
   return 0;
 
  err:
+  /* This is only to unmap the pages which have been mapped before(not include i(th)) */
   uvmunmap(new, 0, i / PGSIZE, 1);
   return -1;
 }
@@ -295,16 +309,12 @@ void switchuvm(struct proc *p) {
   if(p->pagetable == 0)
     panic("switchuvm: no pgdir");
 
-  // pop_off();
   write_csr(satp, MAKE_SATP(p->pagetable));
   sfence_vma();
-  // push_off();
 }
 
 void switchkvm() {
-  // pop_off();
   write_csr(satp, MAKE_SATP(kernel_pagetable));
   sfence_vma();
-  // push_off();
 }
 

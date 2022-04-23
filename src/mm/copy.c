@@ -1,24 +1,76 @@
+#include "param.h"
 #include "mm/vm.h"
 #include "defs.h"
+
+
+static inline int __cow_copy(uint64_t va, pte_t *pte) {
+  uint64 pa = PTE2PA(*pte);
+  if(page_ref(pa) == 1) {
+    *pte |= PTE_W;
+    *pte &= ~PTE_COW;
+  } else {
+    char *mem;
+    if((mem = kalloc()) == 0) {
+      return -1;
+    }
+    memmove(mem, (char *)pa, PGSIZE);
+    uint flag = PTE_FLAGS(*pte);
+    flag |= PTE_W;
+    flag &= ~PTE_COW;
+
+    *pte = PA2PTE(mem) | flag;
+
+    kfree((void *)pa);
+  }
+  // IMPORTANT! Flush TLB
+  sfence_vma_addr(va);
+
+  return 0;
+}
+
+int cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte) {
+  pte_t *pte;
+  if(va >= MAXVA)
+    return -1;
+  pte = walk(pagetable, va, 0);
+  if(pte == 0 || (*pte & PTE_U) == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_COW) == 0)
+    return -1;
+
+  if(pppte) 
+    *pppte = pte;
+
+  return __cow_copy(va, pte);
+}
 
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
+#include "utils.h"
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
   uint64 n, va0, pa0;
-
+  pte_t *pte;
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
+    if(va0 >= MAXVA) 
       return -1;
+    pte = walk(pagetable, va0, 0);
+    if(pte == 0 || (*pte & PTE_U) == 0 || (*pte & PTE_V) == 0)
+      return -1;
+    
+    #ifdef COW
+    if((*pte & PTE_COW)) {
+      if(__cow_copy(va0, pte))
+        return -1;
+    }
+    #endif
+    
     n = PGSIZE - (dstva - va0);
-    if(n > len)
-      n = len;
+    if(n > len) n = len;
+    pa0 = PTE2PA(*pte);
     memmove((void *)(pa0 + (dstva - va0)), src, n);
-
+    // printf("fd=%d\n", *(int *)src);
     len -= n;
     src += n;
     dstva = va0 + PGSIZE;

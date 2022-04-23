@@ -2,6 +2,7 @@
 #include "riscv.h"
 #include "defs.h"
 #include "param.h"
+#include "kernel/proc.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "fs/fs.h"

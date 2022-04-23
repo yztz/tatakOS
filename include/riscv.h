@@ -11,13 +11,17 @@ r_mhartid()
   return x;
 }
 
-// Machine Status Register, mstatus
+#define INTERRUPT 0x8000000000000000UL
+#define EXCEPTION 0x0000000000000000UL
 
-#define MSTATUS_MPP_MASK (3L << 11) // previous mode.
-#define MSTATUS_MPP_M (3L << 11)
-#define MSTATUS_MPP_S (1L << 11)
-#define MSTATUS_MPP_U (0L << 11)
-#define MSTATUS_MIE (1L << 3)    // machine-mode interrupt enable.
+#define INTR_SOFT   (INTERRUPT  + 1)
+#define INTR_TIMER  (INTERRUPT  + 5)
+#define INTR_EXT    (INTERRUPT  + 9) // NOT SUPPORT ON K210
+
+#define EXCP_SYSCALL (EXCEPTION  + 8)
+#define EXCP_STORE_PAGE_FAULT (EXCEPTION  + 15)
+#define EXCP_INSTR_PAGE_FAULT (EXCEPTION  + 12)
+#define EXCP_LOAD_PAGE_FAULT (EXCEPTION  + 13)
 
 static inline uint64
 r_mstatus()
@@ -231,34 +235,6 @@ r_fp()
 }
 
 
-static inline uint64
-r_a0()
-{
-  uint64 x;
-  asm volatile("mv %0, a0" : "=r" (x) );
-  return x;
-}
-
-static inline void
-w_a0(uint64 x)
-{
-  asm volatile("mv a0, %0" : :"r" (x) );
-}
-
-static inline uint64
-r_a1()
-{
-  uint64 x;
-  asm volatile("mv %0, a1" : "=r" (x) );
-  return x;
-}
-
-static inline void
-w_a1(uint64 x)
-{
-  asm volatile("mv a1, %0" : :"r" (x) );
-}
-
 // enable device interrupts
 static inline void
 intr_on()
@@ -328,5 +304,9 @@ static inline void sfence_vma(void)
     __asm__ __volatile__ ("fence\nfence.i\nsfence.vma" : : : "memory");
 }
 
+static inline void sfence_vma_addr(uint64_t addr)
+{
+    __asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
+}
 
 #endif
