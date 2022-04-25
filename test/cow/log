@@ -46,3 +46,6 @@ sfence.vma!
                 COW ENABLED      COW DISABLED
 FREELIST            1819             1922
 BUDDY               1962             1927
+
+重写copyin后：
+BUDDY + COW： 1871

@@ -1,4 +1,4 @@
-#include "param.h"
+#include "utils.h"
 #include "mm/vm.h"
 #include "defs.h"
 
@@ -45,7 +45,6 @@ int cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte) {
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
-#include "utils.h"
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
@@ -78,32 +77,30 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   return 0;
 }
 
+#define check_range(va, n, limit) \
+  (((uint64_t)(va) + (uint64_t)(n) > (uint64_t)(va)) && ((uint64_t)(va) + (uint64_t)(n) <= (uint64_t)(limit)))
+
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.
 // Return 0 on success, -1 on error.
 int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
-  uint64 n, va0, pa0;
+  return copy_from_user(dst, (void *)srcva, len);
+}
 
-//   #ifndef COMPETITION
-//   if()
-//   #endif
-
-  while(len > 0){
-    va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
-      return -1;
-    n = PGSIZE - (srcva - va0);
-    if(n > len)
-      n = len;
-    memmove(dst, (void *)(pa0 + (srcva - va0)), n);
-
-    len -= n;
-    dst += n;
-    srcva = va0 + PGSIZE;
-  }
+/* We always think kernel address is legal... */
+int copy_from_user(void *to, void *from, size_t n) {
+  proc_t *p = myproc();
+  if(!p)
+    panic("copy_from_user: no process context");
+  
+  if(!check_range(from, n, p->sz))
+    return -1;
+  // todo: more checks, such as: guard pages, **mmap**...
+  enable_sum();
+  memmove(to, from, n);
+  disable_sum();
   return 0;
 }
 
@@ -114,38 +111,24 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 int
 copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
-  uint64 n, va0, pa0;
   int got_null = 0;
+  proc_t *proc = myproc();
+  if(!proc)
+    panic("copyinstr: no process context");
 
-  while(got_null == 0 && max > 0){
-    va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
-      return -1;
-    n = PGSIZE - (srcva - va0);
-    if(n > max)
-      n = max;
-
-    char *p = (char *) (pa0 + (srcva - va0));
-    while(n > 0){
-      if(*p == '\0'){
-        *dst = '\0';
-        got_null = 1;
-        break;
-      } else {
-        *dst = *p;
-      }
-      --n;
-      --max;
-      p++;
-      dst++;
+  enable_sum();
+  char *p = (char *)srcva;
+  // no consider wrap
+  while(max > 0 && (uint64_t)p < proc->sz){
+    *dst = *p;
+    if(*p == '\0'){
+      got_null = 1;
+      break;
     }
-
-    srcva = va0 + PGSIZE;
+    max--;
+    p++;
+    dst++;
   }
-  if(got_null){
-    return 0;
-  } else {
-    return -1;
-  }
+  disable_sum();
+  return (got_null ? 0 : -1);
 }

@@ -6,6 +6,8 @@
 
 #define LOOP() {while(1) continue;}
 
+#define _section(name) __attribute__((noinline, section(#name)))
+
 static inline void set_bit(volatile uint32_t *bits, uint32_t mask, uint32_t value)
 {
     uint32_t org = (*bits) & ~mask;
