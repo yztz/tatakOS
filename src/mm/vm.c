@@ -47,9 +47,6 @@ kvminit(void)
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
   kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X, PGSPEC_NORMAL);
-
-  // map kernel stacks
-  // proc_mapstacks();
 }
 
 

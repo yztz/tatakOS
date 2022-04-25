@@ -18,7 +18,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PGSPEC_SUPER  2 // unused
 
 /* PGSIZE */
-#define PGSIZE_SPEC(spec) (1 << (12 + 9 * (spec)))
+#define PGSIZE_SPEC(spec) (1L << (12 + 9 * (spec)))
 #define PGSIZE PGSIZE_SPEC(PGSPEC_NORMAL) // 4KB 2^12
 #define PGSIZE_LARGE PGSIZE_SPEC(PGSPEC_LARGE) // 2MB 2^21
 
@@ -26,8 +26,8 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PGROUNDUP_SPEC(sz, sepc) (((sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
 #define PGROUNDDOWN_SPEC(sz, sepc) ((sz) & ~((PGSIZE_SPEC(sepc))-1))
 
-#define PGROUNDUP(sz)  PGROUNDUP_SPEC(sz, PGSPEC_NORMAL)
-#define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_NORMAL)
+#define PGROUNDUP(sz)  PGROUNDUP_SPEC((uint64_t)sz, PGSPEC_NORMAL)
+#define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC((uint64_t)sz, PGSPEC_NORMAL)
 
 #define PGROUNDUP_LARGE(sz) PGROUNDUP_SPEC(sz, PGSPEC_LARGE)
 #define PGROUNDDOWN_LARGE(sz) PGROUNDDOWN_SPEC(sz, PGSPEC_LARGE)

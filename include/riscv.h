@@ -53,6 +53,7 @@ w_mepc(uint64 x)
 #define SSTATUS_UPIE (1L << 4) // User Previous Interrupt Enable
 #define SSTATUS_SIE (1L << 1)  // Supervisor Interrupt Enable
 #define SSTATUS_UIE (1L << 0)  // User Interrupt Enable
+#define SSTATUS_SUM (1L << 18) // Supervisor User Memory access
 
 
 #define read_csr(reg) ({ unsigned long __tmp; \
@@ -85,6 +86,15 @@ w_mepc(uint64 x)
   else \
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
   __tmp; })
+
+
+static inline void enable_sum() {
+  set_csr(sstatus, SSTATUS_SUM);
+}
+
+static inline void disable_sum() {
+  clear_csr(sstatus, SSTATUS_SUM);
+}
 
 static inline uint64
 r_sstatus()

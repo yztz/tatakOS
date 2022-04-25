@@ -28,9 +28,12 @@ void        uvmfree(pagetable_t, uint64);
 void        uvmclear(pagetable_t, uint64);
 uint64      walkaddr(pagetable_t, uint64);
 int         copyout(pagetable_t, uint64, char *, uint64);
+
+/** @deprecated use copy_from_user instead */
 int         copyin(pagetable_t, char *, uint64, uint64);
 int         copyinstr(pagetable_t, char *, uint64, uint64);
 int         cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte);
+int         copy_from_user(void *to, void *from, size_t n);
 
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
