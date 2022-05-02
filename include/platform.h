@@ -53,7 +53,7 @@
 #define CLOCK_FREQ
 #endif
 
-#define MEM_SIZE (PHYSTOP-KERNBASE) // MUST align 2
+#define MEM_SIZE (PHYSTOP-KERNBASE) // MUST page-aligned
 
 /* supported source */
 enum _plic_irq;

@@ -14,11 +14,9 @@ struct spinlock reflock;
 void page_init(void) {
   initlock(&reflock, "reflock");
   for(int i = 0; i < PAGE_NUMS; i++) {
-    pages[i].refcnt = 0;
-    #ifdef BUDDY
+    pages[i].refcnt = 1;
     pages[i].order = 0;
     pages[i].alloc = 1;
-    #endif
   }
 }
 
@@ -40,6 +38,14 @@ pgref_t deref_page(uint64_t pa) {
 
 pgref_t page_ref(uint64_t pa) {
   return pages[PAGE2NUM(pa)].refcnt;
+}
+
+void mark_page(uint64_t pa, int type) {
+  pages[PAGE2NUM(pa)].type = type;
+}
+
+int page_type(uint64_t pa) {
+  return pages[PAGE2NUM(pa)].type;
 }
 
 

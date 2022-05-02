@@ -22,6 +22,10 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PGSIZE PGSIZE_SPEC(PGSPEC_NORMAL) // 4KB 2^12
 #define PGSIZE_LARGE PGSIZE_SPEC(PGSPEC_LARGE) // 2MB 2^21
 
+/* PGMASK */
+#define PGMASK_SPEC(spec) (~(PGSIZE_SPEC(spec) - 1))
+#define PGMASK PGMASK_SPEC(PGSPEC_NORMAL)
+
 /* Kinds of round */
 #define PGROUNDUP_SPEC(sz, sepc) (((sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
 #define PGROUNDDOWN_SPEC(sz, sepc) ((sz) & ~((PGSIZE_SPEC(sepc))-1))
@@ -63,13 +67,18 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 // use typedef to make type flexible.
 typedef uint8_t pgref_t;
 
-// 8MB/PAGESIZE = 2K
+// 8MB/PAGESIZE = 2K * 2B
 typedef struct _page_t {
     pgref_t refcnt;
     struct {
-        uint8_t order : 4; // use lowest 4 bits only, max 14 (15 as invaild)
-        uint8_t alloc : 1;
+        uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
+        uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
+#define ALLOC_BUDDY     0
+#define ALLOC_FREELIST  1
+#define ALLOC_SLOB      2
+        uint8_t type  : 2; // page type ()
     };
+    // uint8_t resv[2]; // reserved for special use
 } page_t;
 
 #define PAGE_NUMS (MEM_SIZE/PGSIZE)
@@ -83,6 +92,8 @@ void    page_init(void);
 pgref_t ref_page(uint64_t pa);
 pgref_t deref_page(uint64_t pa);
 pgref_t page_ref(uint64_t pa);
+void    mark_page(uint64_t pa, int type);
+int     page_type(uint64_t pa);
 
 int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int perm, int spec);
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
