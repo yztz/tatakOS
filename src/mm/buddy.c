@@ -28,15 +28,13 @@ extern char end[];
 buddy_list_t lists[MAX_ORDER];
 
 void buddy_init() {
-  int knum = PAGE2NUM(end) + 1;
-
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);
     initlock(&lists[i].lock, "buddy list");
   }
 
-  for(int i = knum; i < PAGE_NUMS; i++) {
-    buddy_free(NUM2PAGE(i));
+  for(uint64_t p = PGROUNDUP(end); p < PHYSTOP; p += PGSIZE) {
+    buddy_free((void *)p);
   }
   
 }
@@ -55,9 +53,6 @@ static inline void remove(buddy_t *b) {
   b->pre = b;
 }
 
-// static inline int empty(int order) {
-//   return lists[order].head.next == &lists[order].head;
-// }
 
 static inline int empty(int order) {
   return lists[order].head.next == &lists[order].head;
@@ -116,19 +111,24 @@ void *buddy_alloc(size_t size) {
   pages[PAGE2NUM(b)].alloc = 1;
   release(&lists[order].lock);
   
+  mark_page((uint64_t)b, ALLOC_BUDDY);
+  ref_page((uint64_t)b);
   return (void *) b;
 }
 
-void buddy_free(void *va) {
+void buddy_free(void *pa) {
   int pgnum, ppgnum;
   page_t *page, *ppage;
   buddy_t *b;
 
-  pgnum = PAGE2NUM(va);
+  pgnum = PAGE2NUM(pa);
 
   if(pgnum >= PAGE_NUMS) {
     panic("buddy_free: out of range");
   }
+
+  if(deref_page((uint64_t)pa) > 0) 
+    return;
 
   page = &pages[pgnum];
 
@@ -136,14 +136,13 @@ void buddy_free(void *va) {
     print_page(pgnum);
     panic("buddy_free: page not allocated");
   }
-  b = (buddy_t *) va;
+  b = (buddy_t *) pa;
   //release
   page->alloc = 0;
   // insert back
   acquire(&lists[page->order].lock);
   insert(page->order, b);
 
-  // printf("va: %p, pgnum: %d, macro va: %p\n", va, pgnum, NUM2PAGE(pgnum));
   ppgnum = PARTNER_NO(pgnum, page->order);
   ppage = &pages[ppgnum];
   // we need hold lock to avoid partner being allocated

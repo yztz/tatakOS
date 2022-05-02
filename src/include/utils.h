@@ -5,6 +5,11 @@
 #include "sbi.h"
 
 #define LOOP() {while(1) continue;}
+#define DIVIDER() {printf("\n---------------------------------\n");}
+
+#define ALIGN(a, align) ((a + (align - 1)) & ~(align - 1))
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 #define _section(name) __attribute__((noinline, section(#name)))
 

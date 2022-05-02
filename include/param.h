@@ -15,7 +15,7 @@
 #define MAXPATH      128   // maximum file path name
 #define MAX_MAP      15    // maximum io map
 
-///////////BUDDY/////////////
+/////////////MM//////////////
 #define BUDDY
 #define MAX_ORDER 10
 

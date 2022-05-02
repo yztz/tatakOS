@@ -2,19 +2,18 @@
 // kernel stacks, page-table pages,
 // and pipe buffers. Allocates whole 4096-byte pages.
 
-#include "types.h"
-#include "param.h"
+#include "common.h"
 #include "platform.h"
 #include "atomic/spinlock.h"
 #include "riscv.h"
 #include "defs.h"
 #include "mm/freelist.h"
 #include "mm/page.h"
+#include "mm/buddy.h"
 
-static void freerange(void *pa_start, void *pa_end);
+extern char end[];
 
-extern char end[]; // first address after kernel.
-                   // defined by kernel.ld.
+#define FREELIST_ALLOC_SIZE (1 * 1024 * 1024)
 
 struct run {
   struct run *next;
@@ -30,16 +29,18 @@ freelist_init()
 {
   initlock(&kmem.lock, "kmem");
   kmem.freelist = 0;
-  freerange(end, (void*)PHYSTOP);
+  // freerange(end, (void*)PHYSTOP);
 }
 
-static void
-freerange(void *pa_start, void *pa_end)
+void
+freelist_freerange(void *pa_start, void *pa_end)
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
+    mark_page((uint64_t)pa, ALLOC_FREELIST);
     freelist_free(p);
+  }
 }
 
 // Free the page of physical memory pointed at by v,
@@ -68,12 +69,23 @@ freelist_free(void *pa)
 void *
 freelist_alloc(void)
 {
-  struct run *r;
+  void *alloc = NULL;
+  struct run *r = NULL;
 
   acquire(&kmem.lock);
-  r = kmem.freelist;
-  if(r)
+  if(kmem.freelist) {
+    r = kmem.freelist;
+  } else {
+    alloc = buddy_alloc(FREELIST_ALLOC_SIZE);
+    if(alloc) {
+      freelist_freerange(alloc, (void *)((uint64_t)alloc + FREELIST_ALLOC_SIZE));
+      r = kmem.freelist;
+    }
+  }
+  
+  if(r) {
     kmem.freelist = r->next;
+  }
   release(&kmem.lock);
 
   return (void*)r;

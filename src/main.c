@@ -6,6 +6,7 @@
 #include "mm/vm.h"
 #include "platform.h"
 #include "driver/plic.h"
+#include "test.h"
 
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
@@ -28,6 +29,9 @@ main()
     /* VM */
     kvminit();       // create kernel page table
     kvminithart();   // turn on paging
+
+    // mm_test();
+
     /* TRAP */
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector

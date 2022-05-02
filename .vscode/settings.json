@@ -76,7 +76,8 @@
         "new": "c",
         "ostream": "c",
         "sstream": "c",
-        "streambuf": "c"
+        "streambuf": "c",
+        "slob.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

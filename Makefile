@@ -3,7 +3,7 @@ MAKEFLAGS += --no-print-directory
 
 #===========================CONFIG=================================#
 # CPU NUMS(qemu)
-CPUS ?= 2
+CPUS ?= 4
 # platform [qemu|k210]
 platform ?= k210
 # debug [on|off]
@@ -44,6 +44,7 @@ export debug platform arch
 #=============================FLAGS=+==============================#
 # platform
 CFLAGS += -I$(P)/$(platform)/include
+CFLAGS += $(EXTRA_CFLAGS)
 ifeq ("${platform}", "qemu")
   CFLAGS += -DQEMU
   CFLAGS += -DCPUS=$(CPUS)
