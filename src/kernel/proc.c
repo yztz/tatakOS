@@ -533,13 +533,19 @@ forkret(void)
     // be run from main().
     first = 0;
 
-    uint32_t new;
-    fat32_t fat;
-    fat_read_sb(ROOTDEV, &fat);
-    fat_alloc_cluster(&fat, &new);
-    printf("new cluster is %d\n", new);
+    fat32_t *fat;
+    dir_item_t item;
+    fat_mount(ROOTDEV, &fat);
+    fat_dirlookup(fat, fat->root_cluster, "abcdefghijklmn.txt", &item);
+    // fat_alloc_cluster(fat, &new);
+    // printf("new cluster is %d\n", new);
+    print_dir_item(&item);
+
+    
     LOOP();
     // fsinit(ROOTDEV);
+
+
   }
 
   usertrapret();

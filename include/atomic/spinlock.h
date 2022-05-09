@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define INIT_SPINLOCK(name) spinlock_t name = {.lock=0, .name=#name, .cpu=NULL};
+#define INIT_SPINLOCK(ln) (spinlock_t){.locked=0, .name=#ln, .cpu=NULL};
 
 // Mutual exclusion lock.
 struct spinlock {

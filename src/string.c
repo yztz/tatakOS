@@ -105,3 +105,11 @@ strlen(const char *s)
   return n;
 }
 
+#define UPPER(c) ((c) >= 'a' && (c) <= 'z' ? (c) - ('a' - 'A') : (c))
+
+void to_upper(char *str) {
+  while(*str != '\0') {
+      *str = UPPER(*str);
+      str++;
+  }
+}

@@ -129,8 +129,9 @@ $(fs.img): user
 	@mkfs.vfat -F 32 $@
 	@mkdir -p $(MNT_DIR)
 	@sudo mount $@ $(MNT_DIR)
-# 可能会有权限报错
-	-@sudo mv $(U_PROG_DIR)/* $(MNT_DIR)/
+	@sudo cp $(U_PROG_DIR)/* $(MNT_DIR)/
+# 用于测试长文件名
+	@sudo touch $(MNT_DIR)/abcdefghijklmn.txt
 	@sudo umount $(MNT_DIR)
 
 # $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h

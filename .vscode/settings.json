@@ -80,7 +80,10 @@
         "slob.h": "c",
         "blk_device.h": "c",
         "str.h": "c",
-        "fat.h": "c"
+        "fat.h": "c",
+        "istream": "cpp",
+        "typeinfo": "c",
+        "hlist.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     

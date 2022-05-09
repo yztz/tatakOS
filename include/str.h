@@ -9,5 +9,6 @@ char*           safestrcpy(char* dst, const char* src, int n);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
+void            to_upper(char *str);
 
 #endif

@@ -2,11 +2,17 @@
 #define _H_FAT_
 
 #include "types.h"
+#include "fs.h"
 
 
 #define FAT_SFN_LENGTH (8 + 3) // 短文件名长度
 
 #define MSDOS_NAME FAT_SFN_LENGTH
+
+#define MAX_FILE_NAME 255
+
+// 获取目录项中的簇号
+#define FAT_FETCH_CLUS(item) (((item)->starth << 16) | (item)->startl)
 
 /* 引导扇区 JUMP + BPB + EXT-BPB */
 struct fat_boot_sector {
@@ -74,7 +80,7 @@ typedef struct _entry_time_t {
 } entry_time_t;
 
 /* 短文件名目录项 */ 
-struct msdos_dir_entry {
+struct dir_item {
 	uint8_t	name[MSDOS_NAME];/* name and extension 名称和扩展 */
 	uint8_t	attr;		/* attribute bits 属性位 */
 	uint8_t    lcase;		/* Case for base and extension 基础和扩展的案例 */
@@ -89,8 +95,10 @@ struct msdos_dir_entry {
 	uint32_t	size;		/* file size (in bytes) 文件大小 */
 } __attribute__ ((packed));
 
+typedef struct dir_item dir_item_t;
+
 /* 长文件名插槽 */
-struct msdos_dir_slot {
+struct dir_slot {
 	uint8_t    id;		/* sequence number for slot 槽序列号 */
 	uint8_t    name0_4[10];	/* first 5 characters in name 名称的前5个字符 */
 	uint8_t    attr;		/* attribute byte 属性类型 */
@@ -101,9 +109,13 @@ struct msdos_dir_slot {
 	uint8_t    name11_12[4];	/* last 2 characters in name 名称的最后2个字符 */
 } __attribute__ ((packed));
 
+typedef struct dir_slot dir_slot_t;
+
+struct fat_entry;
 
 typedef struct _fat32_t {
 	uint dev;	/* 设备号 */
+	entry_t *root;		/* 根目录 */
 
 	uint32_t fat_start_sector; 	/* FAT起始扇区号 */
 	uint32_t fat_tbl_sectors; 	/* FAT表扇区数 */
@@ -113,6 +125,8 @@ typedef struct _fat32_t {
 	uint32_t bytes_per_sec;		/* 扇区字节数 */
 
 	uint32_t root_cluster;		/* 根目录扇区号 */
+
+	spinlock_t cache_lock;		/* 保护缓存 */
 } fat32_t;
 
 typedef enum _FAT_RESULT_t{
@@ -123,13 +137,13 @@ typedef enum _FAT_RESULT_t{
 
 
 /* 读取fat超级块并做解析 */
-FR_t fat_read_sb(uint dev, fat32_t *fat);
+FR_t fat_mount(uint dev, fat32_t **ppfat);
 /* 获取下一个簇号 */
 uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
 /* 读取簇 */
 FR_t fat_read_cluster(fat32_t *fat, char *buffer, uint32_t cclus);
 
-FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *new);
-
+FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
+FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item);
 
 #endif

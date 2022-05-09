@@ -16,6 +16,8 @@
 #define MAX_MAP      15    // maximum io map
 
 #define BSIZE 512
+#define NENTRY 40
+
 
 /////////////MM//////////////
 #define BUDDY

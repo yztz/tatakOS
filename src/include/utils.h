@@ -10,6 +10,7 @@
 #define ALIGN(a, align) ((a + (align - 1)) & ~(align - 1))
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 #define _section(name) __attribute__((noinline, section(#name)))
 
@@ -47,13 +48,16 @@ static inline uint32_t get_gpio_bit(volatile uint32_t *bits, size_t offset)
         for (;;)                                        \
             ;                                           \
     }
-    
+
+struct dir_item;
+
 void vmprint(pagetable_t pagetable);
 void backtrace(void);
 void print_map(kmap_t map);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);
+void print_dir_item(struct dir_item *item);
 
 #define get_order(x) luaO_log2(x)
 

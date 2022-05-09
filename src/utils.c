@@ -1,6 +1,8 @@
 #include "printf.h"
 #include "utils.h"
 #include "mm/page.h"
+#include "fs/fat.h"
+#include "str.h"
 
 static char* indents[] = {
   ".. .. ..",
@@ -57,6 +59,18 @@ void
 print_page(int pgnum) {
   page_t *page = &pages[pgnum];
   printf("page %d {order: %d, refcnt: %d, alloc: %d}\n", page->order, page->refcnt, page->alloc);
+}
+
+void
+print_dir_item(struct dir_item *item) {
+  if(!item) {
+    printf("bad item\n");
+    return;
+  }
+  char name[FAT_SFN_LENGTH + 1];
+  name[FAT_SFN_LENGTH] = '\0';
+  strncpy(name, (char *)item->name, FAT_SFN_LENGTH);
+  printf("[file: %s] attr: %b filesize: %d cluster: %d", name, item->attr, item->size, FAT_FETCH_CLUS(item));
 }
 
 // ref: lua fast get order 打表+快速移位x8
