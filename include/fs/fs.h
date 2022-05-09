@@ -5,7 +5,7 @@
 #include "atomic/sleeplock.h"
 #include "atomic/atomic.h"
 #include "hlist.h"
-#include "fat.h"
+#include "fs/fat.h"
 
 #define E_ISDIR(entry) (((entry)->attr & 0b10000) > 0)
 

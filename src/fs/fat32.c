@@ -1,4 +1,4 @@
-#include "fs/fat.h"
+#include "fs/fs.h"
 #include "fs/blk_device.h"
 #include "mm/alloc.h"
 #include "common.h"

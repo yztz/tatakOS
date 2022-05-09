@@ -2,7 +2,7 @@
 #define _H_FAT_
 
 #include "types.h"
-#include "fs.h"
+#include "atomic/spinlock.h"
 
 
 #define FAT_SFN_LENGTH (8 + 3) // 短文件名长度
@@ -112,10 +112,9 @@ struct dir_slot {
 typedef struct dir_slot dir_slot_t;
 
 struct fat_entry;
-
 typedef struct _fat32_t {
 	uint dev;	/* 设备号 */
-	entry_t *root;		/* 根目录 */
+	struct fat_entry *root;		/* 根目录 */
 
 	uint32_t fat_start_sector; 	/* FAT起始扇区号 */
 	uint32_t fat_tbl_sectors; 	/* FAT表扇区数 */

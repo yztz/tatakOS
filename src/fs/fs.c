@@ -86,39 +86,39 @@ static void eput(entry_t *entry) {
 
 
 
-static entry_t *namex(char *path, int nameiparent, char *name)
-{
-  struct inode *ip, *next;
+// static entry_t *namex(char *path, int nameiparent, char *name)
+// {
+//   struct inode *ip, *next;
 
-  if(*path == '/') 
-    ip = idup();
-  else
-    ip = idup(myproc()->cwd);
+//   if(*path == '/') 
+//     ip = idup();
+//   else
+//     ip = idup(myproc()->cwd);
 
-  while((path = skipelem(path, name)) != 0){
-    ilock(ip);
-    if(ip->type != T_DIR){
-      iunlockput(ip);
-      return 0;
-    }
-    if(nameiparent && *path == '\0'){
-      // Stop one level early.
-      iunlock(ip);
-      return ip;
-    }
-    if((next = dirlookup(ip, name, 0)) == 0){
-      iunlockput(ip);
-      return 0;
-    }
-    iunlockput(ip);
-    ip = next;
-  }
-  if(nameiparent){
-    iput(ip);
-    return 0;
-  }
-  return ip;
-}
+//   while((path = skipelem(path, name)) != 0){
+//     ilock(ip);
+//     if(ip->type != T_DIR){
+//       iunlockput(ip);
+//       return 0;
+//     }
+//     if(nameiparent && *path == '\0'){
+//       // Stop one level early.
+//       iunlock(ip);
+//       return ip;
+//     }
+//     if((next = dirlookup(ip, name, 0)) == 0){
+//       iunlockput(ip);
+//       return 0;
+//     }
+//     iunlockput(ip);
+//     ip = next;
+//   }
+//   if(nameiparent){
+//     iput(ip);
+//     return 0;
+//   }
+//   return ip;
+// }
 
 
 
