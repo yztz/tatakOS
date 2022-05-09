@@ -14,8 +14,8 @@
 #include "qemu.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
-#include "fs/fs.h"
-#include "fs/buf.h"
+// #include "fs/fs.h"
+// #include "fs/buf.h"
 #include "virtio.h"
 #include "driver/plic.h"
 #include "mm/io.h"
@@ -289,6 +289,8 @@ virtio_disk_rw(struct buf *b, int write)
   release(&disk.vdisk_lock);
 }
 #include "printf.h"
+
+//中断函数的功能就是告诉os读写操作完成了
 int
 virtio_disk_intr()
 {

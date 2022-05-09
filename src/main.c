@@ -8,6 +8,8 @@
 #include "driver/plic.h"
 #include "test.h"
 
+#include "fs/fatfs.h"
+
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
 
@@ -49,6 +51,9 @@ main()
     #ifdef K210
     for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
     #endif
+
+    fs_test();
+
     /* FILE SYSTEM */
     binit();         // buffer cache
     iinit();         // inode table

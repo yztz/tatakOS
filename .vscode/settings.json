@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.xdc": "tcl",
         "Makefile.*": "makefile",
         "sbi.h": "c",
         "riscv.h": "c",
@@ -77,7 +78,10 @@
         "ostream": "c",
         "sstream": "c",
         "streambuf": "c",
-        "slob.h": "c"
+        "slob.h": "c",
+        "ff.h": "c",
+        "diskio.h": "c",
+        "istream": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

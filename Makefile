@@ -113,11 +113,12 @@ clean:
 	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
-fs.img = $(BUILD_ROOT)/fs.img
+fs.img = $(ROOT)/fs.img
+# fs.img = $(BUILD_ROOT)/fs.img
 
-ifeq ("$(platform)", "qemu")
-run: $(fs.img)
-endif
+# ifeq ("$(platform)", "qemu")
+# run: $(fs.img)
+# endif
 
 # 磁盘映像制作
 $(fs.img): $(SCRIPT)/mkfs user 
