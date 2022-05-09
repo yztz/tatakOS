@@ -15,7 +15,7 @@
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "fs/fs.h"
-#include "fs/buf.h"
+#include "fs/blk_device.h"
 #include "virtio.h"
 #include "driver/plic.h"
 #include "mm/io.h"

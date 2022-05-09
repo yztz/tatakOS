@@ -6,7 +6,7 @@
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "fs/fs.h"
-#include "fs/buf.h"
+#include "fs/blk_device.h"
 
 // Simple logging that allows concurrent FS system calls.
 //

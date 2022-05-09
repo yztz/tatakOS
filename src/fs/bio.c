@@ -21,16 +21,16 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs/fs.h"
-#include "fs/buf.h"
+#include "fs/blk_device.h"
 
-void virtio_disk_rw(struct buf *, int);
+static void disk_io(struct buf * b, int block_no) {
+  #ifdef K210
 
-#ifdef K210
-/* pacify old fs */
-void virtio_disk_rw(struct buf * buffer, int rw) {
-    // nothing...
+  #else 
+  extern void virtio_disk_rw(struct buf *, int);
+  virtio_disk_rw(b, block_no);
+  #endif
 }
-#endif
 
 struct {
   struct spinlock lock;
@@ -105,7 +105,7 @@ bread(uint dev, uint blockno)
 
   b = bget(dev, blockno);
   if(!b->valid) {
-    virtio_disk_rw(b, 0);
+    disk_io(b, 0);
     b->valid = 1;
   }
   return b;
@@ -117,7 +117,7 @@ bwrite(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
-  virtio_disk_rw(b, 1);
+  disk_io(b, 1);
 }
 
 // Release a locked buffer.

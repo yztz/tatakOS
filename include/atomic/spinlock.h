@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define INIT_SPINLOCK(name) spinlock_t name = {.lock=0, .name=#name, .cpu=NULL};
+
 // Mutual exclusion lock.
 struct spinlock {
   uint locked;       // Is the lock held?
@@ -12,6 +14,7 @@ struct spinlock {
   struct cpu *cpu;   // The cpu holding the lock.
 };
 
+typedef struct spinlock spinlock_t;
 
 void            acquire(struct spinlock*);
 int             holding(struct spinlock*);

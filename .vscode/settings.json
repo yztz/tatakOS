@@ -77,8 +77,11 @@
         "ostream": "c",
         "sstream": "c",
         "streambuf": "c",
-        "slob.h": "c"
+        "slob.h": "c",
+        "blk_device.h": "c",
+        "str.h": "c",
+        "fat.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Disabled",
+    "C_Cpp.errorSquiggles": "Enabled",
     
 }   

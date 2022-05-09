@@ -14,12 +14,12 @@ struct stat;
 struct superblock;
 
 // bio.c
-void            binit(void);
-struct buf*     bread(uint, uint);
-void            brelse(struct buf*);
-void            bwrite(struct buf*);
-void            bpin(struct buf*);
-void            bunpin(struct buf*);
+// void            binit(void);
+// struct buf*     bread(uint, uint);
+// void            brelse(struct buf*);
+// void            bwrite(struct buf*);
+// void            bpin(struct buf*);
+// void            bunpin(struct buf*);
 
 // console.c
 void            consoleinit(void);
@@ -85,6 +85,7 @@ int             pipewrite(struct pipe*, uint64, int);
 // void            printfinit(void);
 // void            panic(char*) __attribute__((noreturn));
 #include "printf.h"
+#include "str.h"
 
 // proc.c
 // void            exit(int);
@@ -121,20 +122,20 @@ void            swtch(struct context*, struct context*);
 // void            pop_off(void);
 
 // sleeplock.c
-void            acquiresleep(struct sleeplock*);
-void            releasesleep(struct sleeplock*);
-int             holdingsleep(struct sleeplock*);
-void            initsleeplock(struct sleeplock*, char*);
+// void            acquiresleep(struct sleeplock*);
+// void            releasesleep(struct sleeplock*);
+// int             holdingsleep(struct sleeplock*);
+// void            initsleeplock(struct sleeplock*, char*);
 
 // string.c
-int             memcmp(const void*, const void*, uint);
-void*           memmove(void*, const void*, uint);
-void*           memcpy(void*, const void*, uint);
-void*           memset(void*, int, uint);
-char*           safestrcpy(char*, const char*, int);
-int             strlen(const char*);
-int             strncmp(const char*, const char*, uint);
-char*           strncpy(char*, const char*, int);
+// int             memcmp(const void*, const void*, uint);
+// void*           memmove(void*, const void*, uint);
+// void*           memcpy(void*, const void*, uint);
+// void*           memset(void*, int, uint);
+// char*           safestrcpy(char*, const char*, int);
+// int             strlen(const char*);
+// int             strncmp(const char*, const char*, uint);
+// char*           strncpy(char*, const char*, int);
 
 // syscall.c
 int             argint(int, int*);

@@ -7,6 +7,9 @@
 #include "platform.h"
 #include "driver/plic.h"
 #include "test.h"
+#include "fs/blk_device.h"
+#include "common.h"
+#include "fs/fat.h"
 
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
@@ -52,7 +55,8 @@ main()
     /* FILE SYSTEM */
     binit();         // buffer cache
     iinit();         // inode table
-    fileinit();      // file table
+    fileinit();      // file table 
+    
 
     userinit();      // first user process
     __sync_synchronize();

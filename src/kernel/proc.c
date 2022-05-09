@@ -253,7 +253,7 @@ userinit(void)
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-  p->cwd = namei("/");
+  // p->cwd = namei("/");
 
   p->state = RUNNABLE;
 
@@ -516,6 +516,7 @@ yield(void)
   release(&p->lock);
 }
 
+#include "fs/fat.h"
 // A fork child's very first scheduling by scheduler()
 // will swtch to forkret.
 void
@@ -531,7 +532,14 @@ forkret(void)
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
     first = 0;
-    fsinit(ROOTDEV);
+
+    uint32_t new;
+    fat32_t fat;
+    fat_read_sb(ROOTDEV, &fat);
+    fat_alloc_cluster(&fat, &new);
+    printf("new cluster is %d\n", new);
+    LOOP();
+    // fsinit(ROOTDEV);
   }
 
   usertrapret();

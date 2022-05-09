@@ -1,7 +1,7 @@
  1     fork      sys_fork
  2     exit      sys_exit   
  3     wait      sys_wait   
- 4     pipe      sys_pipe   
+ 59    pipe      sys_pipe   
  5     read      sys_read   
  6     kill      sys_kill   
  7     exec      sys_exec   

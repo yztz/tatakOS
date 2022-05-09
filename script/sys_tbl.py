@@ -15,8 +15,10 @@ def read_file():
     with open(args.filename, 'r') as f:
         while True:
             line = f.readline()
-            if not line or line.startswith('#') or line.startswith('//'):
+            if not line:
                 break
+            elif line.startswith('#') or line.startswith('//'):
+                continue
             else:
                 fields = line.split()
                 ret.append({'num':fields[0], 'name':fields[1], 'sys_func':fields[2]})

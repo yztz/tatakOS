@@ -120,11 +120,21 @@ run: $(fs.img)
 endif
 
 # 磁盘映像制作
-$(fs.img): $(SCRIPT)/mkfs user 
-	@$< $@ README $(shell find $(U_PROG_DIR) -name "_*")
+MNT_DIR := $(BUILD_ROOT)/mnt
 
-$(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
-	gcc -Werror -Wall -Iinclude -o $@ $<
+fs.img : $(fs.img)
+
+$(fs.img): user
+	@dd if=/dev/zero of=$@ bs=1M count=128
+	@mkfs.vfat -F 32 $@
+	@mkdir -p $(MNT_DIR)
+	@sudo mount $@ $(MNT_DIR)
+# 可能会有权限报错
+	-@sudo mv $(U_PROG_DIR)/* $(MNT_DIR)/
+	@sudo umount $(MNT_DIR)
+
+# $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
+# 	gcc -Werror -Wall -Iinclude -o $@ $<
 
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
@@ -134,6 +144,6 @@ user: $(syscall)
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: qemu clean all user kernel entry sbi-k210
+.PHONY: qemu clean all user kernel entry sbi-k210 fs.img
 
 #===========================RULES END==============================#

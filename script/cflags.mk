@@ -1,3 +1,6 @@
+# 这里可以加些警告过滤器
+CFLAGS += -Wno-unused-function
+
 # -fno-omit-frame-pointer:不优化栈帧指针  -O=-O1
 CFLAGS += -Wall -Werror -Og -fno-omit-frame-pointer -ggdb
 # medany=PC±2G medlow=+2G&-2G
