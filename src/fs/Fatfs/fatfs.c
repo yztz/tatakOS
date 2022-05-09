@@ -25,9 +25,10 @@
 #include "atomic/sleeplock.h"
 #include "fs/file.h"
 #include "fs/fcntl.h"
+#include "fs/fatfs.h"
 
 
-static int fs_test(void)
+int fs_test(void)
 {
     static FATFS sdcard_fs;
     FRESULT status;
@@ -35,7 +36,7 @@ static int fs_test(void)
     FILINFO fno;
 
     printf("/********************fs test*******************/\n");
-    f_init();
+    // f_init();
     status = f_mount(&sdcard_fs, _T("0:"), 1);
     printf("mount sdcard:%d\n", status);
     if (status != FR_OK)
@@ -43,6 +44,7 @@ static int fs_test(void)
 
     printf("printf filename\n");
     status = f_findfirst(&dj, &fno, _T("0:"), _T("*"));
+    // printf("\e[31m%d\e[0m\n", fno.fname[0]);
     while (status == FR_OK && fno.fname[0]) {
         if (fno.fattrib & AM_DIR)
             printf("dir:%s\n", fno.fname);

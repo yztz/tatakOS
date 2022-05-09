@@ -52,16 +52,17 @@ main()
     for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
     #endif
 
-    fs_test();
 
-    /* FILE SYSTEM */
-    binit();         // buffer cache
-    iinit();         // inode table
-    fileinit();      // file table
+    // /* FILE SYSTEM */
+    // binit();         // buffer cache
+    // iinit();         // inode table
+    // fileinit();      // file table
 
     userinit();      // first user process
     __sync_synchronize();
     started = 1;
+
+
   } else {
     while(started == 0)
       ;

@@ -9,14 +9,26 @@
 
 // #include "ff.h"			/* Obtains integer types */
 // #include "diskio.h"		/* Declarations of disk functions */
+#include "types.h"
+#include "riscv.h"
+#include "defs.h"
+#include "kernel/proc.h"
+#include "param.h"
+#include "qemu.h"
+#include "atomic/spinlock.h"
+#include "atomic/sleeplock.h"
 #include "fs/ff.h"
+#include "fs/fs.h"
 #include "fs/diskio.h"
+// #include "../../../platform/qemu/include/virtio.h" //似乎不行，报错
 /* Definitions of physical drive number for each drive */
-#define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
-#define DEV_MMC		1	/* Example: Map MMC/SD card to physical drive 1 */
-#define DEV_USB		2	/* Example: Map USB MSD to physical drive 2 */
+// #define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
+// #define DEV_MMC		1	/* Example: Map MMC/SD card to physical drive 1 */
+// #define DEV_USB		2	/* Example: Map USB MSD to physical drive 2 */
 
 
+extern void virtio_disk_rw(struct disk_rw_struct *b, int write);
+extern void virtio_disk_init(void);
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
@@ -38,7 +50,7 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	virtio_disk_init()
+	// virtio_disk_init();
 	return 0;	
 }
 
@@ -55,8 +67,13 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	
-	return RES_PARERR;
+	for(int i = 0; i < count; i++){
+		struct disk_rw_struct a;
+		a.data = buff;
+		a.sectorno = sector + i;
+		virtio_disk_rw(&a, 0);
+	}
+	return 0;
 }
 
 
@@ -74,39 +91,13 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-		// translate the arguments here
-
-		result = RAM_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_MMC :
-		// translate the arguments here
-
-		result = MMC_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
-
-	case DEV_USB :
-		// translate the arguments here
-
-		result = USB_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
-		return res;
+	for(int i = 0; i < count; i++){
+		struct disk_rw_struct a;
+		a.data = buff;
+		a.sectorno = sector + i;
+		virtio_disk_rw(&a, 1);
 	}
-
-	return RES_PARERR;
+	return 0;
 }
 
 #endif
@@ -122,29 +113,6 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	DRESULT res;
-	int result;
-
-	switch (pdrv) {
-	case DEV_RAM :
-
-		// Process of the command for the RAM drive
-
-		return res;
-
-	case DEV_MMC :
-
-		// Process of the command for the MMC/SD card
-
-		return res;
-
-	case DEV_USB :
-
-		// Process of the command the USB drive
-
-		return res;
-	}
-
-	return RES_PARERR;
+	return 0;	
 }
 

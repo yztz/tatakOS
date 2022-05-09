@@ -1,9 +1,11 @@
+#ifndef FS_H
+#define FS_H
 // On-disk file system format.
 // Both the kernel and user programs use this header file.
 
 
 #define ROOTINO  1   // root i-number
-#define BSIZE 1024  // block size
+#define BSIZE 512// block size
 
 // Disk layout:
 // [ boot block | super block | log | inode blocks |
@@ -58,3 +60,14 @@ struct dirent {
   char name[DIRSIZ];
 };
 
+
+// qemu use this struct to read write data from blocks
+#ifdef QEMU
+struct disk_rw_struct{
+	const uchar *data;
+	int disk;
+	uint64 sectorno;
+};
+#endif
+
+#endif

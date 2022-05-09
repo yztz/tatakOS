@@ -81,7 +81,10 @@
         "slob.h": "c",
         "ff.h": "c",
         "diskio.h": "c",
-        "istream": "c"
+        "istream": "c",
+        "fatfs.h": "c",
+        "integer.h": "c",
+        "string": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     

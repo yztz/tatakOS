@@ -20,6 +20,9 @@
 #include "driver/plic.h"
 #include "mm/io.h"
 #include "mm/page.h"
+#include "fs/fs.h"
+#include "fs/diskio.h"
+
 // the address of virtio mmio register r.
 static uint64 virtio_base_address;
 #define R(r) ((volatile uint32 *)(virtio_base_address + (r)))
@@ -65,7 +68,7 @@ static struct disk {
   // for use when completion interrupt arrives.
   // indexed by first descriptor index of chain.
   struct {
-    struct buf *b;
+    struct disk_rw_struct *b;
     char status;
   } info[NUM];
 
@@ -211,9 +214,9 @@ alloc3_desc(int *idx)
 }
 
 void
-virtio_disk_rw(struct buf *b, int write)
+virtio_disk_rw(struct disk_rw_struct *b, int write)
 {
-  uint64 sector = b->blockno * (BSIZE / 512);
+  uint64 sector = b->sectorno;
 
   acquire(&disk.vdisk_lock);
 
@@ -317,7 +320,7 @@ virtio_disk_intr()
     if(disk.info[id].status != 0)
       panic("virtio_disk_intr status");
 
-    struct buf *b = disk.info[id].b;
+    struct disk_rw_struct *b = disk.info[id].b;
     b->disk = 0;   // disk is done with buf
     wakeup(b);
 

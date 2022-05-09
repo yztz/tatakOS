@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "defs.h"
 #include "mm/vm.h"
+#include "fs/fatfs.h"
 
 struct cpu cpus[NUM_CORES];
 
@@ -253,7 +254,7 @@ userinit(void)
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-  p->cwd = namei("/");
+  // p->cwd = namei("/");
 
   p->state = RUNNABLE;
 
@@ -531,7 +532,9 @@ forkret(void)
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
     first = 0;
-    fsinit(ROOTDEV);
+    // fsinit(ROOTDEV);
+    fs_test();
+    for(;;);
   }
 
   usertrapret();

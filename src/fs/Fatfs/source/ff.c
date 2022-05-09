@@ -25,6 +25,15 @@
 #include "fs/ff.h"
 #include "fs/diskio.h"
 
+// do not know why unreference to "strchr", so i use "strchar" replace it.
+char*
+strchar(const char *s, char c)
+{
+  for(; *s; s++)
+    if(*s == c)
+      return (char*)s;
+  return 0;
+}
 /*--------------------------------------------------------------------------
 
    Module Private Definitions
@@ -2979,7 +2988,9 @@ static FRESULT create_name (	/* FR_OK: successful, FR_INVALID_NAME: could not cr
 			sfn[i++] = c;
 			sfn[i++] = d;
 		} else {						/* SBC */
-			if (strchr("*+,:;<=>[]|\"\?\x7F", (int)c)) return FR_INVALID_NAME;	/* Reject illegal chrs for SFN */
+			// if (strchr("*+,:;<=>[]|\"\?\x7F", (int)c)) return FR_INVALID_NAME;	/* Reject illegal chrs for SFN */
+			// zyy: modifyed!
+			if (strchar("*+,:;<=>[]|\"\?\x7F", (int)c)) return FR_INVALID_NAME;	/* Reject illegal chrs for SFN */
 			if (IsLower(c)) c -= 0x20;	/* To upper */
 			sfn[i++] = c;
 		}

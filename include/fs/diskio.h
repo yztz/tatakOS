@@ -5,10 +5,11 @@
 #ifndef _DISKIO_DEFINED
 #define _DISKIO_DEFINED
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
+// #include "integer.h"
+#include "ff.h"
 /* Status of Disk Functions */
 typedef BYTE	DSTATUS;
 
@@ -70,8 +71,9 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
 #define ATA_GET_MODEL		21	/* Get model name */
 #define ATA_GET_SN			22	/* Get serial number */
 
-#ifdef __cplusplus
-}
-#endif
+
+// #ifdef __cplusplus
+// }
+// #endif
 
 #endif
