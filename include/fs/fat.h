@@ -6,10 +6,15 @@
 
 
 #define FAT_SFN_LENGTH (8 + 3) // 短文件名长度
+#define FAT_LFN_LENGTH (5 + 6 + 2) // 长文件名长度
 
 #define MSDOS_NAME FAT_SFN_LENGTH
 
-#define MAX_FILE_NAME 255
+#define FAT_CLUS_LOW_MASK  ((1<<16) - 1)
+#define FAT_CLUS_HIGH_MASK (~FAT_CLUS_LOW_MASK)
+
+#define FAT_ATTR_DIR 0b10000
+#define FAT_ATTR_FILE 0b100000
 
 // 获取目录项中的簇号
 #define FAT_FETCH_CLUS(item) (((item)->starth << 16) | (item)->startl)
@@ -131,7 +136,7 @@ typedef struct _fat32_t {
 typedef enum _FAT_RESULT_t{
 	FR_OK,
 	FR_ERR,
-
+	FR_CONTINUE, // 用于目录继续遍历的标识
 } FR_t;
 
 
@@ -141,8 +146,9 @@ FR_t fat_mount(uint dev, fat32_t **ppfat);
 uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
 /* 读取簇 */
 FR_t fat_read_cluster(fat32_t *fat, char *buffer, uint32_t cclus);
-
+FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item);
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item);
+FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, dir_item_t *item);
 
 #endif

@@ -86,5 +86,11 @@
         "hlist.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
-    
+    "todohighlight.keywords": [
+        {
+            "text": "OK:",
+            "backgroundColor": "green",
+            "color": "white"
+        }
+    ]
 }   

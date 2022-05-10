@@ -533,7 +533,7 @@ forkret(void)
     // be run from main().
     first = 0;
 
-    fat32_t *fat;
+    extern fat32_t *fat;
     dir_item_t item;
     fat_mount(ROOTDEV, &fat);
     fat_dirlookup(fat, fat->root_cluster, "abcdefghijklmn.txt", &item);
@@ -541,7 +541,7 @@ forkret(void)
     // printf("new cluster is %d\n", new);
     print_dir_item(&item);
 
-    
+    myproc()->cwd = namee("/");
     LOOP();
     // fsinit(ROOTDEV);
 

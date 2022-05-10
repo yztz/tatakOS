@@ -1,0 +1,23 @@
+ 1     fork      sys_fork
+ 2     exit      sys_exit   
+ 3     wait      sys_wait   
+ 4     pipe      sys_pipe   
+ 5     read      sys_read   
+ 6     kill      sys_kill   
+ 7     exec      sys_exec   
+ 8     fstat     sys_fstat  
+ 9     chdir     sys_chdir  
+10     dup       sys_dup    
+11     getpid    sys_getpid 
+12     sbrk      sys_sbrk   
+13     sleep     sys_sleep  
+14     uptime    sys_uptime 
+15     open      sys_open   
+16     write     sys_write  
+17     mknod     sys_mknod  
+18     unlink    sys_unlink 
+19     link      sys_link   
+20     mkdir     sys_mkdir  
+21     close     sys_close  
+88     ktest      sys_ktest
+89     timetag   sys_timetag

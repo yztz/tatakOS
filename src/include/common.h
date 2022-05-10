@@ -5,6 +5,8 @@
 #include "param.h"
 #include "utils.h"
 
+#define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
+
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 

@@ -7,7 +7,12 @@
 #include "hlist.h"
 #include "fs/fat.h"
 
-#define E_ISDIR(entry) (((entry)->attr & 0b10000) > 0)
+#define T_DIR     1   // Directory
+#define T_FILE    2   // File
+#define T_DEVICE  3   // Device
+
+#define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
+#define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
 
 //IN RAM
 struct fat_entry {
@@ -27,13 +32,23 @@ struct fat_entry {
     dir_item_t raw;
     uint nlink;
     // uint32_t    file_size;  /* 文件大小 */
-    uint32_t    clus_start; /* 起始簇号 */
+    uint32_t    clus_start; /* 数据起始簇号 */
+
+    struct fat_entry* parent; /* 父目录 */
 
     sleeplock_t  lock;       /* io */
 };
 
 typedef struct fat_entry entry_t;
 
+
+entry_t *namee(entry_t *from, char *path);
+entry_t *nameeparent(entry_t *from, char *path, char *name);
+void etrunc(entry_t *entry);
+void elock(entry_t *entry);
+void eunlock(entry_t *entry);
+void eunlockput(entry_t *entry);
+entry_t *create(entry_t *from, char *path, short type);
 ////////////////////////OLD///////////////////////////
 // On-disk file system format.
 // Both the kernel and user programs use this header file.
@@ -41,58 +56,28 @@ typedef struct fat_entry entry_t;
 
 #define ROOTINO  1   // root i-number
 
-// Disk layout:
-// [ boot block | super block | log | inode blocks |
-//                                          free bit map | data blocks]
-//
-// mkfs computes the super block and builds an initial file system. The
-// super block describes the disk layout:
-struct superblock {
-  uint magic;        // Must be FSMAGIC
-  uint size;         // Size of file system image (blocks)
-  uint nblocks;      // Number of data blocks
-  uint ninodes;      // Number of inodes.
-  uint nlog;         // Number of log blocks
-  uint logstart;     // Block number of first log block
-  uint inodestart;   // Block number of first inode block
-  uint bmapstart;    // Block number of first free map block
-};
+// // Disk layout:
 
-#define FSMAGIC 0x10203040
 
-#define NDIRECT 12
-#define NINDIRECT (BSIZE / sizeof(uint))
-#define MAXFILE (NDIRECT + NINDIRECT)
+// // Inodes per block.
+// #define IPB           (BSIZE / sizeof(struct dinode))
 
-// On-disk inode structure
-struct dinode {
-  short type;           // File type
-  short major;          // Major device number (T_DEVICE only)
-  short minor;          // Minor device number (T_DEVICE only)
-  short nlink;          // Number of links to inode in file system
-  uint size;            // Size of file (bytes)
-  uint addrs[NDIRECT+1];   // Data block addresses
-};
+// // Block containing inode i
+// #define IBLOCK(i, sb)     ((i) / IPB + sb.inodestart)
 
-// Inodes per block.
-#define IPB           (BSIZE / sizeof(struct dinode))
+// // Bitmap bits per block
+// #define BPB           (BSIZE*8)
 
-// Block containing inode i
-#define IBLOCK(i, sb)     ((i) / IPB + sb.inodestart)
+// // Block of free map containing bit for block b
+// #define BBLOCK(b, sb) ((b)/BPB + sb.bmapstart)
 
-// Bitmap bits per block
-#define BPB           (BSIZE*8)
+// // Directory is a file containing a sequence of dirent structures.
+// #define DIRSIZ 14
 
-// Block of free map containing bit for block b
-#define BBLOCK(b, sb) ((b)/BPB + sb.bmapstart)
-
-// Directory is a file containing a sequence of dirent structures.
-#define DIRSIZ 14
-
-struct dirent {
-  ushort inum;
-  char name[DIRSIZ];
-};
+// struct dirent {
+//   ushort inum;
+//   char name[DIRSIZ];
+// };
 
 
 

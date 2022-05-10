@@ -7,6 +7,7 @@
 #include "kernel/elf.h"
 #include "defs.h"
 #include "mm/vm.h"
+#include "fs/fs.h"
 
 static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uint sz);
 
@@ -17,18 +18,16 @@ exec(char *path, char **argv)
   int i, off;
   uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
   struct elfhdr elf;
-  struct inode *ip;
+  entry_t *ep;
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
 
-  begin_op();
 
-  if((ip = namei(path)) == 0){
-    end_op();
+  if((ep = namee(NULL, path)) == 0){
     return -1;
   }
-  ilock(ip);
+  elock(ep);
 
   // Check ELF header
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))

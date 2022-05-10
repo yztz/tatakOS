@@ -70,7 +70,7 @@ print_dir_item(struct dir_item *item) {
   char name[FAT_SFN_LENGTH + 1];
   name[FAT_SFN_LENGTH] = '\0';
   strncpy(name, (char *)item->name, FAT_SFN_LENGTH);
-  printf("[file: %s] attr: %b filesize: %d cluster: %d", name, item->attr, item->size, FAT_FETCH_CLUS(item));
+  printf("[file: %s] attr: %b filesize: %d cluster: %d\n", name, item->attr, item->size, FAT_FETCH_CLUS(item));
 }
 
 // ref: lua fast get order 打表+快速移位x8

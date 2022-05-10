@@ -17,6 +17,7 @@
 
 #define BSIZE 512
 #define NENTRY 40
+#define MAX_FILE_NAME 20
 
 
 /////////////MM//////////////
