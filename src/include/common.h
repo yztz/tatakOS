@@ -5,6 +5,9 @@
 #include "param.h"
 #include "utils.h"
 
+#define __STR(name) #name
+#define STR(name) __STR(name)
+
 #define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
 
 #define likely(x) __builtin_expect(!!(x), 1)

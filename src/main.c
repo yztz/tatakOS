@@ -54,7 +54,6 @@ main()
     #endif
     /* FILE SYSTEM */
     binit();         // buffer cache
-    iinit();         // inode table
     fileinit();      // file table 
     
 

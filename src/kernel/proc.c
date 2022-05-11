@@ -55,6 +55,9 @@ procinit(void)
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       // p->kstack = KSTACK((int) (p - proc));
+      for(int i = 0; i < NOFILE; i++) {
+        p->ofile[i] = NULL;
+      }
   }
   for(int i = 0; i < NUM_CORES; i++) {
     cpus[i].intena = 0;
@@ -234,6 +237,30 @@ uchar initcode[] = {
   #include "generated/initcode_bin.h"
 };
 
+#include "fs/file.h"
+static void init_std(proc_t *p) {
+  struct file *stdin = filealloc();
+  struct file *stdout = filealloc();
+  struct file *stderr = filealloc();
+  
+  p->ofile[0] = stdin;
+  p->ofile[1] = stdout;
+  p->ofile[2] = stderr;
+
+  stdin->type = FD_DEVICE;
+  stdout->type = FD_DEVICE;
+  stderr->type = FD_DEVICE;
+  stdin->readable = 1;
+  stdin->writable = 0;
+  stdout->readable = 0;
+  stdout->writable = 1;
+  stderr->readable = 0;
+  stderr->writable = 1;
+  stdin->dev = &devs[CONSOLE];
+  stdout->dev = &devs[CONSOLE];
+  stderr->dev = &devs[CONSOLE];
+}
+
 // Set up first user process.
 void
 userinit(void)
@@ -253,15 +280,16 @@ userinit(void)
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-  // p->cwd = namei("/");
+    // p->cwd = namei("/");
+
+  init_std(p);
 
   p->state = RUNNABLE;
 
   release(&p->lock);
 }
 
-// Grow or shrink user memory by n bytes.
-// Return 0 on success, -1 on failure.
+
 int
 growproc(int n)
 {
@@ -312,7 +340,7 @@ fork(void)
   for(i = 0; i < NOFILE; i++)
     if(p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
-  np->cwd = idup(p->cwd);
+  np->cwd = edup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
@@ -366,9 +394,7 @@ exit(int status)
     }
   }
 
-  begin_op();
-  iput(p->cwd);
-  end_op();
+  eput(p->cwd);
   p->cwd = 0;
 
   acquire(&wait_lock);
@@ -534,15 +560,16 @@ forkret(void)
     first = 0;
 
     extern fat32_t *fat;
-    dir_item_t item;
-    fat_mount(ROOTDEV, &fat);
-    fat_dirlookup(fat, fat->root_cluster, "abcdefghijklmn.txt", &item);
-    // fat_alloc_cluster(fat, &new);
-    // printf("new cluster is %d\n", new);
-    print_dir_item(&item);
 
-    myproc()->cwd = namee("/");
-    LOOP();
+    fat_mount(ROOTDEV, &fat);
+    // char buf[13];
+    // buf[13] = '\0';
+    // entry_t *target = namee(NULL, "/text.txt");
+    // if(target == NULL) panic("entry is null");
+    // int n = reade(target, 0, (uint64_t)buf, 0, 13);
+    // printf("read %d content: %s", n, buf);
+    myproc()->cwd = namee(NULL, "/");
+    // LOOP();
     // fsinit(ROOTDEV);
 
 

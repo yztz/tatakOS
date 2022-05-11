@@ -1,12 +1,14 @@
+############PROC###############
  1     fork      sys_fork
- 2     exit      sys_exit   
+93     exit      sys_exit   
  3     wait      sys_wait
  6     kill      sys_kill   
- 7     exec      sys_exec
-11     getpid    sys_getpid 
-12     sbrk      sys_sbrk   
+ 7     exec      sys_exec 
 13     sleep     sys_sleep  
 14     uptime    sys_uptime 
+172    getpid    sys_getpid 
+173    getppid   sys_getppid
+#220    clone     sys_clone
 ###############FS##############
 17     getcwd    sys_getcwd
 23     dup       sys_dup    
@@ -24,6 +26,8 @@
 63     read      sys_read
 64     write     sys_write
 80     fstat     sys_fstat  
+##############MM################
+214     sbrk      sys_sbrk  
 #############TEST###############
 88     ktest      sys_ktest
 89     timetag   sys_timetag

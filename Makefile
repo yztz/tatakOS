@@ -121,17 +121,18 @@ endif
 
 # 磁盘映像制作
 MNT_DIR := $(BUILD_ROOT)/mnt
-
+TESTCASES_DIR := $(ROOT)/testcases
 fs.img : $(fs.img)
 
-$(fs.img): user
+$(MNT_DIR):
+	@mkdir -p $(MNT_DIR)
+
+# $(fs.img): user
+$(fs.img): $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=1M count=128
 	@mkfs.vfat -F 32 $@
-	@mkdir -p $(MNT_DIR)
 	@sudo mount $@ $(MNT_DIR)
-	@sudo cp $(U_PROG_DIR)/* $(MNT_DIR)/
-# 用于测试长文件名
-	@sudo touch $(MNT_DIR)/abcdefghijklmn.txt
+	@sudo cp -r $(TESTCASES_DIR)/* $(MNT_DIR)/
 	@sudo umount $(MNT_DIR)
 
 # $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
@@ -142,9 +143,14 @@ user: $(syscall)
 	@make -C $U
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
+mnt: $(fs.img)
+	@sudo mount $< $(MNT_DIR)
+umnt: $(MNT_DIR)
+	@sudo umount $(MNT_DIR)
+
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: qemu clean all user kernel entry sbi-k210 fs.img
+.PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt
 
 #===========================RULES END==============================#

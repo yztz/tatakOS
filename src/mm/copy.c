@@ -2,10 +2,10 @@
 #include "mm/vm.h"
 #include "defs.h"
 
-
+/* 复制COW页 */
 static inline int __cow_copy(uint64_t va, pte_t *pte) {
   uint64 pa = PTE2PA(*pte);
-  if(page_ref(pa) == 1) {
+  if(page_ref(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
     *pte |= PTE_W;
     *pte &= ~PTE_COW;
   } else {
@@ -13,6 +13,7 @@ static inline int __cow_copy(uint64_t va, pte_t *pte) {
     if((mem = kalloc()) == 0) {
       return -1;
     }
+    // 复制页
     memmove(mem, (char *)pa, PGSIZE);
     uint flag = PTE_FLAGS(*pte);
     flag |= PTE_W;

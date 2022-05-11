@@ -77,7 +77,7 @@ fileclose(struct file *f)
 
   if(ff.type == FD_PIPE){
     pipeclose(ff.pipe, ff.writable);
-  } else if(ff.type == FD_ENTRY || ff.type == FD_DEVICE){
+  } else if(ff.type == FD_ENTRY){
     eput(ff.ep);
   }
 }
@@ -116,11 +116,10 @@ fileread(struct file *f, uint64 addr, int n)
   } else if(f->type == FD_DEVICE){
     r = f->dev->read(1, addr, n);
   } else if(f->type == FD_ENTRY){
-    r = -1; //todo:
-    // elock(f->ep);
-    // if((r = readi(f->ip, 1, addr, f->off, n)) > 0)
-    //   f->off += r;
-    // iunlock(f->ip);
+    elock(f->ep);
+    if((r = reade(f->ep, 1, addr, f->off, n)) > 0)
+      f->off += r;
+    eunlock(f->ep);
   } else {
     panic("fileread");
   }
@@ -143,13 +142,11 @@ filewrite(struct file *f, uint64 addr, int n)
   } else if(f->type == FD_DEVICE){
     ret = f->dev->write(1, addr, n);
   } else if(f->type == FD_ENTRY){
-    // ilock(f->ip);
-    // if ((r = writei(f->ip, 1, addr + i, f->off, n1)) > 0)
-    //   f->off += r;
-    // iunlock(f->ip);
-  
-    // ret = (i == n ? n : -1);
-    ret = -1;
+    elock(f->ep);
+    if ((r = writee(f->ep, 1, addr, f->off, n)) > 0)
+      f->off += r;
+    eunlock(f->ep);
+    ret = r;
   } else {
     panic("filewrite");
   }

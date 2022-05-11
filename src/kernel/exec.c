@@ -9,7 +9,11 @@
 #include "mm/vm.h"
 #include "fs/fs.h"
 
-static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uint sz);
+
+#define __MODULE_NAME__ EXEC
+#include "debug.h"
+
+static int loadseg(pde_t *pgdir, uint64 addr, entry_t *ip, uint offset, uint sz);
 
 int
 exec(char *path, char **argv)
@@ -30,7 +34,7 @@ exec(char *path, char **argv)
   elock(ep);
 
   // Check ELF header
-  if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
+  if(reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
   if(elf.magic != ELF_MAGIC)
     goto bad;
@@ -41,8 +45,9 @@ exec(char *path, char **argv)
 
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
-    if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
+    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
       goto bad;
+    }
     if(ph.type != ELF_PROG_LOAD)
       continue;
     if(ph.memsz < ph.filesz)
@@ -55,12 +60,11 @@ exec(char *path, char **argv)
     sz = sz1;
     if((ph.vaddr % PGSIZE) != 0)
       goto bad;
-    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+    if(loadseg(pagetable, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
   }
-  iunlockput(ip);
-  end_op();
-  ip = 0;
+  eunlockput(ep);
+  ep = NULL;
 
   p = myproc();
   uint64 oldsz = p->sz;
@@ -122,9 +126,8 @@ exec(char *path, char **argv)
  bad:
   if(pagetable)
     proc_freepagetable(pagetable, sz);
-  if(ip){
-    iunlockput(ip);
-    end_op();
+  if(ep){
+    eunlockput(ep);
   }
   return -1;
 }
@@ -134,7 +137,7 @@ exec(char *path, char **argv)
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
 static int
-loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
+loadseg(pagetable_t pagetable, uint64 va, entry_t *ip, uint offset, uint sz)
 {
   uint i, n;
   uint64 pa;
@@ -147,7 +150,7 @@ loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz
       n = sz - i;
     else
       n = PGSIZE;
-    if(readi(ip, 0, (uint64)pa, offset+i, n) != n)
+    if(reade(ip, 0, (uint64)pa, offset+i, n) != n)
       return -1;
   }
   

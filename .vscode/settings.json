@@ -83,7 +83,9 @@
         "fat.h": "c",
         "istream": "cpp",
         "typeinfo": "c",
-        "hlist.h": "c"
+        "hlist.h": "c",
+        "usys.h": "c",
+        "debug.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

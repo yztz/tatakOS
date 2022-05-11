@@ -4,9 +4,10 @@
 #include "param.h"
 #include "hlist.h"
 #include "mm/alloc.h"
-#include "printf.h"
-
 #include "str.h"
+
+#define __MODULE_NAME__ FS
+#include "debug.h"
 
 fat32_t *fat;
 
@@ -36,18 +37,13 @@ void fs_init() {
 //   return ret;
 // }
 
-static entry_t *eget(entry_t *parent, dir_item_t *item) {
+static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item) {
   entry_t *entry, *empty = NULL;
-  uint32_t item_clus = FAT_FETCH_CLUS(item);
-
-  if(item_clus == 0) {
-    panic("eget: 0 clus");
-  }
 
   acquire(&fat->cache_lock);
   for(entry = &pool[0]; entry < &pool[NENTRY]; entry++){
     if(entry->ref > 0 && entry->parent == parent && 
-        entry->clus_start == item_clus){
+        entry->clus_offset == clus_offset){
       entry->ref++;
       release(&fat->cache_lock);
       return entry;
@@ -62,7 +58,9 @@ static entry_t *eget(entry_t *parent, dir_item_t *item) {
   entry = empty;
   entry->ref = 1;
   entry->raw = *item;
+  entry->clus_offset = clus_offset;
   entry->clus_start = FAT_FETCH_CLUS(item);
+  entry->fat = parent->fat;
   entry->nlink = 1; // always 1
   entry->parent = parent;
   parent->ref++;
@@ -71,28 +69,32 @@ static entry_t *eget(entry_t *parent, dir_item_t *item) {
 
 }
 
-static entry_t *edup(entry_t *entry) {
+entry_t *edup(entry_t *entry) {
   acquire(&entry->fat->cache_lock);
   entry->ref++;
   release(&entry->fat->cache_lock);
   return entry;
 }
 
-// under lock
 // 递归地解引用
+// under lock
 static void __eput(entry_t *entry) {
   if(entry->ref == 0) 
     panic("eput: zero ref");
   entry->ref--;
-  if(entry->ref == 0) {
+  // 引用为0时，说明没有子目录缓存存在了
+  // 所以在删除的时候无需考虑子目录的并发访问问题
+  if(entry->ref == 0) { 
     if(entry->nlink == 0) {
-      //todo:trunc
+      // todo:
+
+
     }
     __eput(entry->parent);
   }
 }
 
-static void eput(entry_t *entry) {
+void eput(entry_t *entry) {
   acquire(&entry->fat->cache_lock);
   __eput(entry);
   release(&entry->fat->cache_lock);
@@ -117,19 +119,28 @@ void eunlockput(entry_t *entry) {
   eput(entry);
 }
 
+#include "common.h"
+
 // 我们不需要考虑特殊处理.与..因为他们也作为实际的目录项而存在
 // caller hold parent lock
 static entry_t *dirlookup(entry_t *parent, const char *name) {
   dir_item_t item;
+  uint32_t offset;
+  //todo: root 下的..
+
+  if(strncmp(name, ".", 1) == 0) {
+    return parent;
+  }
 
   if(!parent)
     panic("dirlookup: parent is null");
 
-  if(fat_dirlookup(parent->fat, parent->clus_start, name, &item) == FR_ERR) { // not found
+  if(fat_dirlookup(parent->fat, parent->clus_start, name, &item, &offset) == FR_ERR) { // not found
     return NULL;
   }
-  // found
-  return eget(parent, &item);
+
+  // 找到了
+  return eget(parent, offset, &item);
 
 }
 
@@ -146,7 +157,8 @@ entry_t *create(entry_t *from, char *path, short type) {
 
   // 目录项是否已经存在？
   if((ep = dirlookup(dp, name)) != 0){ // 存在
-    iunlockput(dp);
+    debug("create: entry exist");
+    eunlockput(dp);
     elock(ep);
     if(type == T_FILE && E_ISFILE(ep))
       return ep;
@@ -156,11 +168,12 @@ entry_t *create(entry_t *from, char *path, short type) {
 
   // 不存在，则创建之
   dir_item_t item;
+  uint32_t offset;
   fat_alloc_entry(fat, dp->clus_start, name, 
-          type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item);
+          type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item, &offset);
 
   eunlockput(dp);
-  ep = eget(dp, &item);
+  ep = eget(dp, offset, &item);
   elock(ep);
   return ep;
 }
@@ -168,15 +181,15 @@ entry_t *create(entry_t *from, char *path, short type) {
 // int writee(entry_t *entry, int user, uint64_t src, int off, int n) {
   
 // }
-
 static char *skipelem(char *path, char *name) {
   char *s;
   int len;
-
+  // 跳过路径起始的'/'
   while(*path == '/')
     path++;
   if(*path == 0)
-    return 0;
+    return NULL;
+  // 记录name的起始点
   s = path;
   while(*path != '/' && *path != 0)
     path++;
@@ -187,25 +200,26 @@ static char *skipelem(char *path, char *name) {
     memmove(name, s, len);
     name[len] = 0;
   }
+  // 跳过尾部的'/'
   while(*path == '/')
     path++;
+  
   return path;
 }
 
-/* caller holds lock */
+/* todo:可能造成死锁？ */
+/* caller holds entry lock */
 void etrunc(entry_t *entry) {
-  acquire(&entry->parent->lock);
+  acquiresleep(&entry->parent->lock);
   fat_trunc(entry->fat, entry->parent->clus_start, &entry->raw);
-  release(&entry->parent->lock);
+  releasesleep(&entry->parent->lock);
 }
-
 
 
 // ref: xv6
 static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 {
   entry_t*ep, *next;
-
   if(*path == '/') 
     ep = edup(fat->root); // use global fat now
   else if(parent) {
@@ -213,12 +227,13 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   } else
     ep = edup(myproc()->cwd);
 
-  while((path = skipelem(path, name)) != 0){
+  while((path = skipelem(path, name)) != NULL){
     elock(ep);
     if(!E_ISDIR(ep)){
       eunlockput(ep);
       return 0;
     }
+
     if(nameiparent && *path == '\0'){
       // Stop one level early. But still hold ref
       eunlock(ep);
@@ -238,6 +253,16 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   return ep;
 }
 
+int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
+  int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
+  return ret;
+}
+
+
+int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
+  int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
+  return ret;
+}
 
 
 

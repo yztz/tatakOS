@@ -17,6 +17,9 @@
 #include "fs/file.h"
 #include "fs/fcntl.h"
 
+#define __MODULE_NAME__ SYS_FILE
+#include "debug.h"
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int argfd(int n, int *pfd, struct file **pf) {
@@ -130,23 +133,26 @@ uint64 sys_openat(void) {
 
   if(argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 || argint(2, &omode) < 0)
     return -1;
-
+  
+  debug("dirfd is %d path is %s omode is %x", dirfd, path, omode);
   if(dirfd == AT_FDCWD) {
     from = myproc()->cwd;
   } else {
     from = myproc()->ofile[dirfd]->ep;
   }
 
-  if(omode & O_CREATE){ // 创建标志
+  if(omode & O_CREATE) { // 创建标志
     if((ep = create(from, path, T_FILE)) == 0){
       return -1;
     }
   } else {
     if((ep = namee(from, path)) == 0){
+      debug("not found");
       return -1;
     }
+    debug("found");
     elock(ep);
-    if(E_ISDIR(ep) && omode != O_RDONLY){
+    if(E_ISDIR(ep) && omode != O_RDONLY && omode != O_DIRECTORY){
       eunlockput(ep);
       return -1;
     }
@@ -157,17 +163,16 @@ uint64 sys_openat(void) {
     if(f)
       fileclose(f);
     eunlockput(ep);
-    end_op();
     return -1;
   }
 
   f->ep = ep;
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-
-  if((omode & O_TRUNC) && E_ISFILE(ep)){
-    etrunc(ep);
-  }
+  f->type = FD_ENTRY;
+  // if((omode & O_TRUNC) && E_ISFILE(ep)){
+  //   etrunc(ep);
+  // }
 
   eunlock(ep);
 
@@ -179,13 +184,22 @@ uint64 sys_mkdirat(void) {
   // ignore mode
   char path[MAXPATH];
   int dirfd;
-  entry_t *ep;
+  entry_t *ep, *from;
 
-  if(argstr(0, path, MAXPATH) < 0 ||
-    argstr(1, path, MAXPATH) < 0 || 
-    (ep = create(NULL, path, T_DIR)) == 0){
+  if(argint(0, &dirfd) < 0 ||
+    argstr(1, path, MAXPATH) < 0){
     return -1;
   }
+  
+  if(dirfd == AT_FDCWD) {
+    from = myproc()->cwd;
+  } else {
+    from = myproc()->ofile[dirfd]->ep;
+  }
+
+  if((ep = create(from, path, T_DIR)) == NULL)
+    return -1;
+
   eunlockput(ep);
 
   return 0;
@@ -201,13 +215,12 @@ uint64 sys_chdir(void) {
     return -1;
   }
   elock(ep);
-  if(E_ISDIR(ep)){
+  if(!E_ISDIR(ep)){
     eunlockput(ep);
     return -1;
   }
   eunlock(ep);
   eput(p->cwd);
-  end_op();
   p->cwd = ep;
   return 0;
 }
@@ -220,6 +233,7 @@ uint64 sys_exec(void) {
   if(argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0){
     return -1;
   }
+
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
     if(i >= NELEM(argv)){
@@ -253,7 +267,7 @@ uint64 sys_exec(void) {
 
 
 //OK:
-uint64 sys_pipe(void) {
+uint64 sys_pipe2(void) {
   uint64 fdarray; // user pointer to array of two integers
   struct file *rf, *wf;
   int fd0, fd1;

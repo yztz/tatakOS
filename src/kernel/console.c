@@ -23,6 +23,7 @@
 #include "kernel/proc.h"
 #include "platform.h"
 #include "driver/plic.h"
+#include "mm/vm.h"
 
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x

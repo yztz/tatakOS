@@ -3,6 +3,7 @@
 
 #include "device.h"
 #include "fs/fs.h"
+#include "fs/fcntl.h"
 
 struct file {
   enum { FD_NONE, FD_PIPE, FD_ENTRY, FD_DEVICE } type;
@@ -15,7 +16,7 @@ struct file {
     entry_t *ep; // FD_ENTRY
     device_t *dev;
   };
-  uint off;          // FD_INODE
+  uint off;
 };
 
 #define major(dev)  ((dev) >> 16 & 0xFFFF)
@@ -25,5 +26,7 @@ struct file {
 
 #define CONSOLE 1
 
+
+struct file* filealloc(void);
 
 #endif

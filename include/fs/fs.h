@@ -27,14 +27,15 @@ struct fat_entry {
 	  // uint16_t	mdate;		/* 修改日期 */
 
     // struct hlist_node node;
-
-    fat32_t *fat;       /* fat对象引用 */
     dir_item_t raw;
+    fat32_t *fat;       /* fat对象引用 */
+    
     uint nlink;
     // uint32_t    file_size;  /* 文件大小 */
     uint32_t    clus_start; /* 数据起始簇号 */
 
     struct fat_entry* parent; /* 父目录 */
+    uint32_t    clus_offset; /* 簇内字节偏移量 */
 
     sleeplock_t  lock;       /* io */
 };
@@ -48,6 +49,11 @@ void etrunc(entry_t *entry);
 void elock(entry_t *entry);
 void eunlock(entry_t *entry);
 void eunlockput(entry_t *entry);
+entry_t *create(entry_t *from, char *path, short type);
+int writee(entry_t *entry, int user, uint64_t buff, int off, int n);
+int reade(entry_t *entry, int user, uint64_t buff, int off, int n);
+void eput(entry_t *entry);
+entry_t *edup(entry_t *entry);
 entry_t *create(entry_t *from, char *path, short type);
 ////////////////////////OLD///////////////////////////
 // On-disk file system format.

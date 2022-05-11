@@ -127,6 +127,7 @@ typedef struct _fat32_t {
 
 	uint32_t sec_per_cluster;	/* 每簇扇区数 */
 	uint32_t bytes_per_sec;		/* 扇区字节数 */
+	uint32_t bytes_per_cluster;	/* 每簇字节数 */
 
 	uint32_t root_cluster;		/* 根目录扇区号 */
 
@@ -139,16 +140,17 @@ typedef enum _FAT_RESULT_t{
 	FR_CONTINUE, // 用于目录继续遍历的标识
 } FR_t;
 
+// char *DOT;
+// char *DOTDOT;
 
 /* 读取fat超级块并做解析 */
 FR_t fat_mount(uint dev, fat32_t **ppfat);
 /* 获取下一个簇号 */
 uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
-/* 读取簇 */
-FR_t fat_read_cluster(fat32_t *fat, char *buffer, uint32_t cclus);
-FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item);
+FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
-FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item);
+FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
 FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, dir_item_t *item);
-
+int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
+int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
 #endif

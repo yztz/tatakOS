@@ -1,13 +1,9 @@
 #include "atomic/spinlock.h"
 #include "common.h"
 
-
-#ifdef __log__slob
-#include "printf.h"
-#define debug(s, ...) printf("[SLOB] " s, ##__VA_ARGS__)
-#else
-#define debug(s, ...)
-#endif
+#define QUIET
+#define __MODULE_NAME__ SLOB
+#include "debug.h"
 
 // 16bits for an unit
 typedef uint16_t slobidx_t;
@@ -30,12 +26,12 @@ typedef struct slob_page {
 
 #include "mm/buddy.h"
 static inline void *__alloc_one_page() {
-	debug("alloc new page\n");
+	debug("alloc new page");
 	return buddy_alloc(PGSIZE);
 }
 
 static inline void __free_one_page(void *addr) {
-	debug("page freed\n");
+	debug("page freed");
 	buddy_free(addr);
 }
 
@@ -95,15 +91,14 @@ static int slob_last(slob_t *s)
 static void print_slob(sp_t *sp) {
 	#ifdef __log__slob
 	slob_t *b = sp->freelist;
-	debug("sp@%p slob_page units: %d\n", sp, sp->units);
+	debug("sp@%p slob_page units: %d", sp, sp->units);
 	if(b) {
-		debug("slob@%p {units: %d, next: %p}\n", b, slob_units(b), slob_next(b));
+		debug("slob@%p {units: %d, next: %p}", b, slob_units(b), slob_next(b));
 		while(!slob_last(b)) {
 			b = slob_next(b);
-			debug("slob@%p {units: %d, next: %p}\n", b, slob_units(b), slob_next(b));
+			debug("slob@%p {units: %d, next: %p}", b, slob_units(b), slob_next(b));
 		}
 	}
-	debug("\n");
 	#endif
 }
 
@@ -111,8 +106,8 @@ static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int ali
 {
 	slob_t *prev, *cur, *aligned = 0;
 	int delta = 0, units = SLOB_UNITS(size); // 计算需要多少单元（单元对齐）
-	debug("size: %d request units: %d\n", size, units);
-	debug("before alloc:\n");
+	debug("size: %d request units: %d", size, units);
+	debug("before alloc:");
 	print_slob(sp);
     // 遍历slob链表
 	for (prev = NULL, cur = sp->freelist; ; prev = cur, cur = slob_next(cur)) {
@@ -157,7 +152,7 @@ static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int ali
 			if (!sp->units) { // 如果链表空了，就将freelist置NULL
 				sp->freelist = NULL;
 			}
-			debug("after alloc:\n");
+			debug("after alloc:");
 			print_slob(sp);
 			return cur;
 		}
@@ -214,7 +209,7 @@ static void do_slob_free(void *block, int size)
 	
 	sp = SLOB_PAGE(block);
 	units = SLOB_UNITS(size);
-	debug("free block@%p size: %d units: %d\n", block, size, units);
+	debug("free block@%p size: %d units: %d", block, size, units);
 	acquire(&slob_lock);
 	if(sp->units + units == SLOB_PAGE_UNITS) {
 		slob_free_page(sp);
@@ -261,7 +256,7 @@ void slob_free(void* addr) {
 		return;
 	int minalign = sizeof(size_t);
 	size_t* m = (size_t *)((uint64_t)addr - minalign);
-	debug("free: size is %d\n", *m);
+	debug("free: size is %d", *m);
 	do_slob_free(m, *m + minalign);
 }
 
@@ -295,7 +290,7 @@ void *slob_alloc(size_t size) {
 	if(IS_POW2(size))
 		align = max(align, size);
 	
-	debug("alloc size: %d minalign: %d align: %d\n", size, minalign, align);
+	debug("alloc size: %d minalign: %d align: %d", size, minalign, align);
 	
 	acquire(&slob_lock);
 	for(sp = sp0->next; sp != sp0; sp = sp->next) {
