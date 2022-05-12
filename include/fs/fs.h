@@ -13,6 +13,7 @@
 
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
+#define E_FILESIZE(entry) ((entry)->raw.size)
 
 //IN RAM
 struct fat_entry {
@@ -42,7 +43,7 @@ struct fat_entry {
 
 typedef struct fat_entry entry_t;
 
-
+void fs_init();
 entry_t *namee(entry_t *from, char *path);
 entry_t *nameeparent(entry_t *from, char *path, char *name);
 void etrunc(entry_t *entry);

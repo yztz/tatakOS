@@ -5,6 +5,7 @@
 #include "common.h"
 #include "str.h"
 
+#define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -140,6 +141,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, i
     debug("read cluster %d", cclus);
     if(cclus == 0 || n == 0)
         return 0;
+    debug("now off is %d", off)
     // 计算起始簇
     while(off >= BPC(fat)) {
         cclus = fat_next_cluster(fat, cclus);
@@ -177,7 +179,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, i
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
-
+    
     int alloc_num = 1; // 防止频繁alloc
     // 计算起始簇
     while(off >= BPC(fat)) {
@@ -198,7 +200,7 @@ int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, 
     uint32_t sect = clus2datsec(fat, cclus) + off / BPS(fat);
     // 扇区内偏移
     off %= BPS(fat);
-
+    debug("fat_write: sect is %d off is %d n is %d", sect, off, rest);
     while(rest > 0) {
         while(sect < sect + SPC(fat) && rest > 0) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
@@ -356,21 +358,21 @@ static uint8_t cal_checksum(char* shortname) {
     return sum;
 }
 
-static void print_slot_name(dir_slot_t *slot) {
-    char name[14];
-    name[13] = '\0';
-    int p = 0;
-    for(int i = 0; i < 10; i+=2) {
-        name[p++] = slot->name0_4[i];
-    }
-    for(int i = 0; i < 12; i+=2) {
-        name[p++] = slot->name5_10[i];
-    }
-    for(int i = 0; i < 4; i+=2) {
-        name[p++] = slot->name11_12[i];
-    }
-    debug("slot name: %s", name);
-}
+// static void print_slot_name(dir_slot_t *slot) {
+//     char name[14];
+//     name[13] = '\0';
+//     int p = 0;
+//     for(int i = 0; i < 10; i+=2) {
+//         name[p++] = slot->name0_4[i];
+//     }
+//     for(int i = 0; i < 12; i+=2) {
+//         name[p++] = slot->name5_10[i];
+//     }
+//     for(int i = 0; i < 4; i+=2) {
+//         name[p++] = slot->name11_12[i];
+//     }
+//     debug("slot name: %s", name);
+// }
 
 /* 遍历目录项处理接口，不能在其中释放buf，ret既可传参也可以作为返回值*/
 typedef FR_t (*entry_handler_t)(dir_item_t *item, buf_t *b, void *param, void *ret);
@@ -487,6 +489,7 @@ static void generate_dot(fat32_t *fat, uint32_t parent_clus, uint32_t curr_clus)
     item.startl = parent_clus & FAT_CLUS_LOW_MASK;
     item.starth = parent_clus >> 16;
     *(dir_item_t *)(b->data + sizeof(dir_item_t)) = item;
+    brelse(b);
 }
 
 /* 在指定目录簇下创建一个新的（空的）目录项 */
@@ -498,7 +501,7 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
     strncpy(name, cname, MAX_FILE_NAME);
     // todo:为长文件名建立目录项
     int UNUSED(snflag) = generate_shortname((char *)item->name, name); // 结束符'\0'的溢出并不重要
-    debug("gen %s", (char *)item->name);
+    // debug("gen %s", (char *)item->name);
     // 预分配一个簇
     if(fat_alloc_cluster(fat, &clus, 1) == FR_ERR)
         panic("fat_alloc_entry: alloc clus fail");
@@ -514,7 +517,7 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
     if(attr == FAT_ATTR_DIR) { // 如果是目录，创建'.'与'..'
         generate_dot(fat, dir_clus, clus);
     }
-
+    // debug("gen end...");
     return FR_OK;
 }
 

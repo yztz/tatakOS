@@ -15,6 +15,9 @@
 #include "device.h"
 #include "mm/vm.h"
 
+#define __MODULE__NAME__ FILE
+#include "debug.h"
+
 device_t devs[NDEV];
 struct {
   struct spinlock lock;
@@ -145,6 +148,7 @@ filewrite(struct file *f, uint64 addr, int n)
     elock(f->ep);
     if ((r = writee(f->ep, 1, addr, f->off, n)) > 0)
       f->off += r;
+    debug("end...");
     eunlock(f->ep);
     ret = r;
   } else {

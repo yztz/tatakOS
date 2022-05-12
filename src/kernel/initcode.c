@@ -16,7 +16,11 @@
 void printf(const char *fmt, ...);
 
 
-char* prog_name[] = { "openat",  "getppid", "mkdir_", "brk", "close", "chdir", "dup"};
+char* prog_name[] = { "openat",  "getppid", "mkdir_", "brk", "close", 
+                      "chdir", "dup", "clone", "wait", "waitpid", "pipe",
+                      "test_echo", "open", "read", "write"};
+
+// char* prog_name[] = { "open", "read"};
 
 __attribute__((section(".startup"))) 
 void main() {
@@ -24,6 +28,7 @@ void main() {
     char *argv[2];
     argv[1] = 0;
     for (int t = 0; t < sizeof(prog_name)/sizeof(prog_name[0]); t++) {
+        printf("ready to run %s\n", prog_name[t]);
         int npid = fork();
         if(npid < 0) {
             printf("fork failed");

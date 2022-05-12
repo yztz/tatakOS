@@ -21,7 +21,8 @@
 #include "types.h"
 #include "defs.h"
 #include "atomic/spinlock.h"
-#include "io.h"
+#include "mm/io.h"
+#include "printf.h"
 // #include <stdlib.h>
 // #include <string.h>
 // #include <bsp.h>
@@ -338,14 +339,15 @@ void spi_send_data_standard(spi_device_num_t spi_num, spi_chip_select_t chip_sel
 {
     configASSERT(spi_num < SPI_DEVICE_MAX && spi_num != 2);
     // uint8_t *v_buf = malloc(cmd_len + tx_len);
-    uint8_t *v_buf = kalloc();
+    uint8_t *v_buf = kmalloc(cmd_len + tx_len);
     size_t i;
     for(i = 0; i < cmd_len; i++)
         v_buf[i] = cmd_buff[i];
     for(i = 0; i < tx_len; i++)
         v_buf[cmd_len + i] = tx_buff[i];
-
+    // printf("ready to send...\n");
     spi_send_data_normal(spi_num, chip_select, v_buf, cmd_len + tx_len);
+    // printf("done...\n");
     // free();
     kfree((void *)v_buf);
 }

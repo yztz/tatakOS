@@ -2,6 +2,9 @@
 #include "riscv.h"
 #include "mm/io.h"
 
+#define __MODULE_NAME__ PLIC
+#include "debug.h"
+
 static uint64_t plic_virt_base_addr;
 #define __PLIC_BASE_ADDRESS plic_virt_base_addr
 #define PLIC_PRIORITY (__PLIC_BASE_ADDRESS + 0x0)
@@ -34,6 +37,8 @@ void plic_init(void) {
     for (i = 1; i < IRQN_MAX; i++) {
         plic_set_priority(i, 0);
     }
+
+    debug("init success!");
     
 }
 

@@ -1,6 +1,7 @@
 #ifndef _H_UTILS_
 #define _H_UTILS_
 
+#include "printf.h"
 #include "mm/vm.h"
 #include "sbi.h"
 

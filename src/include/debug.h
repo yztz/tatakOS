@@ -9,7 +9,7 @@
 #include "common.h"
 
 #ifndef __MODULE_NAME__
-#define __MODULE_NAME__ __FILE__
+#define __MODULE_NAME__ OTHER
 #endif
 
 #define debug(fmt, ...) printf("["STR(__MODULE_NAME__)"] "fmt"\n", ##__VA_ARGS__);

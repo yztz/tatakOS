@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include "sysctl.h"
 #include "fpioa.h"
-#include "io.h"
+#include "mm/io.h"
 
 volatile fpioa_t *fpioa;
 

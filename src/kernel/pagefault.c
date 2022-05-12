@@ -17,7 +17,11 @@ int handle_pagefault(uint64_t scause) {
         goto bad;
     
     // store page fault
+    #ifdef QEMU
     if(scause == EXCP_STORE_PAGE_FAULT) {
+    #else
+    if(scause == EXCP_STORE_FAULT) {
+    #endif
         // cow
         if(cow_copy(p->pagetable, va, NULL) == -1)
             goto bad;

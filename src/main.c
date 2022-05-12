@@ -9,22 +9,20 @@
 #include "test.h"
 #include "fs/blk_device.h"
 #include "common.h"
-#include "fs/fat.h"
+#include "fs/fs.h"
 
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
 
 // start() jumps here in supervisor mode on all CPUs.
 
-#ifdef K210
-extern void sd();
-#endif
-
 void
 main()
 {
   if(cpuid() == 0){
     printf("\nOS TATAKAI!\n\n");
+
+    platform_early_init();
     /* PRCO && CPU */
     procinit();      // process table
     /* PM */
@@ -43,20 +41,19 @@ main()
     platform_plic_init(); // platform enable source as required
     plic_init_hart();  // disable all interrupts and set ctx threshould to 0 for hart
     platform_plic_init_hart(); // enable for current hart as required
-    printf("plic init success!\n");
     /* DRIVER */
     platform_dirver_init(); // platform driver init
     /* CONSOLE */
     consoleinit(); // console
     printf("console init success!\n");
-    #ifdef K210
-    for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
-    #endif
+    // #ifdef K210
+    // for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
+    // #endif
     /* FILE SYSTEM */
     binit();         // buffer cache
     fileinit();      // file table 
+    fs_init();
     
-
     userinit();      // first user process
     __sync_synchronize();
     started = 1;

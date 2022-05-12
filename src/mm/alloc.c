@@ -6,6 +6,9 @@
 #include "mm/slob.h"
 #include "param.h"
 
+#define __MODULE_NAME__ ALLOC
+#include "debug.h"
+
 #define JUNK 1
 
 extern char end[];
@@ -14,6 +17,8 @@ void kinit(void) {
     page_init();
     buddy_init();
     slob_init();
+
+    debug("init success");
     // freelist_init();
     // #ifdef BUDDY
     // freelist_start = buddy_alloc(FREELIST_MEM);

@@ -6,9 +6,11 @@
  7     exec      sys_exec 
 13     sleep     sys_sleep  
 14     uptime    sys_uptime 
+124    yield     sys_sched_yield
 172    getpid    sys_getpid 
 173    getppid   sys_getppid
-#220    clone     sys_clone
+220    clone     sys_clone
+260    wait4     sys_wait4
 ###############FS##############
 17     getcwd    sys_getcwd
 23     dup       sys_dup    

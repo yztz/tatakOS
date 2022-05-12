@@ -121,7 +121,7 @@ typedef struct proc proc_t;
 
 
 void            exit(int);
-int             fork(void);
+int             do_clone(uint64_t stack);
 int             growproc(int);
 void            proc_mapstacks();
 pagetable_t     proc_pagetable(struct proc *);
@@ -135,7 +135,7 @@ void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             wait(uint64);
+int             waitpid(int cid, uint64 addr);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);

@@ -120,20 +120,20 @@ found:
   p->pid = allocpid();
   p->state = USED;
 
-  // Allocate a trapframe page.
+  // 申请Trapframe
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
   }
-  // Allocate a kernel stack page
+  // 申请内核栈
   if((p->kstack = (uint64_t)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
   }
 
-  // An empty user page table.
+  // 获取空页表（已经映射了内核地址空间，trapfram以及内核栈）
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
     freeproc(p);
@@ -311,7 +311,7 @@ growproc(int n)
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
-fork(void)
+do_clone(uint64_t stack)
 {
   int i, pid;
   struct proc *np;
@@ -322,7 +322,7 @@ fork(void)
     return -1;
   }
 
-  // Copy user memory from parent to child.
+  // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
@@ -330,13 +330,17 @@ fork(void)
   }
   np->sz = p->sz;
 
-  // copy saved user registers.
+  // 复制trapframe
   *(np->trapframe) = *(p->trapframe);
 
-  // Cause fork to return 0 in the child.
+  // 将返回地址重置为0
   np->trapframe->a0 = 0;
 
-  // increment reference counts on open file descriptors.
+  // 如果指定了栈，那么重设sp
+  if(stack)
+    np->trapframe->sp = stack;
+
+  // 增加文件描述符引用
   for(i = 0; i < NOFILE; i++)
     if(p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
@@ -420,10 +424,10 @@ exit(int status)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(uint64 addr)
+waitpid(int cid, uint64 addr)
 {
   struct proc *np;
-  int havekids, pid;
+  int havekids, pid, haveckid;
   struct proc *p = myproc();
 
   acquire(&wait_lock);
@@ -431,15 +435,21 @@ wait(uint64 addr)
   for(;;){
     // Scan through table looking for exited children.
     havekids = 0;
+    haveckid = 0;
     for(np = proc; np < &proc[NPROC]; np++){
       if(np->parent == p){
         // make sure the child isn't still in exit() or swtch().
         acquire(&np->lock);
 
         havekids = 1;
+
+        pid = np->pid;
+        if(cid != -1 && cid != pid) continue;
+
+        haveckid = 1;
         if(np->state == ZOMBIE){
           // Found one.
-          pid = np->pid;
+          
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
             release(&np->lock);
@@ -456,7 +466,7 @@ wait(uint64 addr)
     }
 
     // No point waiting if we don't have any children.
-    if(!havekids || p->killed){
+    if(!havekids || !haveckid || p->killed){
       release(&wait_lock);
       return -1;
     }
@@ -560,14 +570,9 @@ forkret(void)
     first = 0;
 
     extern fat32_t *fat;
-
+    printf("ready to mount\n");
     fat_mount(ROOTDEV, &fat);
-    // char buf[13];
-    // buf[13] = '\0';
-    // entry_t *target = namee(NULL, "/text.txt");
-    // if(target == NULL) panic("entry is null");
-    // int n = reade(target, 0, (uint64_t)buf, 0, 13);
-    // printf("read %d content: %s", n, buf);
+    printf("mount done\n");
     myproc()->cwd = namee(NULL, "/");
     // LOOP();
     // fsinit(ROOTDEV);

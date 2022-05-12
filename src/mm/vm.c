@@ -8,6 +8,9 @@
 #include "printf.h"
 #include "utils.h"
 
+#define __MODULE_NAME__ VM
+#include "debug.h"
+
 
 kmap_t kmap[MAX_MAP];
 static int nxt_mapid = 0; // maybe add a lock for nxt_mapid?
@@ -47,6 +50,8 @@ kvminit(void)
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
   kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X, PGSPEC_NORMAL);
+
+  debug("init success!");
 }
 
 

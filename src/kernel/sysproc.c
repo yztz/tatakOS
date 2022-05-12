@@ -6,6 +6,10 @@
 #include "memlayout.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
+#include "common.h"
+
+#define __MODULE_NAME__ SYS_PROC
+#include "debug.h"
 
 uint64
 sys_exit(void)
@@ -13,7 +17,7 @@ sys_exit(void)
   int n;
   if(argint(0, &n) < 0)
     return -1;
-  exit(n);
+  exit(n << 8); // ref: WEXITSTATUS
   return 0;  // not reached
 }
 
@@ -32,7 +36,20 @@ sys_getppid(void)
 uint64
 sys_fork(void)
 {
-  return fork();
+  return do_clone(0);
+}
+
+
+uint64
+sys_clone(void)
+{
+  int flag; // ignored
+  uint64_t stack;
+  // debug("clone: enter");
+  if(argint(0, &flag) < 0 || argaddr(1, &stack) < 0)
+    return -1;
+  debug("clone: stack is %x", stack);
+  return do_clone(stack);
 }
 
 uint64
@@ -41,7 +58,25 @@ sys_wait(void)
   uint64 p;
   if(argaddr(0, &p) < 0)
     return -1;
-  return wait(p);
+  return waitpid(-1, p);
+}
+
+
+uint64
+sys_wait4(void)
+{
+  int pid;
+  uint64_t status;
+  int options; // ignored
+
+  if(argint(0, &pid) < 0 || argaddr(1, &status) || argint(2, &options) < 0)
+    return -1;
+
+  if(options > 0) 
+    panic("not support");
+
+  return waitpid(pid, status);
+
 }
 
 uint64
@@ -81,6 +116,13 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  return 0;
+}
+
+uint64
+sys_sched_yield(void)
+{
+  yield();
   return 0;
 }
 

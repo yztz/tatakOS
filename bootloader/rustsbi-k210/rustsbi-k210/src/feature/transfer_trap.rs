@@ -16,8 +16,13 @@ pub unsafe fn do_transfer_trap(ctx: &mut SupervisorContext, cause: scause::Trap)
     // 填写S层需要返回到的地址，这里的mepc会被随后的代码覆盖掉
     sepc::write(ctx.mepc);
     // 设置中断位
+    if ctx.mstatus.mpp() == MPP::User {
+        mstatus::set_spp(SPP::User);
+    } else {
+        mstatus::set_spp(SPP::Supervisor);
+    }
+    
     mstatus::set_mpp(MPP::Supervisor);
-    mstatus::set_spp(SPP::Supervisor);
     if mstatus::read().sie() {
         mstatus::set_spie()
     }

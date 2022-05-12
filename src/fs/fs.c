@@ -85,6 +85,8 @@ static void __eput(entry_t *entry) {
   // 引用为0时，说明没有子目录缓存存在了
   // 所以在删除的时候无需考虑子目录的并发访问问题
   if(entry->ref == 0) { 
+    if(entry == entry->fat->root) 
+      panic("eput: root?");
     if(entry->nlink == 0) {
       // todo:
 
@@ -95,6 +97,9 @@ static void __eput(entry_t *entry) {
 }
 
 void eput(entry_t *entry) {
+  if(!entry) 
+    panic("eput: entru is null");
+
   acquire(&entry->fat->cache_lock);
   __eput(entry);
   release(&entry->fat->cache_lock);
@@ -129,7 +134,7 @@ static entry_t *dirlookup(entry_t *parent, const char *name) {
   //todo: root 下的..
 
   if(strncmp(name, ".", 1) == 0) {
-    return parent;
+    return edup(parent);
   }
 
   if(!parent)
@@ -260,6 +265,8 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 
 
 int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
+  if(off >= E_FILESIZE(entry)) 
+    return 0;
   int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
   return ret;
 }

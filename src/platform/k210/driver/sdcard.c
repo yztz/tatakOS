@@ -7,6 +7,9 @@
 #include "defs.h"
 #include "gpiohs.h"
 
+#define __MODULE_NAME__ SDCARD
+#include "debug.h"
+
 /*
  * @brief  Start Data tokens:
  *         Tokens (necessary because at nop/idle (and CS active) only 0xff is
@@ -67,7 +70,7 @@ static void sd_write_data(uint8_t *data_buff, uint32_t length)
 
 static void sd_read_data(uint8_t *data_buff, uint32_t length)
 {
-
+	// debug("read");
     // spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_receive_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 

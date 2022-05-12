@@ -23,12 +23,18 @@
 #include "fs/fs.h"
 #include "fs/blk_device.h"
 
-static void disk_io(struct buf * b, int block_no) {
+static void disk_io(struct buf *b, int write) {
   #ifdef K210
-
+  extern uint8_t sd_read_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
+  extern uint8_t sd_write_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
+  if(write) {
+    sd_write_sector(b->data, b->blockno, 1);
+  } else {
+    sd_read_sector(b->data, b->blockno, 1);
+  }
   #else 
   extern void virtio_disk_rw(struct buf *, int);
-  virtio_disk_rw(b, block_no);
+  virtio_disk_rw(b, write);
   #endif
 }
 

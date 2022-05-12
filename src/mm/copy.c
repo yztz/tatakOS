@@ -94,14 +94,20 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 int copy_from_user(void *to, void *from, size_t n) {
   proc_t *p = myproc();
   if(!p)
-    panic("copy_from_user: no process context");
-  
+    panic("copy_from_user: no process ctx");
+
   if(!check_range(from, n, p->sz))
     return -1;
   // todo: more checks, such as: guard pages, **mmap**...
+  // vmprint(p->pagetable);
+  // printf("va is %lx, pa is %lx\n", from, walkaddr(p->pagetable, (uint64)from));
+  #ifdef QEMU
   enable_sum();
   memmove(to, from, n);
   disable_sum();
+  #else 
+  memmove(to, from, n);
+  #endif
   return 0;
 }
 
@@ -116,8 +122,9 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   proc_t *proc = myproc();
   if(!proc)
     panic("copyinstr: no process context");
-
+  #ifdef QEMU
   enable_sum();
+  #endif
   char *p = (char *)srcva;
   // no consider wrap
   while(max > 0 && (uint64_t)p < proc->sz){
@@ -130,6 +137,8 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     p++;
     dst++;
   }
+  #ifdef QEMU
   disable_sum();
+  #endif
   return (got_null ? 0 : -1);
 }

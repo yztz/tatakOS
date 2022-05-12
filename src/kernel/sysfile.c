@@ -17,6 +17,7 @@
 #include "fs/file.h"
 #include "fs/fcntl.h"
 
+#define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
@@ -75,7 +76,9 @@ uint64 sys_read(void) {
 
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
     return -1;
-  return fileread(f, p, n);
+  int size =  fileread(f, p, n);
+  debug("size is %d", size);
+  return size;
 }
 
 uint64 sys_write(void) {
@@ -83,9 +86,12 @@ uint64 sys_write(void) {
   int n;
   uint64 p;
 
-  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
+  if(argfd(0, 0, &f) < 0 || argaddr(1, &p) < 0 || argint(2, &n) < 0)
     return -1;
-
+  if(n == 256) {
+    // char buf[256];
+    debug("detect write");
+  }
   return filewrite(f, p, n);
 }
 
@@ -150,7 +156,7 @@ uint64 sys_openat(void) {
       debug("not found");
       return -1;
     }
-    debug("found");
+
     elock(ep);
     if(E_ISDIR(ep) && omode != O_RDONLY && omode != O_DIRECTORY){
       eunlockput(ep);
@@ -170,12 +176,13 @@ uint64 sys_openat(void) {
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
   f->type = FD_ENTRY;
+  f->off = 0;
   // if((omode & O_TRUNC) && E_ISFILE(ep)){
   //   etrunc(ep);
   // }
 
   eunlock(ep);
-
+  debug("fd is %d", fd);
   return fd;
 }
 
