@@ -455,7 +455,7 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, dir_item_t *item) { // only for 
 static FR_t entry_alloc_handler(dir_item_t *item, buf_t *b, void *new, void *ret) {
     // 一个空的目录项
     if(item->name[0] == FAT_NAME_END || item->name[0] == FAT_NAME_FREE) {
-        print_dir_item((dir_item_t *)new);
+        // print_dir_item((dir_item_t *)new);
         *item = *(dir_item_t *)new;
         bwrite(b);
         return FR_OK;
