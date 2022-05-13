@@ -1,5 +1,5 @@
 #include "fs/fs.h"
-
+#include "printf.h"
 #include "kernel/proc.h"
 #include "param.h"
 #include "hlist.h"

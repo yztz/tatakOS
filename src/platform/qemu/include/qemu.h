@@ -1,6 +1,8 @@
 #ifndef _H_PLATFORM_QEMU
 #define _H_PLATFORM_QEMU
 
+#define PRIVILEGE_VERSION PRIVILEGE_VERSION_1_12
+
 #ifndef CPUS
 #error CPUS NOT DEFINED!
 #endif

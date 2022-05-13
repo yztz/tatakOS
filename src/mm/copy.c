@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "mm/vm.h"
 #include "defs.h"
+#include "platform.h"
 
 /* 复制COW页 */
 static inline int __cow_copy(uint64_t va, pte_t *pte) {
@@ -99,14 +100,14 @@ int copy_from_user(void *to, void *from, size_t n) {
   if(!check_range(from, n, p->sz))
     return -1;
   // todo: more checks, such as: guard pages, **mmap**...
-  // vmprint(p->pagetable);
-  // printf("va is %lx, pa is %lx\n", from, walkaddr(p->pagetable, (uint64)from));
-  #ifdef QEMU
+  
+  /* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
+  #endif
   memmove(to, from, n);
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
-  #else 
-  memmove(to, from, n);
   #endif
   return 0;
 }
@@ -122,7 +123,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   proc_t *proc = myproc();
   if(!proc)
     panic("copyinstr: no process context");
-  #ifdef QEMU
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
   #endif
   char *p = (char *)srcva;
@@ -137,7 +138,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     p++;
     dst++;
   }
-  #ifdef QEMU
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
   #endif
   return (got_null ? 0 : -1);

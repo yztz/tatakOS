@@ -12,6 +12,8 @@
 
 #include "device.h"
 
+#define PRIVILEGE_VERSION_1_9  0
+#define PRIVILEGE_VERSION_1_12 1
 
 /////////////////////////////////////////////////
 ////////////// platform list here ///////////////
@@ -30,9 +32,12 @@
 /////////////////////////////////////////////////
 /////// platform-specific macro list here ///////
 /////////////////////////////////////////////////
+#ifndef PRIVILEGE_VERSION
+#define PRIVILEGE_VERSION -1
+#endif
 /* define num of cores */
 #ifndef NUM_CORES
-#define NUM_CORES
+#define NUM_CORES -1
 #endif
 /* define PLIC base address */
 #ifndef PLIC_BASE_ADDR

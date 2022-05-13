@@ -7,7 +7,7 @@ CPUS ?= 4
 # platform [qemu|k210]
 platform ?= k210
 # debug [on|off]
-debug ?= on
+debug ?= off
 # serial-port
 serial-port := /dev/ttyUSB0
 # gdb-port
@@ -129,7 +129,7 @@ $(MNT_DIR):
 
 # $(fs.img): user
 $(fs.img): $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=1M count=128
+	@dd if=/dev/zero of=$@ bs=1M count=10
 	@mkfs.vfat -F 32 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(TESTCASES_DIR)/* $(MNT_DIR)/
@@ -148,9 +148,12 @@ mnt: $(fs.img)
 umnt: $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
+sdcard: $(fs.img)
+	sudo dd if=$< of=/dev/sdb
+
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-.PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt
+.PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt sdcard
 
 #===========================RULES END==============================#

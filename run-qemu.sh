@@ -1,2 +1,2 @@
 #!/bin/sh
-make run platform=qemu EXTRA_CFLAGS=-D__log__slob CPUS=1
+make run platform=qemu debug=on CPUS=1
