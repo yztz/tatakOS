@@ -70,6 +70,7 @@ QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
 all: kernel
+	mv $(BUILD_ROOT)/k210.bin os.bin
 
 run: kernel
 ifeq ("$(platform)", "k210") # k210
