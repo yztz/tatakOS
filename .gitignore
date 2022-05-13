@@ -2,5 +2,6 @@
 build/
 fs.img
 mkfs
+os.bin
 include/generated
 src/include/generated

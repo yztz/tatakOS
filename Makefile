@@ -70,6 +70,9 @@ QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
 all: kernel
+	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
+	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
+	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
 	mv $(BUILD_ROOT)/k210.bin os.bin
 
 run: kernel
@@ -111,6 +114,7 @@ clean:
 	-@rm -rf $(BUILD_ROOT)
 	-@rm -rf $(SCRIPT)/mkfs
 	-@rm -rf $(syscall_dir)
+	-@rm -rf os.bin
 	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
