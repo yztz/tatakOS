@@ -13,7 +13,7 @@
 
 
 kmap_t kmap[MAX_MAP];
-static int nxt_mapid = 0; // maybe add a lock for nxt_mapid?
+static int nxt_mapid; // maybe add a lock for nxt_mapid?
 
 /*
  * the kernel's page table.
@@ -32,7 +32,7 @@ kvminit(void)
 {
   kernel_pagetable = (pagetable_t)kalloc();
   memset(kernel_pagetable, 0, PGSIZE);
-
+  nxt_mapid = 0;
   // ioremap(CLINT, 0x10000);
   // ioremap(PLIC_BASE_ADDR, 0x4000000);
   // ioremap(VIRTIO0, PGSIZE);
@@ -100,6 +100,8 @@ kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
     panic("kvmmap: pgsize");
   if(_mappages(kernel_pagetable, va, sz, pa, perm, spec) != 0)
     panic("kvmmap");
+  if(nxt_mapid == MAX_MAP)
+    panic("no map space");
   kmap[nxt_mapid++] = (kmap_t) {.va=va,.pa=pa,.size=sz,.pg_spec=spec,.perm=perm};
 }
 
@@ -141,6 +143,10 @@ uvmcreate()
   if(pagetable == 0)
     return 0;
   memset(pagetable, 0, PGSIZE);
+  if(setupkvm(pagetable) == -1) {
+    uvmfree(pagetable, 0);
+    return 0;
+  }
   return pagetable;
 }
 

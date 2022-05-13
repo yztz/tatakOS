@@ -16,10 +16,12 @@
 void printf(const char *fmt, ...);
 
 
-char* prog_name[] = { "openat",  "getppid", "mkdir_", "brk", "close", 
-                      "chdir", "dup", "clone", "wait", "waitpid", "pipe",
-                      "test_echo", "open", "read", "write"};
+// char* prog_name[] = { "openat",  "getppid", "mkdir_", "brk", "close", 
+//                       "chdir", "dup", "clone", "wait", "waitpid", "pipe",
+//                       "test_echo", "open", "read", "write", "getpid",
+//                       "yield", "fork"};
 
+char* prog_name[0];
 // char* prog_name[] = { "open", "read"};
 
 __attribute__((section(".startup"))) 

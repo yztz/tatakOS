@@ -187,10 +187,6 @@ proc_pagetable(struct proc *p)
   pagetable = uvmcreate();
   if(pagetable == 0)
     return 0;
-  if(setupkvm(pagetable) == -1) {
-    uvmfree(pagetable, 0);
-    return 0;
-  }
   // map the trampoline code (for system call return)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way

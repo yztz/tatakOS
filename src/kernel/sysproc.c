@@ -8,6 +8,7 @@
 #include "kernel/proc.h"
 #include "common.h"
 
+#define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
 
