@@ -5,7 +5,7 @@
 #include "common.h"
 #include "str.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -537,19 +537,19 @@ static int extractname(dir_slot_t *slot, char *buf) {
     uint16_t *n = (uint16_t *)slot->name0_4;
     int p = 0;
     int nul = 0;
-    while(!nul && p < 5 && n[p] != 0xffff) {
+    while(!nul && p < 5) {
         buf[p] = (char) n[p];
         if(buf[p] == '\0') nul = 1;
         p++;
     }
     n = (uint16_t *)slot->name5_10;
-    while(!nul && p < 11 && n[p - 5] != 0xffff) {
+    while(!nul && p < 11) {
         buf[p] = (char) n[p - 5];
         if(buf[p] == '\0') nul = 1;
         p++;
     }
     n = (uint16_t *)slot->name11_12;
-    while(!nul && p < 13 && n[p - 11] != 0xffff) {
+    while(!nul && p < 13) {
         buf[p] = (char) n[p - 11];
         if(buf[p] == '\0') nul = 1;
         p++;
@@ -560,22 +560,26 @@ static int extractname(dir_slot_t *slot, char *buf) {
 
 static void fillname(dir_slot_t *slot, char *buf, int len) {
     static char fill[] = {0xff, 0xff, 0xff, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
-    uint16_t *n;
+    uint8_t *n;
     int p = 0;
     refill:
+    // 存在非对齐访问问题
     while(p < len && p < 5) {
-        n = (uint16_t *)slot->name0_4;
+        n = slot->name0_4;
         n[p] = buf[p];
+        n[p*2+1] = 0;
         p++;
     }
     while(p < len && p < 11) {
-        n = (uint16_t *)slot->name5_10;
+        n = slot->name5_10;
         n[p - 5] = buf[p];
+        n[(p - 5)*2+1] = 0;
         p++;
     }
     while(p < len && p < 13) {
-        n = (uint16_t *)slot->name11_12;
+        n = slot->name11_12;
         n[p - 11] = buf[p];
+        n[(p - 11)*2+1] = 0;
         p++;
     }
     if(len < 13) {

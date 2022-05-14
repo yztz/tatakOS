@@ -207,7 +207,7 @@ uint64 sys_openat(void) {
   entry_t *ep;
   entry_t *from;
   int n;
-
+  debug("entered");
   if(argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 || argint(2, &omode) < 0)
     return -1;
   
@@ -234,7 +234,6 @@ uint64 sys_openat(void) {
       return -1;
     }
   }
-
 
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)

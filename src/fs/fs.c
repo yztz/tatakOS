@@ -51,7 +51,7 @@ FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *state) 
   buf_desc_t *desc = (buf_desc_t *) state;
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) desc->buf;
   int namelen = strlen(name) + 1;
-  int total_size = dirent_size + namelen;
+  int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
   debug("total size is %d desc size is %d", total_size, desc->size);
   if(total_size > desc->size) 
     return FR_OK;

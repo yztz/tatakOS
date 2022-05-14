@@ -134,7 +134,7 @@ $(MNT_DIR):
 
 # $(fs.img): user
 $(fs.img): $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=1M count=10
+	@dd if=/dev/zero of=$@ bs=1M count=128
 	@mkfs.vfat -F 32 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(TESTCASES_DIR)/* $(MNT_DIR)/
