@@ -15,36 +15,52 @@
 
 void printf(const char *fmt, ...);
 
+// FS
+char *fs_testcase[] = { "openat", "mkdir_", "close", "dup2", "getcwd", "getdents",
+                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+                      "mount", "umount", "test_echo"};
+//
+char *proc_testcase[] = { "getppid", "getpid",
+                      "chdir", "clone", "wait", "waitpid",
+                      "yield", "fork",  "execve", "exit", "sleep"};
 
-// char* prog_name[] = { "openat",  "getppid", "mkdir_", "brk", "close", 
-//                       "chdir", "dup", "clone", "wait", "waitpid", "pipe",
-//                       "test_echo", "open", "read", "write", "getpid",
-//                       "yield", "fork"};
+char *mm_testcase[] = {"brk"};
 
-char* prog_name[0];
-// char* prog_name[] = { "open", "read"};
-
+char *other_testcase[] = {"gettimeofday", "times", "uname"};
+//  单项测试
+// char* prog_name[] = { "fstat" };
+void run(char *testcases[], int cnt);
+#define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
-    char *argv[2];
-    argv[1] = 0;
-    for (int t = 0; t < sizeof(prog_name)/sizeof(prog_name[0]); t++) {
-        printf("ready to run %s\n", prog_name[t]);
-        int npid = fork();
-        if(npid < 0) {
-            printf("fork failed");
-            for(;;);
-        }
-        if (npid == 0) { //子进程
-            argv[0] = prog_name[t];
-            int ret = exec(argv[0], argv);
-            printf("exec fail with %d\n", ret);
-        } else {          // 父进程
-            wait(0);
-        }
-    }
+    run(fs_testcase);
+    run(proc_testcase);
+    run(other_testcase);
     for(;;);
+}
+#undef run
+
+void run(char *testcases[], int cnt) {
+  char *argv[2];
+  argv[1] = 0;
+  for (int t = 0; t < cnt; t++) {
+      printf("ready to run %s\n", testcases[t]);
+      int npid = fork();
+      if(npid < 0) {
+          printf("fork failed");
+          for(;;);
+      }
+      if (npid == 0) { //子进程
+          argv[0] = testcases[t];
+          int ret = exec(argv[0], argv);
+          printf("exec fail with %d\n", ret);
+      } else {          // 父进程
+          int status;
+          wait(&status);
+          printf("child exit with %d\n", status);
+      }
+  }
 }
 
 

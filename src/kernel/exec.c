@@ -9,7 +9,7 @@
 #include "mm/vm.h"
 #include "fs/fs.h"
 
-
+#define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
 
@@ -20,7 +20,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
+  uint64 argc, sz = 0, sp, ustack[MAXARG + 1], stackbase;
   struct elfhdr elf;
   entry_t *ep;
   struct proghdr ph;
@@ -81,6 +81,7 @@ exec(char *path, char **argv)
   stackbase = sp - PGSIZE;
 
   // Push argument strings, prepare rest of stack in ustack.
+  
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
       goto bad;
@@ -90,16 +91,17 @@ exec(char *path, char **argv)
       goto bad;
     if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
       goto bad;
-    ustack[argc] = sp;
+    ustack[argc + 1] = sp;
   }
-  ustack[argc] = 0;
+  ustack[0]= argc;
+  ustack[argc + 1] = 0;
 
   // push the array of argv[] pointers.
-  sp -= (argc+1) * sizeof(uint64);
+  sp -= (argc+1+1) * sizeof(uint64);
   sp -= sp % 16;
   if(sp < stackbase)
     goto bad;
-  if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0)
+  if(copyout(pagetable, sp, (char *)ustack, (argc+1+1)*sizeof(uint64)) < 0)
     goto bad;
 
   // arguments to user main(argc, argv)
@@ -118,6 +120,7 @@ exec(char *path, char **argv)
   p->pagetable = pagetable;
   p->sz = sz;
   p->trapframe->epc = elf.entry;  // initial program counter = main
+  debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer
   switchuvm(p);
   proc_freepagetable(oldpagetable, oldsz);

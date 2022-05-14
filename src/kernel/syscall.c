@@ -72,6 +72,14 @@ argaddr(int n, uint64 *ip)
   return 0;
 }
 
+int
+agrlong(int n, uint64 *ip)
+{
+  *ip = argraw(n);
+  return 0;
+}
+
+
 // Fetch the nth word-sized system call argument as a null-terminated string.
 // Copies into buf, at most max.
 // Returns string length if OK (including nul), -1 if error.

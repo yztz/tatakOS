@@ -6,6 +6,8 @@
 #include "atomic/atomic.h"
 #include "hlist.h"
 #include "fs/fat.h"
+#include "fs/stat.h"
+#include "param.h"
 
 #define T_DIR     1   // Directory
 #define T_FILE    2   // File
@@ -20,21 +22,14 @@ struct fat_entry {
     // uint        dev;        /* 所属设备号 */
     int    ref;        /* 引用数 */
 
-    // uint8_t     attr;       /* 文件属性 */
-    // uint16_t	ctime;		/* 创建时间 */
-	  // uint16_t	cdate;		/* 创建日期 */
-	  // uint16_t	adate;		/* 最后访问日期 */
-    // uint16_t	mtime;		/* 修改时间 */
-	  // uint16_t	mdate;		/* 修改日期 */
-
     // struct hlist_node node;
     dir_item_t raw;
     fat32_t *fat;       /* fat对象引用 */
-    
+    char name[MAX_FILE_NAME];
     uint nlink;
     // uint32_t    file_size;  /* 文件大小 */
     uint32_t    clus_start; /* 数据起始簇号 */
-
+    
     struct fat_entry* parent; /* 父目录 */
     uint32_t    clus_offset; /* 簇内字节偏移量 */
 
@@ -56,36 +51,19 @@ int reade(entry_t *entry, int user, uint64_t buff, int off, int n);
 void eput(entry_t *entry);
 entry_t *edup(entry_t *entry);
 entry_t *create(entry_t *from, char *path, short type);
-////////////////////////OLD///////////////////////////
-// On-disk file system format.
-// Both the kernel and user programs use this header file.
-
+char *getcwd(entry_t *entry, char *buf);
+int read_dents(entry_t *entry, char *buf, int n);
+void estat(entry_t *entry, struct kstat *stat);
 
 #define ROOTINO  1   // root i-number
 
-// // Disk layout:
-
-
-// // Inodes per block.
-// #define IPB           (BSIZE / sizeof(struct dinode))
-
-// // Block containing inode i
-// #define IBLOCK(i, sb)     ((i) / IPB + sb.inodestart)
-
-// // Bitmap bits per block
-// #define BPB           (BSIZE*8)
-
-// // Block of free map containing bit for block b
-// #define BBLOCK(b, sb) ((b)/BPB + sb.bmapstart)
-
-// // Directory is a file containing a sequence of dirent structures.
-// #define DIRSIZ 14
-
-// struct dirent {
-//   ushort inum;
-//   char name[DIRSIZ];
-// };
-
+struct linux_dirent64 {
+        uint64        d_ino;
+        int64_t         d_off;
+        unsigned short  d_reclen;
+        unsigned char   d_type;
+        char            d_name[];
+};
 
 
 #endif

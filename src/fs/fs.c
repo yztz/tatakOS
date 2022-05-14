@@ -1,5 +1,6 @@
 #include "fs/fs.h"
 #include "printf.h"
+#include "common.h"
 #include "kernel/proc.h"
 #include "param.h"
 #include "hlist.h"
@@ -24,6 +25,57 @@ void fs_init() {
   }
 }
 
+// todo:可能还需要考虑到挂载问题
+char *getcwd(entry_t *entry, char *buf) {
+  char *end;
+  if(entry->parent == NULL) { // root
+    goto slash;
+  }
+  end = getcwd(entry->parent, buf);
+  if(end - buf > MAXPATH - (MAX_FILE_NAME + 1)) {
+    debug("too long");
+    return end;
+  }
+  int len = strlen(entry->name);
+  strncpy(end, entry->name, len);
+  buf = end + len;
+slash:
+  *buf = '/';
+  buf++;
+  *buf = '\0';
+  return buf;
+}
+
+FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *state) {
+  const int dirent_size = sizeof(struct linux_dirent64);
+  buf_desc_t *desc = (buf_desc_t *) state;
+  struct linux_dirent64 *dirent = (struct linux_dirent64 *) desc->buf;
+  int namelen = strlen(name) + 1;
+  int total_size = dirent_size + namelen;
+  debug("total size is %d desc size is %d", total_size, desc->size);
+  if(total_size > desc->size) 
+    return FR_OK;
+
+  dirent->d_ino = (uint64_t)offset << 32 | FAT_FETCH_CLUS(item);
+  dirent->d_off = offset;
+  dirent->d_reclen = total_size;
+  dirent->d_type = FAT_IS_DIR(item->attr) ? T_DIR : T_FILE; 
+
+  strncpy(dirent->d_name, name, namelen);
+
+  desc->buf += total_size;
+  desc->size -= total_size;
+
+  return FR_CONTINUE;
+}
+
+// caller holds lock
+int read_dents(entry_t *entry, char *buf, int n) {
+  buf_desc_t desc = {.buf = buf, .size = n};
+  fat_traverse_dir(fat, entry->clus_start, dents_handler, &desc);
+  return n - desc.size;
+}
+
 
 // /* 申请一个新的entry */
 // entry_t *alloc_entry(fat32_t *fat) {
@@ -37,7 +89,7 @@ void fs_init() {
 //   return ret;
 // }
 
-static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item) {
+static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, const char *name) {
   entry_t *entry, *empty = NULL;
 
   acquire(&fat->cache_lock);
@@ -63,10 +115,33 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item) {
   entry->fat = parent->fat;
   entry->nlink = 1; // always 1
   entry->parent = parent;
+  strncpy(entry->name, name, strlen(name));
   parent->ref++;
   release(&fat->cache_lock);
   return entry;
 
+}
+
+
+// caller holds lock
+void estat(entry_t *entry, struct kstat *stat) {
+  dir_item_t *item = &entry->raw;
+  stat->st_ino = (uint64_t)entry->clus_offset << 32 | entry->clus_start;
+  stat->st_gid = 0;
+  stat->st_uid = 0;
+  stat->st_dev = entry->fat->dev;
+  stat->st_rdev = entry->fat->dev;
+  stat->st_mode = item->attr;
+  stat->st_blksize = entry->fat->bytes_per_sec;
+  stat->st_blocks = 0;
+  stat->st_size = item->size;
+  stat->st_atime_nsec = 0;
+  stat->st_atime_sec = 0;
+  stat->st_mtime_sec = 0;
+  stat->st_mtime_nsec = 0;
+  stat->st_ctime_sec = 0;
+  stat->st_ctime_nsec = 0;
+  stat->st_nlink = entry->nlink;
 }
 
 entry_t *edup(entry_t *entry) {
@@ -145,7 +220,7 @@ static entry_t *dirlookup(entry_t *parent, const char *name) {
   }
 
   // 找到了
-  return eget(parent, offset, &item);
+  return eget(parent, offset, &item, name);
 
 }
 
@@ -162,7 +237,7 @@ entry_t *create(entry_t *from, char *path, short type) {
 
   // 目录项是否已经存在？
   if((ep = dirlookup(dp, name)) != 0){ // 存在
-    debug("create: entry exist");
+    debug("entry %s exist", name);
     eunlockput(dp);
     elock(ep);
     if(type == T_FILE && E_ISFILE(ep))
@@ -178,7 +253,7 @@ entry_t *create(entry_t *from, char *path, short type) {
           type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item, &offset);
 
   eunlockput(dp);
-  ep = eget(dp, offset, &item);
+  ep = eget(dp, offset, &item, name);
   elock(ep);
   return ep;
 }

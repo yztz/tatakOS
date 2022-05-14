@@ -5,6 +5,9 @@
 #include "kernel/proc.h"
 #include "defs.h"
 
+#define __MODULE_NAME__ TRAP
+#include "debug.h"
+
 /**
  * @return -1 if exception unhandled else 0
 */
@@ -30,6 +33,7 @@ int handle_pagefault(uint64_t scause) {
     return -1;
 
     bad:
+    debug("page fault va is %lx sepc is %lx", va, r_sepc());
     p->killed = 1;
     return 0;
 }

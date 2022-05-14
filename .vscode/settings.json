@@ -85,7 +85,8 @@
         "typeinfo": "c",
         "hlist.h": "c",
         "usys.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "time.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

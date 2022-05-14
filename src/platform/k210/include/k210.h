@@ -11,7 +11,7 @@
 
 #define PLIC_MODE M_MODE
 
-#define CLOCK_FREQ    6500000
+#define CLOCK_FREQ    770000 // 1/10s
 // #define CLOCK_FREQ 40300000
 
 #define CLINT_BASE_ADDR     (0x02000000U)

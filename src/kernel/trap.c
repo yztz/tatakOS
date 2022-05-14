@@ -8,7 +8,7 @@
 #include "utils.h"
 #include "mm/io.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ TRAP
 #include "debug.h"
 
@@ -63,8 +63,6 @@ void
 usertrap(void)
 {
   uint64 scause = read_csr(scause);
-  // printf("usertrap: happen\n");
-  debug("usertrap: scause is %lx", scause);
   if((r_sstatus() & SSTATUS_SPP) != 0){
     printf("scause %p\n", scause);
     printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
@@ -90,7 +88,7 @@ usertrap(void)
     p->trapframe->epc += 4;
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
-    debug("usertrap: proc is %s syscall num is %d", p->name, p->trapframe->a7);
+    // debug("usertrap: proc is %s syscall num is %d", p->name, p->trapframe->a7);
     intr_on();
     syscall();
   } else if(devintr(scause) == 0) {
@@ -117,7 +115,6 @@ usertrap(void)
 void
 usertrapret(void)
 {
-  debug("usertrapret: return");
   struct proc *p = myproc();
   // printf("usertrap: return\n");
   // we're about to switch the destination of traps from
@@ -165,7 +162,7 @@ kerneltrap()
   uint64 scause = r_scause();
   // printf("scause is %lx\n", scause);
   // printf("sepc = %lx\n", sepc);
-  debug("kerneltrap: sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
+  // debug("kerneltrap: sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
   if(intr_get() != 0)
@@ -221,6 +218,7 @@ int devintr(uint64 scause) {
       // printf("time is: %X\n", READ_TIME());
       clockintr();
     }
+    // printf("timer...%d\n", ticks);
     RESET_TIMER();
     w_sip(r_sip() & ~0x10000);
   } else { // unknow

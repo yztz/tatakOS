@@ -59,6 +59,7 @@ binit(void)
   bcache.head.prev = &bcache.head;
   bcache.head.next = &bcache.head;
   for(b = bcache.buf; b < bcache.buf+NBUF; b++){
+    b->refcnt = 0;
     b->next = bcache.head.next;
     b->prev = &bcache.head;
     initsleeplock(&b->lock, "buffer");
@@ -113,6 +114,7 @@ bread(uint dev, uint blockno)
   if(!b->valid) {
     disk_io(b, 0);
     b->valid = 1;
+    b->dirty = 0;
   }
   return b;
 }
@@ -123,7 +125,8 @@ bwrite(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
-  disk_io(b, 1);
+  // disk_io(b, 1);
+  b->dirty = 1;
 }
 
 // Release a locked buffer.
@@ -133,6 +136,11 @@ brelse(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("brelse");
+  
+  if(b->dirty == 1) {
+      disk_io(b, 1);
+      b->dirty = 0;
+    }
 
   releasesleep(&b->lock);
 

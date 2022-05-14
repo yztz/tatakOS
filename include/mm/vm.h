@@ -27,7 +27,7 @@ int         uvmcopy(pagetable_t, pagetable_t, uint64);
 void        uvmfree(pagetable_t, uint64);
 void        uvmclear(pagetable_t, uint64);
 uint64      walkaddr(pagetable_t, uint64);
-int         copyout(pagetable_t, uint64, char *, uint64);
+int         copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len);
 
 /** @deprecated use copy_from_user instead */
 int         copyin(pagetable_t, char *, uint64, uint64);

@@ -2,6 +2,8 @@
 #define _H_DEBUG_
 
 
+#define assert(conditon) if(!(conditon)) panic("assert fail");
+
 
 #if defined DEBUG && !defined QUIET
 #include "printf.h"
@@ -12,9 +14,7 @@
 #define __MODULE_NAME__ OTHER
 #endif
 
-#define debug(fmt, ...) printf("["STR(__MODULE_NAME__)"] "fmt"\n", ##__VA_ARGS__);
-
-
+#define debug(fmt, ...) printf("["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
 
 #define whenstr(a, b)  int __debug__flag = strncmp((a), (b), strlen((b))) == 0;
 

@@ -7,6 +7,7 @@
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
 #include "common.h"
+#include "kernel/time.h"
 
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
@@ -100,16 +101,19 @@ sys_sbrk(void)
 }
 
 uint64
-sys_sleep(void)
+sys_nanosleep(void)
 {
-  int n;
+  timespec_t time;
+  uint64_t addr;
   uint ticks0;
 
-  if(argint(0, &n) < 0)
+  if(argaddr(0, &addr) < 0)
+    return -1;
+  if(copy_from_user(&time, (void *)addr, sizeof(timespec_t)) == -1)
     return -1;
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
+  while(ticks - ticks0 < SEC2TICK(time.tv_sec)){
     if(myproc()->killed){
       release(&tickslock);
       return -1;

@@ -17,7 +17,7 @@
 #include "fs/file.h"
 #include "fs/fcntl.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
@@ -66,6 +66,19 @@ uint64 sys_dup(void) {
 }
 
 uint64 sys_dup3(void) {
+  struct file *f;
+  int new;
+  struct proc *p = myproc();
+
+  if(argfd(0, 0, &f) < 0 || argint(1, &new) < 0)
+    return -1;
+
+  if(p->ofile[new] == 0){
+    p->ofile[new] = f;
+    filedup(f);
+    return new;
+  }
+  
   return -1;
 }
 
@@ -77,7 +90,7 @@ uint64 sys_read(void) {
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
     return -1;
   int size =  fileread(f, p, n);
-  debug("size is %d", size);
+  // debug("size is %d", size);
   return size;
 }
 
@@ -108,11 +121,51 @@ uint64 sys_close(void) {
 }
 
 uint64 sys_fstat(void) {
-  return -1;
+  proc_t *p = myproc();
+  struct file *f;
+  struct kstat stat;
+  entry_t *entry;
+  uint64_t addr;
+
+  if(argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0)
+    return -1;
+
+  entry = f->ep;
+  elock(entry);
+  estat(entry, &stat);
+  eunlock(entry);
+
+  return copyout(p->pagetable, addr, (char *)&stat, sizeof(stat));
 }
 
 uint64 sys_getcwd(void) {
-  return -1;
+  int size;
+  uint64_t addr;
+  char buf[MAXPATH];
+  proc_t *p = myproc();
+
+  if(argaddr(0, &addr) < 0 || argint(1, &size) < 0) {
+    return -1;
+  }
+
+  char *end = getcwd(p->cwd, buf);
+  assert(*end == '\0');
+  // debug("%s", buf);
+  if(copyout(p->pagetable, addr, buf, size) == -1) {
+    return 0;
+  }
+
+  return addr;
+}
+
+uint64_t sys_mount(void) {
+  debug("mount");
+  return 0;
+}
+
+uint64 sys_umount(void) {
+  debug("umount");
+  return 0;
 }
 
 
@@ -121,7 +174,25 @@ uint64 sys_unlinkat(void) {
 }
 
 uint64 sys_getdents64(void) {
-  return -1;
+  proc_t *p = myproc();
+  struct file *f;
+  uint64_t addr ;
+  int len;
+
+  if(argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0 || argint(2, &len) < 0) 
+    return -1;
+  
+  char *buf = (char *)kmalloc(len);
+  elock(f->ep);
+  int ret = read_dents(f->ep, buf, len);
+  eunlock(f->ep);
+
+  if(copyout(p->pagetable, addr, buf, len) == -1) {
+    kfree(buf);
+    return -1;
+  }
+  kfree(buf);
+  return ret;
 }
 
 
