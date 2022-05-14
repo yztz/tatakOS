@@ -28,7 +28,7 @@ char *mm_testcase[] = {"brk"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-// char* prog_name[] = { "fstat" };
+// char* prog_name[] = { "chdir" };
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
@@ -37,6 +37,7 @@ void main() {
     run(fs_testcase);
     run(proc_testcase);
     run(other_testcase);
+    // run(prog_name);
     for(;;);
 }
 #undef run

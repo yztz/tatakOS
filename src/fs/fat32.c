@@ -5,7 +5,7 @@
 #include "common.h"
 #include "str.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -562,29 +562,31 @@ static void fillname(dir_slot_t *slot, char *buf, int len) {
     static char fill[] = {0xff, 0xff, 0xff, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
     uint8_t *n;
     int p = 0;
+    uint8_t fillch = 0;
     refill:
     // 存在非对齐访问问题
     while(p < len && p < 5) {
         n = slot->name0_4;
-        n[p] = buf[p];
-        n[p*2+1] = 0;
+        n[p*2] = buf[p];
+        n[p*2+1] = fillch;
         p++;
     }
     while(p < len && p < 11) {
         n = slot->name5_10;
-        n[p - 5] = buf[p];
-        n[(p - 5)*2+1] = 0;
+        n[(p - 5)*2] = buf[p];
+        n[(p - 5)*2+1] = fillch;
         p++;
     }
     while(p < len && p < 13) {
         n = slot->name11_12;
-        n[p - 11] = buf[p];
-        n[(p - 11)*2+1] = 0;
+        n[(p - 11)*2] = buf[p];
+        n[(p - 11)*2+1] = fillch;
         p++;
     }
     if(len < 13) {
         len = 13;
         buf = fill;
+        fillch = 0xff;
         goto refill;
     }
 }
