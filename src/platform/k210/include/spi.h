@@ -477,6 +477,8 @@ void spi_slave_config(uint8_t int_pin, uint8_t ready_pin, dmac_channel_number_t 
  */
 // void spi_handle_data_dma(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb);
 
+
+void spi_io_init(spi_device_num_t spi_num);
 #ifdef __cplusplus
 }
 #endif

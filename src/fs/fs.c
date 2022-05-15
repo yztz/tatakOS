@@ -228,7 +228,7 @@ static entry_t *dirlookup(entry_t *parent, const char *name) {
 entry_t *create(entry_t *from, char *path, short type) {
   entry_t *ep, *dp;
   char name[MAX_FILE_NAME];
-  
+
   // 查找父目录
   if((dp = nameeparent(from, path, name)) == 0)
     return 0;

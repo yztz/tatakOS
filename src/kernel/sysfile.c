@@ -262,7 +262,7 @@ uint64 sys_mkdirat(void) {
   char path[MAXPATH];
   int dirfd;
   entry_t *ep, *from;
-
+  debug("enter");
   if(argint(0, &dirfd) < 0 ||
     argstr(1, path, MAXPATH) < 0){
     return -1;
@@ -276,9 +276,9 @@ uint64 sys_mkdirat(void) {
 
   if((ep = create(from, path, T_DIR)) == NULL)
     return -1;
-
+  debug("create end");
   eunlockput(ep);
-
+  debug("quit");
   return 0;
 }
 
@@ -287,7 +287,7 @@ uint64 sys_chdir(void) {
   char path[MAXPATH];
   entry_t *ep;
   struct proc *p = myproc();
-  
+  debug("enter");
   if(argstr(0, path, MAXPATH) < 0 || (ep = namee(NULL, path)) == 0){
     return -1;
   }
@@ -299,6 +299,7 @@ uint64 sys_chdir(void) {
   eunlock(ep);
   eput(p->cwd);
   p->cwd = ep;
+  debug("quit")
   return 0;
 }
 

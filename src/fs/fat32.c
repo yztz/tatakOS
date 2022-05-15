@@ -5,7 +5,7 @@
 #include "common.h"
 #include "str.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -278,15 +278,16 @@ FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
     for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
         int changed = 0; // 用于标记当前的块是否被写
         buf_t *b = bread(fat->dev, sect);
+        // if(sect == clus2datsec(fat, 72)) panic("alloc data clus?");
         uint32_t *entry = (uint32_t *)b->data;
         for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
             if(i == 0 && j < 2) continue; // 跳过第0,1号簇
             if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
                 uint32_t clus_num = i * entry_per_sect + j;
                 if(next == 0) { // 如果是最后一个簇，则标记为END
-                    *entry = FAT_CLUS_END;
+                    *(entry + j) = FAT_CLUS_END;
                 } else { // 如果是前面的簇，则标记为下一个簇的簇号
-                    *entry = next;
+                    *(entry + j) = next;
                 }
                 next = clus_num;
                 changed = 1;
@@ -629,7 +630,6 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
         return FR_CONTINUE;
     }
 
-
     // 一个空的目录项
     if(item->name[0] == FAT_NAME_END || item->name[0] == FAT_NAME_FREE) {
         (*cnt)++;
@@ -658,6 +658,8 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
                     len-=13;
                 }
             }
+            if(meta->offset == 0)
+                panic("something happened");
             bwrite(meta->buf);
             return FR_OK;
         } else {
@@ -676,15 +678,16 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
     uint32_t clus;
     int len = strlen(cname);
     int entry_num = (len + 1 + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1; // 包括'\0'
-
+    debug("enter");
     strncpy(name, cname, MAX_FILE_NAME);
     int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name); // 结束符'\0'的溢出并不重要
-    
+    debug("short name gened: %s", item->name);
     // debug("gen %s", (char *)item->name);
     // 预分配一个簇
     if(fat_alloc_cluster(fat, &clus, 1) == FR_ERR)
         panic("fat_alloc_entry: alloc clus fail");
 
+    debug("cluster allocated clus id is %d", clus);
     // 构造目录项
     item->attr = attr;
     item->startl = clus & FAT_CLUS_LOW_MASK;
@@ -696,7 +699,7 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
 
     if(fat_travs_dir(fat, dir_clus, entry_alloc_handler, 1, offset, &ap, &cnt) == FR_ERR)
         panic("fat_alloc_entry: fail");
-
+    debug("alloc success");
     if(attr == FAT_ATTR_DIR) { // 如果是目录，创建'.'与'..'
         generate_dot(fat, dir_clus, clus);
     }

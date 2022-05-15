@@ -28,7 +28,7 @@ char *mm_testcase[] = {"brk"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-// char* prog_name[] = { "chdir" };
+char* prog_name[] = { "openat"};
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 

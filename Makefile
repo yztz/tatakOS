@@ -154,7 +154,10 @@ umnt: $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
 sdcard: $(fs.img)
-	sudo dd if=$< of=/dev/sdb
+	sudo mkfs.vfat -F 32 /dev/sdb
+	sudo mount /dev/sdb /mnt
+	sudo cp -r $(TESTCASES_DIR)/* /mnt/
+	sudo umount /dev/sdb
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@

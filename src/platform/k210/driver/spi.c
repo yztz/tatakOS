@@ -137,13 +137,16 @@ static void spi_set_tmod(uint8_t spi_num, uint32_t tmod)
     set_bit(&spi_handle->ctrlr0, 3 << tmod_offset, tmod << tmod_offset);
 }
 
+void spi_io_init(spi_device_num_t spi_num) {
+    spi[spi_num] = (volatile spi_t *)ioremap((uint64)spi[spi_num], PGSIZE);
+}
+
 void spi_init(spi_device_num_t spi_num, spi_work_mode_t work_mode, spi_frame_format_t frame_format,
               size_t data_bit_length, uint32_t endian)
 {
     configASSERT(data_bit_length >= 4 && data_bit_length <= 32);
     configASSERT(spi_num < SPI_DEVICE_MAX && spi_num != 2);
     spi_clk_init(spi_num); // 初始化时钟
-    spi[spi_num] = (volatile spi_t *)ioremap((uint64)spi[spi_num], PGSIZE);
 
     uint8_t dfs_offset, frf_offset, work_mode_offset;
     switch(spi_num)

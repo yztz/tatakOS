@@ -48,8 +48,9 @@ void platform_dirver_init() {
     fpioa_init();
     debug("fpioa init success!");
     /* SPI */
-	spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
-    debug("spi init success!");
+	// spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
+    spi_io_init(SPI_DEVICE_0);
+    // debug("spi init success!");
     /* SDCARD */
     sd_status = sd_init();
     debug("sdcard init success!");

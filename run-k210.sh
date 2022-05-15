@@ -1,2 +1,3 @@
 #!/bin/sh
-make run debug=on platform=k210
+make run platform=k210
+# make run debug=on platform=k210

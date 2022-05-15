@@ -28,6 +28,10 @@ void
 fileinit(void)
 {
   initlock(&ftable.lock, "ftable");
+  for(int i = 0; i < NFILE; i++) {
+    ftable.file[i].ref = 0;
+    ftable.file[i].ep = NULL;
+  } 
 }
 
 // Allocate a file structure.
