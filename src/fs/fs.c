@@ -333,8 +333,15 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   return ep;
 }
 
+// caller holds lock
 int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
+  int newsize = off + ret;
+  if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
+    entry->raw.size = newsize;
+    debug("update size");
+    fat_update(entry->fat, entry->clus_start, entry->clus_offset, &entry->raw);
+  }
   return ret;
 }
 

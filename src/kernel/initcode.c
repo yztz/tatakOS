@@ -21,23 +21,23 @@ char *fs_testcase[] = { "openat", "mkdir_", "close", "dup2", "getcwd", "getdents
                       "mount", "umount", "test_echo"};
 //
 char *proc_testcase[] = { "getppid", "getpid",
-                      "chdir", "clone", "wait", "waitpid",
+                       "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 
 char *mm_testcase[] = {"brk"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = { "openat"};
+char* prog_name[] = { "mmap"};
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
-    run(fs_testcase);
-    run(proc_testcase);
-    run(other_testcase);
-    // run(prog_name);
+    // run(proc_testcase);
+    // run(other_testcase);
+    // run(fs_testcase);
+    run(prog_name);
     for(;;);
 }
 #undef run

@@ -215,6 +215,19 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, i
     return n - rest;
 }
 
+FR_t fat_update(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
+    if(dir_clus == 0) {
+        debug("dir clus 0?");
+        return FR_ERR;
+    } 
+    
+    buf_t *b = bread(fat->dev, clus2datsec(fat, dir_clus));
+    *(dir_item_t *)(b->data + offset) = *item;
+    bwrite(b);
+    brelse(b);
+    return FR_OK;
+}
+
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
