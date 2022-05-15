@@ -25,12 +25,12 @@
 
 static void disk_io(struct buf *b, int write) {
   #ifdef K210
-  extern uint8_t sd_read_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
-  extern uint8_t sd_write_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
+  extern void sdcard_read_sector(uint8 *buf, int sectorno);
+  extern void sdcard_write_sector(uint8 *buf, int sectorno);
   if(write) {
-    sd_write_sector(b->data, b->blockno, 1);
+    sdcard_write_sector(b->data, b->blockno);
   } else {
-    sd_read_sector(b->data, b->blockno, 1);
+    sdcard_read_sector(b->data, b->blockno);
   }
   #else 
   extern void virtio_disk_rw(struct buf *, int);

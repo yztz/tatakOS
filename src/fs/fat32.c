@@ -5,7 +5,7 @@
 #include "common.h"
 #include "str.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -129,12 +129,15 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // 常规字段初始化
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
-
+    debug("read sb");
     buf_t *buffer = bread(dev, 0);
+    debug("read end");
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
+    // memset(buffer->data, 0, 256);
+    // bwrite(buffer);
     brelse(buffer);
-
+    // for(;;);
     fat->root = get_root(fat);
 
     *ppfat = fat;

@@ -54,6 +54,7 @@ procinit(void)
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
+      p->state = UNUSED;
       // p->kstack = KSTACK((int) (p - proc));
       for(int i = 0; i < NOFILE; i++) {
         p->ofile[i] = NULL;
@@ -597,8 +598,10 @@ sleep(void *chan, struct spinlock *lk)
   // (wakeup locks p->lock),
   // so it's okay to release lk.
 
-  acquire(&p->lock);  //DOC: sleeplock1
-  release(lk);
+  if(lk != &p->lock){
+    acquire(&p->lock);
+    release(lk);
+  }
 
   // Go to sleep.
   p->chan = chan;

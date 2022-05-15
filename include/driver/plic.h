@@ -4,6 +4,8 @@
 #include "platform.h"
 
 typedef enum _plic_irq plic_irq_t;
+
+/* 返回0表示正常处理，否则失败 */
 typedef int (*plic_irq_callback_t)(void *ctx);
 
 typedef struct _plic_instance_t {
