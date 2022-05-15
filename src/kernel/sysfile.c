@@ -374,3 +374,96 @@ uint64 sys_pipe2(void) {
   }
   return 0;
 }
+
+uint64
+sys_mmap(void){
+  uint64 addr, length, offset;
+	int prot, flags, fd, i;
+	// struct file *f = NULL;
+  struct proc *p = myproc();
+
+  if(argaddr(0, &addr) < 0 || argaddr(1, &length) < 0||
+      argint(2, &prot) < 0 || argint(3, &flags) < 0 ||
+      argint(4, &fd) < 0 || argaddr(5, &offset) < 0)
+    panic("sys_mmap 1");
+
+  if((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
+    panic("sys_mmap 2");
+
+  uint64 old_addr = p->sz;
+  p->sz += length;
+  for(i = 0; i < VMA_NUM; i++){
+    if(p->vma[i].state == IDLE){
+      p->vma[i].state = INUSE;
+      if(addr == 0)
+        p->vma[i].addr = old_addr;
+      else
+        p->vma[i].addr = addr;
+      p->vma[i].len = length;
+      p->vma[i].prot = prot;
+      p->vma[i].flags = flags;
+
+      filedup(p->ofile[fd]);
+      p->vma[i].map_file = p->ofile[fd];
+
+      break;
+    }
+  }
+  if(i == VMA_NUM)
+    return -1;
+  
+  // printf(ylw("sys_mmap: %d\n"), old_addr);
+  return old_addr;
+}
+
+uint64
+sys_munmap(void){
+  uint64 va, len;
+  if(argaddr(0, &va) < 0 || argaddr(1, &len) < 0)
+    return -1;
+
+  struct proc *p = myproc();
+  struct vma *v = 0;
+  int i;
+  pte_t *pte;
+
+  for(i = 0; i < VMA_NUM; i++){
+    v = &(p->vma[i]);
+    if(v->state == INUSE && v->addr <= va && va < v->addr + v->len)
+      break;
+  }
+  // printf("\e[34mmunmap vma: %d\n\e[0m", i);
+  if(i == VMA_NUM)//ummap null
+    return -1;
+
+  // write back to disk
+  if(v->flags & MAP_SHARED){
+    filewrite(v->map_file, va, len);
+  }
+  // printf("va: %p   len: %p\n", va, len);
+
+  // if a virtual address has been mapped to physic address,
+  // unmap it, otherwise do noting.
+  for(int a = va; a < va + PGROUNDUP(len); a += PGSIZE){
+    if((pte = walk(p->pagetable, a, 0)) == 0)
+      continue;
+    if((*pte & PTE_V) == 0)
+      continue;
+
+    uvmunmap(p->pagetable, a, 1, 1);
+  }
+
+  //free the entire vma
+  if(va == v->addr && len == v->len){
+    // printf("\e[36mmunmap reset\n\e[0m");
+    v->state = IDLE;
+    // printf("rest vma %d state: %d\n", i, v->state);
+    fileclose(v->map_file);
+  }
+
+  // only allow unmap from the begin of a vma?? namely va == v->addr
+  v->addr += len;
+  v->len -= len;
+
+  return 0;
+}

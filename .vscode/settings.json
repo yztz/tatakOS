@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.xdc": "tcl",
         "Makefile.*": "makefile",
         "sbi.h": "c",
         "riscv.h": "c",
@@ -86,7 +87,12 @@
         "hlist.h": "c",
         "usys.h": "c",
         "debug.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "optional": "c",
+        "stdexcept": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [
