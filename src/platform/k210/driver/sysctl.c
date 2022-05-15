@@ -1616,50 +1616,50 @@ uint32_t sysctl_clock_get_freq(sysctl_clock_t clock)
     return result;
 }
 
-// int sysctl_dma_select(sysctl_dma_channel_t channel, sysctl_dma_select_t select)
-// {
-//     sysctl_dma_sel0_t dma_sel0;
-//     sysctl_dma_sel1_t dma_sel1;
+int sysctl_dma_select(sysctl_dma_channel_t channel, sysctl_dma_select_t select)
+{
+    sysctl_dma_sel0_t dma_sel0;
+    sysctl_dma_sel1_t dma_sel1;
 
-//     /* Read register from bus */
-//     dma_sel0 = sysctl->dma_sel0;
-//     dma_sel1 = sysctl->dma_sel1;
-//     switch (channel)
-//     {
-//         case SYSCTL_DMA_CHANNEL_0:
-//             dma_sel0.dma_sel0 = select;
-//             break;
+    /* Read register from bus */
+    dma_sel0 = sysctl->dma_sel0;
+    dma_sel1 = sysctl->dma_sel1;
+    switch (channel)
+    {
+        case SYSCTL_DMA_CHANNEL_0:
+            dma_sel0.dma_sel0 = select;
+            break;
 
-//         case SYSCTL_DMA_CHANNEL_1:
-//             dma_sel0.dma_sel1 = select;
-//             break;
+        case SYSCTL_DMA_CHANNEL_1:
+            dma_sel0.dma_sel1 = select;
+            break;
 
-//         case SYSCTL_DMA_CHANNEL_2:
-//             dma_sel0.dma_sel2 = select;
-//             break;
+        case SYSCTL_DMA_CHANNEL_2:
+            dma_sel0.dma_sel2 = select;
+            break;
 
-//         case SYSCTL_DMA_CHANNEL_3:
-//             dma_sel0.dma_sel3 = select;
-//             break;
+        case SYSCTL_DMA_CHANNEL_3:
+            dma_sel0.dma_sel3 = select;
+            break;
 
-//         case SYSCTL_DMA_CHANNEL_4:
-//             dma_sel0.dma_sel4 = select;
-//             break;
+        case SYSCTL_DMA_CHANNEL_4:
+            dma_sel0.dma_sel4 = select;
+            break;
 
-//         case SYSCTL_DMA_CHANNEL_5:
-//             dma_sel1.dma_sel5 = select;
-//             break;
+        case SYSCTL_DMA_CHANNEL_5:
+            dma_sel1.dma_sel5 = select;
+            break;
 
-//         default:
-//             return -1;
-//     }
+        default:
+            return -1;
+    }
 
-//     /* Write register back to bus */
-//     sysctl->dma_sel0 = dma_sel0;
-//     sysctl->dma_sel1 = dma_sel1;
+    /* Write register back to bus */
+    sysctl->dma_sel0 = dma_sel0;
+    sysctl->dma_sel1 = dma_sel1;
 
-//     return 0;
-// }
+    return 0;
+}
 
 // uint32_t sysctl_pll_fast_enable_pll(void)
 // {

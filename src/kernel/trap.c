@@ -204,9 +204,16 @@ int devintr(uint64 scause) {
   if (scause == INTR_SOFT) { // k210 ext passby soft
     #ifdef K210
     // printf("caught software intr!\n");
-    if(handle_ext_irq() != 0) return -1;
-    clear_csr(sip, SIP_SSIP);
-    sbi_set_mext();
+    debug("external");
+    if(r_stval() == 9) {
+      int ret;
+      debug("externel interrupt");
+      ret = handle_ext_irq();
+      clear_csr(sip, SIP_SSIP);
+      sbi_set_mext();
+      return ret;
+    }
+    
     #endif
   } else if (scause == INTR_EXT) { // only qemu
     #ifdef QEMU

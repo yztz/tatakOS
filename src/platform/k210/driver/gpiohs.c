@@ -15,10 +15,17 @@
 #include "gpiohs.h"
 #include "utils.h"
 #include "fpioa.h"
+#include "mm/io.h"
 
 #define GPIOHS_MAX_PINNO 32
 
-volatile gpiohs_t* const gpiohs = (volatile gpiohs_t*)GPIOHS_BASE_ADDR;
+volatile gpiohs_t *gpiohs = (volatile gpiohs_t*)GPIOHS_BASE_ADDR;
+
+
+void gpiohs_init() {
+    gpiohs = (volatile gpiohs_t *)ioremap((uint64_t)gpiohs, 0x1000);
+}
+
 
 void gpiohs_set_pin(uint8_t pin, gpio_pin_value_t value)
 {

@@ -159,4 +159,5 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, travs_handler_t handler, 
 FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, dir_item_t *item);
 int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
+FR_t fat_update(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
 #endif

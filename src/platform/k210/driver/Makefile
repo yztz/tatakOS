@@ -1,4 +1,4 @@
-# obj-y += dmac.o
+obj-y += dmac.o
 # obj-y += gpio.o
 obj-y += sdcard.o
 obj-y += spi.o

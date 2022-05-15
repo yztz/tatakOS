@@ -197,7 +197,7 @@ typedef struct _gpiohs
 /**
  * @brief       GPIO High-speed object instanse
  */
-extern volatile gpiohs_t *const gpiohs;
+extern volatile gpiohs_t *gpiohs;
 
 /**
  * @brief       Set Gpiohs drive mode
@@ -259,6 +259,9 @@ void gpiohs_irq_register(uint8_t pin, uint32_t priority, plic_irq_callback_t cal
  * @param[in]   pin             Gpiohs pin
  */
 void gpiohs_irq_unregister(uint8_t pin);
+
+
+void gpiohs_init();
 
 #ifdef __cplusplus
 }

@@ -21,7 +21,7 @@ char *fs_testcase[] = { "openat", "mkdir_", "close", "dup2", "getcwd", "getdents
                       "mount", "umount", "test_echo"};
 //
 char *proc_testcase[] = { "getppid", "getpid",
-                      "chdir", "clone", "wait", "waitpid",
+                       "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 
 char *mm_testcase[] = {"brk"};

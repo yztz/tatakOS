@@ -1,12 +1,15 @@
 use crate::runtime::SupervisorContext;
 use core::arch::asm;
-use riscv::register::{mie, mip, mstatus, scause};
+use riscv::register::{mie, mip, mstatus, scause, stval};
 use rustsbi::println;
 
 static mut DEVINTRENTRY: usize = 0;
 
 pub unsafe fn call_supervisor_interrupt(ctx: &mut SupervisorContext) {
-    // println!("ext called!");
+    println!("ext called!");
+    unsafe {
+        stval::write(0x9);
+    }
     mip::set_ssoft();
     mie::clear_mext();
     
