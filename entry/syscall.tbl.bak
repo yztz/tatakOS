@@ -22,3 +22,4 @@
 88     ktest      sys_ktest
 89     timetag   sys_timetag
 222     mmap      sys_mmap
+215     munmap      sys_munmap

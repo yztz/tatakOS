@@ -414,7 +414,7 @@ sys_mmap(void){
 
   uint64 old_addr = p->sz;
   p->sz += length;
-  for(i = 0; i < VMA_NUM; i++){ // lock?
+  for(i = 0; i < VMA_NUM; i++){
     if(p->vma[i].state == VMA_UNUSED){
       p->vma[i].state = VMA_USED;
       if(addr == 0)
@@ -463,15 +463,18 @@ sys_munmap(void){
     filewrite(v->map_file, va, len);
   }
   // printf("va: %p   len: %p\n", va, len);
-
+  // printf(grn("%d\n"), va);
+  va = PGROUNDUP(va);
+  // printf(ylw("%d\n"), va);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
-  for(int a = va; a < va + PGROUNDUP(len); a += PGSIZE){
+  for(int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE) {
     if((pte = walk(p->pagetable, a, 0)) == 0)
       continue;
     if((*pte & PTE_V) == 0)
       continue;
 
+  // printf(ylw("%d\n"), a);
     uvmunmap(p->pagetable, a, 1, 1);
   }
 
