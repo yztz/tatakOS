@@ -17,7 +17,7 @@
 #include "fs/file.h"
 #include "fs/fcntl.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 

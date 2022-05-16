@@ -12,6 +12,7 @@ struct spinlock {
   // For debugging:
   char *name;        // Name of lock.
   struct cpu *cpu;   // The cpu holding the lock.
+  int pid;
 };
 
 typedef struct spinlock spinlock_t;

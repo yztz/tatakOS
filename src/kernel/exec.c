@@ -9,7 +9,7 @@
 #include "mm/vm.h"
 #include "fs/fs.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
 
@@ -63,6 +63,7 @@ exec(char *path, char **argv)
     if(loadseg(pagetable, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
   }
+
   eunlockput(ep);
   ep = NULL;
 

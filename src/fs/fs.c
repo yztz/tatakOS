@@ -52,7 +52,7 @@ FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *state) 
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) desc->buf;
   int namelen = strlen(name) + 1;
   int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
-  debug("total size is %d desc size is %d", total_size, desc->size);
+  // debug("total size is %d desc size is %d", total_size, desc->size);
   if(total_size > desc->size) 
     return FR_OK;
 
@@ -339,8 +339,8 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   int newsize = off + ret;
   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
     entry->raw.size = newsize;
-    debug("update size");
-    fat_update(entry->fat, entry->clus_start, entry->clus_offset, &entry->raw);
+    // debug("update size");
+    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
   }
   return ret;
 }

@@ -129,9 +129,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // 常规字段初始化
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
-    debug("read sb");
     buf_t *buffer = bread(dev, 0);
-    debug("read end");
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
     // memset(buffer->data, 0, 256);
@@ -220,27 +218,25 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
         debug("dir clus 0?");
         return FR_ERR;
     } 
-    
-    buf_t *b = bread(fat->dev, clus2datsec(fat, dir_clus));
-    *(dir_item_t *)(b->data + offset) = *item;
-    bwrite(b);
-    brelse(b);
+    debug("offset is %d\n", offset)
+    fat_write(fat, dir_clus, 0, (uint64_t)item, offset, sizeof(dir_item_t));
     return FR_OK;
 }
 
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
-    
+    debug("cclus is %d", cclus);
     int alloc_num = 1; // 防止频繁alloc
     // 计算起始簇
     while(off >= BPC(fat)) {
         cclus = fat_next_cluster(fat, cclus);
         off -= BPC(fat);
         if(cclus == FAT_CLUS_END) {
+            debug("alloc ?")
             uint32_t prev = cclus;
             if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR) {
-                debug("fat_write: alloc cluster f");
+                debug("fat_write: alloc cluster fail");
                 return 0;
             }
             fat_append_cluster(fat, prev, cclus);
@@ -622,7 +618,7 @@ static void fillname(dir_slot_t *slot, char *buf, int len) {
 
 static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *p2) {
     ap_t *ap = (ap_t *)p1;
-    int *UNUSED(cnt) = (int *)p2;
+    int *cnt = (int *)p2;
     // 我们在设计上强行要求长文件名目录项必须创建一个扇区上
     // 主要原因是怕出现下面情况(假设我们需要的entry数目为5)
     // F: free  E: end  U: used
@@ -653,6 +649,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
             int end = meta->item_no - ap->entry_num + 1;
             dir_slot_t *slot_end = (dir_slot_t *)item - ap->entry_num + 1;
             if(end < 0) panic("entry_alloc: item no");
+            assert((uint64)slot_end >= (uint64)meta->buf->data);
             // 复制短目录项
             debug("copy short item");
             *item = *ap->item; 
@@ -677,6 +674,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
             if(meta->offset == 0)
                 panic("something happened");
             bwrite(meta->buf);
+            debug("offset is %d", meta->offset);
             return FR_OK;
         } else {
             return FR_CONTINUE;
@@ -694,7 +692,6 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
     uint32_t clus;
     int len = strlen(cname);
     int entry_num = (len + 1 + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1; // 包括'\0'
-    debug("enter");
     strncpy(name, cname, MAX_FILE_NAME);
     int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name); // 结束符'\0'的溢出并不重要
     debug("short name gened: %s", item->name);
