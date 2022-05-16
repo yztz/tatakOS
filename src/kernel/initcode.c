@@ -36,6 +36,7 @@ void main() {
     // printf("hello world %d\n", 123);
     run(fs_testcase);
     run(proc_testcase);
+    run(mm_testcase);
     run(other_testcase);
     // run(prog_name);
     for(;;);
