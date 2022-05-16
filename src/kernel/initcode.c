@@ -24,7 +24,7 @@ char *proc_testcase[] = { "getppid", "getpid",
                        "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 
-char *mm_testcase[] = {"brk"};
+char *mm_testcase[] = {"brk", "mmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
@@ -36,10 +36,18 @@ void run(char *testcases[], int cnt);
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
+<<<<<<< HEAD
     // run(fs_testcase);
     // run(proc_testcase);
     // run(other_testcase);
     run(prog_name);
+=======
+    run(fs_testcase);
+    run(proc_testcase);
+    run(mm_testcase);
+    run(other_testcase);
+    // run(prog_name);
+>>>>>>> 149a3aff56aa1d80cf49e53a1899976820d29229
     for(;;);
 }
 #undef run

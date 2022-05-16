@@ -98,12 +98,12 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
 
     fat->root_cluster = dbr->fat32.root_cluster;
 
-    debug("start sector   is %d", fat->fat_start_sector);
-    debug("fat sectors    is %d", fat->fat_tbl_sectors);
-    debug("sec per clus   is %d", fat->sec_per_cluster);
-    debug("bytes per clus is %d", fat->bytes_per_sec);
-    debug("fat table num  is %d", fat->fat_tbl_num);
-    debug("root cluster   is %d", fat->root_cluster);
+    printf("start sector   is %d\n", fat->fat_start_sector);
+    printf("fat sectors    is %d\n", fat->fat_tbl_sectors);
+    printf("sec per clus   is %d\n", fat->sec_per_cluster);
+    printf("bytes per clus is %d\n", fat->bytes_per_sec);
+    printf("fat table num  is %d\n", fat->fat_tbl_num);
+    printf("root cluster   is %d\n", fat->root_cluster);
 }
 
 static entry_t *get_root(fat32_t *fat) {

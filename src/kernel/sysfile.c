@@ -385,10 +385,10 @@ sys_mmap(void){
   if(argaddr(0, &addr) < 0 || argaddr(1, &length) < 0||
       argint(2, &prot) < 0 || argint(3, &flags) < 0 ||
       argint(4, &fd) < 0 || argaddr(5, &offset) < 0)
-    panic("sys_mmap 1");
+    return -1;
 
   if((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
-    panic("sys_mmap 2");
+    return -1;
 
   uint64 old_addr = p->sz;
   p->sz += length;

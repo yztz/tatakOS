@@ -74,6 +74,5 @@ uint64_t sys_gettimeofday(void) {
   if(copyout(myproc()->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
     ret = -1;
   } 
-  printf("ret is %d\n", ret);
   return ret;
 }
