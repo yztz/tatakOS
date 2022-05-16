@@ -392,9 +392,9 @@ sys_mmap(void){
 
   uint64 old_addr = p->sz;
   p->sz += length;
-  for(i = 0; i < VMA_NUM; i++){
-    if(p->vma[i].state == IDLE){
-      p->vma[i].state = INUSE;
+  for(i = 0; i < VMA_NUM; i++){ // lock?
+    if(p->vma[i].state == VMA_UNUSED){
+      p->vma[i].state = VMA_USED;
       if(addr == 0)
         p->vma[i].addr = old_addr;
       else
@@ -429,7 +429,7 @@ sys_munmap(void){
 
   for(i = 0; i < VMA_NUM; i++){
     v = &(p->vma[i]);
-    if(v->state == INUSE && v->addr <= va && va < v->addr + v->len)
+    if(v->state == VMA_USED && v->addr <= va && va < v->addr + v->len)
       break;
   }
   // printf("\e[34mmunmap vma: %d\n\e[0m", i);
@@ -456,7 +456,7 @@ sys_munmap(void){
   //free the entire vma
   if(va == v->addr && len == v->len){
     // printf("\e[36mmunmap reset\n\e[0m");
-    v->state = IDLE;
+    v->state = VMA_UNUSED;
     // printf("rest vma %d state: %d\n", i, v->state);
     fileclose(v->map_file);
   }

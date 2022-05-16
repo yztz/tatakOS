@@ -547,23 +547,23 @@ static void generate_dot(fat32_t *fat, uint32_t parent_clus, uint32_t curr_clus)
 // }
 
 static int extractname(dir_slot_t *slot, char *buf) {
-    uint16_t *n = (uint16_t *)slot->name0_4;
+    uint8_t *n = slot->name0_4;
     int p = 0;
     int nul = 0;
     while(!nul && p < 5) {
-        buf[p] = (char) n[p];
+        buf[p] = n[2*p];
         if(buf[p] == '\0') nul = 1;
         p++;
     }
-    n = (uint16_t *)slot->name5_10;
+    n = slot->name5_10;
     while(!nul && p < 11) {
-        buf[p] = (char) n[p - 5];
+        buf[p] = n[2*(p - 5)];
         if(buf[p] == '\0') nul = 1;
         p++;
     }
-    n = (uint16_t *)slot->name11_12;
+    n = slot->name11_12;
     while(!nul && p < 13) {
-        buf[p] = (char) n[p - 11];
+        buf[p] = n[2*(p - 11)];
         if(buf[p] == '\0') nul = 1;
         p++;
     }

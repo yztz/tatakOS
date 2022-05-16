@@ -98,7 +98,7 @@ struct vma{
   int flags;
 
   struct file *map_file;
-  enum{IDLE, INUSE} state;
+  enum{VMA_UNUSED, VMA_USED} state;
 };
 
 struct fat_entry;
