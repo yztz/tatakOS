@@ -151,6 +151,17 @@ entry_t *edup(entry_t *entry) {
   return entry;
 }
 
+
+static void unlink(entry_t *entry) {
+  if(entry == entry->fat->root) {
+    panic("rm root? fuck");
+  }
+
+  if(fat_unlink(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw) == FR_ERR) {
+    debug("try to rm an entry that doesn't exist");
+  }
+}
+
 // 递归地解引用
 // under lock
 static void __eput(entry_t *entry) {
@@ -162,10 +173,15 @@ static void __eput(entry_t *entry) {
   if(entry->ref == 0) { 
     if(entry == entry->fat->root) 
       panic("eput: root?");
-    if(entry->nlink == 0) {
-      // todo:
 
+    if(entry->nlink <= 0) {
+      acquiresleep(&entry->lock);
+      release(&entry->fat->cache_lock);
 
+      unlink(entry);
+      
+      releasesleep(&entry->lock);
+      acquire(&entry->fat->cache_lock);
     }
     __eput(entry->parent);
   }
@@ -287,13 +303,17 @@ static char *skipelem(char *path, char *name) {
   return path;
 }
 
-/* todo:可能造成死锁？ */
+
 /* caller holds entry lock */
 void etrunc(entry_t *entry) {
-  acquiresleep(&entry->parent->lock);
-  fat_trunc(entry->fat, entry->parent->clus_start, &entry->raw);
-  releasesleep(&entry->parent->lock);
+  if(E_ISDIR(entry)) {
+    debug("try trunc dir?");
+    return;
+  }
+  
+  fat_trunc(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
 }
+
 
 
 // ref: xv6

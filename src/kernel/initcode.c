@@ -16,7 +16,7 @@
 void printf(const char *fmt, ...);
 
 // FS
-char *fs_testcase[] = { "mkdir_","openat", "dup2","close",  "getcwd", "getdents",
+char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
                       "mount", "umount", "test_echo"};
 //
@@ -28,7 +28,7 @@ char *mm_testcase[] = {"brk", "mmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = { "close", "dup",};
+char *prog_name[] = { "gettimeofday",};
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 

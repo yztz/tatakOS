@@ -17,7 +17,7 @@
 #include "fs/file.h"
 #include "fs/fcntl.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
@@ -170,7 +170,31 @@ uint64 sys_umount(void) {
 
 
 uint64 sys_unlinkat(void) {
-  return -1;
+  entry_t *entry, *from;
+  int dirfd;
+  char path[MAXPATH];
+
+
+  //todo: flag ignored
+  if(argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0)
+    return -1;
+
+
+  if(dirfd == AT_FDCWD) {
+    from = myproc()->cwd;
+  } else {
+    from = myproc()->ofile[dirfd]->ep;
+  }
+
+  if((entry = namee(from, path)) == NULL)
+    return -1;
+  debug("here");
+  elock(entry);
+  // 仅仅是减少链接数，当引用数为0时会自动检查链接数并决定是否将其释放
+  entry->nlink--;
+  eunlockput(entry);
+  debug("here2");
+  return 0;
 }
 
 uint64 sys_getdents64(void) {
@@ -196,9 +220,7 @@ uint64 sys_getdents64(void) {
 }
 
 
-#define AT_FDCWD -100
-
-//OK:
+//todo: trunc
 uint64 sys_openat(void) {
   // owner mode is ignored
   char path[MAXPATH];
