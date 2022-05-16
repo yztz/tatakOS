@@ -446,7 +446,7 @@ sys_munmap(void){
   // printf(ylw("%d\n"), va);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
-  for(int a = va; a < va + PGROUNDDOWN(len); a += PGSIZE){
+  for(int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE){
     if((pte = walk(p->pagetable, a, 0)) == 0)
       continue;
     if((*pte & PTE_V) == 0)
