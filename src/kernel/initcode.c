@@ -24,7 +24,7 @@ char *proc_testcase[] = { "getppid", "getpid",
                        "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 
-char *mm_testcase[] = {"brk"};
+char *mm_testcase[] = {"brk", "mmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
