@@ -90,6 +90,17 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+#define VMA_NUM 16
+struct vma{
+  uint64 addr;
+  uint64 len;
+  int prot;
+  int flags;
+
+  struct file *map_file;
+  enum{IDLE, INUSE} state;
+};
+
 struct fat_entry;
 // Per-process state
 struct proc {
@@ -115,6 +126,7 @@ struct proc {
   struct fat_entry *cwd;           // Current directory
   // struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  struct vma vma[VMA_NUM];
 };
 
 typedef struct proc proc_t;
