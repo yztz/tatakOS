@@ -293,6 +293,7 @@ void *slob_alloc(size_t size) {
 	debug("alloc size: %d minalign: %d align: %d", size, minalign, align);
 	
 	acquire(&slob_lock);
+	// zyy: is this is find from a set(list) of slob pages?
 	for(sp = sp0->next; sp != sp0; sp = sp->next) {
 		if(sp->units == 0 || sp->units < units)
 			continue;

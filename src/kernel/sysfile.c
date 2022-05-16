@@ -441,15 +441,18 @@ sys_munmap(void){
     filewrite(v->map_file, va, len);
   }
   // printf("va: %p   len: %p\n", va, len);
-
+  // printf(grn("%d\n"), va);
+  va = PGROUNDUP(va);
+  // printf(ylw("%d\n"), va);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
-  for(int a = va; a < va + PGROUNDUP(len); a += PGSIZE){
+  for(int a = va; a < va + PGROUNDDOWN(len); a += PGSIZE){
     if((pte = walk(p->pagetable, a, 0)) == 0)
       continue;
     if((*pte & PTE_V) == 0)
       continue;
 
+  // printf(ylw("%d\n"), a);
     uvmunmap(p->pagetable, a, 1, 1);
   }
 

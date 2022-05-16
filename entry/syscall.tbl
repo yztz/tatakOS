@@ -30,6 +30,7 @@
 80     fstat     sys_fstat  
 ##############MM################
 214     sbrk      sys_sbrk  
+215     munmap      sys_munmap
 222     mmap      sys_mmap
 ############Others##############
 153     times           sys_times
