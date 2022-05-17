@@ -93,7 +93,8 @@
         "vector": "c",
         "optional": "c",
         "stdexcept": "c",
-        "mm_types.h": "c"
+        "mm_types.h": "c",
+        "rbtree.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [
