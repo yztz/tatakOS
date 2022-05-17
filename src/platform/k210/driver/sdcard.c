@@ -320,11 +320,12 @@ static int sd_init(void) {
 }
 
 static struct sleeplock sdcard_lock;
+static struct spinlock rwlock;
 
 void sdcard_init(void) {
 	int result = sd_init();
 	initsleeplock(&sdcard_lock, "sdcard");
-
+	initlock(&rwlock, "rwlock");
 	if (0 != result) {
 		panic("sdcard_init failed");
 	}
@@ -348,8 +349,8 @@ void sdcard_read_sector(uint8 *buf, int sectorno) {
 	}
 
 	// enter critical section!
-	acquiresleep(&sdcard_lock);
-
+	// acquiresleep(&sdcard_lock);
+	acquire(&rwlock);
 	sd_send_cmd(SD_CMD17, address, 0);
 	result = sd_get_response_R1();
 
@@ -372,7 +373,8 @@ void sdcard_read_sector(uint8 *buf, int sectorno) {
 
 	sd_end_cmd();
 
-	releasesleep(&sdcard_lock);
+	release(&rwlock);
+	// releasesleep(&sdcard_lock);
 	// leave critical section!
 }
 
@@ -393,8 +395,8 @@ void sdcard_write_sector(uint8 *buf, int sectorno) {
 	}
 
 	// enter critical section!
-	acquiresleep(&sdcard_lock);
-
+	// acquiresleep(&sdcard_lock);
+	acquire(&rwlock);
 	sd_send_cmd(SD_CMD24, address, 0);
 	if (0 != sd_get_response_R1()) {
 		releasesleep(&sdcard_lock);
@@ -445,7 +447,8 @@ void sdcard_write_sector(uint8 *buf, int sectorno) {
 		panic("sdcard: an error occurs when writing");
 	}
 
-	releasesleep(&sdcard_lock);
+	release(&rwlock);
+	// releasesleep(&sdcard_lock);
 	// leave critical section!
 }
 

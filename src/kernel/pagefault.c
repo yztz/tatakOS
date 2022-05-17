@@ -1,5 +1,5 @@
 #include "common.h"
-#include "riscv.h"
+#include "platform.h"
 #include "mm/alloc.h"
 #include "fs/fs.h"
 #include "fs/file.h"
@@ -7,44 +7,23 @@
 #include "kernel/proc.h"
 #include "defs.h"
 
-#define __MODULE_NAME__ TRAP
+#define __MODULE_NAME__ PAGEFAULT
 #include "debug.h"
 
 /**
- * @return -1 if exception unhandled else 0
-*/
-int handle_pagefault(uint64_t scause) {
-    // printf(grn("%d\n"), scause);
-    proc_t *p = myproc();
-    uint64_t va = read_csr(stval);
-
-    // illegal address
-    if(va >= p->sz) 
-        goto bad;
-    // if(va >= p->sz){
-
-    // printf(ylw("va: %d\n"), va);
-    // printf(ylw("p->sz: %d\n"), p->sz);
-    // for(;;);
-    // }
-
-    
-    // for(;;);
-    // store page fault
-    #ifdef QEMU
-    if(scause == EXCP_STORE_PAGE_FAULT) {
-    #else
-    if(scause == EXCP_STORE_FAULT) {
-    #endif
-        // cow
-        if(cow_copy(p->pagetable, va, NULL) == -1)
-            goto bad;
-        return 0;
-    }
-    //zyy: mmap or lazy
-    else if(scause == EXCP_LOAD_PAGE_FAULT){
-        // for(;;);
+ * @brief read file into memory when page fault hapened
+ * 
+ * @return int 
+ */
+int mmap_read(){
+      //zyy: mmap or lazy
         uint64 va = r_stval(), pa;
+
+        // printf(rd("va: %p\n"), va);
+        // printf(rd("va: %p\n"),PGROUNDDOWN(va));
+        // pte_t *pte = walk(p->pagetable, va, 0);
+        // printf(rd("pte: %p\n"), pte);
+
         struct proc *p = myproc();
         struct vma *v = 0;
         int i, j;
@@ -54,6 +33,8 @@ int handle_pagefault(uint64_t scause) {
           if(v->addr <= va && va < v->addr + v->len)
             break;
         }
+
+        // printf(rd("v->addr: %p\n"), v->addr);
 
         if(i < VMA_NUM){
 
@@ -69,7 +50,8 @@ int handle_pagefault(uint64_t scause) {
             panic("map page failed!");
           }
 
-          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
+          // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
+          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
             // printf("%d\n", r);
             panic("read file failed!");
           }
@@ -80,14 +62,54 @@ int handle_pagefault(uint64_t scause) {
         }
 
         return 0;
+}
 
+/**
+ * @return -1 if exception unhandled else 0
+*/
+int handle_pagefault(uint64_t scause) {
+    // printf(grn("%d\n"), scause);
+    proc_t *p = myproc();
+    uint64_t va = read_csr(stval);
+
+    // illegal address
+    if(va >= p->sz) 
+        goto bad;
+
+    // 地址翻译与访问顺序为：VMA ---> MMU ---> PMA ---> PMP ---> ACCESSED
+    // 在特权级1.12下，所有与MMU相关的错误都将触发xx_page_fault
+    // 而对于PMP(Physical Memory Protection)相关的错误，都将触发xx_access_fault。
+    // 在特权级1.9下，由于没有pagefault(ref: p51)，因此SBI帮我在底层做了一下转换
+    // 对于缺页的错误，它将非缺页以及非PMP访问的异常都归结到了xx_access_fault中，因此这里需要加一层宏判断
+    
+    #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+    if(scause == EXCP_STORE_PAGE_FAULT)
+    #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
+    if(scause == EXCP_STORE_FAULT)
+    #else
+    if(0)
+    #endif
+    { // store page fault
+        // cow
+        if(cow_copy(p->pagetable, va, NULL) == -1){
+            if(mmap_read() == -1)
+              goto bad;
+        }
+        return 0;
     }
-    // for(;;);
+    
+    
+
+    if(scause == EXCP_LOAD_PAGE_FAULT)
+    { 
+        mmap_read();
+        return 0;
+    }
+
     return -1;
 
     bad:
     debug("page fault va is %lx sepc is %lx", va, r_sepc());
-    // for(;;);
     p->killed = 1;
     return 0;
 }
