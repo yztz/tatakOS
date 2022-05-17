@@ -11,6 +11,60 @@
 #include "debug.h"
 
 /**
+ * @brief read file into memory when page fault hapened
+ * 
+ * @return int 
+ */
+int mmap_read(){
+      //zyy: mmap or lazy
+        uint64 va = r_stval(), pa;
+
+        // printf(rd("va: %p\n"), va);
+        // printf(rd("va: %p\n"),PGROUNDDOWN(va));
+        // pte_t *pte = walk(p->pagetable, va, 0);
+        // printf(rd("pte: %p\n"), pte);
+
+        struct proc *p = myproc();
+        struct vma *v = 0;
+        int i, j;
+
+        for(i = 0; i < VMA_NUM; i++){
+          v = &(p->vma[i]);
+          if(v->addr <= va && va < v->addr + v->len)
+            break;
+        }
+
+        // printf(rd("v->addr: %p\n"), v->addr);
+
+        if(i < VMA_NUM){
+
+          for(j = 0; j*PGSIZE < v->len; j++){
+            if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE){
+              break;
+            }
+          }
+
+          pa = (uint64)kalloc();
+          memset((void *)pa, 0, PGSIZE);
+          if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
+            panic("map page failed!");
+          }
+
+          // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
+          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
+            // printf("%d\n", r);
+            panic("read file failed!");
+          }
+
+        } else{
+          p->killed = 1;
+          panic("va not find in vma!! lazy allocation is not implemented!");
+        }
+
+        return 0;
+}
+
+/**
  * @return -1 if exception unhandled else 0
 */
 int handle_pagefault(uint64_t scause) {
@@ -37,52 +91,19 @@ int handle_pagefault(uint64_t scause) {
     #endif
     { // store page fault
         // cow
-        if(cow_copy(p->pagetable, va, NULL) == -1)
-            goto bad;
+        if(cow_copy(p->pagetable, va, NULL) == -1){
+            if(mmap_read() == -1)
+              goto bad;
+        }
         return 0;
     }
     
     
 
     if(scause == EXCP_LOAD_PAGE_FAULT)
-    { //zyy: mmap or lazy
-        uint64 va = r_stval(), pa;
-        struct proc *p = myproc();
-        struct vma *v = 0;
-        int i, j;
-
-        for(i = 0; i < VMA_NUM; i++){
-          v = &(p->vma[i]);
-          if(v->addr <= va && va < v->addr + v->len)
-            break;
-        }
-
-        if(i < VMA_NUM){
-
-          for(j = 0; j*PGSIZE < v->len; j++){
-            if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE){
-              break;
-            }
-          }
-
-          pa = (uint64)kalloc();
-          memset((void *)pa, 0, PGSIZE);
-          if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
-            panic("map page failed!");
-          }
-
-          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
-            // printf("%d\n", r);
-            panic("read file failed!");
-          }
-
-        } else{
-          p->killed = 1;
-          panic("va not find in vma!! lazy allocation is not implemented!");
-        }
-
+    { 
+        mmap_read();
         return 0;
-
     }
 
     return -1;

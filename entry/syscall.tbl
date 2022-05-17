@@ -29,13 +29,8 @@
 64     write     sys_write
 80     fstat     sys_fstat  
 ##############MM################
-<<<<<<< HEAD
 214     sbrk      sys_sbrk  
 215     munmap      sys_munmap
-=======
-214     sbrk      sys_sbrk 
-#215     munmap    sys_munmap
->>>>>>> 149a3aff56aa1d80cf49e53a1899976820d29229
 222     mmap      sys_mmap
 ############Others##############
 153     times           sys_times

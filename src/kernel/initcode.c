@@ -29,25 +29,17 @@ char *mm_testcase[] = {"brk", "mmap"};
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
 // char* prog_name[] = { "close", "dup",};
-char* prog_name[] = { "mmap"};
+char* prog_name[] = {"munmap", "mmap"};
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
-<<<<<<< HEAD
     // run(fs_testcase);
     // run(proc_testcase);
     // run(other_testcase);
     run(prog_name);
-=======
-    run(fs_testcase);
-    run(proc_testcase);
-    run(mm_testcase);
-    run(other_testcase);
-    // run(prog_name);
->>>>>>> 149a3aff56aa1d80cf49e53a1899976820d29229
     for(;;);
 }
 #undef run
