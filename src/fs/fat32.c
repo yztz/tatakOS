@@ -1,3 +1,7 @@
+/* 
+    此模块的设计思想在于，尽可能地减少与上层的耦合，尽可能的独立，为后续VFS加入提供可能性。
+    此外，许多接口函数的参数使用的都是基本的数据类型，且尽可能地仅与fat32协议相关，提供了移植的可能性。
+*/
 #include "fs/fs.h"
 #include "fs/blk_device.h"
 #include "mm/alloc.h"
@@ -56,7 +60,7 @@ typedef FR_t (*entry_handler_t)(dir_item_t *item, travs_meta_t *meta, void *para
 static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, 
                           entry_handler_t handler, 
                           int alloc, uint32_t *offset,
-                          void *param, void *ret);
+                          void *p1, void *p2);
 
 
 typedef struct lookup_param {
@@ -437,7 +441,7 @@ static uint8_t cal_checksum(char* shortname) {
 static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, 
                           entry_handler_t handler, 
                           int alloc, uint32_t *offset,
-                          void *param, void *ret) 
+                          void *p1, void *p2) 
 {
     const int item_per_sec = fat->bytes_per_sec/sizeof(dir_item_t);
     uint32_t curr_clus = dir_clus;
@@ -452,7 +456,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus,
                 uint32_t ofst = (clus_cnt * SPC(fat) + i) * BPS(fat) + j * sizeof(dir_item_t);
                 dir_item_t *item = (dir_item_t *)(b->data) + j;
                 travs_meta_t meta = {.buf = b, .item_no = j, .nitem = item_per_sec,.offset = ofst};
-                if((res = handler(item, &meta, param, ret)) != FR_CONTINUE) {
+                if((res = handler(item, &meta, p1, p2)) != FR_CONTINUE) {
                     brelse(b);
                     if(offset) // 计算当前目录项在当前目录数据簇中的偏移量
                         *offset = ofst;
@@ -480,34 +484,52 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus,
 }
 
 
-static FR_t file_trunc_handler(dir_item_t *item, travs_meta_t *meta, void *fat, void *name) {
-    if(item->name[0] == FAT_NAME_END) {
-        panic("trunc: no diritem");
-    } else if(item->name[0] != FAT_NAME_FREE) {
-        // found
-        if(strncmp((char *)item->name, (char *)name, FAT_SFN_LENGTH) == 0) {
-            item->size = 0;
-            // 销毁fat链，但保留一个簇大小来减少分配频率
-            fat_destory_clus_chain((fat32_t *)fat, FAT_FETCH_CLUS(item), 1);
-            bwrite(meta->buf);
-            return FR_OK;
-        }
-    }
 
+FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) { 
+    item->size = 0;
+    // 将文件大小设置为0
+    fat_update(fat, dir_clus, offset, item);
+    // 回收簇
+    fat_destory_clus_chain(fat, FAT_FETCH_CLUS(item), 0);
+
+    return FR_OK;
+}
+
+static FR_t unlink_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofs) {
+    uint8_t checksum = *(uint8_t *)checkson;
+    int offset = *(int *)ofs;
+
+    if(meta->offset > offset) return FR_ERR;
+
+    if(item->name[0] == FAT_NAME_END) {
+        return FR_OK; // 找不到了
+    } else if(item->name[0] == FAT_NAME_FREE) {
+        // JUST a free entry
+    } else {
+        if(FAT_IS_LFN(item->attr)) { // 长目录项
+            if(((dir_slot_t *)item)->alias_checksum == checksum) {
+                item->name[0] = FAT_NAME_FREE;
+            }
+        } else { // 短目录项
+            if(meta->offset == offset) {
+                debug("found short item for unlink");
+                item->name[0] = FAT_NAME_FREE;
+                return FR_OK;
+            }
+        }
+        
+    }
     return FR_CONTINUE;
 }
 
-/* 
-    若item为文件，设置filesize为0，此外解除链
-*/
-FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, dir_item_t *item) { // only for file
-    if(item->attr == FAT_ATTR_DIR) {
-        return FR_ERR;
-    } else {
-        return fat_travs_dir(fat, dir_clus, file_trunc_handler, 0, NULL, fat, item->name);
-    }
+FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
+    uint32_t checksum = cal_checksum((char *)item->name);
+    debug_if(FAT_IS_DIR(item->attr), "warning! You are trying del a dir");
+    // 截断文件
+    fat_trunc(fat, dir_clus, offset, item);
+    // 删除目录项
+    return fat_travs_dir(fat, dir_clus, unlink_handler, 0, NULL, &checksum, &offset);
 }
-
 
 
 
@@ -685,7 +707,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
     }
 }
 
-
+// todo: 不是本函数的TODO！主要是上层函数调用时，可能还要增加父entry的文件大小？
 /* 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项*/
 FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset) {
     char name[MAX_FILE_NAME];
@@ -727,11 +749,7 @@ static int match_long_name(lp_t *lp, dir_slot_t *slot) {
     char *p = lp->p;
 
     int pos = extractname(slot, buf) - 1;
-    // for(int i = 0; i <= pos; i++) {
-    //     printf("%d ", buf[i]);
-    // }
-    // debug("");
-    // debug("get long name %s size %d", buf, strlen(buf) + 1);
+
     while(p >= lp->longname && pos >= 0) {
         if(buf[pos] != *p) {
             return 0;
@@ -816,12 +834,6 @@ static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, vo
 
 /* 在指定目录簇下寻找名为name的目录项 */
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *ret, uint32_t *offset) {
-    // 生成对应的短文件名
-    // char short_name[FAT_SFN_LENGTH + 1];
-    // char name[MAX_FILE_NAME];
-    // strncpy(name, cname, MAX_FILE_NAME);
-    // generate_shortname(short_name, name);
-    // debug("the shorname is: %s", short_name);
     char *name = (char *)cname;
     int len = strlen(name);
     lp_t lp = {.longname = name, .p = name + len, .top = name + len, .next = 0, .checksum = 0};

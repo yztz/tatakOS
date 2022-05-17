@@ -16,7 +16,7 @@
 void printf(const char *fmt, ...);
 
 // FS
-char *fs_testcase[] = { "mkdir_","openat", "dup2","close",  "getcwd", "getdents",
+char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
                       "mount", "umount", "test_echo"};
 //
