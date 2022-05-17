@@ -6,6 +6,7 @@
 #include "kernel/proc.h"
 #include "kernel/elf.h"
 #include "defs.h"
+#include "common.h"
 #include "mm/vm.h"
 #include "fs/fs.h"
 
@@ -43,6 +44,7 @@ exec(char *path, char **argv)
     goto bad;
 
 
+  // vmprint(pagetable);
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
@@ -64,6 +66,8 @@ exec(char *path, char **argv)
       goto bad;
   }
 
+  // printf("ph: %d\n", ph.vaddr + ph.memsz);
+  vmprint(pagetable);
   eunlockput(ep);
   ep = NULL;
 

@@ -16,6 +16,7 @@
  * @return int 
  */
 int mmap_read(){
+        struct proc *p = myproc();
       //zyy: mmap or lazy
         uint64 va = r_stval(), pa;
 
@@ -24,7 +25,8 @@ int mmap_read(){
         // pte_t *pte = walk(p->pagetable, va, 0);
         // printf(rd("pte: %p\n"), pte);
 
-        struct proc *p = myproc();
+        // vmprint(p->pagetable);
+        
         struct vma *v = 0;
         int i, j;
 

@@ -458,6 +458,14 @@ sys_mmap(void)
     return -1;
 
   uint64 old_addr = p->sz;
+  printf(rd("old_addr: %p\n"), old_addr);
+  pte_t *pte = walk(p->pagetable, old_addr, 0);
+  
+  printf(ylw("pte: %p\n"), *pte);
+  printf("pa: %p\n", PTE2PA(*pte));
+  printf("V: %d\n", *pte & PTE_V);
+  printf("U: %d\n", *pte & PTE_U);
+
   p->sz += length;
   for (i = 0; i < VMA_NUM; i++)
   { // lock?
