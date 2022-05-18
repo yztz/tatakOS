@@ -51,7 +51,7 @@ int mmap_fetch(){
 
           // pte_t *pte = walk(p->pagetable, va, 0);
           // printf(grn("pte_pa: %p"), PTE2PA(*pte));
-          
+          int prot = get_prot(v->prot);
           memset((void *)pa, 0, PGSIZE);
           if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
             panic("map page failed!");
