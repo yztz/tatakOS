@@ -173,16 +173,18 @@ free_vma(struct proc *p){
     v = &(p->vma[i]);
     // v->state is cleared in sys_munmap
     if(v->state == VMA_USED){
-      for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->addr + v->len); a++){
+      for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
       if ((pte = walk(p->pagetable, a, 0)) == 0)
         continue;
       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
         continue;
 
+      // printf(ylw("a: %p\n"), a);
       //may have bug here!
       if (v->flags & MAP_SHARED)
       {
-        writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, PGMASK & (v->len + v->addr - a)));
+        // printf(ylw("PGMASK & : %p\n"), (v->end - a));
+        // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
       }
       // printf(ylw("free_vam a: %p\n"), a); 
       uvmunmap(p->pagetable, a, 1, 1);

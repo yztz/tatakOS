@@ -93,7 +93,8 @@
         "vector": "c",
         "optional": "c",
         "stdexcept": "c",
-        "numeric": "c"
+        "numeric": "c",
+        "deque": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

@@ -15,9 +15,8 @@
  * 
  * @return int 
  */
-int mmap_read(){
+int mmap_fetch(){
         struct proc *p = myproc();
-      //zyy: mmap or lazy
         uint64 va = r_stval(), pa;
 
         // printf(rd("va: %p\n"), va);
@@ -48,7 +47,7 @@ int mmap_read(){
 
           pa = (uint64)kalloc();
 
-          printf(ylw("pa: %p\n"), pa);
+          // printf(ylw("pa: %p\n"), pa);
 
           // pte_t *pte = walk(p->pagetable, va, 0);
           // printf(grn("pte_pa: %p"), PTE2PA(*pte));
@@ -62,7 +61,7 @@ int mmap_read(){
           // printf(grn("pte_pa: %p"), PTE2PA(*pte));
 
           // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
-          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
+          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, min(PGSIZE, v->end - PGROUNDDOWN(va))) == -1){
             // printf("%d\n", r);
             panic("read file failed!");
           }
@@ -108,7 +107,7 @@ int handle_pagefault(uint64_t scause) {
     { // store page fault
         // cow
         if(cow_copy(p->pagetable, va, NULL) == -1){
-            if(mmap_read() == -1)
+            if(mmap_fetch() == -1)
               goto bad;
         }
         return 0;
@@ -118,7 +117,7 @@ int handle_pagefault(uint64_t scause) {
 
     if(scause == EXCP_LOAD_PAGE_FAULT)
     { 
-        mmap_read();
+        mmap_fetch();
         return 0;
     }
 

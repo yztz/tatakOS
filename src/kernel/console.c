@@ -71,19 +71,22 @@ consolewrite(int user_src, uint64 src, int n)
 {
   int i;
 
-  if(src == 0x60000000){
-    printf(grn("src: %p \n"), src);
-    // for(;;);
-    for(int i=1; i < 50; i++)
-      printf(grn("%c"), *(char*)((void*)0x803c0000 + i));
-    // printf(grn("pa content: %c\n"), *(char*)va);
-    printf("\n");
-  }
+  // enable_sum();
+  // if(src == 0x60000000){
+  //   printf(grn("src: %p \n"), src);
+  //   // for(;;);
+  //   char c;
+  //   for(int i=0; i < 50; i++)
+  //     printf(rd("char: %c\n"), c);
+  //     // printf(grn("%c"), *(char*)((void*)0x60000000 + i));
+  //   // printf(grn("pa content: %c\n"), *(char*)va);
+  //   printf("\n");
+  // }
+  // disable_sum();
   for(i = 0; i < n; i++){
     char c;
     if(either_copyin(&c, user_src, src+i, 1) == -1)
       break;
-    // printf("%c", c);
     consputc(c);
   }
 

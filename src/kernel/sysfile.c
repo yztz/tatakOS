@@ -448,7 +448,6 @@ sys_mmap(void)
 {
   uint64 addr, length, offset;
   int prot, flags, fd, i;
-  // struct file *f = NULL;
   struct proc *p = myproc();
 
   if (argaddr(0, &addr) < 0 || argaddr(1, &length) < 0 ||
@@ -486,6 +485,7 @@ sys_mmap(void)
       p->vma[i].prot = prot;
       p->vma[i].flags = flags;
       p->vma[i].off = offset;
+      p->vma[i].end = (old_addr + length);
 
       filedup(p->ofile[fd]);
       p->vma[i].map_file = p->ofile[fd];
@@ -495,13 +495,17 @@ sys_mmap(void)
   }
   if (i == VMA_NUM)
     panic("vma is full!");
-    // return -1;
 
-  // printf(ylw("sys_mmap: %d\n"), old_addr);
   return old_addr;
 }
 
-/*目前只考虑从vma头开始unmap的情况*/
+/**
+ * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以
+ * 要求va是页对齐的，并且len为PGSIZE的整数倍，或者等于区域的总长度
+ * 否则需要考虑区域的分割等问题。
+ * 
+ * @return uint64 
+ */
 uint64
 sys_munmap(void)
 {
@@ -517,34 +521,32 @@ sys_munmap(void)
   for (i = 0; i < VMA_NUM; i++)
   {
     v = &(p->vma[i]);
-    if (v->state == VMA_USED && v->addr <= va && va < v->addr + v->len)
+    if (v->state == VMA_USED && v->addr == va)
       break;
   }
   if (i == VMA_NUM) // ummap null
-    return -1;
+    panic("munmap: va is not equal to one of v->addr!");
+    // return -1;
 
-  // for(;;);
-  // for(;;);
-  // printf("va: %p   len: %p\n", va, len);
-  // printf(grn("%d\n"), va);
+  if(len % PGSIZE != 0 && len != v->len)
+    panic("munmap: length is not a multiple of PGSIZE or vma length!");
+
   va = PGROUNDUP(va);
-  // printf(ylw("munmap va: %p\n"), va);
-  // printf(ylw("munmap len: %d\n"), len);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
   if (va <= PGROUNDDOWN(va + len))
-    for (int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE)
+    for (int a = va; a <= PGROUNDDOWN(va + len); a += PGSIZE)
     {
+      printf(rd("a: %p\n"), a);
       if ((pte = walk(p->pagetable, a, 0)) == 0)
         continue;
       if ((*pte & PTE_V) == 0)
         continue;
 
-      printf(ylw("a: %d\n"), a);
       // write back to disk
       if (v->flags & MAP_SHARED)
       {
-        writee(v->map_file->ep, 1, va, v->off + (a - v->addr), min(PGSIZE, PGMASK & (v->len + v->addr - a)));
+        writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
       }
       uvmunmap(p->pagetable, a, 1, 1);
     }
@@ -553,8 +555,7 @@ sys_munmap(void)
   if (va == v->addr && len == v->len)
   {
     // v->state = VMA_UNUSED;
-    // TODO();//free 
-    fileclose(v->map_file);
+    // fileclose(v->map_file);
   }
 
   // for a simple version of mmap, we assume it's unmap from the head 
@@ -563,6 +564,5 @@ sys_munmap(void)
   v->addr += len;
   v->len -= len;
 
-  // for(;;);
   return 0;
 }
