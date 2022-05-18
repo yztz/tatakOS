@@ -93,8 +93,13 @@
         "vector": "c",
         "optional": "c",
         "stdexcept": "c",
+<<<<<<< HEAD
         "mm_types.h": "c",
         "rbtree.h": "c"
+=======
+        "numeric": "c",
+        "deque": "c"
+>>>>>>> purefat32
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

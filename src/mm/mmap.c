@@ -25,6 +25,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 
 }
 
+//zyy: a region is represented as [addr, end), end is not included.
 /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
 struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
 {

@@ -21,6 +21,8 @@
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int argfd(int n, int *pfd, struct file **pf)
@@ -446,7 +448,6 @@ sys_mmap(void)
 {
   uint64 addr, length, offset;
   int prot, flags, fd, i;
-  // struct file *f = NULL;
   struct proc *p = myproc();
 
   if (argaddr(0, &addr) < 0 || argaddr(1, &length) < 0 ||
@@ -457,8 +458,20 @@ sys_mmap(void)
   if ((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
     return -1;
 
-  uint64 old_addr = p->sz;
-  p->sz += length;
+  uint64 old_addr = p->cur_mmap_sz;
+
+  // printf(rd("old_addr: %p\n"), old_addr);
+  // pte_t *pte = walk(p->pagetable, old_addr, 0);
+  
+  // printf(ylw("pte: %p\n"), *pte);
+  // printf("pa: %p\n", PTE2PA(*pte));
+  // printf("V: %d\n", *pte & PTE_V);
+  // printf("U: %d\n", *pte & PTE_U);
+
+  //有个问题，一个文件似乎必须占据整个页，如果两个文件映射到同一个页，那么
+  //第一个触发页错误的文件会导致第二个无法触发页错误，从而第二个文件可能读写
+  //第一个文件的mmap区域。
+  p->cur_mmap_sz += PGROUNDUP(length); 
   for (i = 0; i < VMA_NUM; i++)
   { // lock?
     if (p->vma[i].state == VMA_UNUSED)
@@ -472,6 +485,7 @@ sys_mmap(void)
       p->vma[i].prot = prot;
       p->vma[i].flags = flags;
       p->vma[i].off = offset;
+      p->vma[i].end = (old_addr + length);
 
       filedup(p->ofile[fd]);
       p->vma[i].map_file = p->ofile[fd];
@@ -480,13 +494,18 @@ sys_mmap(void)
     }
   }
   if (i == VMA_NUM)
-    return -1;
+    panic("vma is full!");
 
-  // printf(ylw("sys_mmap: %d\n"), old_addr);
   return old_addr;
 }
 
-/*目前只考虑从vma头开始unmap的情况*/
+/**
+ * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以
+ * 要求va是页对齐的，并且len为PGSIZE的整数倍，或者等于区域的总长度
+ * 否则需要考虑区域的分割等问题。
+ * 
+ * @return uint64 
+ */
 uint64
 sys_munmap(void)
 {
@@ -502,33 +521,32 @@ sys_munmap(void)
   for (i = 0; i < VMA_NUM; i++)
   {
     v = &(p->vma[i]);
-    if (v->state == VMA_USED && v->addr <= va && va < v->addr + v->len)
+    if (v->state == VMA_USED && v->addr == va)
       break;
   }
   if (i == VMA_NUM) // ummap null
-    return -1;
+    panic("munmap: va is not equal to one of v->addr!");
+    // return -1;
 
-  // for(;;);
-  // for(;;);
-  // printf("va: %p   len: %p\n", va, len);
-  // printf(grn("%d\n"), va);
+  if(len % PGSIZE != 0 && len != v->len)
+    panic("munmap: length is not a multiple of PGSIZE or vma length!");
+
   va = PGROUNDUP(va);
-  // printf(ylw("%d\n"), va);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
-  if (va < PGROUNDDOWN(va + len))
-    for (int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE)
+  if (va <= PGROUNDDOWN(va + len))
+    for (int a = va; a <= PGROUNDDOWN(va + len); a += PGSIZE)
     {
+      printf(rd("a: %p\n"), a);
       if ((pte = walk(p->pagetable, a, 0)) == 0)
         continue;
       if ((*pte & PTE_V) == 0)
         continue;
 
-      printf(ylw("a: %d\n"), a);
       // write back to disk
       if (v->flags & MAP_SHARED)
       {
-        filewrite(v->map_file, va, PGSIZE);
+        writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
       }
       uvmunmap(p->pagetable, a, 1, 1);
     }
@@ -536,8 +554,8 @@ sys_munmap(void)
   // free the entire vma
   if (va == v->addr && len == v->len)
   {
-    v->state = VMA_UNUSED;
-    fileclose(v->map_file);
+    // v->state = VMA_UNUSED;
+    // fileclose(v->map_file);
   }
 
   // for a simple version of mmap, we assume it's unmap from the head 
@@ -546,6 +564,5 @@ sys_munmap(void)
   v->addr += len;
   v->len -= len;
 
-  // for(;;);
   return 0;
 }
