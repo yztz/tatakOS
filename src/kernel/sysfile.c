@@ -21,6 +21,8 @@
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int argfd(int n, int *pfd, struct file **pf)
@@ -459,7 +461,7 @@ sys_mmap(void)
 
   uint64 old_addr = p->cur_mmap_sz;
 
-  printf(rd("old_addr: %p\n"), old_addr);
+  // printf(rd("old_addr: %p\n"), old_addr);
   // pte_t *pte = walk(p->pagetable, old_addr, 0);
   
   // printf(ylw("pte: %p\n"), *pte);
@@ -470,7 +472,7 @@ sys_mmap(void)
   //有个问题，一个文件似乎必须占据整个页，如果两个文件映射到同一个页，那么
   //第一个触发页错误的文件会导致第二个无法触发页错误，从而第二个文件可能读写
   //第一个文件的mmap区域。
-  p->cur_mmap_sz += length;
+  p->cur_mmap_sz += PGROUNDUP(length); 
   for (i = 0; i < VMA_NUM; i++)
   { // lock?
     if (p->vma[i].state == VMA_UNUSED)
@@ -492,7 +494,8 @@ sys_mmap(void)
     }
   }
   if (i == VMA_NUM)
-    return -1;
+    panic("vma is full!");
+    // return -1;
 
   // printf(ylw("sys_mmap: %d\n"), old_addr);
   return old_addr;
@@ -525,11 +528,11 @@ sys_munmap(void)
   // printf("va: %p   len: %p\n", va, len);
   // printf(grn("%d\n"), va);
   va = PGROUNDUP(va);
-  printf(ylw("munmap va: %p\n"), va);
-  printf(ylw("munmap len: %d\n"), len);
+  // printf(ylw("munmap va: %p\n"), va);
+  // printf(ylw("munmap len: %d\n"), len);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
-  if (va < PGROUNDDOWN(va + len))
+  if (va <= PGROUNDDOWN(va + len))
     for (int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE)
     {
       if ((pte = walk(p->pagetable, a, 0)) == 0)
@@ -541,7 +544,7 @@ sys_munmap(void)
       // write back to disk
       if (v->flags & MAP_SHARED)
       {
-        filewrite(v->map_file, va, PGSIZE);
+        writee(v->map_file->ep, 1, va, v->off + (a - v->addr), min(PGSIZE, PGMASK & (v->len + v->addr - a)));
       }
       uvmunmap(p->pagetable, a, 1, 1);
     }

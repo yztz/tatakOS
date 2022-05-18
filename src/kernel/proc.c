@@ -9,6 +9,14 @@
 #include "mm/vm.h"
 
 #include "debug.h"
+#include "fs/fcntl.h"
+#include "fs/stat.h"
+#include "fs/fs.h"
+#include "fs/file.h"
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 struct cpu cpus[NUM_CORES];
 
 struct proc proc[NPROC];
@@ -171,7 +179,12 @@ free_vma(struct proc *p){
       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
         continue;
 
-      printf(ylw("free_vam a: %p\n"), a); 
+      //may have bug here!
+      if (v->flags & MAP_SHARED)
+      {
+        writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, PGMASK & (v->len + v->addr - a)));
+      }
+      // printf(ylw("free_vam a: %p\n"), a); 
       uvmunmap(p->pagetable, a, 1, 1);
 
       }

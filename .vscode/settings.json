@@ -92,7 +92,8 @@
         "unordered_map": "c",
         "vector": "c",
         "optional": "c",
-        "stdexcept": "c"
+        "stdexcept": "c",
+        "numeric": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

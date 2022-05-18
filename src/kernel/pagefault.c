@@ -20,7 +20,7 @@ int mmap_read(){
       //zyy: mmap or lazy
         uint64 va = r_stval(), pa;
 
-        printf(rd("va: %p\n"), va);
+        // printf(rd("va: %p\n"), va);
         // printf(rd("va: %p\n"),PGROUNDDOWN(va));
         // pte_t *pte = walk(p->pagetable, va, 0);
         // printf(rd("pte: %p\n"), pte);
@@ -61,10 +61,10 @@ int mmap_read(){
             panic("read file failed!");
           }
 
-          for(int i=1; i < 50; i++)
-            printf(grn("%c"), *(char*)(pa + i));
-          // printf(grn("pa content: %c\n"), *(char*)va);
-          printf("\n");
+          // for(int i=1; i < 50; i++)
+          //   printf(grn("%c"), *(char*)(pa + i));
+          // // printf(grn("pa content: %c\n"), *(char*)va);
+          // printf("\n");
 
         } else{
           p->killed = 1;
