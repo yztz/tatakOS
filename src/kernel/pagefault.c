@@ -50,10 +50,16 @@ int mmap_read(){
 
           printf(ylw("pa: %p\n"), pa);
 
+          // pte_t *pte = walk(p->pagetable, va, 0);
+          // printf(grn("pte_pa: %p"), PTE2PA(*pte));
+          
           memset((void *)pa, 0, PGSIZE);
           if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
             panic("map page failed!");
           }
+
+          // pte_t *pte = walk(p->pagetable, va, 0);
+          // printf(grn("pte_pa: %p"), PTE2PA(*pte));
 
           // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
           if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
