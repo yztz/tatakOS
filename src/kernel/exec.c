@@ -67,7 +67,7 @@ exec(char *path, char **argv)
   }
 
   // printf("ph: %d\n", ph.vaddr + ph.memsz);
-  vmprint(pagetable);
+  // vmprint(pagetable);
   eunlockput(ep);
   ep = NULL;
 
@@ -124,6 +124,7 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
+  // printf(rd("sz: %x\n"), sz);
   p->trapframe->epc = elf.entry;  // initial program counter = main
   debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer

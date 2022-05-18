@@ -457,16 +457,20 @@ sys_mmap(void)
   if ((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
     return -1;
 
-  uint64 old_addr = p->sz;
-  printf(rd("old_addr: %p\n"), old_addr);
-  pte_t *pte = walk(p->pagetable, old_addr, 0);
-  
-  printf(ylw("pte: %p\n"), *pte);
-  printf("pa: %p\n", PTE2PA(*pte));
-  printf("V: %d\n", *pte & PTE_V);
-  printf("U: %d\n", *pte & PTE_U);
+  uint64 old_addr = p->cur_mmap_sz;
 
-  p->sz += length;
+  printf(rd("old_addr: %p\n"), old_addr);
+  // pte_t *pte = walk(p->pagetable, old_addr, 0);
+  
+  // printf(ylw("pte: %p\n"), *pte);
+  // printf("pa: %p\n", PTE2PA(*pte));
+  // printf("V: %d\n", *pte & PTE_V);
+  // printf("U: %d\n", *pte & PTE_U);
+
+  //有个问题，一个文件似乎必须占据整个页，如果两个文件映射到同一个页，那么
+  //第一个触发页错误的文件会导致第二个无法触发页错误，从而第二个文件可能读写
+  //第一个文件的mmap区域。
+  p->cur_mmap_sz += length;
   for (i = 0; i < VMA_NUM; i++)
   { // lock?
     if (p->vma[i].state == VMA_UNUSED)
@@ -521,7 +525,8 @@ sys_munmap(void)
   // printf("va: %p   len: %p\n", va, len);
   // printf(grn("%d\n"), va);
   va = PGROUNDUP(va);
-  // printf(ylw("%d\n"), va);
+  printf(ylw("munmap va: %p\n"), va);
+  printf(ylw("munmap len: %d\n"), len);
   // if a virtual address has been mapped to physic address,
   // unmap it, otherwise do noting.
   if (va < PGROUNDDOWN(va + len))
@@ -544,7 +549,8 @@ sys_munmap(void)
   // free the entire vma
   if (va == v->addr && len == v->len)
   {
-    v->state = VMA_UNUSED;
+    // v->state = VMA_UNUSED;
+    // TODO();//free 
     fileclose(v->map_file);
   }
 

@@ -20,7 +20,7 @@ int mmap_read(){
       //zyy: mmap or lazy
         uint64 va = r_stval(), pa;
 
-        // printf(rd("va: %p\n"), va);
+        printf(rd("va: %p\n"), va);
         // printf(rd("va: %p\n"),PGROUNDDOWN(va));
         // pte_t *pte = walk(p->pagetable, va, 0);
         // printf(rd("pte: %p\n"), pte);
@@ -47,6 +47,9 @@ int mmap_read(){
           }
 
           pa = (uint64)kalloc();
+
+          printf(ylw("pa: %p\n"), pa);
+
           memset((void *)pa, 0, PGSIZE);
           if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
             panic("map page failed!");
@@ -57,6 +60,11 @@ int mmap_read(){
             // printf("%d\n", r);
             panic("read file failed!");
           }
+
+          for(int i=1; i < 50; i++)
+            printf(grn("%c"), *(char*)(pa + i));
+          // printf(grn("pa content: %c\n"), *(char*)va);
+          printf("\n");
 
         } else{
           p->killed = 1;
@@ -75,7 +83,7 @@ int handle_pagefault(uint64_t scause) {
     uint64_t va = read_csr(stval);
 
     // illegal address
-    if(va >= p->sz) 
+    if(va >= p->cur_mmap_sz) 
         goto bad;
 
     // 地址翻译与访问顺序为：VMA ---> MMU ---> PMA ---> PMP ---> ACCESSED

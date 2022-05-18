@@ -8,6 +8,7 @@
 #include "defs.h"
 #include "mm/vm.h"
 
+#include "debug.h"
 struct cpu cpus[NUM_CORES];
 
 struct proc proc[NPROC];
@@ -148,7 +149,34 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  p->cur_mmap_sz = MMAP_BASE;
   return p;
+}
+
+void
+free_vma(struct proc *p){
+  pte_t *pte;
+  struct vma *v;
+  int i;
+  uint64 a;
+
+  // for(;;);
+  for(i=0; i < VMA_NUM; i++){
+    v = &(p->vma[i]);
+    // v->state is cleared in sys_munmap
+    if(v->state == VMA_USED){
+      for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->addr + v->len); a++){
+      if ((pte = walk(p->pagetable, a, 0)) == 0)
+        continue;
+      if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
+        continue;
+
+      printf(ylw("free_vam a: %p\n"), a); 
+      uvmunmap(p->pagetable, a, 1, 1);
+
+      }
+    }
+  }
 }
 
 // free a proc structure and the data hanging from it,
@@ -163,6 +191,10 @@ freeproc(struct proc *p)
     kfree((void*)p->kstack);
   p->trapframe = 0;
   p->kstack = 0;
+
+  free_vma(p);
+
+  // for(;;);
   if(p->pagetable){
     proc_freepagetable(p->pagetable, p->sz);
     p->pagetable = 0;
@@ -357,6 +389,8 @@ do_clone(uint64_t stack)
   np->state = RUNNABLE;
   release(&np->lock);
 
+
+  np->cur_mmap_sz = p->cur_mmap_sz;
   return pid;
 }
 
