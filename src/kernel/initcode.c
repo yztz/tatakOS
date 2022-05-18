@@ -29,7 +29,7 @@ char *mm_testcase[] = {"brk", "mmap"};
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
 // char* prog_name[] = { "close", "dup",};
-char* prog_name[] = {"munmap", "mmap"};
+char* prog_name[] = {"mmap", "munmap", };
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))

@@ -15,7 +15,7 @@
 #endif
 
 #define debug(fmt, ...) printf("["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
-#define debug_if(condition, fmt, ...) {if(condition) printf("["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__)}
+#define debug_if(condition, fmt, ...) {if(condition) debug(fmt, ##__VA_ARGS__)}
 #else 
 
 #define debug(fmt, ...)
