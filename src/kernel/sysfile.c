@@ -537,7 +537,7 @@ sys_munmap(void)
   if (va <= PGROUNDDOWN(va + len))
     for (int a = va; a <= PGROUNDDOWN(va + len); a += PGSIZE)
     {
-      printf(rd("a: %p\n"), a);
+      // printf(rd("a: %p\n"), a);
       if ((pte = walk(p->pagetable, a, 0)) == 0)
         continue;
       if ((*pte & PTE_V) == 0)
