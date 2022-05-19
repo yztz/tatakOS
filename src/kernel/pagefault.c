@@ -15,16 +15,10 @@
  * 
  * @return int 
  */
-int mmap_read(){
-      //zyy: mmap or lazy
+int mmap_fetch(){
+    struct proc *p = myproc();
     uint64 va = r_stval(), pa;
 
-    // printf(rd("va: %p\n"), va);
-    // printf(rd("va: %p\n"),PGROUNDDOWN(va));
-    // pte_t *pte = walk(p->pagetable, va, 0);
-    // printf(rd("pte: %p\n"), pte);
-
-    struct proc *p = myproc();
     struct vma *v = 0;
     int i, j;
 
@@ -34,13 +28,27 @@ int mmap_read(){
         break;
     }
 
-    // printf(rd("v->addr: %p\n"), v->addr);
 
     if(i < VMA_NUM){
 
       for(j = 0; j*PGSIZE < v->len; j++){
         if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE){
           break;
+          pa = (uint64)kalloc();
+
+          memset((void *)pa, 0, PGSIZE);
+          if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
+            panic("map page failed!");
+          }
+
+        
+          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, min(PGSIZE, v->end - PGROUNDDOWN(va))) == -1){
+            panic("read file failed!");
+          }
+
+        } else{
+          p->killed = 1;
+          panic("va not find in vma!! lazy allocation is not implemented!");
         }
       }
 
@@ -73,7 +81,7 @@ int handle_pagefault(uint64_t scause) {
     uint64_t va = read_csr(stval);
 
     // illegal address
-    if(va >= p->sz) 
+    if(va >= p->cur_mmap_sz) 
         goto bad;
 
     // 地址翻译与访问顺序为：VMA ---> MMU ---> PMA ---> PMP ---> ACCESSED
@@ -92,7 +100,7 @@ int handle_pagefault(uint64_t scause) {
     { // store page fault
         // cow
         if(cow_copy(p->pagetable, va, NULL) == -1){
-            if(mmap_read() == -1)
+            if(mmap_fetch() == -1)
               goto bad;
         }
         return 0;
@@ -102,7 +110,7 @@ int handle_pagefault(uint64_t scause) {
 
     if(scause == EXCP_LOAD_PAGE_FAULT)
     { 
-        mmap_read();
+        mmap_fetch();
         return 0;
     }
 

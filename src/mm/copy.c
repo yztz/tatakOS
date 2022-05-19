@@ -79,8 +79,10 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   return 0;
 }
 
-#define check_range(va, n, limit) \
-  (((uint64_t)(va) + (uint64_t)(n) > (uint64_t)(va)) && ((uint64_t)(va) + (uint64_t)(n) <= (uint64_t)(limit)))
+#define check_range(va, n, limit, mmap_limit) \
+  (((uint64_t)(va) + (uint64_t)(n) > (uint64_t)(va)) && \
+  (((uint64_t)(va) + (uint64_t)(n) <= (uint64_t)(limit)) || \
+  (((uint64_t)(va) + (uint64_t)(n) >= MMAP_BASE) && ((uint64_t)(va) + (uint64_t)(n) <= mmap_limit))))
 
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.
@@ -97,7 +99,7 @@ int copy_from_user(void *to, void *from, size_t n) {
   if(!p)
     panic("copy_from_user: no process ctx");
 
-  if(!check_range(from, n, p->sz))
+  if(!check_range(from, n, p->sz, p->cur_mmap_sz))
     return -1;
   // todo: more checks, such as: guard pages, **mmap**...
   

@@ -93,6 +93,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 #define VMA_NUM 16
 struct vma{
   uint64 addr;
+  uint64 end;//aligned to pages
   uint64 len;
   int prot;
   int flags;
@@ -128,7 +129,9 @@ struct proc {
   // struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   uint64 ktrap_fp;
+
   struct vma vma[VMA_NUM];
+  uint64 cur_mmap_sz;
 };
 
 typedef struct proc proc_t;

@@ -121,12 +121,12 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
-      // panic("uvmunmap: walk");
-      continue;
+      panic("uvmunmap: walk");
+      // continue;
     }
     if((*pte & PTE_V) == 0){
-      // panic("uvmunmap: not mapped");
-      continue;
+      panic("uvmunmap: not mapped");
+      // continue;
     }
     if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
       panic("uvmunmap: not a leaf");
