@@ -34,6 +34,8 @@ struct fat_entry {
     uint32_t    clus_offset; /* 簇内字节偏移量 */
 
     sleeplock_t  lock;       /* io */
+    
+    struct address_space *i_mmaping;
 };
 
 typedef struct fat_entry entry_t;
@@ -65,5 +67,22 @@ struct linux_dirent64 {
         char            d_name[];
 };
 
+struct address_space {
+	struct inode		*host;		/* owner: inode, block_device */
+	struct radix_tree_root	page_tree;	/* radix tree of all pages */
+	// rwlock_t		tree_lock;	/* and rwlock protecting it */
+	unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
+	struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
+	struct list_head	i_mmap_nonlinear;/*list VM_NONLINEAR mappings */
+	spinlock_t		i_mmap_lock;	/* protect tree, count, list */
+	unsigned int		truncate_count;	/* Cover race condition with truncate */
+	unsigned long		nrpages;	/* number of total pages */
+	spinlock_t		private_lock;	/* for use by the address_space */
+} __attribute__((aligned(sizeof(long))));
+	/*
+	 * On most architectures that alignment is already the case; but
+	 * must be enforced here for CRIS, to let the least signficant bit
+	 * of struct page's "mapping" pointer be used for PAGE_MAPPING_ANON.
+	 */
 
 #endif
