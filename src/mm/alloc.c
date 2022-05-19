@@ -59,7 +59,7 @@ void *kalloc(void) {
 /**
  * IMPORTANT!
  * Note: kfree does not check the legality of addr now,
- * so never try to free a unallocated mem or try to free a truncated mem.
+ * so never try to free an unallocated mem or try to free a truncated mem.
 */
 void kfree(void *addr) {
     //todo: do more checks...

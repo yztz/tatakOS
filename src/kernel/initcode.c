@@ -24,11 +24,10 @@ char *proc_testcase[] = { "getppid", "getpid",
                        "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 
-char *mm_testcase[] = {"brk", "mmap"};
+char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-// char* prog_name[] = { "close", "dup",};
 char* prog_name[] = {"mmap", "munmap"};
 
 void run(char *testcases[], int cnt);

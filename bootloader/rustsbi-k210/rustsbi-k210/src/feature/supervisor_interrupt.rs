@@ -6,7 +6,7 @@ use rustsbi::println;
 static mut DEVINTRENTRY: usize = 0;
 
 pub unsafe fn call_supervisor_interrupt(ctx: &mut SupervisorContext) {
-    println!("ext called!");
+    // println!("ext called!");
     unsafe {
         stval::write(0x9);
     }

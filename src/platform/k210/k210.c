@@ -46,18 +46,19 @@ void platform_dirver_init() {
     /* SYSCTL */
     sysctl_init();
     debug("sysctl init success!");
+    
     /* FPIOA */
     fpioa_init();
 
-    fpioa_set_function(27, FUNC_SPI0_SCLK);
-    fpioa_set_function(28, FUNC_SPI0_D0);
-    fpioa_set_function(26, FUNC_SPI0_D1);
-	fpioa_set_function(32, FUNC_GPIOHS7);
-    fpioa_set_function(29, FUNC_SPI0_SS3);
+    // fpioa_set_function(27, FUNC_SPI0_SCLK);
+    // fpioa_set_function(28, FUNC_SPI0_D0);
+    // fpioa_set_function(26, FUNC_SPI0_D1);
+	// fpioa_set_function(32, FUNC_GPIOHS7);
+    // fpioa_set_function(29, FUNC_SPI0_SS3);
     debug("fpioa init success!");
 
     /* GPIOHS */
-    gpiohs_init();
+    // gpiohs_init();
     /* SPI */
     spi_io_init(SPI_DEVICE_0);
     debug("spi init success!");
@@ -66,7 +67,8 @@ void platform_dirver_init() {
     debug("dmac init success!");
     
     /* SDCARD */
-    sdcard_init();
+    if(sd_init() != 0) 
+        panic("sd init fail");
     debug("sdcard init success!");
 
     debug("driver init success!");
