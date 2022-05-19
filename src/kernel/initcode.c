@@ -28,7 +28,6 @@ char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-// char* prog_name[] = { "close", "dup",};
 char* prog_name[] = {"mmap", "munmap"};
 
 void run(char *testcases[], int cnt);
@@ -38,6 +37,7 @@ void main() {
     // printf("hello world %d\n", 123);
     run(fs_testcase);
     run(proc_testcase);
+    run(mm_testcase);
     run(other_testcase);
     // run(prog_name);
     for(;;);
