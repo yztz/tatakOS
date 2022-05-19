@@ -15,6 +15,7 @@
 kmap_t kmap[MAX_MAP];
 static int nxt_mapid; // maybe add a lock for nxt_mapid?
 
+#include "mm/io.h"
 /*
  * the kernel's page table.
  */
@@ -33,13 +34,22 @@ kvminit(void)
   kernel_pagetable = (pagetable_t)kalloc();
   memset(kernel_pagetable, 0, PGSIZE);
   nxt_mapid = 0;
-  // ioremap(CLINT, 0x10000);
-  // ioremap(PLIC_BASE_ADDR, 0x4000000);
-  // ioremap(VIRTIO0, PGSIZE);
 
+  // uint64 UNUSED(va) = ioremap(0x2000000, 0x10000);
   // vmprint(kernel_pagetable);
-  // erasekvm(kernel_pagetable);
+  // va = ioremap(0xc000000, 0x4000000);
   // vmprint(kernel_pagetable);
+  // va = ioremap(0x50440000, 0x10000);
+  // vmprint(kernel_pagetable);
+  // va = ioremap(0x502b0000, 0x10000);
+  // vmprint(kernel_pagetable);
+  // va = ioremap(0x52000000U, 0x1000000);
+  // vmprint(kernel_pagetable);
+  // ioremap(0x50000000U, 0x1000);
+  // vmprint(kernel_pagetable);
+  //   uint64 va = 0x1f06000000UL;
+  //   kvmmap(va, 0x52000000U , 0x1000000, PTE_R | PTE_W, PGSPEC_LARGE);
+  //   vmprint(kernel_pagetable);
   // for(;;);
 
   // map kernel text executable and read-only.
@@ -71,7 +81,7 @@ kvminithart()
 // or 0 if not mapped.
 // Can only be used to look up user pages.
 uint64
-walkaddr(pagetable_t pagetable, uint64 va)
+_walkaddr(pagetable_t pagetable, uint64 va, int pg_spec)
 {
   pte_t *pte;
   uint64 pa;
@@ -79,7 +89,8 @@ walkaddr(pagetable_t pagetable, uint64 va)
   if(va >= MAXVA)
     return 0;
 
-  pte = walk(pagetable, va, 0);
+  pte = _walk(pagetable, va, 0, pg_spec);
+
   if(pte == 0)
     return 0;
   if((*pte & PTE_V) == 0)
@@ -98,10 +109,11 @@ kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
 {
   if(va % PGSIZE_SPEC(spec)) // we need va aligned
     panic("kvmmap: pgsize");
-  if(_mappages(kernel_pagetable, va, sz, pa, perm, spec) != 0)
-    panic("kvmmap");
   if(nxt_mapid == MAX_MAP)
     panic("no map space");
+  if(_mappages(kernel_pagetable, va, sz, pa, perm, spec) != 0)
+    panic("kvmmap");
+  
   kmap[nxt_mapid++] = (kmap_t) {.va=va,.pa=pa,.size=sz,.pg_spec=spec,.perm=perm};
 }
 
@@ -301,8 +313,7 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){ // 叶子节点
-      printf("\nnormal pa: %p\n", PTE2PA_SPEC(pte, PGSPEC_NORMAL));
-      printf("large pa: %p\n", PTE2PA_SPEC(pte, PGSPEC_LARGE));
+      printf("\nnormal pa: %p\n", PTE2PA(pte));
       panic("freewalk: leaf");
     }
   }

@@ -326,7 +326,7 @@ void spi_send_data_multiple(spi_device_num_t spi_num, spi_chip_select_t chip_sel
  */
 void spi_send_data_standard_dma(dmac_channel_number_t channel_num, spi_device_num_t spi_num,
                                 spi_chip_select_t chip_select,
-                                const uint8_t *cmd_buff, size_t cmd_len, const uint8_t *tx_buff, size_t tx_len);
+                                const uint8_t *tx_buff, size_t tx_len);
 
 /**
  * @brief       Spi receive data by dma
@@ -335,8 +335,6 @@ void spi_send_data_standard_dma(dmac_channel_number_t channel_num, spi_device_nu
  * @param[in]   r_channel_num       Dmac read channel number
  * @param[in]   spi_num             Spi bus number
  * @param[in]   chip_select         Spi chip select
- * @param[in]   cmd_buff            Spi command buffer point
- * @param[in]   cmd_len             Spi command length
  * @param[in]   rx_buff             Spi receive buffer point
  * @param[in]   rx_len              Spi receive buffer length
  *
@@ -344,10 +342,9 @@ void spi_send_data_standard_dma(dmac_channel_number_t channel_num, spi_device_nu
  *     - 0      Success
  *     - Other  Fail
  */
-void spi_receive_data_standard_dma(dmac_channel_number_t dma_send_channel_num,
-                                   dmac_channel_number_t dma_receive_channel_num,
-                                   spi_device_num_t spi_num, spi_chip_select_t chip_select, const uint8_t *cmd_buff,
-                                   size_t cmd_len, uint8_t *rx_buff, size_t rx_len);
+void spi_receive_data_standard_dma(dmac_channel_number_t dma_receive_channel_num,
+                                   spi_device_num_t spi_num, spi_chip_select_t chip_select,
+                                   uint8_t *rx_buff, size_t rx_len);
 
 /**
  * @brief       Spi special send data by dma
@@ -421,7 +418,7 @@ void spi_fill_data_dma(dmac_channel_number_t channel_num, spi_device_num_t spi_n
  */
 void spi_send_data_normal_dma(dmac_channel_number_t channel_num, spi_device_num_t spi_num,
                               spi_chip_select_t chip_select,
-                              const void *tx_buff, size_t tx_len, spi_transfer_width_t spi_transfer_width);
+                              const void *tx_buff, size_t tx_len);
 
 /**
  * @brief       Spi normal send by dma

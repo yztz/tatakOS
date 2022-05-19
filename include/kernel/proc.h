@@ -127,6 +127,7 @@ struct proc {
   struct fat_entry *cwd;           // Current directory
   // struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint64 ktrap_fp;
   struct vma vma[VMA_NUM];
 };
 

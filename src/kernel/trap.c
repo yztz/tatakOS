@@ -163,6 +163,11 @@ kerneltrap()
   // printf("scause is %lx\n", scause);
   // printf("sepc = %lx\n", sepc);
   // debug("kerneltrap: sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
+
+  if(myproc()) {
+    myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
+  }
+
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
   if(intr_get() != 0)
@@ -204,10 +209,8 @@ int devintr(uint64 scause) {
   if (scause == INTR_SOFT) { // k210 ext passby soft
     #ifdef K210
     // printf("caught software intr!\n");
-    debug("external");
     if(r_stval() == 9) {
       int ret;
-      debug("externel interrupt");
       ret = handle_ext_irq();
       clear_csr(sip, SIP_SSIP);
       sbi_set_mext();

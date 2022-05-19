@@ -8,6 +8,9 @@
 #include "printf.h"
 #include "param.h"
 
+#define __MODULE_NAME__ PAGE
+#include "debug.h"
+
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
 
@@ -98,6 +101,7 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, in
   return 0;
 
   bad:
+  debug("mappages fail");
   _uvmunmap(pagetable, start, (a-start)/PGSIZE_SPEC(spec), 0, spec);
   return -1;
 }
@@ -127,7 +131,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
       panic("uvmunmap: not a leaf");
     if(do_free){
-      uint64 pa = PTE2PA_SPEC(*pte, spec);
+      uint64 pa = PTE2PA(*pte);
       kfree((void*)pa);
     }
     *pte = 0;

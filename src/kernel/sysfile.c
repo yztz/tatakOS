@@ -184,12 +184,10 @@ uint64 sys_unlinkat(void) {
 
     if ((entry = namee(from, path)) == NULL)
         return -1;
-    debug("here");
     elock(entry);
     // 仅仅是减少链接数，当引用数为0时会自动检查链接数并决定是否将其释放
     entry->nlink--;
     eunlockput(entry);
-    debug("here2");
     return 0;
 }
 

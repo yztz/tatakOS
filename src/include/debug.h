@@ -21,11 +21,10 @@
 #define debug(fmt, ...)
 #define debug_if(condition, fmt, ...)
 
+#endif // DEBUG
+
 #define grn(str) 	"\e[32;1m"str"\e[0m"
 #define ylw(str) 	"\e[33;1m"str"\e[0m"
 #define rd(str) 	"\e[31;1m"str"\e[0m"
-
-#endif // DEBUG
-
 
 #endif // _H_DEBUG_
