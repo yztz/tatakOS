@@ -7,7 +7,7 @@ volatile int panicked = 0;
 void panic(char *s)
 {
   printf(rd("panic: "));
-  printf(rd(s));
+  printf(rd("%s"), s);
   printf("\n");
   // printf("backtrace: \n");
   // backtrace();

@@ -9,7 +9,7 @@
 #include "common.h"
 #include "str.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -301,9 +301,11 @@ FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
             if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
                 uint32_t clus_num = i * entry_per_sect + j;
                 if(next == 0) { // 如果是最后一个簇，则标记为END
+                    debug("mark clus %d as end", clus_num);
                     *(entry + j) = FAT_CLUS_END;
                 } else { // 如果是前面的簇，则标记为下一个簇的簇号
                     *(entry + j) = next;
+                    debug("mark clus %d as head", clus_num);
                 }
                 next = clus_num;
                 changed = 1;
@@ -336,13 +338,17 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
         uint32_t *pclus;
 
         buf_t *b = bread(fat->dev, clus2fatsec(fat, cclus));
+        // debug("cur bno is %d clus is %d", clus2fatsec(fat, cclus), cclus);
         pclus = (uint32_t *)(b->data + clus2offset(fat, cclus));
         cclus = *pclus; // 得到下一个簇
-        if(idx == 0 && keepfirst)
+        if(cclus == FAT_CLUS_FREE) {
+            panic("release free?");
+        }
+        if(idx == 0 && keepfirst) {
             *pclus = FAT_CLUS_END;
-        else
+        } else {
             *pclus = FAT_CLUS_FREE;
-
+        }
         bwrite(b);
         brelse(b);
         idx++;
@@ -489,9 +495,10 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
     item->size = 0;
     // 将文件大小设置为0
     fat_update(fat, dir_clus, offset, item);
+    debug("file size zeroed");
     // 回收簇
     fat_destory_clus_chain(fat, FAT_FETCH_CLUS(item), 0);
-
+    debug("cluster recycled");
     return FR_OK;
 }
 
@@ -509,11 +516,12 @@ static FR_t unlink_handler(dir_item_t *item, travs_meta_t *meta, void *checkson,
         if(FAT_IS_LFN(item->attr)) { // 长目录项
             if(((dir_slot_t *)item)->alias_checksum == checksum) {
                 item->name[0] = FAT_NAME_FREE;
+                bwrite(meta->buf);
             }
         } else { // 短目录项
             if(meta->offset == offset) {
-                debug("found short item for unlink");
                 item->name[0] = FAT_NAME_FREE;
+                bwrite(meta->buf);
                 return FR_OK;
             }
         }

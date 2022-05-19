@@ -4,6 +4,7 @@
 #include "printf.h"
 #include "mm/vm.h"
 #include "sbi.h"
+#include "debug.h"
 
 #define LOOP() {while(1) continue;}
 #define DIVIDER() {printf("\n---------------------------------\n");}
@@ -53,12 +54,14 @@ static inline uint32_t get_gpio_bit(volatile uint32_t *bits, size_t offset)
 struct dir_item;
 
 void vmprint(pagetable_t pagetable);
-void backtrace(void);
+void backtrace(proc_t *p);
 void print_map(kmap_t map);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
+
+void TODO(char *s, int d);
 
 #define get_order(x) luaO_log2(x)
 

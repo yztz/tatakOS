@@ -25,12 +25,14 @@
 
 static void disk_io(struct buf *b, int write) {
   #ifdef K210
-  extern void sdcard_read_sector(uint8 *buf, int sectorno);
-  extern void sdcard_write_sector(uint8 *buf, int sectorno);
+  // extern void sdcard_read_sector(uint8 *buf, int sectorno);
+  // extern void sdcard_write_sector(uint8 *buf, int sectorno);
+  extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
+  extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
   if(write) {
-    sdcard_write_sector(b->data, b->blockno);
+    sd_write_sector_dma(b->data, b->blockno, 1);
   } else {
-    sdcard_read_sector(b->data, b->blockno);
+    sd_read_sector_dma(b->data, b->blockno, 1);
   }
   #else 
   extern void virtio_disk_rw(struct buf *, int);
@@ -97,8 +99,6 @@ bget(uint dev, uint blockno)
   // Recycle the least recently used (LRU) unused buffer.
   for(b = bcache.head.prev; b != &bcache.head; b = b->prev){
     if(b->refcnt == 0) {
-      if(b->lock.lk.locked)
-        printf("b: %ld pid: %d cpid: %d\n", b->blockno, b->lock.lk.pid, myproc()->pid);
       b->dev = dev;
       b->blockno = blockno;
       b->valid = 0;

@@ -45,8 +45,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PA2PTE_SPEC(pa, level) (((((uint64)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
 #define PA2PTE(pa) PA2PTE_SPEC(pa, PGSPEC_NORMAL)
 
-#define PTE2PA_SPEC(pte, level) (((pte) >> 10) << (12 + 9 * (level)))
-#define PTE2PA(pte) PTE2PA_SPEC(pte, PGSPEC_NORMAL)
+#define PTE2PA(pte) (((pte) >> 10) << 12)
 
 #define PGSHIFT 12  // bits of offset within a page
 /* Extract the three 9-bit page table indices from a virtual address. */

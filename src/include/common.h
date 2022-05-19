@@ -8,6 +8,10 @@
 #define __STR(name) #name
 #define STR(name) __STR(name)
 
+#ifndef offsetof
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+
 #define UNUSED(x) x __attribute__((__unused__))
 
 #define likely(x) __builtin_expect(!!(x), 1)

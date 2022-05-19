@@ -37,7 +37,7 @@ _vmprint(pagetable_t pagetable, int level, int ignore_level) {
     pagetable_t pa = (pagetable_t)PTE2PA(pte);
     if(pte & PTE_V){  // 存在
       if((pte & (PTE_R|PTE_W|PTE_X)) > 0) // 打印叶节点
-        printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA_SPEC(pte, level));
+        printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA(pte));
       else {// 打印下级页表地址 
         printf("%s %-3d: pte %p pa %p\n", indent, i, pte, pa);
         _vmprint(pa, level - 1, ignore_level);
@@ -52,9 +52,9 @@ vmprint(pagetable_t pagetable) {
 }
 
 void 
-backtrace(void) {
+backtrace(proc_t *p) {
   uint64 fp, top;
-  fp = r_fp();
+  fp = p->ktrap_fp;
   top = PGROUNDUP(fp);
   while(fp < top) {
     printf("%p\n", *(uint64*)(fp-8));
@@ -106,4 +106,11 @@ int luaO_log2 (unsigned int x) {
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
   return l + log_2[x];
+}
+
+void TODO(char *s, int d)
+{
+  printf(ylw("The functionality is not yet implemented!"));
+  printf(grn("file: %s\tline: %d\r\n"), s, d);
+  for(;;);
 }
