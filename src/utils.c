@@ -108,9 +108,9 @@ int luaO_log2 (unsigned int x) {
   return l + log_2[x];
 }
 
-void inline TODO()
+void TODO(char *s, int d)
 {
   printf(ylw("The functionality is not yet implemented!"));
-  printf(grn("file: %s\tline: %d\r\n"), __FILE__, __LINE__);
+  printf(grn("file: %s\tline: %d\r\n"), s, d);
   for(;;);
 }

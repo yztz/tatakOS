@@ -27,4 +27,5 @@
 #define ylw(str) 	"\e[33;1m"str"\e[0m"
 #define rd(str) 	"\e[31;1m"str"\e[0m"
 
+
 #endif // _H_DEBUG_

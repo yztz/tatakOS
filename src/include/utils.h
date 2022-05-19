@@ -4,6 +4,7 @@
 #include "printf.h"
 #include "mm/vm.h"
 #include "sbi.h"
+#include "debug.h"
 
 #define LOOP() {while(1) continue;}
 #define DIVIDER() {printf("\n---------------------------------\n");}
@@ -59,13 +60,8 @@ void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
-// void inline TODO();
-void inline TODO()
-{
-  printf(ylw("The functionality is not yet implemented!"));
-  printf(grn("file: %s\tline: %d\r\n"), __FILE__, __LINE__);
-  for(;;);
-}
+
+void TODO(char *s, int d);
 
 #define get_order(x) luaO_log2(x)
 

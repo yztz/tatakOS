@@ -20,7 +20,14 @@
 // #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
+#include "utils.h"
 
+// void TODO(char *s, int d)
+// {
+//   printf(ylw("The functionality is not yet implemented!"));
+//   printf(grn("file: %s\tline: %d\r\n"), s, d);
+//   for(;;);
+// }
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 // Fetch the nth word-sized system call argument as a file descriptor
@@ -407,7 +414,7 @@ sys_mmap(void)
       argint(4, &fd) < 0 || argaddr(5, &offset) < 0)
     return -1;
 
-  TODO();
+  TODO(__FILE__, __LINE__);
 
   if ((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
     return -1;
@@ -446,6 +453,7 @@ sys_mmap(void)
 
       break;
     }
+  }
     if (i == VMA_NUM)
         panic("vma is full!");
 
