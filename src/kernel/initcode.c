@@ -36,9 +36,9 @@ void run(char *testcases[], int cnt);
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
-    run(fs_testcase);
-    run(proc_testcase);
-    run(other_testcase);
+    // run(fs_testcase);
+    // run(proc_testcase);
+    // run(other_testcase);
     run(prog_name);
     for(;;);
 }

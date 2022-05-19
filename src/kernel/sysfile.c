@@ -455,6 +455,8 @@ sys_mmap(void)
       argint(4, &fd) < 0 || argaddr(5, &offset) < 0)
     return -1;
 
+  TODO();
+
   if ((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
     return -1;
 

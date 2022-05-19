@@ -107,3 +107,10 @@ int luaO_log2 (unsigned int x) {
   while (x >= 256) { l += 8; x >>= 8; }
   return l + log_2[x];
 }
+
+void inline TODO()
+{
+  printf(ylw("The functionality is not yet implemented!"));
+  printf(grn("file: %s\tline: %d\r\n"), __FILE__, __LINE__);
+  for(;;);
+}
