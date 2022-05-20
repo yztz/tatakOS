@@ -97,7 +97,7 @@ struct vma{
   uint64 len;
   int prot;
   int flags;
-  uint64 off;
+  uint16 pgoff;
 
   struct file *map_file;
   enum{VMA_UNUSED, VMA_USED} state;

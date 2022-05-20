@@ -502,43 +502,11 @@ uint64 sys_munmap(void) {
 
             // write back to disk
             if (v->flags & MAP_SHARED) {
-                writee(v->map_file->ep, 1, a, v->off + (a - v->addr),
-                       min(PGSIZE, (v->end - a)));
+                // writee(v->map_file->ep, 1, a, v->off + (a - v->addr),
+                //        min(PGSIZE, (v->end - a)));
             }
             uvmunmap(p->pagetable, a, 1, 1);
         }
-    if (i == VMA_NUM)  // ummap null
-        return -1;
-
-    va = PGROUNDUP(va);
-    // if a virtual address has been mapped to physic address,
-    // unmap it, otherwise do noting.
-    if (va < PGROUNDDOWN(va + len))
-        for (int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE) {
-            if ((pte = walk(p->pagetable, a, 0)) == 0)
-                continue;
-            if ((*pte & PTE_V) == 0)
-                continue;
-
-            // write back to disk
-            if (v->flags & MAP_SHARED) {
-                filewrite(v->map_file, va, PGSIZE);
-            }
-            uvmunmap(p->pagetable, a, 1, 1);
-        }
-
-    // free the entire vma
-    if (va == v->addr && len == v->len) {
-        v->state = VMA_UNUSED;
-        fileclose(v->map_file);
-    }
-
-    // for a simple version of mmap, we assume it's unmap from the head
-    // of a vma, namely va == v->addr
-    // if we unmap in the middle of a vma, the vma is split into two
-    v->addr += len;
-    v->len -= len;
-
     // free the entire vma
     if (va == v->addr && len == v->len) {
         // v->state = VMA_UNUSED;
