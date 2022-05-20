@@ -24,7 +24,7 @@ int mmap_fetch(){
 
     for(i = 0; i < VMA_NUM; i++){
       v = &(p->vma[i]);
-      if(v->addr <= va && va < v->addr + v->len)
+      if(v->addr <= va && va < v->end)
         break;
     }
 
@@ -34,22 +34,6 @@ int mmap_fetch(){
       for(j = 0; j*PGSIZE < v->len; j++){
         if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE){
           break;
-          pa = (uint64)kalloc();
-
-          memset((void *)pa, 0, PGSIZE);
-          if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
-            panic("map page failed!");
-          }
-
-        
-          if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, min(PGSIZE, v->end - PGROUNDDOWN(va))) == -1){
-            panic("read file failed!");
-          }
-
-        } else{
-          p->killed = 1;
-          panic("va not find in vma!! lazy allocation is not implemented!");
-        }
       }
 
       pa = (uint64)kalloc();

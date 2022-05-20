@@ -93,7 +93,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 #define VMA_NUM 16
 struct vma{
   uint64 addr;
-  uint64 end;//aligned to pages
+  uint64 end;
   uint64 len;
   int prot;
   int flags;
