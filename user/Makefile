@@ -1,59 +1,65 @@
-SHELL := /bin/bash
-CFLAGS += -I$U/include
-CFLAGS += -I$(ROOT)/include
+ARCH ?= riscv64
+MODE ?= release
+CHAPTER ?= 7
+app_dir = src
+src_dir := build/$(ARCH)
+bin_dir := build/bin
+out_dir := target
+cmake_build_args := -DARCH=$(ARCH) -DCHAPTER=$(CHAPTER)
+ifeq ($(MODE), release)
+cmake_build_args += -DCMAKE_BUILD_TYPE=Release
+else ifeq ($(MODE), debug)
+cmake_build_args += -DCMAKE_BUILD_TYPE=Debug
+endif
 
-BUILD_DIR := $(subst $U,$(U_OBJ_DIR),$(shell pwd))
+# riscv64-unknown-elf-
+OBJCOPY := $(ARCH)-unknown-elf-objcopy
+OBJDUMP := $(ARCH)-unknown-elf-objdump
+CP := cp
+CH_TESTS :=  
 
-prog += _cat
-prog += _echo
-prog += _forktest
-prog += _grep
-prog += _grind
-prog += _init
-prog += _kill
-prog += _ln
-prog += _ls
-prog += _mkdir
-prog += _rm
-prog += _sh
-prog += _stressfs
-prog += _usertests
-prog += _wc
-prog += _zombie
-prog += _ctxswitch
-prog += _freemem
-prog += _cowtest
+CH2_TESTS := ch2_ ch2t_
+CH3_TESTS_BASE := $(CH2_TESTS) ch3_0_ ch3t_
+CH4_TESTS := ch2_ ch3_0_ ch4_
+CH5_TESTS := $(CH4_TESTS) ch5_
+CH6_TESTS := $(CH5_TESTS) ch6_
+CH7_TESTS := $(CH6_TESTS) ch7_
 
-# 带有路径的目标可执行程序
-target_prog := $(foreach p, $(prog), $(U_PROG_DIR)/$(p))
-# 程序构建路径
-src_dir := $(patsubst _%, $(shell pwd)/%, $(prog))
-# 库目标
-ulib_obj := $(BUILD_DIR)/lib/built-in.o
+ifeq ($(CHAPTER), 2)
+	CH_TESTS += $(CH2_TESTS)
+else ifeq ($(CHAPTER), 3_0)
+	CH_TESTS += $(CH3_TESTS_BASE)
+else ifeq ($(CHAPTER), 3_1)
+	CH_TESTS += ch3_1_
+else ifeq ($(CHAPTER), 3_2)
+	CH_TESTS += ch3_2_
+else ifeq ($(CHAPTER), 4)
+	CH_TESTS += $(CH4_TESTS)
+else ifeq ($(CHAPTER), 5)
+	CH_TESTS += $(CH5_TESTS)
+else ifeq ($(CHAPTER), 6)
+	CH_TESTS += $(CH6_TESTS)
+else ifeq ($(CHAPTER), 7)
+	CH_TESTS += $(CH7_TESTS)
+endif
 
-all: $(ulib_obj) $(src_dir) $(target_prog)
+# CH_TESTS += oscomp/open oscomp/write
 
-$(target_prog) : $(U_PROG_DIR)/_% : $(BUILD_DIR)/%/built-in.o $(ulib_obj)
-	@$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
-	@echo -e "LD\t\t$(notdir $@)"
+binary:
+	@mkdir -p $(U_OBJ_DIR)
+	@cd $(U_OBJ_DIR) && cmake $(cmake_build_args) $(shell pwd) && make
+	@$(CP) src/oscomp/text.txt $(U_OBJ_DIR)/riscv64/
+	@mkdir -p $(U_OBJ_DIR)/riscv64/mnt && touch $(U_OBJ_DIR)/riscv64/mnt/test_mount
+	@$(CP) -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
 
-.PHONY: $(src_dir)
-$(src_dir):
-	@make -C $@ -f $(SCRIPT)/Makefile.build
+# @ln -s build/riscv64/ .
 
-$(ulib_obj) : 
-	@make -C lib -f $(SCRIPT)/Makefile.build
+pre:
+	@rm -rf $(out_dir)
+	@mkdir -p $(out_dir)/bin/
+	@mkdir -p $(out_dir)/elf/
 
-# .PHONY: initcode
-# initcode:
-# 	@$(CC) $(CFLAGS) -march=rv64g -nostdinc -I. -Ikernel -c initcode.S -o $(BUILD_DIR)/initcode.o
-# 	@$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode.o
-# 	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
-# 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_DIR)/initcode.asm
+all: binary
 
-# $U/_forktest: $U/forktest.o $(ULIB)
-# 	# forktest has less library code linked in - needs to be small
-# 	# in order to be able to max out the proc table.
-# 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $U/_forktest $U/forktest.o $U/ulib.o $U/usys.o
-# 	$(OBJDUMP) -S $U/_forktest > $U/forktest.asm
-
+clean:
+	@rm -rf build target asm riscv64
