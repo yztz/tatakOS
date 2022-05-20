@@ -3,6 +3,7 @@
 #include "mm/page.h"
 #include "fs/fat.h"
 #include "str.h"
+#include "debug.h"
 
 static char* indents[] = {
   ".. .. ..",
@@ -113,4 +114,19 @@ void TODO(char *s, int d)
   printf(ylw("The functionality is not yet implemented!"));
   printf(grn("file: %s\tline: %d\r\n"), s, d);
   for(;;);
+}
+
+void
+print_all_vma(){
+  struct proc *p = myproc();
+  struct vm_area_struct *vma;
+  int i = 0;
+
+  vma = p->mm->mmap;
+  printf(ylw("number of vmas: %d\n"), p->mm->map_count);
+  while(vma != NULL){
+   printf(grn("no.%d start: %p end: %p\n"), i++, vma->vm_start, vma->vm_end); 
+   vma = vma->vm_next;
+  }
+  printf("\n");
 }

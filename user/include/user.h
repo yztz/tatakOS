@@ -13,10 +13,10 @@ int read(int, void*, int);
 int close(int);
 int kill(int);
 int exec(char*, char**);
-int open(const char*, int);
+// int open(const char*, int);
 int mknod(const char*, short, short);
 int unlink(const char*);
-int fstat(int fd, struct stat*);
+int fstat(int fd, struct kstat*);
 int link(const char*, const char*);
 int mkdir(const char*);
 int chdir(const char*);
@@ -27,9 +27,16 @@ int sleep(int);
 int uptime(void);
 int ktest(void);
 uint64 timetag(void);
+int openat(int fd, const char *filename, int flag, int mode);
+int open(const char *filename, int flag);
+
+#define AT_FDCWD -100
+
+void *mmap(void *, uint64, int, int, int, off_t);
+int munmap(void *start, uint64 len);
 
 // ulib.c
-int stat(const char*, struct stat*);
+int stat(const char*, struct kstat*);
 char* strcpy(char*, const char*);
 void *memmove(void*, const void*, int);
 char* strchr(const char*, char c);

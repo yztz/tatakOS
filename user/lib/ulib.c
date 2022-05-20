@@ -71,7 +71,7 @@ gets(char *buf, int max)
 }
 
 int
-stat(const char *n, struct stat *st)
+stat(const char *n, struct kstat *st)
 {
   int fd;
   int r;
@@ -133,4 +133,8 @@ void *
 memcpy(void *dst, const void *src, uint n)
 {
   return memmove(dst, src, n);
+}
+
+int open(const char *filename, int flag) {
+    return openat(AT_FDCWD, filename, flag, 0600);
 }

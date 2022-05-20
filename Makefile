@@ -133,12 +133,22 @@ $(MNT_DIR):
 	@mkdir -p $(MNT_DIR)
 
 # $(fs.img): user
+# $(fs.img): $(MNT_DIR)
+# 	@dd if=/dev/zero of=$@ bs=1M count=128
+# 	@mkfs.vfat -F 32 $@
+# 	@sudo mount $@ $(MNT_DIR)
+# 	@sudo cp -r $(TESTCASES_DIR)/* $(MNT_DIR)/
+# 	@sudo umount $(MNT_DIR)
+
+
+$(fs.img): user
 $(fs.img): $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=1M count=128
 	@mkfs.vfat -F 32 $@
 	@sudo mount $@ $(MNT_DIR)
-	@sudo cp -r $(TESTCASES_DIR)/* $(MNT_DIR)/
+	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
 	@sudo umount $(MNT_DIR)
+
 
 # $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
 # 	gcc -Werror -Wall -Iinclude -o $@ $<

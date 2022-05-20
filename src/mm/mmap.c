@@ -19,6 +19,7 @@
 #include "mm/mm_types.h"
 #include "mm/mm.h"
 #include "rbtree.h"
+#include "utils.h"
 
 uint64
 get_unmapped_area(uint64 len){
@@ -43,6 +44,8 @@ do_mmap(struct file *file, unsigned long addr,
 		panic("do mmap 2");// offset is not page aligned
 
 	ret = do_mmap_pgoff(file, addr, len, prot, flag, offset >> PGSHIFT);	
+
+	print_all_vma();
 	return ret;
 }
 
@@ -56,7 +59,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 
 	vma->vm_file = file;
 	vma->vm_start = get_unmapped_area(len);
-	vma->vm_end = addr + len;
+	vma->vm_end = vma->vm_start + len;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = prot;
 	vma->vm_page_prot = pgoff;

@@ -62,6 +62,7 @@ void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
 
 void TODO(char *s, int d);
+void print_all_vma();
 
 #define todo()  TODO(__FILE__, __LINE__)
 #define get_order(x) luaO_log2(x)
