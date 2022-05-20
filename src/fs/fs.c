@@ -115,7 +115,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->fat = parent->fat;
   entry->nlink = 1; // always 1
   entry->parent = parent;
-  strncpy(entry->name, name, strlen(name));
+  strncpy(entry->name, name, MAX_FILE_NAME);
   parent->ref++;
   release(&fat->cache_lock);
   return entry;

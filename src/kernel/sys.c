@@ -13,6 +13,7 @@ utsname_t sysname = {
 
 
 uint64 sys_timetag(void) {
+  printf("tick %ld\n", ticks);
     return ticks;
 }
 

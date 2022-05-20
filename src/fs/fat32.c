@@ -105,7 +105,7 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
     printf("start sector   is %d\n", fat->fat_start_sector);
     printf("fat sectors    is %d\n", fat->fat_tbl_sectors);
     printf("sec per clus   is %d\n", fat->sec_per_cluster);
-    printf("bytes per clus is %d\n", fat->bytes_per_sec);
+    printf("bytes per sec  is %d\n", fat->bytes_per_sec);
     printf("fat table num  is %d\n", fat->fat_tbl_num);
     printf("root cluster   is %d\n", fat->root_cluster);
 }
@@ -138,6 +138,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
     // memset(buffer->data, 0, 256);
     // bwrite(buffer);
+    // print_block(buffer->data);
     brelse(buffer);
     // for(;;);
     fat->root = get_root(fat);

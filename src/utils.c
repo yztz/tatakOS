@@ -63,6 +63,14 @@ backtrace(proc_t *p) {
 }
 
 void
+print_block(uint8_t *b) {
+  for(int i = 0; i < BSIZE; i++) {
+    if(i != 0 && i % 16 == 0) printf("\n");
+    printf("%02x ", b[i]);
+  }
+}
+
+void
 print_map(kmap_t map) {
   printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
 }

@@ -72,7 +72,6 @@ static void sd_write_data(uint8_t *data_buff, uint32_t length)
 
 static void sd_read_data(uint8_t *data_buff, uint32_t length)
 {
-	// debug("read");
     spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_receive_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 
@@ -80,13 +79,13 @@ static void sd_read_data(uint8_t *data_buff, uint32_t length)
 
 static void sd_write_data_dma(uint8_t *data_buff)
 {
-    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
+    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 32, 1);
     spi_send_data_standard_dma(DMAC_CHANNEL0, SPI_DEVICE_0, SPI_CHIP_SELECT_3, (uint8_t *)(data_buff), 128 * 4);
 }
 
 static void sd_read_data_dma(uint8_t *data_buff)
 {
-    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
+    spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 32, 1);
     spi_receive_data_standard_dma(DMAC_CHANNEL0, SPI_DEVICE_0, SPI_CHIP_SELECT_3, data_buff,128 * 4);
 }
 
@@ -383,15 +382,11 @@ uint8_t sd_init(void)
 	sd_lowlevel_init(0); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */
 	SD_CS_HIGH(); // 拉高HS7电平
-	/*!< Send dummy byte 0xFF, 10 times with CS high */
-	/*!< Rise CS and MOSI for 80 clocks cycles */
-	/*!< Send dummy byte 0xFF */
+
 	for (index = 0; index < 10; index++)
 		frame[index] = 0xFF;
 	sd_write_data(frame, 10);
 	/*------------Put SD in SPI mode--------------*/
-	/*!< SD initialized and set to SPI mode properly */
-
     index = 0xFF;
     while (index--) {
         sd_send_cmd(SD_CMD0, 0, 0x95);
@@ -455,113 +450,14 @@ uint8_t sd_init(void)
 	return sd_get_cardinfo(&cardinfo);
 }
 
-/*
- * @brief  Reads a block of data from the SD.
- * @param  data_buff: pointer to the buffer that receives the data read from the
- *                  SD.
- * @param  sector: SD's internal address to read from.
- * @retval The SD Response:
- *         - 0xFF: Sequence failed
- *         - 0: Sequence succeed
- */
-// uint8_t sd_read_sector(uint8_t *data_buff, uint32_t sector, uint32_t count)
-// {
-// 	uint8_t frame[2], flag;
-// 	/*!< Send CMD17 (SD_CMD17) to read one block */
-// 	if (count == 1) {
-// 		flag = 0;
-// 		sd_send_cmd(SD_CMD17, sector, 0);
-// 	} else {
-// 		flag = 1;
-// 		sd_send_cmd(SD_CMD18, sector, 0);
-// 	}
-// 	/*!< Check if the SD acknowledged the read block command: R1 response (0x00: no errors) */
-// 	if (sd_get_response() != 0x00) {
-// 		sd_end_cmd();
-// 		return 0xFF;
-// 	}
-// 	while (count) {
-// 		if (sd_get_response() != SD_START_DATA_SINGLE_BLOCK_READ)
-// 			break;
-// 		/*!< Read the SD block data : read NumByteToRead data */
-// 		sd_read_data(data_buff, 512);
-// 		/*!< Get CRC bytes (not really needed by us, but required by SD) */
-// 		sd_read_data(frame, 2);
-// 		data_buff += 512;
-// 		count--;
-// 	}
-// 	sd_end_cmd();
-// 	if (flag) {
-// 		sd_send_cmd(SD_CMD12, 0, 0);
-// 		sd_get_response();
-// 		sd_end_cmd();
-// 		sd_end_cmd();
-// 	}
-// 	/*!< Returns the reponse */
-// 	return count > 0 ? 0xFF : 0;
-// }
-
-/*
- * @brief  Writes a block on the SD
- * @param  data_buff: pointer to the buffer containing the data to be written on
- *                  the SD.
- * @param  sector: address to write on.
- * @retval The SD Response:
- *         - 0xFF: Sequence failed
- *         - 0: Sequence succeed
- */
-// uint8_t sd_write_sector(uint8_t *data_buff, uint32_t sector, uint32_t count)
-// {
-// 	uint8_t frame[2] = {0xFF};
-// 	if (count == 1) {
-// 		frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
-// 		sd_send_cmd(SD_CMD24, sector, 0);
-// 	} else {
-// 		frame[1] = SD_START_DATA_MULTIPLE_BLOCK_WRITE;
-// 		sd_send_cmd(SD_ACMD23, count, 0);
-// 		sd_get_response();
-// 		sd_end_cmd();
-// 		sd_send_cmd(SD_CMD25, sector, 0);
-// 	}
-// 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
-// 	if (sd_get_response() != 0x00) {
-// 		sd_end_cmd();
-// 		return 0xFF;
-// 	}
-// 	while (count--) {
-// 		/*!< Send the data token to signify the start of the data */
-// 		sd_write_data(frame, 2);
-// 		/*!< Write the block data to SD : write count data by block */
-// 		sd_write_data(data_buff, 512);
-// 		/*!< Put CRC bytes (not really needed by us, but required by SD) */
-// 		sd_write_data(frame, 2);
-// 		data_buff += 512;
-// 		/*!< Read data response */
-// 		if (sd_get_dataresponse() != 0x00) {
-// 			sd_end_cmd();
-// 			return 0xFF;
-// 		}
-// 	}
-// 	sd_end_cmd();
-// 	sd_end_cmd();
-// 	/*!< Returns the reponse */
-// 	return 0;
-// }
-
-
 uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 {
 	uint8_t frame[2];
 	acquiresleep(&sdlock);
 	intr_off();
 	/*!< Send CMD17 (SD_CMD17) to read one block */
-	// if (count == 1) {
-	// flag = 0;
 	sd_send_cmd(SD_CMD17, sector, 0);
-	// } else {
-	// 	flag = 1;
-	// 	sd_send_cmd(SD_CMD18, sector, 0);
-	// }
+
 	/*!< Check if the SD acknowledged the read block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
 		sd_end_cmd();
@@ -571,7 +467,7 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 	
 	if (sd_get_response() != SD_START_DATA_SINGLE_BLOCK_READ)
 		panic("read fail");
-	// 	break;
+
 	/*!< Read the SD block data : read NumByteToRead data */
 	sd_read_data_dma(data_buff);
 	/*!< Get CRC bytes (not really needed by us, but required by SD) */
@@ -579,12 +475,7 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 		
 	sd_end_cmd();
 	intr_on();
-	// if (flag) {
-	// 	sd_send_cmd(SD_CMD12, 0, 0);
-	// 	sd_get_response();
-	// 	sd_end_cmd();
-	// 	sd_end_cmd();
-	// }
+
 	releasesleep(&sdlock);
 	/*!< Returns the reponse */
 	return 0;

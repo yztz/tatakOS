@@ -12,7 +12,7 @@ int read(int, void*, int);
 int close(int);
 int kill(int);
 int exec(char*, char**);
-int open(const char*, int);
+int openat(int fd, const char*, int);
 int mknod(const char*, short, short);
 int unlink(const char*);
 // int fstat(int fd, struct stat*);

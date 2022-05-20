@@ -14,6 +14,7 @@
 }) */
 
 void printf(const char *fmt, ...);
+void read_test();
 
 // FS
 char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
@@ -28,19 +29,19 @@ char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = {"mmap", "munmap"};
+char* prog_name[] = {"close", "chdir",};
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
     // printf("hello world %d\n", 123);
-    run(fs_testcase);
-    run(proc_testcase);
-    run(mm_testcase);
-    run(other_testcase);
-    // run(prog_name);
-    for(;;);
+    // run(fs_testcase);
+    // run(proc_testcase);
+    // run(mm_testcase);
+    // run(other_testcase);
+    run(prog_name);
+  for(;;);
 }
 #undef run
 
