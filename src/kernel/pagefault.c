@@ -15,64 +15,26 @@
  * 
  * @return int 
  */
-int mmap_fetch(){
-    // struct proc *p = myproc();
-    // uint64 va = r_stval(), pa;
+int mmap_fetch(uint64 address){
+  struct mm_struct *mm = myproc()->mm;
+  struct vm_area_struct *area = mm->mmap;
+  uint64 pgoff, endoff, size;
 
-    // struct vma *v = 0;
-    // int i, j;
+  //find area that contains the address
+  while(area){
+    if(area->vm_start <= address && area->vm_end > address)
+      break;
+    area = area->vm_next;
+  }
+  struct file *file = area->vm_file;
+  struct address_space *mmaping = 
 
-    // for(i = 0; i < VMA_NUM; i++){
-    //   v = &(p->vma[i]);
-    //   if(v->addr <= va && va < v->end)
-    //     break;
-    // }
-
-
-    // if(i < VMA_NUM){
-
-    //   struct file *file = v->map_file;
-    //   struct address_space *mapping = file->ep->i_mmaping;
-    //   uint64 size, pgoff, endoff;
-      
-    //   pgoff = ((va - v->addr) >> PAGE_CACHE_SHIFT) + v->pgoff;
-    //   endoff = (())
+  pgoff = ((address - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
+	endoff = ((area->vm_end - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
+  size = 
 
 
-
-
-
-
-
-
-
-
-
-
-    //   // for(j = 0; j*PGSIZE < v->len; j++){
-    //   //   if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE)
-    //   //     break;
-    //   // }
-
-    //   // pa = (uint64)kalloc();
-    //   // memset((void *)pa, 0, PGSIZE);
-    //   // if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
-    //   //   panic("map page failed!");
-    //   // }
-
-    //   // // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
-    //   // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
-    //   //   // printf("%d\n", r);
-    //   //   panic("read file failed!");
-    //   // }
-
-
-    // } else{
-    //   p->killed = 1;
-    //   panic("va not find in vma!! lazy allocation is not implemented!");
-    // }
-
-    return 0;
+  return 0;
 }
 
 /**
@@ -103,7 +65,7 @@ int handle_pagefault(uint64_t scause) {
     { // store page fault
         // cow
         if(cow_copy(p->pagetable, va, NULL) == -1){
-            if(mmap_fetch() == -1)
+            if(mmap_fetch(va) == -1)
               goto bad;
         }
         return 0;
@@ -113,7 +75,7 @@ int handle_pagefault(uint64_t scause) {
 
     if(scause == EXCP_LOAD_PAGE_FAULT)
     { 
-        mmap_fetch();
+        mmap_fetch(va);
         return 0;
     }
 

@@ -26,6 +26,7 @@ void test_mmap(void){
     mmap(NULL, 0x111, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     mmap(NULL, 0x1001, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    mmap(NULL, 0x200, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     //printf("return array: %x\n", array);
 
     if (array == MAP_FAILED) {
