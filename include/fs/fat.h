@@ -155,7 +155,7 @@ uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
 FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
-FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, travs_handler_t handler, void *state);
+FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
 FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
 int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);

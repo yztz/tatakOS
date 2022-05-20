@@ -9,10 +9,6 @@
 #include "fs/stat.h"
 #include "param.h"
 
-#define T_DIR     1   // Directory
-#define T_FILE    2   // File
-#define T_DEVICE  3   // Device
-
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
 #define E_FILESIZE(entry) ((entry)->raw.size)
@@ -50,9 +46,8 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n);
 int reade(entry_t *entry, int user, uint64_t buff, int off, int n);
 void eput(entry_t *entry);
 entry_t *edup(entry_t *entry);
-entry_t *create(entry_t *from, char *path, short type);
 char *getcwd(entry_t *entry, char *buf);
-int read_dents(entry_t *entry, char *buf, int n);
+int read_dents(entry_t *entry, uint32_t *offset, char *buf, int n);
 void estat(entry_t *entry, struct kstat *stat);
 
 #define ROOTINO  1   // root i-number

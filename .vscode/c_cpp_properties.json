@@ -6,7 +6,7 @@
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/src/include/**",
                 "${workspaceFolder}/src/platform/**",
-                "${workspaceFolder}/user/include/**"
+                "${workspaceFolder}/user/**"
             ],
             "defines": [],
             "intelliSenseMode": "linux-gcc-x64", 
