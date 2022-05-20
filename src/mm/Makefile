@@ -6,3 +6,4 @@ obj-y += page.o
 obj-y += buddy.o
 obj-y += alloc.o
 obj-y += slob.o
+obj-y += mmap.o

@@ -107,6 +107,16 @@ allocpid() {
   return pid;
 }
 
+void
+init_mm(struct proc *p){
+
+  p->mm = kmalloc(sizeof(struct mm_struct));
+  p->mm->mmap = NULL;
+  p->mm->mmap_cache = NULL;
+  p->mm->map_count = 0;
+  initlock(&p->mm->lock, "mm lock");
+}
+
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
@@ -158,41 +168,43 @@ found:
   p->context.sp = p->kstack + PGSIZE;
 
   p->cur_mmap_sz = MMAP_BASE;
+  init_mm(p);
+
   return p;
 }
 
-void
-free_vma(struct proc *p){
-  pte_t *pte;
-  struct vma *v;
-  int i;
-  uint64 a;
+// void
+// free_vma(struct proc *p){
+//   pte_t *pte;
+//   struct vma *v;
+//   int i;
+//   uint64 a;
 
-  // for(;;);
-  for(i=0; i < VMA_NUM; i++){
-    v = &(p->vma[i]);
-    // v->state is cleared in sys_munmap
-    if(v->state == VMA_USED){
-      for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
-      if ((pte = walk(p->pagetable, a, 0)) == 0)
-        continue;
-      if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
-        continue;
+//   // for(;;);
+//   for(i=0; i < VMA_NUM; i++){
+//     v = &(p->vma[i]);
+//     // v->state is cleared in sys_munmap
+//     if(v->state == VMA_USED){
+//       for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
+//       if ((pte = walk(p->pagetable, a, 0)) == 0)
+//         continue;
+//       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
+//         continue;
 
-      // printf(ylw("a: %p\n"), a);
-      //may have bug here!
-      if (v->flags & MAP_SHARED)
-      {
-        // printf(ylw("PGMASK & : %p\n"), (v->end - a));
-        // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
-      }
-      // printf(ylw("free_vam a: %p\n"), a); 
-      uvmunmap(p->pagetable, a, 1, 1);
+//       // printf(ylw("a: %p\n"), a);
+//       //may have bug here!
+//       if (v->flags & MAP_SHARED)
+//       {
+//         // printf(ylw("PGMASK & : %p\n"), (v->end - a));
+//         // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
+//       }
+//       // printf(ylw("free_vam a: %p\n"), a); 
+//       uvmunmap(p->pagetable, a, 1, 1);
 
-      }
-    }
-  }
-}
+//       }
+//     }
+//   }
+// }
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -207,7 +219,7 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   p->kstack = 0;
 
-  free_vma(p);
+  // free_vma(p);
 
   // for(;;);
   if(p->pagetable){

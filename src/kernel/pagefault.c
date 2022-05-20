@@ -16,24 +16,27 @@
  * @return int 
  */
 int mmap_fetch(){
-    struct proc *p = myproc();
-    uint64 va = r_stval(), pa;
+    // struct proc *p = myproc();
+    // uint64 va = r_stval(), pa;
 
-    struct vma *v = 0;
-    int i, j;
+    // struct vma *v = 0;
+    // int i, j;
 
-    for(i = 0; i < VMA_NUM; i++){
-      v = &(p->vma[i]);
-      if(v->addr <= va && va < v->end)
-        break;
-    }
+    // for(i = 0; i < VMA_NUM; i++){
+    //   v = &(p->vma[i]);
+    //   if(v->addr <= va && va < v->end)
+    //     break;
+    // }
 
 
-    if(i < VMA_NUM){
+    // if(i < VMA_NUM){
 
-      struct file *file = v->map_file;
-      struct address_space *mapping = file->ep->i_mmaping;
+    //   struct file *file = v->map_file;
+    //   struct address_space *mapping = file->ep->i_mmaping;
+    //   uint64 size, pgoff, endoff;
       
+    //   pgoff = ((va - v->addr) >> PAGE_CACHE_SHIFT) + v->pgoff;
+    //   endoff = (())
 
 
 
@@ -46,29 +49,28 @@ int mmap_fetch(){
 
 
 
+    //   // for(j = 0; j*PGSIZE < v->len; j++){
+    //   //   if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE)
+    //   //     break;
+    //   // }
 
-      // for(j = 0; j*PGSIZE < v->len; j++){
-      //   if(v->addr + j*PGSIZE <= va && va < v->addr + (j+1)*PGSIZE)
-      //     break;
-      // }
+    //   // pa = (uint64)kalloc();
+    //   // memset((void *)pa, 0, PGSIZE);
+    //   // if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
+    //   //   panic("map page failed!");
+    //   // }
 
-      // pa = (uint64)kalloc();
-      // memset((void *)pa, 0, PGSIZE);
-      // if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa, PTE_R|PTE_W|PTE_X|PTE_U) == -1){
-      //   panic("map page failed!");
-      // }
-
-      // // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
-      // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
-      //   // printf("%d\n", r);
-      //   panic("read file failed!");
-      // }
+    //   // // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
+    //   // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j*PGSIZE, PGSIZE) == -1){
+    //   //   // printf("%d\n", r);
+    //   //   panic("read file failed!");
+    //   // }
 
 
-    } else{
-      p->killed = 1;
-      panic("va not find in vma!! lazy allocation is not implemented!");
-    }
+    // } else{
+    //   p->killed = 1;
+    //   panic("va not find in vma!! lazy allocation is not implemented!");
+    // }
 
     return 0;
 }

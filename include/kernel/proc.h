@@ -90,17 +90,43 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-#define VMA_NUM 16
-struct vma{
-  uint64 addr;
-  uint64 end;
-  uint64 len;
-  int prot;
-  int flags;
-  uint16 pgoff;
+// #define VMA_NUM 16
+// struct vma{
+//   uint64 addr;
+//   uint64 end;
+//   uint64 len;
+//   int prot;
+//   int flags;
+//   uint16 pgoff;
 
-  struct file *map_file;
-  enum{VMA_UNUSED, VMA_USED} state;
+//   struct file *map_file;
+//   enum{VMA_UNUSED, VMA_USED} state;
+// };
+struct vm_area_struct
+{
+  struct mm_struct *vm_mm;
+  uint64 vm_start;
+  uint64 vm_end;
+
+  struct vm_area_struct *vm_next;//linked list of vm areas per task
+  
+  int vm_page_prot;
+  int vm_flags;
+
+  // struct rb_node vm_rb;
+
+  uint64 vm_pgoff;
+  struct file *vm_file;
+};
+
+
+
+struct mm_struct {
+  struct vm_area_struct *mmap;//list of vmas
+  // struct rb_root mm_rb;
+  struct vm_area_struct *mmap_cache;
+  int map_count;              //number of vmas
+  spinlock_t lock;
 };
 
 struct fat_entry;
@@ -130,8 +156,9 @@ struct proc {
   char name[16];               // Process name (debugging)
   uint64 ktrap_fp;
 
-  struct vma vma[VMA_NUM];
+  // struct vma vma[VMA_NUM];
   uint64 cur_mmap_sz;
+  struct mm_struct *mm;
 };
 
 typedef struct proc proc_t;

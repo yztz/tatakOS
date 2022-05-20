@@ -109,4 +109,5 @@ void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 #define walk(pagetable, va, alloc) \
     _walk(pagetable, va, alloc, PGSPEC_NORMAL)
 
+#define PAGE_CACHE_SHIFT PGSHIFT
 #endif

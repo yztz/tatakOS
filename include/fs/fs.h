@@ -69,7 +69,7 @@ struct linux_dirent64 {
 
 struct address_space {
 	entry_t *host;		/* owner: inode, block_device */
-	struct radix_tree_root	page_tree;	/* radix tree of all pages */
+	// struct radix_tree_root	page_tree;	/* radix tree of all pages */
 	// rwlock_t		tree_lock;	/* and rwlock protecting it */
 	// unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
 	// struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
