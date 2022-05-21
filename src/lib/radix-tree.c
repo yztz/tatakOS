@@ -1,12 +1,29 @@
-#include "types.h"
+// #include "types.h"
+// #include "atomic/sleeplock.h"
+// #include "atomic/atomic.h"
+// #include "fs/fat.h"
+// #include "fs/stat.h"
+// #include "param.h"
+// #include "radix-tree.h"
+// #include "mm/alloc.h"
+
+// #include "debug.h"
 #include "atomic/sleeplock.h"
-#include "atomic/atomic.h"
-#include "hlist.h"
-#include "fs/fat.h"
+#include "atomic/spinlock.h"
+#include "defs.h"
+#include "fs/fcntl.h"
+#include "fs/file.h"
+#include "fs/fs.h"
 #include "fs/stat.h"
+#include "kernel/proc.h"
+#include "mm/vm.h"
 #include "param.h"
+#include "riscv.h"
+#include "types.h"
+#include "debug.h"
+#include "utils.h"
+#include "mm/mm.h"
 #include "radix-tree.h"
-#include "mm/alloc.h"
 
 //基数树(radix tree, rdt)相关
 
@@ -37,7 +54,7 @@ struct radix_tree_node {
 //根据rdt的高度返回其最大的id值。
 uint64 
 radix_tree_maxindex(uint height){
-  return 1<<(height * RADIX_TREE_MAP_SHIFT) - 1;
+  return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
 }
 
 /**
@@ -86,7 +103,7 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 {
 	struct radix_tree_node *node = NULL, *tmp, **slot;
 	uint32 height, shift;
-	int error;
+	// int error;
 
 	/* make sure the tree is high enough*/
 	if(index > radix_tree_maxindex(root->height)){

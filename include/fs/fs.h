@@ -8,6 +8,7 @@
 #include "fs/fat.h"
 #include "fs/stat.h"
 #include "param.h"
+#include "radix-tree.h"
 
 #define T_DIR     1   // Directory
 #define T_FILE    2   // File

@@ -7,14 +7,21 @@
 #include "kernel/proc.h"
 #include "defs.h"
 #include "debug.h"
-#include "page.h"
+#include "mm/page.h"
 #include "radix-tree.h"
+#include "mm/mm.h"
+
+/**
+ * @brief 定义了关于file map相关的函数，函数声明在mm.h
+ * 
+ */
+
 
 /*
  * a rather lightweight function, finding and getting a reference to a
  * hashed page atomically.
  */
-uint64 * find_get_page(struct address_space *mapping, unsigned long offset)
+uint64 find_get_page(struct address_space *mapping, unsigned long offset)
 {
 	// page_t *page;
   uint64 pa;
@@ -94,7 +101,7 @@ int filemap_nopage(uint64 address){
   return 0;
 }
 
-int 
+void
 add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
 {
   acquire(&mapping->page_lock);

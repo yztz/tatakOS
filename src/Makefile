@@ -13,6 +13,8 @@ obj-y+=platform/
 obj-y+=atomic/
 obj-y+=tests/
 
+obj-y+=lib/
+
 obj-y += printf.o
 obj-y += string.o
 obj-y += panic.o
