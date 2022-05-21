@@ -41,6 +41,7 @@ aux_source_directory(lib LIBS)
 set(LIBS ${ARCH_DIR}/crt.S src/oscomp/clone.s ${LIBS})
 add_library(ulib ${LIBS} syscall_ids)
 include_directories(include/)
+include_directories(../include/)
 target_include_directories(ulib PRIVATE ${ARCH_DIR})
 
 # Execuatble

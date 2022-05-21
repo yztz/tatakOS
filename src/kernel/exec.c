@@ -126,7 +126,7 @@ exec(char *path, char **argv)
   p->sz = sz;
   // printf(rd("sz: %x\n"), sz);
   p->trapframe->epc = elf.entry;  // initial program counter = main
-  debug("entry addr is %lx", elf.entry);
+  // debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer
   switchuvm(p);
   proc_freepagetable(oldpagetable, oldsz);

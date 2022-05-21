@@ -1,6 +1,7 @@
 #include "kernel/sys.h"
 #include "kernel/time.h"
 #include "defs.h"
+#include "profile.h"
 
 
 utsname_t sysname = {
@@ -15,6 +16,24 @@ utsname_t sysname = {
 uint64 sys_timetag(void) {
   printf("tick %ld\n", ticks);
     return ticks;
+}
+
+uint64 sys_bio_cache(void) {
+  uint64_t addr;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+
+  #ifdef DEBUG
+  cache_rate_t rate;
+  extern uint64_t bio_cache_hit, bio_cache_miss;
+  rate.hit = bio_cache_hit;
+  rate.miss = bio_cache_miss;
+  return copyout(myproc()->pagetable, addr, (char *)&rate, sizeof(rate));
+  #endif
+
+
+  return -1;
 }
 
 

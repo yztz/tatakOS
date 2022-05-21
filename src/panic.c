@@ -9,7 +9,6 @@ void panic(char *s)
   printf(s);
   printf("\n");
   // printf("backtrace: \n");
-  // backtrace();
   panicked = 1; // freeze uart output from other CPUs
   for(;;)
     ;

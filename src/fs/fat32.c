@@ -45,12 +45,12 @@
 
 typedef struct buf buf_t;
 
-
+// 目录遍历的元信息
 typedef struct travs_meta {
-    int item_no;
-    int nitem;
-    buf_t *buf;
-    uint32_t offset;
+    int item_no;    // 当前扇区内的目录项号
+    int nitem;      // 扇区内总共的目录项数
+    buf_t *buf;     // 当前扇区的buf
+    uint32_t offset; // 当前目录项在目录内的偏移量
 } travs_meta_t;
 
 
@@ -63,7 +63,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus,
                           int alloc, uint32_t *offset,
                           void *p1, void *p2);
 
-
+/* 用于目录项查找的辅助结构状态信息 */
 typedef struct lookup_param {
     char *longname; // 长文件名
     char *top; // 栈顶
@@ -174,6 +174,7 @@ FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
         panic("fat_append_cluster:prev is not the end");
     }
     *(uint32_t *)(buf->data + offset) = new;
+    bwrite(buf);
     brelse(buf);
 
     return FR_OK;
@@ -233,29 +234,19 @@ int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, 
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
     debug("cclus is %d", cclus);
+    uint32_t prev_clus;
     int alloc_num = 1; // 防止频繁alloc
-    // 计算起始簇
-    while(off >= BPC(fat)) {
-        cclus = fat_next_cluster(fat, cclus);
-        off -= BPC(fat);
-        if(cclus == FAT_CLUS_END) {
-            debug("alloc ?")
-            uint32_t prev = cclus;
-            if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR) {
-                debug("fat_write: alloc cluster fail");
-                return 0;
-            }
-            fat_append_cluster(fat, prev, cclus);
-            alloc_num++;
-        }
-    }
     int rest = n;
-    // 计算簇内起始扇区号
-    uint32_t sect = clus2datsec(fat, cclus) + off / BPS(fat);
-    // 扇区内偏移
-    off %= BPS(fat);
-    debug("fat_write: sect is %d off is %d n is %d", sect, off, rest);
+
     while(rest > 0) {
+        if(off >= BPC(fat)) {
+            off -= BPC(fat);
+            goto next_clus;
+        }
+        // 计算簇内起始扇区号
+        uint32_t sect = clus2datsec(fat, cclus) + off / BPS(fat);
+        // 扇区内偏移
+        off %= BPS(fat);
         while(sect < sect + SPC(fat) && rest > 0) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
             int len = min(rest, BPS(fat) - off);
@@ -265,22 +256,22 @@ int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, 
             brelse(b);
             rest -= len;
             buffer += len;
-            
+
             off = 0; // 偏移量以及被抵消了，恒置为0
             sect++;
         }
         if(rest == 0) break;
+    next_clus:
+        prev_clus = cclus;
         cclus = fat_next_cluster(fat, cclus);
         if(cclus == FAT_CLUS_END) {
-            uint32_t prev = cclus;
             if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR) {
-                debug("fat_write: alloc cluster f");
+                debug("fat_write: alloc fail");
                 return 0;
             }
-            fat_append_cluster(fat, prev, cclus);
+            fat_append_cluster(fat, prev_clus, cclus);
             alloc_num++;
         }
-        sect = clus2datsec(fat, cclus);
     }
 
     return n - rest;
@@ -303,7 +294,7 @@ FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
             if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
                 uint32_t clus_num = i * entry_per_sect + j;
                 if(next == 0) { // 如果是最后一个簇，则标记为END
-                    debug("mark clus %d as end", clus_num);
+                    debug("mark clus %d[sect: %d] as end", clus_num, clus2datsec(fat, clus_num));
                     *(entry + j) = FAT_CLUS_END;
                 } else { // 如果是前面的簇，则标记为下一个簇的簇号
                     *(entry + j) = next;
@@ -519,9 +510,9 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
     return FR_OK;
 }
 
-static FR_t unlink_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofs) {
+static FR_t unlink_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofst) {
     uint8_t checksum = *(uint8_t *)checkson;
-    int offset = *(int *)ofs;
+    int offset = *(int *)ofst;
 
     if(meta->offset > offset) return FR_ERR;
 
@@ -721,7 +712,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
             if(meta->offset == 0)
                 panic("something happened");
             bwrite(meta->buf);
-            debug("offset is %d", meta->offset);
+
             return FR_OK;
         } else {
             return FR_CONTINUE;

@@ -7,6 +7,7 @@
 #include "mm/alloc.h"
 #include "str.h"
 
+#define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
 
@@ -83,18 +84,6 @@ int read_dents(entry_t *entry, uint32_t *offset, char *buf, int n) {
   return n - state.desc.size;
 }
 
-
-// /* 申请一个新的entry */
-// entry_t *alloc_entry(fat32_t *fat) {
-//   entry_t *ret = (entry_t *)kmalloc(sizeof(entry_t));
-//   if(!ret) 
-//     panic("alloc_entry: kmalloc fail");
-//   initsleeplock(&ret->lock, "fat_entry");
-//   ret->fat = fat;
-//   ret->ref = 0;
-
-//   return ret;
-// }
 
 static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, const char *name) {
   entry_t *entry, *empty = NULL;
@@ -281,9 +270,6 @@ entry_t *create(entry_t *from, char *path, short type) {
   return ep;
 }
 
-// int writee(entry_t *entry, int user, uint64_t src, int off, int n) {
-  
-// }
 static char *skipelem(char *path, char *name) {
   char *s;
   int len;
@@ -366,7 +352,7 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   int newsize = off + ret;
   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
     entry->raw.size = newsize;
-    // debug("update size");
+    debug("update size");
     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
   }
   return ret;

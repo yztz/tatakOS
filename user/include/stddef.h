@@ -114,6 +114,12 @@ struct linux_dirent64 {
         char            d_name[];
 };
 
+
+typedef struct {
+    uint64 hit;
+    uint64 miss;
+} cache_rate_t;
+
 // for mmap
 #define PROT_NONE 0
 #define PROT_READ 1

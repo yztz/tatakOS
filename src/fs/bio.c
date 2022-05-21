@@ -25,8 +25,6 @@
 
 static void disk_io(struct buf *b, int write) {
   #ifdef K210
-  // extern void sdcard_read_sector(uint8 *buf, int sectorno);
-  // extern void sdcard_write_sector(uint8 *buf, int sectorno);
   extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
   extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
   if(write) {
@@ -50,12 +48,23 @@ struct {
   struct buf head;
 } bcache;
 
+
+#ifdef DEBUG
+uint64_t bio_cache_hit;
+uint64_t bio_cache_miss;
+#endif
+
 void
 binit(void)
 {
   struct buf *b;
 
   initlock(&bcache.lock, "bcache");
+
+  #ifdef DEBUG
+  bio_cache_hit = 0;
+  bio_cache_miss = 0;
+  #endif
 
   // Create linked list of buffers
   bcache.head.prev = &bcache.head;
@@ -65,13 +74,14 @@ binit(void)
     b->next = bcache.head.next;
     b->prev = &bcache.head;
     b->blockno = 0;
+    b->dev = -1;
     initsleeplock(&b->lock, "buffer");
     bcache.head.next->prev = b;
     bcache.head.next = b;
   }
 }
 
-#include "kernel/proc.h"
+
 
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
@@ -79,8 +89,6 @@ binit(void)
 static struct buf*
 bget(uint dev, uint blockno)
 {
-  if(blockno == 542398548)
-    panic("strange");
   struct buf *b;
 
   acquire(&bcache.lock);
@@ -88,13 +96,18 @@ bget(uint dev, uint blockno)
   // Is the block already cached?
   for(b = bcache.head.next; b != &bcache.head; b = b->next){
     if(b->dev == dev && b->blockno == blockno){
+      #ifdef DEBUG
+      bio_cache_hit++;
+      #endif
       b->refcnt++;
       release(&bcache.lock);
       acquiresleep(&b->lock);
       return b;
     }
   }
-
+  #ifdef DEBUG
+  bio_cache_miss++;
+  #endif
   // Not cached.
   // Recycle the least recently used (LRU) unused buffer.
   for(b = bcache.head.prev; b != &bcache.head; b = b->prev){
@@ -115,13 +128,10 @@ bget(uint dev, uint blockno)
 struct buf*
 bread(uint dev, uint blockno)
 {
-  if(blockno == 542398548)
-    panic("strange");
   struct buf *b;
-
+  
   b = bget(dev, blockno);
-  if(b->blockno == 542398548)
-    panic("strange");
+
   if(!b->valid) {
     disk_io(b, 0);
     b->valid = 1;
@@ -134,8 +144,6 @@ bread(uint dev, uint blockno)
 void
 bwrite(struct buf *b)
 {
-  if(b->blockno == 542398548)
-    panic("strange");
   if(!holdingsleep(&b->lock))
     panic("bwrite");
   // disk_io(b, 1);
@@ -147,8 +155,6 @@ bwrite(struct buf *b)
 void
 brelse(struct buf *b)
 {
-  if(b->blockno == 542398548)
-    panic("strange");
   if(!holdingsleep(&b->lock))
     panic("brelse");
   

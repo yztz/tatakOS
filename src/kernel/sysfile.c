@@ -17,7 +17,7 @@
 #include "riscv.h"
 #include "types.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
