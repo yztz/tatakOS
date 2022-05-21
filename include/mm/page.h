@@ -98,6 +98,10 @@ int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int pe
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 
+void get_page(page_t *page);
+void put_page(page_t *page);
+
+
 /* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
 /* Out of convenient and compatibility, we define the default behavior for the func below */
 #define mappages(pagetable, va, sz, pa, perm) \
@@ -110,4 +114,5 @@ void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
     _walk(pagetable, va, alloc, PGSPEC_NORMAL)
 
 #define PAGE_CACHE_SHIFT PGSHIFT
+#define PAGE_CACHE_SIZE PGSIZE
 #endif

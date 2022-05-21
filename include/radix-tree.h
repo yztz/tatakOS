@@ -19,4 +19,5 @@ struct radix_tree_root
   struct radix_tree_node *rnode;
 };
 
+void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
 #endif

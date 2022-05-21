@@ -35,7 +35,7 @@ struct fat_entry {
 
     sleeplock_t  lock;       /* io */
     
-    struct address_space *i_mmaping;
+    struct address_space *i_mapping;
 };
 
 typedef struct fat_entry entry_t;
@@ -69,7 +69,7 @@ struct linux_dirent64 {
 
 struct address_space {
 	entry_t *host;		/* owner: inode, block_device */
-	// struct radix_tree_root	page_tree;	/* radix tree of all pages */
+	struct radix_tree_root	page_tree;	/* radix tree of all pages */
 	// rwlock_t		tree_lock;	/* and rwlock protecting it */
 	// unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
 	// struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
@@ -77,7 +77,7 @@ struct address_space {
 	// spinlock_t		i_mmap_lock;	/* protect tree, count, list */
 	// unsigned int		truncate_count;	/* Cover race condition with truncate */
 	unsigned long		nrpages;	/* number of total pages */
-	spinlock_t		private_lock;	/* for use by the address_space */
+	spinlock_t		page_lock;	
 } __attribute__((aligned(sizeof(long))));
 	/*
 	 * On most architectures that alignment is already the case; but

@@ -137,3 +137,20 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     *pte = 0;
   }
 }
+
+void get_page(page_t *page){
+  acquire(&reflock);
+  page->refcnt++;
+  release(&reflock);
+}
+
+void put_page(page_t *page){
+  acquire(&reflock);
+  page->refcnt--;
+  if(page->refcnt == 0){
+    //may be do someting, release the page?
+    // todo();
+
+  }
+  release(&reflock);
+}

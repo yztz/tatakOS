@@ -6,36 +6,11 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "defs.h"
-
-#define __MODULE_NAME__ PAGEFAULT
 #include "debug.h"
 
-/**
- * @brief read file into memory when page fault hapened
- * 
- * @return int 
- */
-int mmap_fetch(uint64 address){
-  struct mm_struct *mm = myproc()->mm;
-  struct vm_area_struct *area = mm->mmap;
-  uint64 pgoff, endoff, size;
-
-  //find area that contains the address
-  while(area){
-    if(area->vm_start <= address && area->vm_end > address)
-      break;
-    area = area->vm_next;
-  }
-  struct file *file = area->vm_file;
-  struct address_space *mmaping = 
-
-  pgoff = ((address - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
-	endoff = ((area->vm_end - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
-  size = 
+#define __MODULE_NAME__ PAGEFAULT
 
 
-  return 0;
-}
 
 /**
  * @return -1 if exception unhandled else 0
@@ -65,7 +40,7 @@ int handle_pagefault(uint64_t scause) {
     { // store page fault
         // cow
         if(cow_copy(p->pagetable, va, NULL) == -1){
-            if(mmap_fetch(va) == -1)
+            if(filemap_nopage(va) == -1)
               goto bad;
         }
         return 0;
@@ -75,7 +50,7 @@ int handle_pagefault(uint64_t scause) {
 
     if(scause == EXCP_LOAD_PAGE_FAULT)
     { 
-        mmap_fetch(va);
+        filemap_nopage(va);
         return 0;
     }
 
