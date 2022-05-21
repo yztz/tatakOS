@@ -17,16 +17,17 @@
 uint64 * find_get_page(struct address_space *mapping, unsigned long offset)
 {
 	// page_t *page;
-  uint64 *pa;
+  uint64 pa;
 
 	/*
 	 * We scan the hash list read-only. Addition to and removal from
 	 * the hash-list needs a held write-lock.
 	 */
 	acquire(&mapping->page_lock);
-	pa = radix_tree_lookup(&mapping->page_tree, offset);
+	pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  /* increase the ref counts of the page that pa belongs to*/
 	if (pa)
-		// get_page(&pages[PAGE2NUM(*pa)]);
+		get_page(&pages[PAGE2NUM(pa)]);
 	release(&mapping->page_lock);
 	return pa;
 }
@@ -40,8 +41,8 @@ int filemap_nopage(uint64 address){
   struct mm_struct *mm = myproc()->mm;
   struct vm_area_struct *area = mm->mmap;
   uint64 pgoff, endoff, size;
-  page_t *page;
-  uint64 *pa;
+  // page_t *page;
+  uint64 pa;
 
   //find area that contains the address
   while(area){
@@ -71,13 +72,32 @@ int filemap_nopage(uint64 address){
   // find frome page cache first
   // page = find_get_page(mapping, pgoff);
   pa = find_get_page(mapping, pgoff);
+  // 页缓存命中，把address和pa映射
   if(pa){
-    mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R);
+    if(mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R) < 0)
+      panic("filemap no page 2");
+
     return 0;
   }
 
-  pa = (uint64 *)kalloc();
+  // 没有命中，分配页，读磁盘
+  pa = (uint64 )kalloc(); 
+  if(mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R) < 0)
+    panic("filemap no page 3");
   
-  
+  //如果文件的最后一个页的内容不满一页，reade返回值大于0。
+  if(reade(area->vm_file->ep, 1, PGROUNDDOWN(address), pgoff*PGSIZE, PGSIZE) < 0)
+    panic("filemap no page 4");
 
+  /* add page to page cache*/
+  add_to_page_cache(pa, mapping, pgoff);
+  return 0;
+}
+
+int 
+add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
+{
+  acquire(&mapping->page_lock);
+  radix_tree_insert(&mapping->page_tree, offset, (void *)pa);
+  release(&mapping->page_lock);
 }

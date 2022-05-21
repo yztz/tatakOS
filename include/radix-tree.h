@@ -20,4 +20,6 @@ struct radix_tree_root
 };
 
 void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
+int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item);
+static int radix_tree_extend(struct radix_tree_root *root, unsigned long index);
 #endif
