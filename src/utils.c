@@ -109,12 +109,13 @@ int luaO_log2 (unsigned int x) {
   return l + log_2[x];
 }
 
-void TODO(char *s, int d)
+void TODO(char *s, const char *s1, int d)
 {
   printf(ylw("The functionality is not yet implemented!"));
-  printf(grn("file: %s\tline: %d\r\n"), s, d);
-  for(;;);
+  printf(grn("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
+  // for(;;);
 }
+
 
 void
 print_all_vma(){
@@ -129,4 +130,16 @@ print_all_vma(){
    vma = vma->vm_next;
   }
   printf("\n");
+}
+
+void
+printf_radix_tree(){
+
+}
+
+
+/* 打印空闲的物理页数,统计剩余的物理内存 */
+void
+print_empty_page(){
+
 }

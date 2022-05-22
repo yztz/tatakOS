@@ -61,10 +61,11 @@ int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
 
-void TODO(char *s, int d);
+void TODO(char *s, const char *s1, int d);
 void print_all_vma();
+void printf_radix_tree();
 
-#define todo()  TODO(__FILE__, __LINE__)
+#define todo()  TODO(__FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)
 
 

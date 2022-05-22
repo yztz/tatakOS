@@ -117,6 +117,8 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->parent = parent;
   strncpy(entry->name, name, strlen(name));
   parent->ref++;
+  
+  entry->i_mapping  = kmalloc(sizeof(struct address_space));
   release(&fat->cache_lock);
   return entry;
 
@@ -162,6 +164,11 @@ static void unlink(entry_t *entry) {
   }
 }
 
+void
+free_mapping(entry_t *entry){
+  todo();
+}
+
 // 递归地解引用
 // under lock
 static void __eput(entry_t *entry) {
@@ -183,6 +190,10 @@ static void __eput(entry_t *entry) {
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
     }
+
+    /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
+    free_mapping(entry);
+
     __eput(entry->parent);
   }
 }

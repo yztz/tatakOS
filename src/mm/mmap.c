@@ -45,7 +45,7 @@ do_mmap(struct file *file, unsigned long addr,
 
 	ret = do_mmap_pgoff(file, addr, len, prot, flag, offset >> PGSHIFT);	
 
-	print_all_vma();
+	// print_all_vma();
 	return ret;
 }
 

@@ -36,6 +36,7 @@ struct fat_entry {
 
     sleeplock_t  lock;       /* io */
     
+    /* 在entry读到内存中时，分配对象 */
     struct address_space *i_mapping;
 };
 

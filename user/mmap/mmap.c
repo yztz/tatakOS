@@ -23,11 +23,12 @@ void test_mmap(void){
     fstat(fd, &kst);
     printf("file len: %d\n", kst.st_size);
     array = mmap(NULL, kst.st_size, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    /* 单个进程的多个虚拟页共用一个物理页， 多个进程的虚拟页也可以共用一个物理页*/
     mmap(NULL, 0x111, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     mmap(NULL, 0x1001, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     mmap(NULL, 0x200, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    //printf("return array: %x\n", array);
+    printf("return array: %x\n", array);
 
     if (array == MAP_FAILED) {
 	printf("mmap error.\n");
