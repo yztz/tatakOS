@@ -24,15 +24,9 @@
 #include "utils.h"
 #include "mm/mm.h"
 #include "radix-tree.h"
+#include "debug.h"
 
 //基数树(radix tree, rdt)相关
-
-/*
- * Radix tree node definition.
- */
-#define RADIX_TREE_MAP_SHIFT  6
-#define RADIX_TREE_MAP_SIZE  (1UL << RADIX_TREE_MAP_SHIFT)
-#define RADIX_TREE_MAP_MASK  (RADIX_TREE_MAP_SIZE-1)
 
 // struct radix_tree_node {
 //   uint8 height;
@@ -41,19 +35,22 @@
 //   uint64 tags[RADIX_TREE_MAX_TAGS];
 // };
 
-/**
- * @brief 为了节省空间，我们尽量不在页描述符page_t结构体中加入更多字段来表示page所对应的的物理地址，
- * 在linux中，如果有缓存，叶子节点的slot指向页描述符；我们直接在叶子节点的slot保存缓存的物理地址。
- * 
- */
-struct radix_tree_node {
-	unsigned int	count;
-	void		*slots[RADIX_TREE_MAP_SIZE];
-};
 
-//根据rdt的高度返回其最大的id值。
-uint64 
+
+/** 根据rdt的高度返回其最大的id值。注意height为0，最大id不为0，
+ * id为0，则至少有一个节点，高度至少为1。所以
+ * return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
+ * 的表达是错的(要排除掉height为0的情况）。前面使用这个表达式，把pa存在了rdt root指向node的指针中
+ * 歪打正着也能读出来。
+ * 如果height为0选择返回一个负值，还要考虑有符号数和无符号数比较时的转化，所以我们选择特殊处理height=0
+ * 的情况。
+ */
+uint64
 radix_tree_maxindex(uint height){
+	if(height == 0)
+		return 0;
+		// panic("rdt maxindex: height is 0!");
+		// return -1;
   return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
 }
 
@@ -74,6 +71,8 @@ void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
     panic("radix tree lookup 1");
 		// return NULL;
 
+	// printf(rd("index: %d height: %d\n"), index, root->height);
+	
 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;
 	slot = &root->rnode;
 
@@ -105,11 +104,16 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 	uint32 height, shift;
 	// int error;
 
+	// printf(rd("insert0: index: %d height: %d\n"), index, root->height);
+
+	// printf(rd("insert: index: %d maxindex: %d\n"), index, radix_tree_maxindex(root->height));
 	/* make sure the tree is high enough*/
-	if(index > radix_tree_maxindex(root->height)){
+	if(root->height == 0 || index > radix_tree_maxindex(root->height)){
+	// printf(rd("insert1: index: %d height: %d\n"), index, root->height);
 		if(radix_tree_extend(root, index))	
 			panic("rdt insert 1");
 	}
+	// printf(rd("insert2: index: %d height: %d\n"), index, root->height);
 	slot = &root->rnode;
 	height = root->height;
 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;	
@@ -154,7 +158,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
 
 	/* Figure out what the height should be.  */
 	height = root->height + 1;
-	while (index > radix_tree_maxindex(height))
+	while (height == 0 || index > radix_tree_maxindex(height))
 		height++;
 	
 	if (root->rnode) {

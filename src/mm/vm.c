@@ -51,7 +51,7 @@ kvminit(void)
   //   kvmmap(va, 0x52000000U , 0x1000000, PTE_R | PTE_W, PGSPEC_LARGE);
   //   vmprint(kernel_pagetable);
   // for(;;);
-  printf(rd("etext: %p\n"), (uint64)etext);
+  // printf(rd("etext: %p\n"), (uint64)etext);
 
   // map kernel text executable and read-only.
   kvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X, PGSPEC_NORMAL);

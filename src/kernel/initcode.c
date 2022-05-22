@@ -1,5 +1,6 @@
 #include "usys.h"
 #include "stdarg.h"
+#include "debug.h"
 /* #define syscall(num, arg0, arg1, arg2, arg3) ({ \
     register uint64 a0 asm ("a0") = (uint64)(arg0); \
     register uint64 a1 asm ("a1") = (uint64)(arg1); \
@@ -47,6 +48,7 @@ void run(char *testcases[], int cnt) {
   char *argv[2];
   argv[1] = 0;
   for (int t = 0; t < cnt; t++) {
+      // printf(rd("cnt: %d\n"), cnt);
       printf("ready to run %s\n", testcases[t]);
       int npid = fork();
       if(npid < 0) {

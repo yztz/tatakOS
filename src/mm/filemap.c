@@ -67,7 +67,6 @@ int filemap_nopage(uint64 address){
   // the page need to read greater than the total page
   if(pgoff >= size)
     panic("mmap fetch 1");
-  return 0;
 
   /*
 	 * The "size" of the file, as far as mmap is concerned, isn't bigger
@@ -79,6 +78,7 @@ int filemap_nopage(uint64 address){
   // find frome page cache first
   // page = find_get_page(mapping, pgoff);
   pa = find_get_page(mapping, pgoff);
+  // printf(ylw("pa: %p\n"), pa);
   // 页缓存命中，把address和pa映射
   if(pa){
     if(mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R) < 0)
@@ -87,6 +87,7 @@ int filemap_nopage(uint64 address){
     return 0;
   }
 
+  // printf(rd("not hit\n"));
   // 没有命中，分配页，读磁盘
   pa = (uint64 )kalloc(); 
   if(mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R) < 0)
@@ -98,6 +99,9 @@ int filemap_nopage(uint64 address){
 
   /* add page to page cache*/
   add_to_page_cache(pa, mapping, pgoff);
+  // printf(ylw("aaa: %p"), mapping->page_tree.rnode);
+  printf_radix_tree(&mapping->page_tree);
+
   return 0;
 }
 

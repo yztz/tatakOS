@@ -37,19 +37,19 @@ do_mmap(struct file *file, unsigned long addr,
 	unsigned long len, int prot,
 	int flag, unsigned long offset)
 {
-	int ret;
+	// int ret;
 	if((offset + PGROUNDUP(len)) < offset)//if len < 0
 		panic("do mmap 1");
 	if(offset & ~PGMASK)
 		panic("do mmap 2");// offset is not page aligned
 
-	ret = do_mmap_pgoff(file, addr, len, prot, flag, offset >> PGSHIFT);	
 
 	// print_all_vma();
-	return ret;
+	return do_mmap_pgoff(file, addr, len, prot, flag, offset >> PGSHIFT);	
+	
 }
 
-unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
+uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 			unsigned long len, int prot,
 			int flags, unsigned long pgoff)
 {
@@ -62,7 +62,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	vma->vm_end = vma->vm_start + len;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = prot;
-	vma->vm_page_prot = pgoff;
+	vma->vm_pgoff = pgoff;
 
 	// add to mm_struct list
 	vma->vm_next = mm->mmap;
@@ -71,7 +71,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	mm->map_count++;
 	release(&mm->lock);
 
-	return 0;
+	return vma->vm_start;
 }
 
 // /*

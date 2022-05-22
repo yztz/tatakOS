@@ -132,9 +132,30 @@ print_all_vma(){
   printf("\n");
 }
 
-void
-printf_radix_tree(){
+#include "radix-tree.h"
+void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
+  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++){
+    if(node->slots[i] != NULL){
+      for(int j = 0; j < c_h; j++){
+        printf(".. ");
+      }
+      /* the leaf node */
+      if(c_h == height){
+        printf("%-3d  "rd("pa: %p"), i, node->slots[i]);
+      }
+      else{
+        printf("%-3d\n", i);
+        _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
+      }
+    }
+  }
+}
 
+void
+printf_radix_tree(struct radix_tree_root *root){
+  printf("\n");
+  _printf_radix_tree(root->rnode, root->height, 1); 
+  printf("\n");
 }
 
 

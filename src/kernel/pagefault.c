@@ -20,6 +20,7 @@ int handle_pagefault(uint64_t scause) {
     // printf(grn("%d\n"), scause);
     proc_t *p = myproc();
     uint64_t va = read_csr(stval);
+    // printf(grn("%p\n"), va);
 
     // illegal address
     if(va >= p->cur_mmap_sz) 

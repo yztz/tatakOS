@@ -1,1 +1,1 @@
-obj-y += mmap.o
+obj-y += maptest.o
