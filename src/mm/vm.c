@@ -22,7 +22,7 @@ static int nxt_mapid; // maybe add a lock for nxt_mapid?
 pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
-
+extern char end[];
 extern char trampoline[]; // trampoline.S
 
 void freewalk(pagetable_t pagetable);
@@ -51,7 +51,7 @@ kvminit(void)
   //   kvmmap(va, 0x52000000U , 0x1000000, PTE_R | PTE_W, PGSPEC_LARGE);
   //   vmprint(kernel_pagetable);
   // for(;;);
-  // printf(rd("etext: %p\n"), (uint64)etext);
+  printf(rd("end: %p\n"), (uint64)end);
 
   // map kernel text executable and read-only.
   kvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X, PGSPEC_NORMAL);
