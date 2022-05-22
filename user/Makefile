@@ -23,7 +23,7 @@ prog += _grep
 # prog += _ctxswitch
 # prog += _freemem
 # prog += _cowtest
-prog += _mmap
+prog += _maptest
 
 # 带有路径的目标可执行程序
 target_prog := $(foreach p, $(prog), $(U_PROG_DIR)/$(p))

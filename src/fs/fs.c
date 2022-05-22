@@ -9,6 +9,7 @@
 
 #define __MODULE_NAME__ FS
 #include "debug.h"
+#include "mm/mm.h"
 
 fat32_t *fat;
 
@@ -164,10 +165,8 @@ static void unlink(entry_t *entry) {
   }
 }
 
-void
-free_mapping(entry_t *entry){
-  todo();
-}
+
+
 
 // 递归地解引用
 // under lock

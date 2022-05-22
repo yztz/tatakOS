@@ -13,5 +13,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr, unsigned lon
 uint64 find_get_page(struct address_space *mapping, unsigned long offset);
 int filemap_nopage(uint64 address);
 void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset);
+void
+free_mapping(entry_t *entry);
 
 #endif

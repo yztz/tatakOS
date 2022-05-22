@@ -20,6 +20,7 @@
 /*
  * a rather lightweight function, finding and getting a reference to a
  * hashed page atomically.
+ * 和内存管理模块还未耦合，暂时先不增加页引用。
  */
 uint64 find_get_page(struct address_space *mapping, unsigned long offset)
 {
@@ -33,8 +34,8 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
 	acquire(&mapping->page_lock);
 	pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
   /* increase the ref counts of the page that pa belongs to*/
-	if (pa)
-		get_page(&pages[PAGE2NUM(pa)]);
+	// if (pa)
+		// get_page(&pages[PAGE2NUM(pa)]);
 	release(&mapping->page_lock);
 	return pa;
 }
@@ -111,4 +112,38 @@ add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
   acquire(&mapping->page_lock);
   radix_tree_insert(&mapping->page_tree, offset, (void *)pa);
   release(&mapping->page_lock);
+}
+
+/**
+ * @brief 释放一颗rdt，包括释放其叶节点对应的物理页。
+ * 问题：
+ * 释放物理页时，是先减去其引用数，如果为0则free，还是直接free？目前在find_get_page
+ * 先不增加页引用，直接free。
+ * 
+ * @param node 
+ * @param height 
+ * @param c_h 
+ */
+void
+walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h){
+  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++){
+    if(node->slots[i] != NULL){
+      /* the leaf node */
+      if(c_h == height){
+        void *pa = (node->slots[i]);
+        /* 是释放一整个物理页吗？ */
+        kfree(pa);
+      }
+      else{
+        printf("%-3d\n", i);
+        _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
+      }
+    }
+  }
+}
+
+void
+free_mapping(entry_t *entry){
+  struct radix_tree_root *root = &entry->i_mapping->page_tree;
+  walk_free_rdt(root->rnode, root->height, 1);
 }
