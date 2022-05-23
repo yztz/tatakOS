@@ -67,7 +67,7 @@ exec(char *path, char **argv)
   }
 
   // printf("ph: %d\n", ph.vaddr + ph.memsz);
-  vmprint(pagetable);
+  // vmprint(pagetable);
   eunlockput(ep);
   ep = NULL;
 

@@ -114,36 +114,45 @@ add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
   release(&mapping->page_lock);
 }
 
-// /**
-//  * @brief 释放一颗rdt，包括释放其叶节点对应的物理页。
-//  * 问题：
-//  * 释放物理页时，是先减去其引用数，如果为0则free，还是直接free？目前在find_get_page
-//  * 先不增加页引用，直接free。
-//  * 
-//  * @param node 
-//  * @param height 
-//  * @param c_h 
-//  */
-// void
-// walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h){
-//   for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++){
-//     if(node->slots[i] != NULL){
-//       /* the leaf node */
-//       if(c_h == height){
-//         void *pa = (node->slots[i]);
-//         /* 是释放一整个物理页吗？ */
-//         kfree(pa);
-//       }
-//       else{
-//         printf("%-3d\n", i);
-//         _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
-//       }
-//     }
-//   }
-// }
+/**
+ * @brief 释放一颗rdt，包括释放其叶节点对应的物理页。
+ * 问题：
+ * 释放物理页时，是先减去其引用数，如果为0则free，还是直接free？目前在find_get_page
+ * 先不增加页引用，直接free。
+ * 
+ * @param node 
+ * @param height 
+ * @param c_h 
+ */
+void
+walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h){
+  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++){
+    if(node->slots[i] != NULL){
+      /* the leaf node, 释放叶节点记录的物理地址的页 */
+      if(c_h == height){
+        void *pa = (node->slots[i]);
+        /* 是释放一整个物理页吗？ */
+        kfree(pa);
+      }
+      else{
+        // printf("%-3d\n", i);
+        walk_free_rdt((struct radix_tree_node *)node->slots[i], height, c_h+1);
+        void *addr = node->slots[i];
+        kfree(addr);
+      }
+    }
+  }
+}
 
-// void
-// free_mapping(entry_t *entry){
-//   struct radix_tree_root *root = &entry->i_mapping->page_tree;
-//   walk_free_rdt(root->rnode, root->height, 1);
-// }
+void
+free_mapping(entry_t *entry){
+  struct radix_tree_root *root = &(entry->i_mapping->page_tree);
+  if(root->height > 0)
+    walk_free_rdt(root->rnode, root->height, 1);
+  /* free rnode */
+  void *addr = root->rnode;
+  kfree(addr);
+  /* freee i_mapping */
+  addr = entry->i_mapping;
+  kfree(addr);
+}

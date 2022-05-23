@@ -15,11 +15,11 @@
 static struct kstat kst;
 void test_mmap(void){
     // TEST_START(__func__);
-    // char *array1;
-    // char *array2;
-    // char *array3;
-    // char *array4;
-    // char *array5;
+    char *array1;
+    char *array2;
+    char *array3;
+    char *array4;
+    char *array5;
     const char *str = "  Hello, mmap successfully!";
     int fd;
 
@@ -28,17 +28,17 @@ void test_mmap(void){
     write(fd, str, strlen(str));
     fstat(fd, &kst);
     printf(bl("file len: %d\n"), kst.st_size);
-    // array1 = mmap(NULL, kst.st_size, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    // array2 = mmap(NULL, 0x111 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    // array3 = mmap(NULL, 0x1001, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    // array4 = mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    // array5 = mmap(NULL, 0x200 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    array1 = mmap(NULL, kst.st_size, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    array2 = mmap(NULL, 0x111 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    array3 = mmap(NULL, 0x1001, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    array4 = mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    array5 = mmap(NULL, 0x200 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
 
-	// printf("mmap content: %s\n", array1);
-	// printf("mmap content: %s\n", array2);
-	// printf("mmap content: %s\n", array3);
-	// printf("mmap content: %s\n", array4);
-	// printf("mmap content: %s\n", array5);
+	printf("mmap content: %s\n", array1);
+	printf("mmap content: %s\n", array2);
+	printf("mmap content: %s\n", array3);
+	printf("mmap content: %s\n", array4);
+	printf("mmap content: %s\n", array5);
 
 
     // if (array == MAP_FAILED) {
