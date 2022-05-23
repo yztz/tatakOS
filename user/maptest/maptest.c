@@ -60,6 +60,6 @@ int main(void){
     printf("==============maptest begin================\n");
     test_mmap();
     printf("==============maptest end================\n");
-    // for(;;);
+    for(;;);
     return 0;
 }

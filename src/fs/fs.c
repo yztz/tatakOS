@@ -191,7 +191,7 @@ static void __eput(entry_t *entry) {
     }
 
     /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
-    free_mapping(entry);
+    // free_mapping(entry);
 
     __eput(entry->parent);
   }
