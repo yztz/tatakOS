@@ -101,7 +101,7 @@ int filemap_nopage(uint64 address){
   /* add page to page cache*/
   add_to_page_cache(pa, mapping, pgoff);
   // printf(ylw("aaa: %p"), mapping->page_tree.rnode);
-  printf_radix_tree(&mapping->page_tree);
+  // printf_radix_tree(&mapping->page_tree);
 
   return 0;
 }
@@ -115,7 +115,7 @@ add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
 }
 
 /**
- * @brief 释放一颗rdt，包括释放其叶节点对应的物理页。
+ * @brief 释放一颗rdt，包括释放其叶节点对应的物理页，注意，传入的node节点需要在上一级释放（现改为在本级最后释放）。
  * 问题：
  * 释放物理页时，是先减去其引用数，如果为0则free，还是直接free？目前在find_get_page
  * 先不增加页引用，直接free。
@@ -135,23 +135,26 @@ walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h){
         kfree(pa);
       }
       else{
-        // printf("%-3d\n", i);
+        /* 递归释放下一级节点的内容 */
         walk_free_rdt((struct radix_tree_node *)node->slots[i], height, c_h+1);
-        void *addr = node->slots[i];
-        kfree(addr);
+        // void *addr = node->slots[i];
+        // kfree(addr);
       }
     }
   }
+  kfree((void *)node);
 }
 
 void
 free_mapping(entry_t *entry){
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
-  if(root->height > 0)
+  void *addr;
+  if(root->height > 0){
     walk_free_rdt(root->rnode, root->height, 1);
-  /* free rnode */
-  void *addr = root->rnode;
-  kfree(addr);
+    /* free rnode */
+    // addr = root->rnode;
+    // kfree(addr);
+  }
   /* freee i_mapping */
   addr = entry->i_mapping;
   kfree(addr);
