@@ -8,7 +8,7 @@
 #define ROOTDEV       1  // device number of file system root disk
 #define MAXARG       32  // max exec arguments
 
-#define NBUF         (10)  // size of disk block cache
+#define NBUF         (30)  // size of disk block cache
 #define MAXPATH      128   // maximum file path name
 #define MAX_MAP      15    // maximum io map
 
@@ -16,9 +16,10 @@
 #define NENTRY 40
 #define MAX_FILE_NAME 20
 
+#define USTACKSIZE 8192
+
 
 /////////////MM//////////////
-#define BUDDY
 #define MAX_ORDER 10
 
 ////////////COW//////////////

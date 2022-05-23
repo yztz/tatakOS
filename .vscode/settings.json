@@ -96,7 +96,9 @@
         "numeric": "c",
         "deque": "c",
         "syscall_ids.h": "c",
-        "syscall_arch.h": "c"
+        "syscall_arch.h": "c",
+        "profile_gen.h": "c",
+        "profile.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

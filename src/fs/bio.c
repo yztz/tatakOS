@@ -23,17 +23,22 @@
 #include "fs/fs.h"
 #include "fs/blk_device.h"
 
-static void disk_io(struct buf *b, int write) {
+#ifdef K210
+extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
+extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
+#else 
+extern void virtio_disk_rw(struct buf *, int);
+#endif
+
+
+static void (disk_io)(struct buf *b, int write) {
   #ifdef K210
-  extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-  extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
   if(write) {
     sd_write_sector_dma(b->data, b->blockno, 1);
   } else {
     sd_read_sector_dma(b->data, b->blockno, 1);
   }
-  #else 
-  extern void virtio_disk_rw(struct buf *, int);
+  #else
   virtio_disk_rw(b, write);
   #endif
 }
@@ -126,7 +131,7 @@ bget(uint dev, uint blockno)
 
 // Return a locked buf with the contents of the indicated block.
 struct buf*
-bread(uint dev, uint blockno)
+(bread)(uint dev, uint blockno)
 {
   struct buf *b;
   
@@ -142,7 +147,7 @@ bread(uint dev, uint blockno)
 
 // Write b's contents to disk.  Must be locked.
 void
-bwrite(struct buf *b)
+(bwrite)(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
@@ -153,7 +158,7 @@ bwrite(struct buf *b)
 // Release a locked buffer.
 // Move to the head of the most-recently-used list.
 void
-brelse(struct buf *b)
+(brelse)(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("brelse");

@@ -29,7 +29,7 @@ char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = {"close"};
+char* prog_name[] = {"mem_test"};
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
@@ -40,7 +40,9 @@ void main() {
     // run(proc_testcase);
     // run(mm_testcase);
     // run(other_testcase);
+    memuse();
     run(prog_name);
+    memuse();
   for(;;);
 }
 #undef run

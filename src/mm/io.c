@@ -4,6 +4,7 @@
 #include "riscv.h"
 #include "printf.h"
 
+#define QUIET
 #define __MODULE_NAME__ IO
 #include "debug.h"
 

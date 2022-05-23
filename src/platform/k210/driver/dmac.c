@@ -739,7 +739,7 @@ void dmac_wait_idle(dmac_channel_number_t channel_num)
 {   
     acquire(&myproc()->lock);
     while(!dmac_is_idle(channel_num)) {
-        printf("sleep...\n");
+        // printf("sleep...\n");
         sleep((void *)dmac, &myproc()->lock);
     }
     release(&myproc()->lock);

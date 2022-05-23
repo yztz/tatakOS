@@ -37,6 +37,7 @@
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday
 #############TEST###############
-88     ktest        sys_ktest
 89     timetag      sys_timetag
 90     bio_cache    sys_bio_cache
+99     profile      sys_profile
+100    memuse       sys_memuse

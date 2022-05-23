@@ -10,7 +10,7 @@
 #include "fs/blk_device.h"
 #include "common.h"
 #include "fs/fs.h"
-#include "debug.h"
+
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
 

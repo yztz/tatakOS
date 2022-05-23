@@ -6,6 +6,7 @@
 #include "hlist.h"
 #include "mm/alloc.h"
 #include "str.h"
+#include "profile.h"
 
 #define QUIET
 #define __MODULE_NAME__ FS

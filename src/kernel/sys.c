@@ -2,6 +2,12 @@
 #include "kernel/time.h"
 #include "defs.h"
 #include "profile.h"
+#include "mm/buddy.h"
+
+typedef struct {
+    uint64_t hit;
+    uint64_t miss;
+} cache_rate_t;
 
 
 utsname_t sysname = {
@@ -14,8 +20,8 @@ utsname_t sysname = {
 
 
 uint64 sys_timetag(void) {
-  printf("tick %ld\n", ticks);
-    return ticks;
+  // printf("tick %ld\n", ticks);
+  return ticks;
 }
 
 uint64 sys_bio_cache(void) {
@@ -37,23 +43,10 @@ uint64 sys_bio_cache(void) {
 }
 
 
-uint64 sys_ktest(void) {
-  // sbi_putchar('H');
-  // sbi_putchar('E');
-  // sbi_putchar('L');
-  // sbi_putchar('L');
-  // sbi_putchar('O');
-  // sbi_putchar('W');
-  // sbi_putchar(' ');
-  // sbi_putchar('W');
-  // sbi_putchar('O');
-  // sbi_putchar('R');
-  // sbi_putchar('L');
-  // sbi_putchar('D');
-  // sbi_putchar('\n');
+uint64_t sys_memuse(void) {
+  buddy_print_free();
   return 0;
 }
-
 
 uint64_t sys_times(void) {
   uint64_t addr;

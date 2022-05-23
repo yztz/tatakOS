@@ -160,6 +160,7 @@ void spi_init(spi_device_num_t spi_num, spi_work_mode_t work_mode, spi_frame_for
 uint32_t spi_set_clk_rate(spi_device_num_t spi_num, uint32_t spi_clk)
 {
     uint32_t spi_baudr = sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num) / spi_clk;
+    // printf("1 %d\n", sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num));
     if(spi_baudr < 2 )
     {
         spi_baudr = 2;
@@ -168,8 +169,10 @@ uint32_t spi_set_clk_rate(spi_device_num_t spi_num, uint32_t spi_clk)
     {
         spi_baudr = 65534;
     }
+    
     volatile spi_t *spi_adapter = spi[spi_num];
     spi_adapter->baudr = spi_baudr;
+    printf("2 %d\n", sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num));
     return sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num) / spi_baudr;
 }
 

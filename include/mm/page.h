@@ -27,8 +27,8 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PGMASK PGMASK_SPEC(PGSPEC_NORMAL)
 
 /* Kinds of round */
-#define PGROUNDUP_SPEC(sz, sepc) (((sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
-#define PGROUNDDOWN_SPEC(sz, sepc) ((sz) & ~((PGSIZE_SPEC(sepc))-1))
+#define PGROUNDUP_SPEC(sz, sepc) ((((uint64_t)sz)+(PGSIZE_SPEC(sepc))-1) & ~((PGSIZE_SPEC(sepc))-1))
+#define PGROUNDDOWN_SPEC(sz, sepc) (((uint64_t)sz) & ~((PGSIZE_SPEC(sepc))-1))
 
 #define PGROUNDUP(sz)  PGROUNDUP_SPEC((uint64_t)sz, PGSPEC_NORMAL)
 #define PGROUNDDOWN(sz) PGROUNDDOWN_SPEC((uint64_t)sz, PGSPEC_NORMAL)
@@ -80,9 +80,12 @@ typedef struct _page_t {
     // uint8_t resv[2]; // reserved for special use
 } page_t;
 
-#define PAGE_NUMS (MEM_SIZE/PGSIZE)
-#define PAGE2NUM(pa) (((uint64_t)(pa) - KERNBASE) / PGSIZE)
-#define NUM2PAGE(num) ((uint64 *)((num) * PGSIZE + KERNBASE))
+/* 页的数量 */
+#define PAGE_NUMS ((MEM_END - KERN_BASE)/PGSIZE)
+/* 地址--->页号 */
+#define PAGE2NUM(pa) (((uint64_t)(pa) - KERN_BASE) / PGSIZE)
+/* 页号--->地址 */
+#define NUM2PAGE(num) ((uint64 *)((num) * PGSIZE + KERN_BASE))
 
 extern page_t pages[PAGE_NUMS];
 

@@ -22,6 +22,8 @@
 #include "k210.h"
 #elif defined QEMU
 #include "qemu.h"
+#else
+#include "k210.h" /* placate vscode */
 #endif
 /////////////////////////////////////////////////
 ////////////// platform list end ////////////////
@@ -47,18 +49,20 @@
 #ifndef UART_IRQ
 #define UART_IRQ
 #endif
-/* KERNBASE and PHYSTOP must be page-aligned! */
-#ifndef KERNBASE
-#define KERNBASE
+/* define memory */
+#ifndef KERN_BASE
+#define KERN_BASE
 #endif
-#ifndef PHYSTOP
-#define PHYSTOP
+#ifndef MEM_START
+#define MEM_START
 #endif
+#ifndef MEM_END
+#define MEM_END
+#endif
+
 #ifndef CLOCK_FREQ
 #define CLOCK_FREQ
 #endif
-
-#define MEM_SIZE (PHYSTOP-KERNBASE) // MUST page-aligned
 
 /* supported source */
 enum _plic_irq;

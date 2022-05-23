@@ -56,7 +56,7 @@ void platform_dirver_init() {
 	// fpioa_set_function(32, FUNC_GPIOHS7);
     // fpioa_set_function(29, FUNC_SPI0_SS3);
     debug("fpioa init success!");
-
+    // sysctl_get_reset_status();   
     /* GPIOHS */
     // gpiohs_init();
     /* SPI */
@@ -65,7 +65,8 @@ void platform_dirver_init() {
     /* DMA */
     dmac_init();
     debug("dmac init success!");
-    
+    sysctl_clock_enable(SYSCTL_CLOCK_APB1);
+    sysctl_clock_set_threshold(SYSCTL_THRESHOLD_SPI0, 0);
     /* SDCARD */
     if(sd_init() != 0) 
         panic("sd init fail");

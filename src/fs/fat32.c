@@ -9,7 +9,9 @@
 #include "common.h"
 #include "str.h"
 
-// #define QUIET
+#include "profile.h"
+
+#define QUIET
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
@@ -150,7 +152,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 }
 
 /* 获取下一个簇号 */
-uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus) {
+uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
     if(cclus == FAT_CLUS_END || cclus == FAT_CLUS_FREE) return cclus;
 
     buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
@@ -230,7 +232,7 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item) {
     return FR_OK;
 }
 
-int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n) {
+int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
     debug("cclus is %d", cclus);
@@ -278,7 +280,7 @@ int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, 
 }
 
 /* 申请指定数量的簇并将它们串在一起 */
-FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
+FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
     const int entry_per_sect = BPS(fat) / 4;
     uint32_t sect = fat->fat_start_sector;
     int cnt = n - 1;

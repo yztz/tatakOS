@@ -1,4 +1,4 @@
-use k210_hal::{clint::msip, clock::Clocks, fpioa, pac, prelude::*};
+use k210_hal::{clint::msip, clock::Clocks, fpioa, pac::{self, sysctl}, prelude::*, sysctl};
 use riscv::register::{mhartid, mip};
 use rustsbi::println;
 
@@ -25,6 +25,8 @@ pub fn init_peripheral() {
     rustsbi::init_timer(Timer);
     rustsbi::init_reset(Reset);
     rustsbi::init_ipi(Ipi);
+    // sysctl::CLK_FREQ::read(&self)
+    // println!("freq is {}", sysctl.pll0.get_frequency().0);
 }
 
 struct Ipi;

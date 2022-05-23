@@ -26,5 +26,6 @@ int sleep(int);
 int uptime(void);
 int ktest(void);
 uint64 timetag(void);
+int memuse(void);
 
 #endif

@@ -3,9 +3,13 @@
 */
 
 #include "atomic/spinlock.h"
+#include "atomic/atomic.h"
 #include "common.h"
 #include "mm/page.h"
 #include "mm/buddy.h"
+
+#define __MODULE_NAME__ BUDDY
+#include "debug.h"
 
 #define INVAIL_ORDER (0xf)
 
@@ -27,16 +31,21 @@ extern char end[];
 
 buddy_list_t lists[MAX_ORDER];
 
+static atomic_t used;
+static uint total;
+
 void buddy_init() {
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);
     initlock(&lists[i].lock, "buddy list");
   }
-
-  for(uint64_t p = PGROUNDUP(end); p < PHYSTOP; p += PGSIZE) {
+  total = 0;
+  /* 从kernel end处一直释放到MEM_END */
+  for(uint64_t p = (uint64_t)end; p < MEM_END; p += PGSIZE) {
     buddy_free((void *)p);
+    total++;
   }
-  
+  used = INIT_ATOMIC;
 }
 
 static inline void insert(int order, buddy_t *b) {
@@ -113,6 +122,8 @@ void *buddy_alloc(size_t size) {
   
   mark_page((uint64_t)b, ALLOC_BUDDY);
   ref_page((uint64_t)b);
+
+  atomic_add(&used, 1 << oorder);
   return (void *) b;
 }
 
@@ -145,6 +156,7 @@ void buddy_free(void *pa) {
 
   ppgnum = PARTNER_NO(pgnum, page->order);
   ppage = &pages[ppgnum];
+  atomic_add(&used, -(1 << page->order));
   // we need hold lock to avoid partner being allocated
   while(page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
     int order;
@@ -168,9 +180,11 @@ void buddy_free(void *pa) {
     ppage = &pages[ppgnum];
   }
   release(&lists[page->order].lock);
-
 }
 
-
+void buddy_print_free() {
+  int u = atomic_get(&used);
+  printf("page usage: %d%% ( %d used | %d total )\n", u * 100 / total, u, total);
+}
 
 

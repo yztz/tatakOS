@@ -55,13 +55,13 @@ void SD_CS_LOW(void)
 
 void SD_HIGH_SPEED_ENABLE(void)
 {
-    // spi_set_clk_rate(SPI_DEVICE_0, 10000000);
+    spi_set_clk_rate(SPI_DEVICE_0, 18000000);
 }
 
-static void sd_lowlevel_init(uint8_t spi_index)
+static void sd_lowlevel_init()
 {
     // gpiohs_set_drive_mode(7, GPIO_DM_OUTPUT);
-    // spi_set_clk_rate(SPI_DEVICE_0, 200000);     /*set clk rate*/
+    spi_set_clk_rate(SPI_DEVICE_0, 200000);     /*set clk rate*/
 }
 
 static void sd_write_data(uint8_t *data_buff, uint32_t length)
@@ -164,7 +164,7 @@ static uint8_t sd_get_response(void)
  *         - status 110: Data rejected due to a Write error.
  *         - status 111: Data rejected due to other error.
  */
-static uint8_t sd_get_dataresponse(void)
+static uint8_t (sd_get_dataresponse)(void)
 {
 	uint8_t response;
 	/*!< Read resonse */
@@ -379,7 +379,7 @@ uint8_t sd_init(void)
 	/* 设置功能管脚 */
 	io_mux_init();
 	/*!< Initialize SD_SPI */
-	sd_lowlevel_init(0); // 拉低HS7电平，设置时钟速率为低速模式
+	// sd_lowlevel_init(); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */
 	SD_CS_HIGH(); // 拉高HS7电平
 
@@ -446,7 +446,8 @@ uint8_t sd_init(void)
 	}
 	if ((frame[0] & 0x40) == 0)
 		return 0xFF;
-	SD_HIGH_SPEED_ENABLE();
+
+	// SD_HIGH_SPEED_ENABLE();
 	return sd_get_cardinfo(&cardinfo);
 }
 
@@ -481,7 +482,8 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 	return 0;
 }
 
-uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector)
+// #include "profile.h"
+uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
 {
 	uint8_t frame[2] = {0xFF};
     frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;

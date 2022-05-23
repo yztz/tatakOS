@@ -17,6 +17,7 @@
 // #include <math.h>
 // #include <stdio.h>
 #include "sysctl.h"
+#include "printf.h"
 #include "mm/io.h"
 // #include "string.h"
 // #include "encoding.h"
@@ -558,7 +559,7 @@ int sysctl_clock_get_threshold(sysctl_threshold_t which)
             threshold = (int)sysctl->clk_th0.rom_gclk_threshold;
             break;
         case SYSCTL_THRESHOLD_SPI0:
-            threshold = (int)sysctl->clk_th1.spi0_clk_threshold;
+            threshold = (*(uint32_t *)(&(sysctl->clk_th1))) & 0xff;
             break;
         case SYSCTL_THRESHOLD_SPI1:
             threshold = (int)sysctl->clk_th1.spi1_clk_threshold;
@@ -1269,7 +1270,6 @@ uint32_t sysctl_pll_get_freq(sysctl_pll_t pll)
 
 //     return sysctl_pll_get_freq(pll);
 // }
-
 uint32_t sysctl_clock_get_freq(sysctl_clock_t clock)
 {
     uint32_t source = 0;
@@ -1819,17 +1819,8 @@ int sysctl_dma_select(sysctl_dma_channel_t channel, sysctl_dma_select_t select)
 //     return cpu_freq;
 // }
 
-// void sysctl_enable_irq(void)
-// {
-//     set_csr(mie, MIP_MEIP);
-//     set_csr(mstatus, MSTATUS_MIE);
-// }
 
-// void sysctl_disable_irq(void)
-// {
-//     clear_csr(mie, MIP_MEIP);
-//     clear_csr(mstatus, MSTATUS_MIE);
-// }
+
 
 // uint64_t sysctl_get_time_us(void)
 // {

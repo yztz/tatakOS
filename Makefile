@@ -89,8 +89,10 @@ else # others
 	@echo -e "\n\033[31;1mUNSUPPORT PLATFORM!\033[0m\n"
 endif
 
-syscall_dir := $(ROOT)/include/generated
-syscall := $(syscall_dir)/syscall_gen.h
+GEN_HEADER_DIR := $(ROOT)/include/generated
+
+syscall := $(GEN_HEADER_DIR)/syscall_gen.h
+profile := $(GEN_HEADER_DIR)/profile_gen.h
 
 kernel: $(syscall)
 	@make -C $K
@@ -98,9 +100,18 @@ kernel: $(syscall)
 
 $(syscall): entry/syscall.tbl
 	@echo -e "GEN\t\tsyscall"
-	@mkdir -p $(syscall_dir)
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $(syscall_dir)/syscall_gen.h -t tbl
-	@$(SCRIPT)/sys_tbl.py entry/syscall.tbl -o $(syscall_dir)/syscall.h -t hdr
+	@mkdir -p $(GEN_HEADER_DIR)
+	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall_gen.h -t tbl
+	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall.h -t hdr
+
+ifeq ("${debug}", "on")
+kernel: $(profile)
+
+$(profile): entry/profile.tbl
+	@echo -e "GEN\t\tprofile"
+	@mkdir -p $(GEN_HEADER_DIR)
+	@python3 $(SCRIPT)/profile_tbl.py $< -o $@
+endif
 
 SBI_TARGET_PATH := target/riscv64imac-unknown-none-elf/debug
 sbi-k210:
@@ -113,7 +124,7 @@ sbi-qemu:
 clean: 
 	-@rm -rf $(BUILD_ROOT)
 	-@rm -rf $(SCRIPT)/mkfs
-	-@rm -rf $(syscall_dir)
+	-@rm -rf $(GEN_HEADER_DIR)
 	-@rm -rf os.bin
 	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
