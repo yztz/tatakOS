@@ -6,11 +6,11 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "defs.h"
-#include "debug.h"
 #include "mm/mm.h"
 
 #define __MODULE_NAME__ PAGEFAULT
 
+#include "debug.h"
 
 
 /**

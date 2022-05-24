@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.xdc": "tcl",
+    "proc.h": "c",
+    "debug.h": "c"
+  }
+}

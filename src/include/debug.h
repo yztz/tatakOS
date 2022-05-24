@@ -23,10 +23,6 @@
 
 #endif // DEBUG
 
-#define grn(str) 	"\e[32;1m"str"\e[0m"
-#define ylw(str) 	"\e[33;1m"str"\e[0m"
-#define rd(str) 	"\e[31;1m"str"\e[0m"
-#define bl(str) 	"\e[34;1m"str"\e[0m"
 
 
 #endif // _H_DEBUG_

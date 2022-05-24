@@ -1,6 +1,6 @@
 #include "usys.h"
 #include "stdarg.h"
-#include "debug.h"
+// #include "debug.h"
 /* #define syscall(num, arg0, arg1, arg2, arg3) ({ \
     register uint64 a0 asm ("a0") = (uint64)(arg0); \
     register uint64 a1 asm ("a1") = (uint64)(arg1); \

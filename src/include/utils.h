@@ -4,7 +4,7 @@
 #include "printf.h"
 #include "mm/vm.h"
 #include "sbi.h"
-#include "debug.h"
+// #include "debug.h"
 
 #define LOOP() {while(1) continue;}
 #define DIVIDER() {printf("\n---------------------------------\n");}
@@ -69,5 +69,10 @@ void printf_radix_tree();
 #define todo()  TODO(__FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)
 
+
+#define grn(str) 	"\e[32;1m"str"\e[0m"
+#define ylw(str) 	"\e[33;1m"str"\e[0m"
+#define rd(str) 	"\e[31;1m"str"\e[0m"
+#define bl(str) 	"\e[34;1m"str"\e[0m"
 
 #endif
