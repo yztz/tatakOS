@@ -6,7 +6,9 @@
 #include "hlist.h"
 #include "mm/alloc.h"
 #include "str.h"
+#include "profile.h"
 
+#define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
 #include "mm/mm.h"
@@ -47,14 +49,20 @@ slash:
   return buf;
 }
 
-FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *state) {
+/* 没什么实际意义，仅仅用来保存状态 */
+struct dents_state {
+  buf_desc_t desc;
+  uint32_t *offset;
+};
+
+FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *s) {
   const int dirent_size = sizeof(struct linux_dirent64);
-  buf_desc_t *desc = (buf_desc_t *) state;
-  struct linux_dirent64 *dirent = (struct linux_dirent64 *) desc->buf;
+  struct dents_state *state = (struct dents_state *) s;
+  struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
   int namelen = strlen(name) + 1;
   int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
   // debug("total size is %d desc size is %d", total_size, desc->size);
-  if(total_size > desc->size) 
+  if(total_size > state->desc.size) 
     return FR_OK;
 
   dirent->d_ino = (uint64_t)offset << 32 | FAT_FETCH_CLUS(item);
@@ -63,32 +71,21 @@ FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *state) 
   dirent->d_type = FAT_IS_DIR(item->attr) ? T_DIR : T_FILE; 
 
   strncpy(dirent->d_name, name, namelen);
-
-  desc->buf += total_size;
-  desc->size -= total_size;
+  // printf("name: %s totalsize: %d offset: %d\n", name, total_size, offset);
+  state->desc.buf += total_size;
+  state->desc.size -= total_size;
+  *(state->offset) = offset + sizeof(*item);
 
   return FR_CONTINUE;
 }
 
 // caller holds lock
-int read_dents(entry_t *entry, char *buf, int n) {
-  buf_desc_t desc = {.buf = buf, .size = n};
-  fat_traverse_dir(fat, entry->clus_start, dents_handler, &desc);
-  return n - desc.size;
+int read_dents(entry_t *entry, uint32_t *offset, char *buf, int n) {
+  struct dents_state state = {{.buf = buf, .size = n}, .offset = offset};
+  fat_traverse_dir(fat, entry->clus_start, *offset, dents_handler, &state);
+  return n - state.desc.size;
 }
 
-
-// /* 申请一个新的entry */
-// entry_t *alloc_entry(fat32_t *fat) {
-//   entry_t *ret = (entry_t *)kmalloc(sizeof(entry_t));
-//   if(!ret) 
-//     panic("alloc_entry: kmalloc fail");
-//   initsleeplock(&ret->lock, "fat_entry");
-//   ret->fat = fat;
-//   ret->ref = 0;
-
-//   return ret;
-// }
 
 static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, const char *name) {
   entry_t *entry, *empty = NULL;
@@ -116,7 +113,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->fat = parent->fat;
   entry->nlink = 1; // always 1
   entry->parent = parent;
-  strncpy(entry->name, name, strlen(name));
+  strncpy(entry->name, name, MAX_FILE_NAME);
   parent->ref++;
   
   entry->i_mapping  = kmalloc(sizeof(struct address_space));
@@ -284,9 +281,6 @@ entry_t *create(entry_t *from, char *path, short type) {
   return ep;
 }
 
-// int writee(entry_t *entry, int user, uint64_t src, int off, int n) {
-  
-// }
 static char *skipelem(char *path, char *name) {
   char *s;
   int len;
@@ -369,7 +363,7 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   int newsize = off + ret;
   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
     entry->raw.size = newsize;
-    // debug("update size");
+    debug("update size");
     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
   }
   return ret;

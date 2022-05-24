@@ -17,7 +17,7 @@
 #include "riscv.h"
 #include "types.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 #include "utils.h"
@@ -212,7 +212,7 @@ uint64 sys_getdents64(void) {
 
     char* buf = (char*)kmalloc(len);
     elock(f->ep);
-    int ret = read_dents(f->ep, buf, len);
+    int ret = read_dents(f->ep, &f->off, buf, len);
     eunlock(f->ep);
 
     if (copyout(p->pagetable, addr, buf, len) == -1) {

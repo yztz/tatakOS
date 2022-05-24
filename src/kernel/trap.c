@@ -6,20 +6,11 @@
 #include "kernel/proc.h"
 #include "defs.h"
 #include "utils.h"
-#include "mm/io.h"
+#include "driver/timer.h"
 
 // #define QUIET
 #define __MODULE_NAME__ TRAP
 #include "debug.h"
-
-static uint64_t *clint_mtime;
-// #define RESET_TIMER() sbi_set_timer(*clint_mtime + CLOCK_FREQ)
-#define READ_TIME() (*clint_mtime)
-#define RESET_TIMER() sbi_legacy_set_timer(READ_TIME() + CLOCK_FREQ)
-// #define RESET_TIMER() sbi_legacy_set_timer(read_csr(mtime) + CLOCK_FREQ)
-
-struct spinlock tickslock;
-uint64 ticks;
 
 extern char trampoline[], uservec[], userret[];
 extern int handle_pagefault(uint64_t scause);
@@ -33,11 +24,7 @@ extern pagetable_t kernel_pagetable;
 void
 trapinit(void)
 {
-  initlock(&tickslock, "time");
-  // clint_mtime = (uint64_t *)(ioremap(CLINT_MTIME, 2 * PGSIZE));
-  clint_mtime = (uint64_t *)(ioremap(CLINT, 0x10000) + 0Xbff8);
-  ticks = 0;
-  debug("init success!");
+  init_timer();
 }
 
 // set up to take exceptions and traps while in the kernel.
@@ -51,7 +38,7 @@ trapinithart(void)
   write_csr(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
   // w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
   // 重置计时器
-  RESET_TIMER();
+  reset_timer();
 }
 
 //
@@ -229,7 +216,7 @@ int devintr(uint64 scause) {
       clockintr();
     }
     // printf("timer...%d\n", ticks);
-    RESET_TIMER();
+    reset_timer();
     w_sip(r_sip() & ~0x10000);
   } else { // unknow
     return -1;

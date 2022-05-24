@@ -547,8 +547,6 @@ void dmac_init(void)
     dmac_cfg_u_t dmac_cfg;
     dmac_reset_u_t dmac_reset;
 
-    // kvmmap(DMAC_BASE_ADDR, DMAC_BASE_ADDR, PGSIZE, PTE_R | PTE_W, PGSPEC_NORMAL);
-    // dmac = (volatile dmac_t *)DMAC_BASE_ADDR;
     dmac = (volatile dmac_t *)ioremap(DMAC_BASE_ADDR, PGSIZE);
     plic_register_handler(IRQN_DMA0_INTERRUPT, dmac_intr, NULL);
 
@@ -741,7 +739,7 @@ void dmac_wait_idle(dmac_channel_number_t channel_num)
 {   
     acquire(&myproc()->lock);
     while(!dmac_is_idle(channel_num)) {
-        printf("sleep...\n");
+        // printf("sleep...\n");
         sleep((void *)dmac, &myproc()->lock);
     }
     release(&myproc()->lock);
@@ -749,9 +747,6 @@ void dmac_wait_idle(dmac_channel_number_t channel_num)
 
 int dmac_intr(void *ctx)
 {
-    // printf("intr: idle ? %d\n", dmac_is_idle(DMAC_CHANNEL0));
-    // printf("sepc is %lx\n", r_sepc());
-    // backtrace(myproc());
     dmac_chanel_interrupt_clear(DMAC_CHANNEL0);
     wakeup((void *)dmac);
     return 0;

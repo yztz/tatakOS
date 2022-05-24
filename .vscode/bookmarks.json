@@ -14,6 +14,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/platform/k210/driver/sysctl.c",
+			"bookmarks": [
+				{
+					"line": 1465,
+					"column": 38,
+					"label": ""
+				}
+			]
 		}
 	]
 }

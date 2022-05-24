@@ -74,16 +74,15 @@ exec(char *path, char **argv)
   p = myproc();
   uint64 oldsz = p->sz;
 
-  // Allocate two pages at the next page boundary.
-  // Use the second as the user stack.
+  // alloc for user stack
   sz = PGROUNDUP(sz);
   uint64 sz1;
-  if((sz1 = uvmalloc(pagetable, sz, sz + 2*PGSIZE)) == 0)
+  if((sz1 = uvmalloc(pagetable, sz, sz + PGSIZE + USTACKSIZE)) == 0)
     goto bad;
   sz = sz1;
-  uvmclear(pagetable, sz-2*PGSIZE);
+  uvmclear(pagetable, sz - (PGSIZE + USTACKSIZE));
   sp = sz;
-  stackbase = sp - PGSIZE;
+  stackbase = sp - USTACKSIZE;
 
   // Push argument strings, prepare rest of stack in ustack.
   
@@ -126,7 +125,7 @@ exec(char *path, char **argv)
   p->sz = sz;
   // printf(rd("sz: %x\n"), sz);
   p->trapframe->epc = elf.entry;  // initial program counter = main
-  debug("entry addr is %lx", elf.entry);
+  // debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer
   switchuvm(p);
   proc_freepagetable(oldpagetable, oldsz);

@@ -60,6 +60,7 @@ void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
+void print_block(uint8_t *b) ;
 
 void TODO(char *s, const char *s1, int d);
 void print_all_vma();
