@@ -364,6 +364,12 @@ void io_mux_init(void)
 
 static sleeplock_t sdlock;
 
+static void sd_error(char *CMD) {
+	char buf[255];
+	sprintf(buf, "%s ERROR\n", CMD);
+	panic(buf);
+}
+
 /*
  * @brief  Initializes the SD/SD communication.
  * @param  None
@@ -396,10 +402,7 @@ uint8_t sd_init(void)
             break;
     }
     if (index == 0)
-    {
-        printf("SD_CMD0 is %x\n", result);
-        return 0xFF;
-    }
+		sd_error("CMD0");
 
 	sd_send_cmd(SD_CMD8, 0x01AA, 0x87);
 	/*!< 0x01 or 0x05 */
@@ -407,17 +410,15 @@ uint8_t sd_init(void)
 	sd_read_data(frame, 4);
 	sd_end_cmd();
 	if (result != 0x01)
-	{
-        printf("SD_CMD8 is %x\n", result);
-		return 0xFF;
-    }
+		sd_error("CMD8");
+
 	index = 0xFF;
 	while (index--) {
 		sd_send_cmd(SD_CMD55, 0, 0);
 		result = sd_get_response();
 		sd_end_cmd();
-		if (result != 0x01)
-			return 0xFF;
+		if (result != 0x01) 
+			sd_error("CMD55");
 		sd_send_cmd(SD_ACMD41, 0x40000000, 0);
 		result = sd_get_response();
 		sd_end_cmd();
@@ -425,10 +426,8 @@ uint8_t sd_init(void)
 			break;
 	}
 	if (index == 0)
-	{
-        printf("SD_CMD55 is %x\n", result);
-		return 0xFF;
-    }
+		sd_error("CMD55");
+
 	index = 0xFF;
 	while(index--){
 		sd_send_cmd(SD_CMD58, 0, 1);
@@ -440,12 +439,10 @@ uint8_t sd_init(void)
 		}
 	}
 	if(index == 0)
-	{
-	    printf("SD_CMD58 is %x\n", result);
-		return 0xFF;
-	}
+		sd_error("CMD58");
+
 	if ((frame[0] & 0x40) == 0)
-		return 0xFF;
+		sd_error("CMD58 frame");
 
 	// SD_HIGH_SPEED_ENABLE();
 	return sd_get_cardinfo(&cardinfo);
