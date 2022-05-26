@@ -2,6 +2,8 @@
   "files.associations": {
     "*.xdc": "tcl",
     "proc.h": "c",
-    "debug.h": "c"
+    "debug.h": "c",
+    "unistd.h": "c",
+    "file.h": "c"
   }
 }

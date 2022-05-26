@@ -128,12 +128,12 @@ exec(char *path, char **argv)
   // debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer
   switchuvm(p);
-  proc_freepagetable(oldpagetable, oldsz);
+  proc_freepagetable(oldpagetable, oldsz, MMAP_BASE);
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz);
+    proc_freepagetable(pagetable, sz, MMAP_BASE);
   if(ep){
     eunlockput(ep);
   }

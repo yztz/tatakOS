@@ -107,7 +107,7 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 	// printf(rd("insert0: index: %d height: %d\n"), index, root->height);
 
 	// printf(rd("insert: index: %d maxindex: %d\n"), index, radix_tree_maxindex(root->height));
-	/* make sure the tree is high enough*/
+	/* make sure the tree is high enough */
 	if(root->height == 0 || index > radix_tree_maxindex(root->height)){
 	// printf(rd("insert1: index: %d height: %d\n"), index, root->height);
 		if(radix_tree_extend(root, index))	
@@ -137,13 +137,15 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 		shift -= RADIX_TREE_MAP_SHIFT;
 		height--;
 	}
-	/* slot should be null*/
+	/* slot should be null 当打印之后，*slot就不为0了，很奇怪*/
+  // printf(ylw("slot: %p\n"), *slot);
 	if(*slot != NULL)
-		panic("rdt insert 3");
+		// panic("rdt insert 3");
 	if(node)
 		node->count++;
 
 	*slot = item;	
+  // printf(ylw("slot1: %p\n"), *slot);
 	
 	return 0;
 }

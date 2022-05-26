@@ -33,8 +33,10 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
 	 */
 	acquire(&mapping->page_lock);
 	pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
-	// if (pa)
+	if (pa)
+    ref_page(pa);
 		// get_page(&pages[PAGE2NUM(pa)]);
 	release(&mapping->page_lock);
 	return pa;
@@ -46,7 +48,9 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
  * @return int 
  */
 int filemap_nopage(uint64 address){
-  struct mm_struct *mm = myproc()->mm;
+  // printf(grn("cur_mmap_sz: %p\n"), myproc()->cur_mmap_sz);
+  struct proc *p = myproc();
+  struct mm_struct *mm = p->mm;
   struct vm_area_struct *area = mm->mmap;
   uint64 pgoff, endoff, size;
   // page_t *page;
@@ -76,7 +80,7 @@ int filemap_nopage(uint64 address){
 	if (size > endoff)
 		size = endoff;
 
-  // find frome page cache first
+  // find from page cache first
   // page = find_get_page(mapping, pgoff);
   pa = find_get_page(mapping, pgoff);
   // printf(ylw("pa: %p\n"), pa);
@@ -91,6 +95,7 @@ int filemap_nopage(uint64 address){
   // printf(rd("not hit\n"));
   // 没有命中，分配页，读磁盘
   pa = (uint64 )kalloc(); 
+  // printf(bl("pa: %p\n"), pa);
   if(mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U|PTE_V|PTE_W|PTE_R) < 0)
     panic("filemap no page 3");
   
@@ -99,8 +104,8 @@ int filemap_nopage(uint64 address){
     panic("filemap no page 4");
 
   /* add page to page cache*/
-  add_to_page_cache(pa, mapping, pgoff);
   // printf(ylw("aaa: %p"), mapping->page_tree.rnode);
+  add_to_page_cache(pa, mapping, pgoff);
   // printf_radix_tree(&mapping->page_tree);
 
   return 0;
@@ -130,9 +135,11 @@ walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h){
     if(node->slots[i] != NULL){
       /* the leaf node, 释放叶节点记录的物理地址的页 */
       if(c_h == height){
-        void *pa = (node->slots[i]);
-        /* 是释放一整个物理页吗？ */
-        kfree(pa);
+        // void *pa = (node->slots[i]);
+        // /* 是释放一整个物理页吗？ */
+        // printf(bl("walk free pa: %p\n"), pa);
+        // kfree(pa);
+        break;
       }
       else{
         /* 递归释放下一级节点的内容 */

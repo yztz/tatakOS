@@ -156,7 +156,7 @@ uvmcreate()
     return 0;
   memset(pagetable, 0, PGSIZE);
   if(setupkvm(pagetable) == -1) {
-    uvmfree(pagetable, 0);
+    uvmfree(pagetable, 0, MMAP_BASE);
     return 0;
   }
   return pagetable;
@@ -228,10 +228,27 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 // Free user memory pages,
 // then free page-table pages.
 void
-uvmfree(pagetable_t pagetable, uint64 sz)
+uvmfree(pagetable_t pagetable, uint64 sz, uint64 mmap_sz)
 {
   if(sz > 0)
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
+
+
+  /* free mmap area, 注意，可能是父进程释放子进程，所以不能用myproc() */
+  // if(myproc()->cur_mmap_sz > MMAP_BASE)
+  pte_t *pte;
+  if(mmap_sz > MMAP_BASE){
+    for(int a = MMAP_BASE; a < mmap_sz; a+=PGSIZE){
+      // printf(bl("a: %p\n"), a);
+      if((pte = walk(pagetable, a, 0)) == 0)
+        continue;
+      if((*pte & PTE_V) == 0)
+        continue;
+    
+      uvmunmap(pagetable, a, 1, 1);
+    } 
+  }
+
   freewalk(pagetable);
 }
 

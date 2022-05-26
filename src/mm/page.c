@@ -120,6 +120,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
+    // printf(ylw("a: %p\n"), a);
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
       panic("uvmunmap: walk");
       // continue;

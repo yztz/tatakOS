@@ -81,6 +81,8 @@ usertrap(void)
   } else if(devintr(scause) == 0) {
     // ok
   } else if(handle_pagefault(scause) == 0) {
+
+    // printf(grn("cur_mmap_sz: %p\n"), myproc()->cur_mmap_sz);
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
@@ -163,6 +165,7 @@ kerneltrap()
   if(devintr(scause) == 0) {
     // ok
   } else{
+    backtrace(myproc());
     printf("scause %p\n", scause);
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");

@@ -223,7 +223,7 @@ freeproc(struct proc *p)
 
   // for(;;);
   if(p->pagetable){
-    proc_freepagetable(p->pagetable, p->sz);
+    proc_freepagetable(p->pagetable, p->sz, p->cur_mmap_sz);
     p->pagetable = 0;
   } 
   p->sz = 0;
@@ -261,7 +261,7 @@ proc_pagetable(struct proc *p)
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
               (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
-    uvmfree(pagetable, 0);
+    uvmfree(pagetable, 0, MMAP_BASE);
     return 0;
   }
 
@@ -269,7 +269,7 @@ proc_pagetable(struct proc *p)
               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
     uvmunmap(pagetable, TRAPFRAME, 1, 0);
-    uvmfree(pagetable, 0);
+    uvmfree(pagetable, 0, MMAP_BASE);
     return 0;
   }
 
@@ -279,12 +279,12 @@ proc_pagetable(struct proc *p)
 // Free a process's page table, and free the
 // physical memory it refers to.
 void
-proc_freepagetable(pagetable_t pagetable, uint64 sz)
+proc_freepagetable(pagetable_t pagetable, uint64 sz, uint64 mmap_sz)
 {
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmunmap(pagetable, KSTACK, 1, 0);
   erasekvm(pagetable);
-  uvmfree(pagetable, sz);
+  uvmfree(pagetable, sz, mmap_sz);
 }
 
 // a user program that calls exec("/init")

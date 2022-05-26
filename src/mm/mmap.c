@@ -27,7 +27,9 @@ get_unmapped_area(uint64 len){
 	struct proc *p = myproc();
 
 	old_addr = p->cur_mmap_sz;
+  // printf(rd("cur_de 1: %p\n"), myproc()->cur_mmap_sz);
 	p->cur_mmap_sz += PGROUNDUP(len);
+  // printf(ylw("cur_de 2: %p\n"), myproc()->cur_mmap_sz);
 
 	return old_addr;
 }

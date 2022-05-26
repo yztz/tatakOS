@@ -5,6 +5,7 @@
 #include "mm/page.h"
 #include "mm/slob.h"
 #include "param.h"
+#include "utils.h"
 
 #define __MODULE_NAME__ ALLOC
 #include "debug.h"
@@ -38,6 +39,7 @@ void *kmalloc(size_t size) {
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
     }
+    // printf(ylw("pa: %p\n"), ret);
     return ret;
 }
 
