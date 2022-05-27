@@ -86,7 +86,7 @@ void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
 		height--;
 	}
 
-  // we get a pointer to struct page or null.
+  /* we get a pointer to struct page or null. */
 	return (void *) *slot;
 }
 
@@ -113,13 +113,13 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 		if(radix_tree_extend(root, index))	
 			panic("rdt insert 1");
 	}
-	printf(grn("root->rnode: %p\n"), root->rnode);
+	// printf(grn("root->rnode: %p\n"), root->rnode);
 	// printf(rd("insert2: index: %d height: %d\n"), index, root->height);
 	slot = &root->rnode;
 	height = root->height;
 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;	
 
-  printf(rd("slot1: %p\n"), *slot);
+  // printf(rd("slot1: %p\n"), *slot);
 	while (height > 0)
 	{
 		if(*slot == NULL){
@@ -132,18 +132,19 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 				node->count++;
 		}
 
-  printf(rd("slot2: %p\n"), *slot);
-	printf(rd("index: %p\n"), ((*slot)->slots[0]));
+  // printf(rd("slot2: %p\n"), *slot);
+	// printf(rd("index: %p\n"), ((*slot)->slots[0]));
 		/* Go a level down. */
 		node = *slot;
 		slot = (struct radix_tree_node **)
 						(node->slots + ((index >> shift) & RADIX_TREE_MAP_MASK));
-  printf(rd("slot3: %p\n"), *slot);
+  // printf(rd("slot3: %p\n"), *slot);
 		shift -= RADIX_TREE_MAP_SHIFT;
 		height--;
 	}
 	/* slot should be null 当打印之后，*slot就不为0了，很奇怪, 莫非分配节点时应该把指针初始化为NULL？*/
-  printf(ylw("slot: %p\n"), slot);
+	// for(int i = 0; i <= 1280; i+=1)
+  	// printf(ylw("slot: %p\n"), *(slot+i-10));
 	if(*slot != NULL)
 		panic("rdt insert 3");
 	if(node)
@@ -191,7 +192,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
 static struct radix_tree_node *
 radix_tree_node_alloc(){
 	struct radix_tree_node *ret;
-	ret = kmalloc(sizeof(struct radix_tree_node));
+	ret = kzalloc(sizeof(struct radix_tree_node));
 	if(ret == NULL)
 		panic("rdt alloc");
 	

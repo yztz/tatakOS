@@ -116,7 +116,9 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   strncpy(entry->name, name, MAX_FILE_NAME);
   parent->ref++;
   
-  entry->i_mapping  = kmalloc(sizeof(struct address_space));
+  entry->i_mapping  = kzalloc(sizeof(struct address_space));
+  entry->i_mapping->host = entry;
+
   release(&fat->cache_lock);
   return entry;
 
@@ -370,14 +372,25 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 }
 
 
+// /* 如果有vfs，reade可以类比为一个通用的读文件函数，即linux中的do_generic_file_read */
+// int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
+//   if(off >= E_FILESIZE(entry)) 
+//     return 0;
+//   int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
+//   return ret;
+// }
+
+
 int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
   if(off >= E_FILESIZE(entry)) 
     return 0;
-  int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
+  // /* 偏移加上要读的字节数超过了文件大小 */
+  // if(off + n > E_FILESIZE(entry)){
+  //   n = E_FILESIZE(entry) - off;
+  // }
+  int ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
   return ret;
 }
-
-
 
 entry_t *namee(entry_t *from, char *path){
   char name[MAX_FILE_NAME];
