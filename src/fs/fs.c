@@ -377,6 +377,7 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 //   if(off >= E_FILESIZE(entry)) 
 //     return 0;
 //   int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
+    
 //   return ret;
 // }
 

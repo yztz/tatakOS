@@ -102,9 +102,12 @@ int filemap_nopage(uint64 address)
     panic("filemap no page 3");
 
   //如果文件的最后一个页的内容不满一页，reade返回值大于0。
-  if (reade(area->vm_file->ep, 1, PGROUNDDOWN(address), pgoff * PGSIZE, PGSIZE) < 0)
+  entry_t *entry = area->vm_file->ep;
+  if (fat_read(entry->fat, entry->clus_start, 1, PGROUNDDOWN(address), pgoff * PGSIZE, PGSIZE) < 0)
     panic("filemap no page 4");
 
+  // if (do_generic_mapping_read(entry->i_mapping, 1, PGROUNDDOWN(address), pgoff * PGSIZE, PGSIZE) < 0)
+    // panic("filemap no page 4");
   /* add page to page cache*/
   // printf(ylw("aaa: %p"), mapping->page_tree.rnode);
   add_to_page_cache(pa, mapping, pgoff);
@@ -177,6 +180,8 @@ void free_mapping(entry_t *entry)
 
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n)
 {
+      // if(user == 1)
+        // for(;;);
   uint index,  end_index;
   uint64 pa, pgoff;
   int rest, cur_off;
@@ -217,17 +222,24 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     /* the content is not cached in page cache, read from disk and cache it */
     if (!pa)
     {
+      // if(user == 1)
+        // for(;;);
       pa = (uint64)kalloc();
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
-      fat_read(entry->fat, entry->clus_start, user, pa, index*PGSIZE, PGSIZE);
+      /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
+      fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
+
+      printf(ylw("pa: %s\n"), (char *)pa);
+
       add_to_page_cache(pa, mapping, index);
     }
 
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min(rest, PGSIZE - pgoff);
 
-    either_copyout(1, buff, (void *)(pa + pgoff), len);
+    // printf(ylw("buff: %p pa: %p\n"), buff, pa);
+    either_copyout(user, buff, (void *)(pa + pgoff), len);
 
     cur_off += len;
     buff += len;

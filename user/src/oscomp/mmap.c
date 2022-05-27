@@ -49,7 +49,7 @@ void test_mmap(void){
     char *array3;
     char *array4;
     char *array5;
-    const char *str = "  Hello, mmap successfully!";
+    const char *str = "Hello, mmap successfully!";
     int fd;
 
     // printf(rd("maptest begin !!\n"));
@@ -70,6 +70,13 @@ void test_mmap(void){
 	printf("mmap content: %s\n", array5);
 
 
+    /* 先关闭再打开一下，否则文件的偏移为末尾，读不出来 */
+    close(fd);
+    fd = open("test_mmap.txt", O_RDWR | O_CREATE);
+    char buf[50];
+    read(fd, buf, 24);
+    printf(grn("buf: %s\n"), buf);
+    printf(grn("buf: %p\n"), buf);
     // if (array == MAP_FAILED) {
 	// printf("mmap error.\n");
     // }else{
