@@ -93,11 +93,12 @@ int filemap_nopage(uint64 address)
 
     return 0;
   }
+  // for(;;);
 
   // printf(rd("not hit\n"));
   // 没有命中，分配页，读磁盘
-  pa = (uint64)kalloc();
-  // printf(bl("pa: %p\n"), pa);
+  // pa = (uint64)kalloc();
+  printf(bl("pa: %p\n"), pa);
   if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
     panic("filemap no page 3");
 
@@ -178,6 +179,16 @@ void free_mapping(entry_t *entry)
   kfree(addr);
 }
 
+/**
+ * @brief 正常的读文件一次读一个page（8 sectors）, 可以考虑使用"read ahead".
+ * 
+ * @param mapping 
+ * @param user 
+ * @param buff 
+ * @param off 
+ * @param n 
+ * @return int 
+ */
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n)
 {
       // if(user == 1)
@@ -213,7 +224,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
        * 1.文件大小file size为4096， pgoff为4095.以上不正确。
        * 2.大小为4095，pgoff为4094.以上正确。
        */
-      if (pgoff > ((file_size-1) & ~PGMASK))
+      // if (pgoff > ((file_size-1) & ~PGMASK))
+      if (pgoff >= (file_size & ~PGMASK))
         break;
     }
 
@@ -228,9 +240,10 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
-      fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
+      // fat_readpage(entry->fat, entry->clus_start, 0, pa, index*PGSIZE);
+      readpage(entry, pa, index);
 
-      printf(ylw("pa: %s\n"), (char *)pa);
+      // printf(ylw("pa: %s\n"), (char *)pa);
 
       add_to_page_cache(pa, mapping, index);
     }

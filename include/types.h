@@ -22,6 +22,7 @@ typedef uint64 *pagetable_t;
 
 
 typedef uint64 pgoff_t;
+typedef uint64 sector_t;
 // #define pgoff_t unsigned long
 #endif
 

@@ -109,6 +109,7 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
     printf("fat sectors    is %d\n", fat->fat_tbl_sectors);
     printf("sec per clus   is %d\n", fat->sec_per_cluster);
     printf("bytes per sec  is %d\n", fat->bytes_per_sec);
+    printf("bytes per cluster is %d\n", fat->bytes_per_cluster);
     printf("fat table num  is %d\n", fat->fat_tbl_num);
     printf("root cluster   is %d\n", fat->root_cluster);
 }
@@ -921,3 +922,58 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, trav
 }
 
 
+
+
+/**
+ * @brief 找到一个page cache缓存了多个磁盘sector的内容，找到这些sector对应的号。
+ * 
+ * @param fat 
+ * @param cclus 
+ * @param user 
+ * @param buffer 
+ * @param off 
+ * @return int 
+ */
+int fat_readpage(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off) {
+    int n = PGSIZE;
+
+    if(off & ~PGMASK)
+        panic("fat_readpage: offset not page aligned!");
+    
+    // debug("read cluster %d", cclus);
+    if(cclus == 0 || n == 0)
+        return 0;
+    // debug("now off is %d", off)
+    // 计算起始簇
+    while(off >= BPC(fat)) {
+        cclus = fat_next_cluster(fat, cclus);
+        off -= BPC(fat);
+        if(cclus == FAT_CLUS_END) {
+            return 0;
+        }
+    }
+    int rest = n;
+    // 计算簇内起始扇区号
+    uint32_t sect = clus2datsec(fat, cclus) + off / BPS(fat);
+    // 扇区内偏移
+    off %= BPS(fat);
+    debug("start sect is %d off in sec is %d", sect, off);
+    while(cclus != FAT_CLUS_END && rest > 0) {
+        while(sect < sect + SPC(fat) && rest > 0) {
+            // 计算本扇区内需要读取的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
+            int len = min(rest, BPS(fat) - off);
+            buf_t *b = bread(fat->dev, sect);
+            either_copyout(user, buffer, b->data + off, len);
+            brelse(b);
+            rest -= len;
+            buffer += len;
+
+            off = 0; // 偏移量以及被抵消了，恒置为0
+            sect++;
+        }
+        cclus = fat_next_cluster(fat, cclus);
+        sect = clus2datsec(fat, cclus);
+    }
+
+    return n - rest;
+}
