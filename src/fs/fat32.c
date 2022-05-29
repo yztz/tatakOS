@@ -8,6 +8,7 @@
 #include "mm/vm.h"
 #include "common.h"
 #include "str.h"
+#include "bio.h"
 
 #include "profile.h"
 
@@ -925,17 +926,26 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, trav
 
 
 /**
- * @brief 找到一个page cache缓存了多个磁盘sector的内容，找到这些sector对应的号。
+ * @brief 根据文件的偏移和长度找到对应的磁盘块号(sector)，并且分段，每段包含一组连续的sectors，
+ * 使用一个bio_vec结构体表示。
+ * 以簇cluster为单位进行查找，因为一个簇内的扇区sector是连续的。
  * 
  * @param fat 
  * @param cclus 
- * @param user 
- * @param buffer 
  * @param off 
+ * @param n
  * @return int 
  */
-int fat_readpage(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off) {
-    int n = PGSIZE;
+struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
+    struct bio_vec *first_bio_vec = kzalloc(sizeof(struct bio_vec));
+    struct bio_vec *cur_bio_vec = first_bio_vec;
+    /* sector counts in a cluster */
+    uint32 spc = SPC(fat);
+    /* the total number of sectors to get, need up align*/
+    uint32 sec_total_num = (n + BPS(fat)-1) / BPS(fat);
+    uint32 sec_off_num;
+    uint32 sect;
+
 
     if(off & ~PGMASK)
         panic("fat_readpage: offset not page aligned!");
@@ -952,28 +962,42 @@ int fat_readpage(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int of
             return 0;
         }
     }
-    int rest = n;
+    
+    /* the initial offset number of a sector in a cluster */
+    sec_off_num = off / BPS(fat);
     // 计算簇内起始扇区号
-    uint32_t sect = clus2datsec(fat, cclus) + off / BPS(fat);
-    // 扇区内偏移
-    off %= BPS(fat);
-    debug("start sect is %d off in sec is %d", sect, off);
-    while(cclus != FAT_CLUS_END && rest > 0) {
-        while(sect < sect + SPC(fat) && rest > 0) {
-            // 计算本扇区内需要读取的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
-            int len = min(rest, BPS(fat) - off);
-            buf_t *b = bread(fat->dev, sect);
-            either_copyout(user, buffer, b->data + off, len);
-            brelse(b);
-            rest -= len;
-            buffer += len;
+    sect = clus2datsec(fat, cclus) + sec_off_num % spc;
 
-            off = 0; // 偏移量以及被抵消了，恒置为0
-            sect++;
+    while(cclus != FAT_CLUS_END && sec_total_num > 0){
+        if(cur_bio_vec != first_bio_vec){
+            /** 
+             * 新的簇的第一个扇区号和上一个簇的最后一个扇区号不连续，新建一个结构体存放这个段，这里的链表
+             * 操作是进程私有的，似乎不用加锁。
+            */
+            if(cur_bio_vec->bv_start_num + cur_bio_vec->count != sect){
+                struct bio_vec *new_bio_vec = kzalloc(sizeof(struct bio_vec));
+                cur_bio_vec->next = new_bio_vec;
+                cur_bio_vec = new_bio_vec;
+            }
         }
+
+        /* the bio_vec is new allocated in this loop (we use kzalloc) */
+        if(cur_bio_vec->bv_start_num == 0){
+            cur_bio_vec->bv_start_num = sect;
+            cur_bio_vec->count = min(spc - sec_off_num, sec_total_num);
+        }
+        else{
+            /* the sectors in this cluster is continuous with last cluster */
+            cur_bio_vec->count += min(spc - sec_off_num, sec_total_num);
+        }
+
+        sec_off_num = (sec_off_num + cur_bio_vec->count) % spc;
+        sec_total_num -= cur_bio_vec->count;
+
         cclus = fat_next_cluster(fat, cclus);
         sect = clus2datsec(fat, cclus);
     }
+    
 
-    return n - rest;
+    return first_bio_vec;
 }
