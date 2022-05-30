@@ -12,12 +12,12 @@
 #include "mm/mm.h"
 #include "bio.h"
 
+#include "fs/mpage.h"
 /**
  * @brief 这个文件里定义了关于页page的操作函数
  * 
  */
 
-struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum);
 
 /**
  * @brief 得到bio结构体，记录了此次读操作涉及到的sector信息。
@@ -32,6 +32,8 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
   struct bio *bio = do_readpage(entry, buff, flpgnum);
   if(bio)
     submit_bio(READ, bio);
+  
+  return 0;
 }
 
 
@@ -44,7 +46,7 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
  * @return struct bio* 
  */
 struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
-  struct bio *bio;
+  struct bio *bio = kzalloc(sizeof(bio));
   struct bio_vec *first_bio_vec, *cur_bio_vec;
   int sect_num = 0;
   uint32 bps = entry->fat->bytes_per_sec;
@@ -52,11 +54,11 @@ struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
   first_bio_vec = fat_get_sectors(entry->fat, entry->clus_start, flpgnum*PGSIZE, PGSIZE);
   cur_bio_vec = first_bio_vec;
   while(cur_bio_vec != NULL){
-    cur_bio_vec->buff = (void *)buff;
-    buff += cur_bio_vec->count * bps;
-    sect_num += cur_bio_vec->count;
+    cur_bio_vec->bv_buff = (void *)buff;
+    buff += cur_bio_vec->bv_count * bps;
+    sect_num += cur_bio_vec->bv_count;
 
-    cur_bio_vec = cur_bio_vec->next;
+    cur_bio_vec = cur_bio_vec->bv_next;
   }
 
   if(PGSIZE / bps != sect_num)
@@ -64,6 +66,7 @@ struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
 
   bio->bi_io_vec = first_bio_vec; 
   bio->bi_rw = READ;
+  bio->bi_dev = entry->fat->dev;
 
   return bio;
 }

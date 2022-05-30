@@ -11,6 +11,7 @@
 #include "radix-tree.h"
 #include "mm/mm.h"
 
+#include "fs/mpage.h"
 /**
  * @brief 定义了关于file map相关的函数，函数声明在mm.h
  *
@@ -97,7 +98,7 @@ int filemap_nopage(uint64 address)
 
   // printf(rd("not hit\n"));
   // 没有命中，分配页，读磁盘
-  // pa = (uint64)kalloc();
+  pa = (uint64)kalloc();
   printf(bl("pa: %p\n"), pa);
   if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
     panic("filemap no page 3");
@@ -240,8 +241,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
-      // fat_readpage(entry->fat, entry->clus_start, 0, pa, index*PGSIZE);
-      readpage(entry, pa, index);
+      fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
+      // readpage(entry, pa, index);
 
       // printf(ylw("pa: %s\n"), (char *)pa);
 
@@ -258,5 +259,6 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     buff += len;
     rest -= len;
   }
+  /* 返回读取的字节数 */
   return n - rest;
 }

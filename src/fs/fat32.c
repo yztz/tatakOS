@@ -974,9 +974,9 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
              * 新的簇的第一个扇区号和上一个簇的最后一个扇区号不连续，新建一个结构体存放这个段，这里的链表
              * 操作是进程私有的，似乎不用加锁。
             */
-            if(cur_bio_vec->bv_start_num + cur_bio_vec->count != sect){
+            if(cur_bio_vec->bv_start_num + cur_bio_vec->bv_count != sect){
                 struct bio_vec *new_bio_vec = kzalloc(sizeof(struct bio_vec));
-                cur_bio_vec->next = new_bio_vec;
+                cur_bio_vec->bv_next = new_bio_vec;
                 cur_bio_vec = new_bio_vec;
             }
         }
@@ -984,15 +984,15 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
         /* the bio_vec is new allocated in this loop (we use kzalloc) */
         if(cur_bio_vec->bv_start_num == 0){
             cur_bio_vec->bv_start_num = sect;
-            cur_bio_vec->count = min(spc - sec_off_num, sec_total_num);
+            cur_bio_vec->bv_count = min(spc - sec_off_num, sec_total_num);
         }
         else{
             /* the sectors in this cluster is continuous with last cluster */
-            cur_bio_vec->count += min(spc - sec_off_num, sec_total_num);
+            cur_bio_vec->bv_count += min(spc - sec_off_num, sec_total_num);
         }
 
-        sec_off_num = (sec_off_num + cur_bio_vec->count) % spc;
-        sec_total_num -= cur_bio_vec->count;
+        sec_off_num = (sec_off_num + cur_bio_vec->bv_count) % spc;
+        sec_total_num -= cur_bio_vec->bv_count;
 
         cclus = fat_next_cluster(fat, cclus);
         sect = clus2datsec(fat, cclus);

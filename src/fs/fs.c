@@ -390,6 +390,9 @@ int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
   //   n = E_FILESIZE(entry) - off;
   // }
   int ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
+
+  // printf(ylw("ret: %d\n"));
+  // for(;;);
   return ret;
 }
 

@@ -204,14 +204,15 @@ bunpin(struct buf *b) {
 
 /*************************new add func**************************/
 
-struct request_queue rq = {.queue_head = NULL};
+struct request_queue rq = {.queue_head = NULL, .rq_lock = {0, 0, 0, 0}};
 
 void submit_bio(uint8 rw, struct bio *bio){
-  acquire(&rq.rq_lock);
-  bio->next = rq.queue_head;
+  /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
+  // acquire(&rq.rq_lock);
+  bio->bi_next = rq.queue_head;
   rq.queue_head = bio;  
   make_request(rw);
-  release(&rq.rq_lock);
+  // release(&rq.rq_lock);
 }
 
 
@@ -223,24 +224,25 @@ void make_request(uint8 rw){
   while(cur_bio){
 
     cur_bio_vec = cur_bio->bi_io_vec;
-    /* 对于一次请求的每个段 */
+    /* 对于一次I/O请求的每个段 */
     while(cur_bio_vec){
-      for(int i = 0; i < cur_bio_vec->count; i++){
+      for(int i = 0; i < cur_bio_vec->bv_count; i++){
         #if defined K210
           panic("make_request: not implementation!");
         #elif defined QEMU
-          struct buf *b;
-          b->blockno = cur_bio_vec->bv_start_num + i;
-          b->data = cur_bio_vec->buff + i*BSIZE;
-          virtio_disk_rw(b, rw);)
+        /* 先调用一个bio 函数, debug用 */
+        struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
+        memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
+        brelse(b);
         #else
           panic("no defined platform");
         #endif
+        cur_bio_vec->bv_buff += BSIZE;
       }
-      cur_bio_vec = cur_bio_vec->next;
+      cur_bio_vec = cur_bio_vec->bv_next;
     }
   
-  cur_bio = cur_bio->next;
+  cur_bio = cur_bio->bi_next;
   }
     
 }

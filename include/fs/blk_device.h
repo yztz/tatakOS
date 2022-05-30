@@ -15,7 +15,15 @@ struct buf {
   struct buf *prev; // LRU cache list
   struct buf *next;
   uchar data[BSIZE];
+  // void *data;
   // todo:
+};
+
+struct buffer_head {
+  int disk;
+  uint blockno;
+  void *data;
+  struct buffer_head *next;
 };
 
 void            binit(void);
