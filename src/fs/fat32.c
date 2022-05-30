@@ -127,7 +127,9 @@ static entry_t *get_root(fat32_t *fat) {
     initsleeplock(&root->lock, "root_lock");
     return root;
 }
-
+extern uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, uint32_t count);
+uint8_t buf[8 * 512]; //4KB
+#include "profile.h"
 /* 读取fat超级块并做解析 */
 FR_t fat_mount(uint dev, fat32_t **ppfat) {
     fat32_t *fat = (fat32_t *)kmalloc(sizeof(fat32_t));
@@ -136,6 +138,15 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // 常规字段初始化
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
+
+    memset(buf, 'F', 8 * 512);
+    for(int i = 0; i < 256; i++) { // 1MB
+        sd_write_sector_dma(buf, i * 8, 8);
+    }
+    sys_profile();
+
+
+    for(;;);
     buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);

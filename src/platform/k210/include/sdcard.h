@@ -81,8 +81,8 @@ extern SD_CardInfo cardinfo;
 uint8_t sd_init(void);
 uint8_t sd_read_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
 uint8_t sd_write_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
-uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector);
-uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector);
+uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count);
+uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, int count);
 
 #ifdef __cplusplus
 }
