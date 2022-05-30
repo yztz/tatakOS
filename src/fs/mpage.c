@@ -31,7 +31,7 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
   
   struct bio *bio = do_readpage(entry, buff, flpgnum);
   if(bio)
-    submit_bio(bio);
+    submit_bio(READ, bio);
 }
 
 

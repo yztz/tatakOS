@@ -22,6 +22,7 @@
 #include "defs.h"
 #include "fs/fs.h"
 #include "fs/blk_device.h"
+#include "bio.h"
 
 #ifdef K210
 extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
@@ -200,3 +201,46 @@ bunpin(struct buf *b) {
 }
 
 
+
+/*************************new add func**************************/
+
+struct request_queue rq = {.queue_head = NULL};
+
+void submit_bio(uint8 rw, struct bio *bio){
+  acquire(&rq.rq_lock);
+  bio->next = rq.queue_head;
+  rq.queue_head = bio;  
+  make_request(rw);
+  release(&rq.rq_lock);
+}
+
+
+void make_request(uint8 rw){
+  struct bio *cur_bio;
+  struct bio_vec *cur_bio_vec;
+
+  cur_bio = rq.queue_head;
+  while(cur_bio){
+
+    cur_bio_vec = cur_bio->bi_io_vec;
+    /* 对于一次请求的每个段 */
+    while(cur_bio_vec){
+      for(int i = 0; i < cur_bio_vec->count; i++){
+        #if defined K210
+          panic("make_request: not implementation!");
+        #elif defined QEMU
+          struct buf *b;
+          b->blockno = cur_bio_vec->bv_start_num + i;
+          b->data = cur_bio_vec->buff + i*BSIZE;
+          virtio_disk_rw(b, rw);)
+        #else
+          panic("no defined platform");
+        #endif
+      }
+      cur_bio_vec = cur_bio_vec->next;
+    }
+  
+  cur_bio = cur_bio->next;
+  }
+    
+}

@@ -11,6 +11,7 @@
 struct bio {
   struct bio_vec *bi_io_vec;
   uint8 bi_rw;
+  struct bio *next;
 };
 
 
@@ -23,4 +24,10 @@ struct bio_vec {
   uint32 count;/* the counts of sectors */
   struct bio_vec *next;/* the pointer of next bio segment */
   void *buff; /* the address to begin read/write */
+};
+
+
+struct request_queue {
+  struct bio *queue_head;
+  spinlock_t rq_lock;
 };
