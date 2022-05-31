@@ -85,11 +85,12 @@ int filemap_nopage(uint64 address)
   // find from page cache first
   // page = find_get_page(mapping, pgoff);
   pa = find_get_page(mapping, pgoff);
-  // printf(ylw("pa: %p\n"), pa);
+  printf(ylw("pa: %p\n"), pa);
   // 页缓存命中，把address和pa映射
   if (pa)
   {
-    if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
+    pagetable_t pagetable = myproc()->pagetable;
+    if (mappages(pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
       panic("filemap no page 2");
 
     return 0;
@@ -239,6 +240,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       // if(user == 1)
         // for(;;);
       pa = (uint64)kalloc();
+      printf(ylw("pa: %p\n"), pa);
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/

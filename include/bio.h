@@ -11,12 +11,13 @@
  * stacking drivers)
  */
 
-struct bio {
+typedef struct bio {
   struct bio_vec *bi_io_vec;
   uint8 bi_rw;
   struct bio *bi_next;
   uint bi_dev;
-};
+}bio_t;
+
 
 
 /**
