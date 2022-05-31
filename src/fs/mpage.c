@@ -49,8 +49,8 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
  * @return struct bio* 
  */
 struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
-  // struct bio *bio = kzalloc(sizeof(bio));
-  struct bio *bio = kzalloc(PGSIZE);
+  struct bio *bio = kzalloc(sizeof(struct bio));
+  // struct bio *bio = kzalloc(PGSIZE);
   struct bio_vec *first_bio_vec, *cur_bio_vec;
   /* 用来统计扇区总数是否符合条件 */
   int sect_num = 0;
