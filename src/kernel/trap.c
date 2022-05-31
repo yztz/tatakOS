@@ -12,13 +12,12 @@
 #define __MODULE_NAME__ TRAP
 #include "debug.h"
 
-extern char trampoline[], uservec[], userret[];
 extern int handle_pagefault(uint64_t scause);
 
 // in kernelvec.S, calls kerneltrap().
 void kernelvec();
 
-extern int devintr();
+int devintr();
 
 extern pagetable_t kernel_pagetable;
 void
@@ -99,21 +98,21 @@ usertrap(void)
 //
 // return to user space
 //
+void userret(struct trapframe *trapfram);
+void uservec();
 void
 usertrapret(void)
 {
   struct proc *p = myproc();
-  // printf("usertrap: return\n");
   // we're about to switch the destination of traps from
   // kerneltrap() to usertrap(), so turn off interrupts until
   // we're back in user space, where usertrap() is correct.
   intr_off();
   // send syscalls, interrupts, and exceptions to trampoline.S
-  w_stvec(TRAMPOLINE + (uservec - trampoline));
+  w_stvec((uint64)uservec);
 
   // set up trapframe values that uservec will need when
-  // the process next re-enters the kernel.
-  // p->trapframe->kernel_satp = r_satp();         // kernel page table
+  // the process next re-enters the kernel.        // kernel page table
   p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
   p->trapframe->kernel_trap = (uint64)usertrap;
   p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
@@ -135,8 +134,7 @@ usertrapret(void)
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
   // and switches to user mode with sret.
-  uint64 fn = TRAMPOLINE + (userret - trampoline);
-  ((void (*)(uint64))fn)(TRAPFRAME);
+  userret(p->trapframe);
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,
@@ -147,8 +145,6 @@ kerneltrap()
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  // printf("scause is %lx\n", scause);
-  // printf("sepc = %lx\n", sepc);
   // debug("kerneltrap: sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
 
   if(myproc()) {

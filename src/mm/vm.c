@@ -23,7 +23,7 @@ pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
-extern char trampoline[]; // trampoline.S
+// extern char trampoline[]; // trampoline.S
 
 void freewalk(pagetable_t pagetable);
 
@@ -55,11 +55,9 @@ kvminit(void)
   kvmmap(KERN_BASE, KERN_BASE, (uint64)etext-KERN_BASE, PTE_R | PTE_X, PGSPEC_NORMAL);
   // map kernel data and the physical RAM we'll make use of.
   uint64_t aligned_data = PGROUNDUP_SPEC(etext, PGSPEC_LARGE);
+  // map free mem
   kvmmap((uint64)etext, (uint64)etext, aligned_data-(uint64)etext, PTE_R | PTE_W, PGSPEC_NORMAL);
   kvmmap(aligned_data, aligned_data, MEM_END-aligned_data, PTE_R | PTE_W, PGSPEC_LARGE);
-  // map the trampoline for trap entry/exit to
-  // the highest virtual address in the kernel.
-  kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X, PGSPEC_NORMAL);
 
   debug("init success!");
 }

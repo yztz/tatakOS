@@ -29,7 +29,6 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
-extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
 // parents are not lost. helps obey the
@@ -37,21 +36,6 @@ extern char trampoline[]; // trampoline.S
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
 
-// Allocate a page for each process's kernel stack.
-// Map it high in memory, followed by an invalid
-// guard page.
-// void
-// proc_mapstacks() {
-//   struct proc *p;
-  
-//   for(p = proc; p < &proc[NPROC]; p++) {
-//     char *pa = kalloc();
-//     if(pa == 0)
-//       panic("kalloc");
-//     uint64 va = KSTACK((int) (p - proc));
-//     kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W, PGSPEC_NORMAL);
-//   }
-// }
 
 // initialize the proc table at boot time.
 void
@@ -139,7 +123,7 @@ found:
     return 0;
   }
   // 申请内核栈
-  if((p->kstack = (uint64_t)kalloc()) == 0){
+  if((p->kstack = (uint64_t)kmalloc(KSTACK_SZ)) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -239,28 +223,10 @@ proc_pagetable(struct proc *p)
   pagetable = uvmcreate();
   if(pagetable == 0)
     return 0;
-  // map the trampoline code (for system call return)
-  // at the highest user virtual address.
-  // only the supervisor uses it, on the way
-  // to/from user space, so not PTE_U.
-  // if(mappages(pagetable, TRAMPOLINE, PGSIZE,
-  //             (uint64)trampoline, PTE_R | PTE_X) < 0){
-  //   uvmfree(pagetable, 0);
-  //   return 0;
-  // }
-
-  // map the trapframe just below TRAMPOLINE, for trampoline.S.
-  if(mappages(pagetable, TRAPFRAME, PGSIZE,
-              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
-    erasekvm(pagetable);
-    uvmfree(pagetable, 0);
-    return 0;
-  }
-
-  if(mappages(pagetable, KSTACK, PGSIZE,
+  // 映射内核栈
+  if(mappages(pagetable, KSTACK, KSTACK_SZ,
               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
-    uvmunmap(pagetable, TRAPFRAME, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
   }
@@ -273,7 +239,6 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
-  uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmunmap(pagetable, KSTACK, 1, 0);
   erasekvm(pagetable);
   uvmfree(pagetable, sz);

@@ -23,12 +23,12 @@ void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
+    memuse();
     // printf("hello world %d\n", 123);
     // run(fs_testcase);
     // run(proc_testcase);
     // run(mm_testcase);
     // run(other_testcase);
-    memuse();
     run(prog_name);
     memuse();
   for(;;);
