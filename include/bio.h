@@ -1,3 +1,6 @@
+#ifndef H_BIO
+#define H_BIO
+
 #include "types.h"
 
 #define READ 0
@@ -33,5 +36,7 @@ struct request_queue {
   spinlock_t rq_lock;
 };
 
-void make_request(uint8 rw);
-void submit_bio(uint8 rw, struct bio *bio);
+void make_request();
+void submit_bio(struct bio *bio);
+
+#endif

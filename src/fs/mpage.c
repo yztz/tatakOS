@@ -11,6 +11,7 @@
 #include "radix-tree.h"
 #include "mm/mm.h"
 #include "bio.h"
+#include "utils.h"
 
 #include "fs/mpage.h"
 /**
@@ -29,9 +30,11 @@
  */
 int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
   
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   struct bio *bio = do_readpage(entry, buff, flpgnum);
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   if(bio)
-    submit_bio(READ, bio);
+    submit_bio(bio);
   
   return 0;
 }
@@ -46,11 +49,14 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
  * @return struct bio* 
  */
 struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
-  struct bio *bio = kzalloc(sizeof(bio));
+  // struct bio *bio = kzalloc(sizeof(bio));
+  struct bio *bio = kzalloc(PGSIZE);
   struct bio_vec *first_bio_vec, *cur_bio_vec;
+  /* 用来统计扇区总数是否符合条件 */
   int sect_num = 0;
   uint32 bps = entry->fat->bytes_per_sec;
 
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   first_bio_vec = fat_get_sectors(entry->fat, entry->clus_start, flpgnum*PGSIZE, PGSIZE);
   cur_bio_vec = first_bio_vec;
   while(cur_bio_vec != NULL){
@@ -61,12 +67,16 @@ struct bio *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
     cur_bio_vec = cur_bio_vec->bv_next;
   }
 
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   if(PGSIZE / bps != sect_num)
     panic("do_readpage: sector num is wrong!");
-
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   bio->bi_io_vec = first_bio_vec; 
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   bio->bi_rw = READ;
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
   bio->bi_dev = entry->fat->dev;
-
+  printf(grn("mapping: %p\n"), entry->i_mapping->host);
+  // print_bio_vec(bio);
   return bio;
 }

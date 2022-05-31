@@ -4,6 +4,7 @@
 #include "fs/fat.h"
 #include "str.h"
 #include "debug.h"
+#include "bio.h"
 
 static char* indents[] = {
   ".. .. ..",
@@ -171,4 +172,23 @@ printf_radix_tree(struct radix_tree_root *root){
 void
 print_empty_page(){
 
+}
+
+void
+print_bio_vec(struct bio *cur_bio){
+  struct bio_vec *cur_bio_vec = cur_bio->bi_io_vec;
+  while(cur_bio_vec != NULL){
+    printf(ylw("bio_vec start: %d, bio_vec counts: %d\n"),
+    cur_bio_vec->bv_start_num, cur_bio_vec->bv_count);
+
+    cur_bio_vec = cur_bio_vec->bv_next;
+  }
+}
+
+/* 打印一个页的内容 */
+void print_page_contents(uint64 *pa){
+  for(int i = 0; i < PGSIZE/sizeof(uint64); i++){
+    printf(rd("%d  %p\n"), i*8, *pa);
+    pa++;
+  }
 }

@@ -23,6 +23,7 @@
 #include "fs/fs.h"
 #include "fs/blk_device.h"
 #include "bio.h"
+#include "utils.h"
 
 #ifdef K210
 extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
@@ -206,37 +207,34 @@ bunpin(struct buf *b) {
 
 struct request_queue rq = {.queue_head = NULL, .rq_lock = {0, 0, 0, 0}};
 
-void submit_bio(uint8 rw, struct bio *bio){
+void submit_bio( struct bio *bio){
   /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
   // acquire(&rq.rq_lock);
   bio->bi_next = rq.queue_head;
   rq.queue_head = bio;  
-  make_request(rw);
+  make_request();
   // release(&rq.rq_lock);
 }
 
 
-void make_request(uint8 rw){
+void make_request(){
   struct bio *cur_bio;
   struct bio_vec *cur_bio_vec;
 
   cur_bio = rq.queue_head;
   while(cur_bio){
-
+    // print_bio_vec(cur_bio);
     cur_bio_vec = cur_bio->bi_io_vec;
     /* 对于一次I/O请求的每个段 */
     while(cur_bio_vec){
       for(int i = 0; i < cur_bio_vec->bv_count; i++){
-        #if defined K210
-          panic("make_request: not implementation!");
-        #elif defined QEMU
-        /* 先调用一个bio 函数, debug用 */
+        /* qemu */
+        /* 根据bio读读写位，判断是读还是写 */
+        printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
         struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
         memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
         brelse(b);
-        #else
-          panic("no defined platform");
-        #endif
+        printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
         cur_bio_vec->bv_buff += BSIZE;
       }
       cur_bio_vec = cur_bio_vec->bv_next;

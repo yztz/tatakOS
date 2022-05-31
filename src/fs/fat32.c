@@ -208,6 +208,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, i
         while(sect < sect + SPC(fat) && rest > 0) {
             // 计算本扇区内需要读取的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
             int len = min(rest, BPS(fat) - off);
+            printf(grn("sect: %d\n"), sect);
             buf_t *b = bread(fat->dev, sect);
             either_copyout(user, buffer, b->data + off, len);
             brelse(b);
@@ -220,6 +221,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, i
         cclus = fat_next_cluster(fat, cclus);
         sect = clus2datsec(fat, cclus);
     }
+    printf(ylw("==============\n"));
 
     return n - rest;
 }
@@ -969,6 +971,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     sect = clus2datsec(fat, cclus) + sec_off_num % spc;
 
     while(cclus != FAT_CLUS_END && sec_total_num > 0){
+        // printf(grn("sect: %d\n"), sect);
         if(cur_bio_vec != first_bio_vec){
             /** 
              * 新的簇的第一个扇区号和上一个簇的最后一个扇区号不连续，新建一个结构体存放这个段，这里的链表
@@ -997,6 +1000,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
         cclus = fat_next_cluster(fat, cclus);
         sect = clus2datsec(fat, cclus);
     }
+    // printf(ylw("==============\n"));
     
 
     return first_bio_vec;

@@ -5,6 +5,7 @@
     "debug.h": "c",
     "unistd.h": "c",
     "file.h": "c",
-    "bio.h": "c"
+    "bio.h": "c",
+    "sbi.h": "c"
   }
 }

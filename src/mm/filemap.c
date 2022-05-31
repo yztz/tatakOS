@@ -178,6 +178,7 @@ void free_mapping(entry_t *entry)
   /* freee i_mapping */
   addr = entry->i_mapping;
   kfree(addr);
+  entry->i_mapping = NULL;
 }
 
 /**
@@ -241,10 +242,12 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
-      fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
-      // readpage(entry, pa, index);
+      // fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
+      readpage(entry, pa, index);
 
-      // printf(ylw("pa: %s\n"), (char *)pa);
+      // print_page_contents((uint64 *)pa);
+      // for(;;);
+      // printf(ylw("pa: %p\n"), pa);
 
       add_to_page_cache(pa, mapping, index);
     }
