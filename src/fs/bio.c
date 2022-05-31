@@ -230,11 +230,11 @@ void make_request(){
       for(int i = 0; i < cur_bio_vec->bv_count; i++){
         /* qemu */
         /* 根据bio读读写位，判断是读还是写 */
-        // printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
+        printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
         struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
         memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
         brelse(b);
-        // printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
+        printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
         cur_bio_vec->bv_buff += BSIZE;
       }
       cur_bio_vec = cur_bio_vec->bv_next;
@@ -242,5 +242,6 @@ void make_request(){
   
   cur_bio = cur_bio->bi_next;
   }
-    
+
+  rq.queue_head = NULL; 
 }
