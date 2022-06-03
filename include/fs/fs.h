@@ -82,4 +82,5 @@ struct address_space {
 	 * of struct page's "mapping" pointer be used for PAGE_MAPPING_ANON.
 	 */
 
+typedef struct address_space address_space_t;
 #endif

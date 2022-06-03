@@ -6,6 +6,10 @@
     "unistd.h": "c",
     "file.h": "c",
     "bio.h": "c",
-    "sbi.h": "c"
+    "sbi.h": "c",
+    "device.h": "c",
+    "profile.h": "c",
+    "type_traits": "c",
+    "profile_gen.h": "c"
   }
 }

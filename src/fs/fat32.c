@@ -126,6 +126,9 @@ static entry_t *get_root(fat32_t *fat) {
     root->parent = NULL;
     root->raw.attr = FAT_ATTR_DIR;
     root->clus_start = fat->root_cluster;
+
+    root->i_mapping = kzalloc(sizeof(address_space_t));
+    
     initsleeplock(&root->lock, "root_lock");
     return root;
 }

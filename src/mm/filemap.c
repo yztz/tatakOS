@@ -85,7 +85,7 @@ int filemap_nopage(uint64 address)
   // find from page cache first
   // page = find_get_page(mapping, pgoff);
   pa = find_get_page(mapping, pgoff);
-  printf(ylw("pa: %p\n"), pa);
+  // printf(ylw("pa: %p\n"), pa);
   // 页缓存命中，把address和pa映射
   if (pa)
   {
@@ -100,7 +100,7 @@ int filemap_nopage(uint64 address)
   // printf(rd("not hit\n"));
   // 没有命中，分配页，读磁盘
   pa = (uint64)kalloc();
-  printf(bl("pa: %p\n"), pa);
+  // printf(bl("pa: %p\n"), pa);
   if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
     panic("filemap no page 3");
 
@@ -240,7 +240,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       // if(user == 1)
         // for(;;);
       pa = (uint64)kalloc();
-      printf(ylw("pa: %p\n"), pa);
+      // printf(ylw("pa: %p\n"), pa);
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
@@ -265,5 +265,42 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     rest -= len;
   }
   /* 返回读取的字节数 */
+  return n - rest;
+}
+
+uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n){
+  uint32_t pg_id, pg_off, rest, cur_off;
+  uint64_t pa;
+  entry_t *entry = mapping->host;
+  int len;
+
+  cur_off = off;
+  rest = n;
+
+  todo("if off biger the file size, expend tree");
+  while(rest > 0){
+    pg_id = cur_off >> PGSHIFT;
+    pg_off = cur_off & ~PGMASK;
+
+
+    pa = find_get_page(mapping, pg_id);
+    todo("lock page");
+    if(!pa){
+      pa = (uint64_t)kalloc();
+      todo("use prepare_write");
+      readpage(entry, pa, pg_id);
+      add_to_page_cache(pa, mapping, pg_id);
+    }
+
+    len = min(rest, PGSIZE - pg_off);
+    either_copyin((void* )(pa + pg_off), 1, buff, len);
+    // memmove((void* )(pa + pg_off), (void *)buff, len);
+    // for(;;);
+    todo("set page dirty");
+
+    rest -= len;
+    cur_off += len; 
+  }
+
   return n - rest;
 }

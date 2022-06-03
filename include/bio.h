@@ -24,18 +24,18 @@ typedef struct bio {
  * @brief 描述了一个I/O操作的段（连续的sectors）
  * 
  */
-struct bio_vec {
+typedef struct bio_vec {
   sector_t bv_start_num;/* the number of the first sector */
   uint32 bv_count;/* the counts of sectors */
   struct bio_vec *bv_next;/* the pointer of next bio segment */
   void *bv_buff; /* the address to begin read/write */
-};
+}bio_vec_t;
 
 
-struct request_queue {
-  struct bio *queue_head;
+typedef struct request_queue {
+  struct bio *rq_head, *rq_tail;
   spinlock_t rq_lock;
-};
+} request_queue_t;
 
 void make_request();
 void submit_bio(struct bio *bio);

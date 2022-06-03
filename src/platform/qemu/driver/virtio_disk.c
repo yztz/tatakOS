@@ -210,6 +210,7 @@ alloc3_desc(int *idx)
   return 0;
 }
 
+/* 给这个函数加上一个while，搞一个线程专门运行它 */
 void
 virtio_disk_rw(struct buf *b, int write)
 {

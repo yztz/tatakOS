@@ -204,44 +204,76 @@ bunpin(struct buf *b) {
 
 
 /*************************new add func**************************/
+void free_bio(bio_t *bio){
 
-struct request_queue rq = {.queue_head = NULL, .rq_lock = {0, 0, 0, 0}};
+}
 
-void submit_bio( struct bio *bio){
+// request_queue_t rq = {.rq_head = NULL, .rq_tail = NULL, .rq_lock = {0, 0, 0, 0}};
+
+void submit_bio( bio_t *bio){
   /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
   // acquire(&rq.rq_lock);
-  bio->bi_next = rq.queue_head;
-  rq.queue_head = bio;  
-  make_request();
+  // // bio->bi_next = rq.rq_head;
+  // // rq.rq_head = bio;  
+  // if(rq.rq_tail == NULL){
+  //   rq.rq_head = bio;
+  //   rq.rq_tail = bio;
+  // }
+  // else {
+  //   rq.rq_tail->bi_next = bio;
+  //   rq.rq_tail = bio;
+  // }
+  // wakeup((void*) &rq);
+  // sleep((void *)bio, &rq.rq_lock);
   // release(&rq.rq_lock);
-}
-
-
-void make_request(){
-  struct bio *cur_bio;
-  struct bio_vec *cur_bio_vec;
-
-  cur_bio = rq.queue_head;
-  while(cur_bio){
-    // print_bio_vec(cur_bio);
-    cur_bio_vec = cur_bio->bi_io_vec;
-    /* 对于一次I/O请求的每个段 */
-    while(cur_bio_vec){
-      for(int i = 0; i < cur_bio_vec->bv_count; i++){
-        /* qemu */
-        /* 根据bio读读写位，判断是读还是写 */
-        printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
-        struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
-        memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
-        brelse(b);
-        printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
-        cur_bio_vec->bv_buff += BSIZE;
-      }
-      cur_bio_vec = cur_bio_vec->bv_next;
-    }
-  
-  cur_bio = cur_bio->bi_next;
+  // make_request();
+  bio_vec_t *cur_bio_vec;
+  cur_bio_vec = bio->bi_io_vec;
+  while(cur_bio_vec){
+    for(int i = 0; i < cur_bio_vec->bv_count; i++){
+      struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
+      memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
+      brelse(b);
+      cur_bio_vec->bv_buff += BSIZE;
+    } 
+    cur_bio_vec = cur_bio_vec->bv_next;
   }
-
-  rq.queue_head = NULL; 
 }
+
+
+// void make_request(){
+//   struct bio *cur_bio;
+//   struct bio_vec *cur_bio_vec;
+
+//   cur_bio = rq.rq_head;
+//   while(cur_bio){
+//     // print_bio_vec(cur_bio);
+//     cur_bio_vec = cur_bio->bi_io_vec;
+//     /* 对于一次I/O请求的每个段 */
+//     while(cur_bio_vec){
+//       for(int i = 0; i < cur_bio_vec->bv_count; i++){
+//         /* qemu */
+//         /* 根据bio读读写位，判断是读还是写 */
+//         // printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
+//         struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
+//         memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
+//         brelse(b);
+//         // printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
+//         cur_bio_vec->bv_buff += BSIZE;
+//       }
+//       cur_bio_vec = cur_bio_vec->bv_next;
+//     }
+  
+//   cur_bio = cur_bio->bi_next;
+//   }
+
+//   rq.rq_head = NULL; 
+//   todo("free the IO request queue!");
+// }
+
+// void make_request(){
+//   while(1){
+//     acquire(&rq.rq_lock);
+
+//   }
+// }

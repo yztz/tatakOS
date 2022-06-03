@@ -371,6 +371,40 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   return ret;
 }
 
+/**
+ * @brief int 类型最大表示的整数为1<<31-1,折合2G-1个字节。不知是否会有溢出的危险。
+ * 
+ * @param entry 
+ * @param user 
+ * @param buff 
+ * @param off 
+ * @param n 
+ * @return int 
+ */
+// int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
+//   /* maybe overflow */
+//   if(off < 0 || n < 0)
+//     panic("writee");
+
+//   uint64_t ret, newsize;
+
+//   ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
+//   newsize = off + ret; 
+
+//   /* 更改文件在父目录中的元数据 */
+//   if(ret > 0 && newsize > entry->raw.size){
+//     entry->raw.size = newsize;
+//     debug("updata size");
+//     /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */
+//     // todo();
+//     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+//     // if(do_generic_mapping_write(entry->parent->i_mapping, 0, (uint64_t)&entry->raw, entry->clus_offset, sizeof(dir_item_t))  != sizeof(dir_item_t))
+//       // panic("writee!");
+//   }
+//   return ret;
+
+// }
+
 
 // /* 如果有vfs，reade可以类比为一个通用的读文件函数，即linux中的do_generic_file_read */
 // int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
@@ -383,8 +417,13 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 
 
 int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
+  /* maybe overflow */
+  if(off < 0 || n < 0)
+    panic("reade 1");
+
   if(off >= E_FILESIZE(entry)) 
-    return 0;
+    panic("reade 2");
+    // return 0;
   // /* 偏移加上要读的字节数超过了文件大小 */
   // if(off + n > E_FILESIZE(entry)){
   //   n = E_FILESIZE(entry) - off;
