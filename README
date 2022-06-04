@@ -1,4 +1,6 @@
 tatakOS is the best OS in the world.
 
 概要文档详见【腾讯文档 https://docs.qq.com/doc/DTUtvRWNjYnJMUHZY】。
-细节文档详见doc目录。
+doc/ - 详细的开发文档
+test/ - 内核调试测试日志与测试程序
+changelog - 项目变更日志
