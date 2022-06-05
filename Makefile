@@ -137,7 +137,6 @@ endif
 
 # 磁盘映像制作
 MNT_DIR := $(BUILD_ROOT)/mnt
-TESTCASES_DIR := $(ROOT)/testcases
 fs.img : $(fs.img)
 
 $(MNT_DIR):
