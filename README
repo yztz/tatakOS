@@ -1,1 +1,8 @@
-tatakOS is the best OS in the world.
+本项目基于mit-xv6-riscv
+
+TatakOS
+
+操作系统内核设计赛文档.pdf - 概要文档
+changelog - 项目变更日志
+doc/ - 详细的开发文档
+test/ - 内核调试测试日志与测试程序
