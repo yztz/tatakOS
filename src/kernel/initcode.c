@@ -17,14 +17,13 @@ char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = {"mem_test"};
+char* prog_name[] = {"getpid"};
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
 __attribute__((section(".startup"))) 
 void main() {
     memuse();
-    // printf("hello world %d\n", 123);
     run(fs_testcase);
     run(proc_testcase);
     run(mm_testcase);

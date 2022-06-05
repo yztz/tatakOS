@@ -21,7 +21,7 @@ void fs_init() {
   //   entry_pool[i].first = NULL;
   // }
 
-  for(int i = 1; i < NENTRY; i++) {
+  for(int i = 0; i < NENTRY; i++) {
     memset(&pool[i], 0, sizeof(entry_t));
     initsleeplock(&pool[i].lock, "pool_entry");
   }

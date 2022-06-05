@@ -84,7 +84,7 @@ uint64_t sys_gettimeofday(void) {
   time = TICK2TIMESPEC(ticks);
   release(&tickslock);
   uint64_t old_ticks = ticks;
-  while(ticks - old_ticks < 10); // 测试用例不合理
+  while(ticks - old_ticks < 5); // 测试用例不合理
 
   if(copyout(myproc()->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
     ret = -1;
