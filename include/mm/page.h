@@ -78,7 +78,16 @@ typedef struct _page_t {
         uint8_t type  : 2; // page type ()
     };
     // uint8_t resv[2]; // reserved for special use
+
+    uint8_t flags;
+    void *sleeplock;
 } page_t;
+
+#define PG_locked (1L << 0)
+#define PG_dirty (1L << 1)
+#define PG_uptodata (1L << 2)
+
+
 
 /* 页的数量 */
 #define PAGE_NUMS ((MEM_END - KERN_BASE)/PGSIZE)
@@ -101,9 +110,19 @@ int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int pe
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 
-void get_page(page_t *page);
-void put_page(page_t *page);
 
+pgref_t get_page(uint64_t pa);
+pgref_t put_page(uint64_t pa );
+
+void lock_page(uint64_t pa);
+void unlock_page(uint64_t pa);
+
+
+void set_page_dirty(uint64_t pa);
+void clear_page_dirty(uint64_t pa);
+int page_is_dirty(uint64_t pa);
+
+void unlock_put_page(uint64_t pa);
 
 /* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
 /* Out of convenient and compatibility, we define the default behavior for the func below */

@@ -17,28 +17,28 @@
  *
  */
 
+
+uint64 find_page(struct address_space *mapping, unsigned long offset){
+  uint64 pa = 0;
+
+  acquire(&mapping->page_lock);
+  pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  release(&mapping->page_lock);
+  return pa;
+}
 /*
  * a rather lightweight function, finding and getting a reference to a
  * hashed page atomically.
- * 和内存管理模块还未耦合，暂时先不增加页引用。
  */
 uint64 find_get_page(struct address_space *mapping, unsigned long offset)
 {
-  // page_t *page;
-  uint64 pa;
+  uint64 pa = 0;
 
-  /*
-   * We scan the hash list read-only. Addition to and removal from
-   * the hash-list needs a held write-lock.
-   */
-  acquire(&mapping->page_lock);
-  pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  pa = find_page(mapping, offset);
   // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
   if (pa)
-    ref_page(pa);
-  // get_page(&pages[PAGE2NUM(pa)]);
-  release(&mapping->page_lock);
+    get_page(pa);
   return pa;
 }
 
@@ -49,7 +49,6 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
  */
 int filemap_nopage(uint64 address)
 {
-  // printf(grn("cur_mmap_sz: %p\n"), myproc()->cur_mmap_sz);
   struct proc *p = myproc();
   struct mm_struct *mm = p->mm;
   struct vm_area_struct *area = mm->mmap;
@@ -82,11 +81,10 @@ int filemap_nopage(uint64 address)
   if (size > endoff)
     size = endoff;
 
-  // find from page cache first
-  // page = find_get_page(mapping, pgoff);
+  /* find from page cache first, if find page, increase it's ref count */
   pa = find_get_page(mapping, pgoff);
   // printf(ylw("pa: %p\n"), pa);
-  // 页缓存命中，把address和pa映射
+  /* 页缓存命中，把address和pa映射 */
   if (pa)
   {
     pagetable_t pagetable = myproc()->pagetable;
@@ -149,6 +147,9 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
         // /* 是释放一整个物理页吗？ */
         // printf(bl("walk free pa: %p\n"), pa);
         // kfree(pa);
+        #ifdef TODO
+        todo("is the page mapping, not kfree, else ,free the page");
+        #endif
         break;
       }
       else
@@ -163,10 +164,24 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
   kfree((void *)node);
 }
 
-/*注意，只需释放rdt节点，不释放已经映射的物理内存，
-物理内存不在文件关闭时释放，而在unmap或者进程退出时释放 */
+/**
+ * @brief 注意，只需释放rdt节点，不释放已经映射的物理内存，
+ * 物理内存不在文件关闭时释放，而在unmap或者进程退出时释放，这是因为mmap系统调用说明了，文件
+ * 关闭，映射仍然存在。 
+ * 
+ * 补充：以上似乎不对，一个页加入某个文件的page cache，似乎引用数加1，这个文件关闭时，kfree
+ * 减去这个引用数，引用数为0则释放。或者区分一下page cache中哪些页是mmap的？然后分别处理。
+ * 
+ * 现在文件关闭时，还要检测脏页，并写回。
+ * 
+ * @param entry 
+ */
 void free_mapping(entry_t *entry)
 {
+
+  #ifdef TODO
+  todo("(before free invoke )invoke write pages method to write dirty pages");
+  #endif
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
   void *addr;
   if (root->height > 0)
@@ -260,6 +275,11 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
 
+
+    #ifdef TODO
+    todo("put page?");
+    #endif
+
     cur_off += len;
     buff += len;
     rest -= len;
@@ -268,6 +288,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
   return n - rest;
 }
 
+/* this function is models on generic_file_aio_write_nolock in linux 2.6.0*/
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n){
   uint32_t pg_id, pg_off, rest, cur_off;
   uint64_t pa;
@@ -277,30 +298,65 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
   cur_off = off;
   rest = n;
 
+
+  #ifdef TODO
   todo("if off biger the file size, expend tree");
+  #endif
   while(rest > 0){
     pg_id = cur_off >> PGSHIFT;
     pg_off = cur_off & ~PGMASK;
 
 
     pa = find_get_page(mapping, pg_id);
-    todo("lock page");
     if(!pa){
       pa = (uint64_t)kalloc();
+      get_page(pa);
+      #ifdef TODO
       todo("use prepare_write");
+      #endif
       readpage(entry, pa, pg_id);
       add_to_page_cache(pa, mapping, pg_id);
     }
 
+    /* 函数位置有待商榷 */
+    lock_page(pa);
+
     len = min(rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), 1, buff, len);
+
+    set_pg_rdt_dirty(pa, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
     // memmove((void* )(pa + pg_off), (void *)buff, len);
     // for(;;);
-    todo("set page dirty");
+    // todo("set page dirty");
+    unlock_put_page(pa);
 
     rest -= len;
     cur_off += len; 
+    buff += len;
   }
 
   return n - rest;
+}
+
+
+
+/**
+ * @brief find all pages in the mapping with tag
+ * 
+ * @param mapping 
+ * @param tag 
+ * @return pages_be_found_head_t* 
+ */
+pages_be_found_head_t *
+find_pages_tag(address_space_t *mapping, uint32_t tag){
+  pages_be_found_head_t *pg_head = kzalloc(sizeof(pages_be_found_head_t));
+  
+  pg_head->head = NULL;
+  pg_head->tail = NULL;
+  pg_head->nr_pages = 0;
+
+  radix_tree_find_tags(&mapping->page_tree, tag, pg_head);
+
+  pg_head->tail->next = NULL;
+  return pg_head;
 }

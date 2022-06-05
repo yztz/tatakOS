@@ -477,6 +477,11 @@ sys_mmap(void)
   if ((p->ofile[fd]->writable == 0) && (prot & PROT_WRITE) && (flags & MAP_SHARED))
     panic("sys_mmap 2");
 
+
+  filedup(p->ofile[fd]);
+  #ifdef TODO
+  todo("manual said file close, i think it's entry close");
+  #endif
   return do_mmap(p->ofile[fd], addr, length, prot, 
           flags, offset);
 

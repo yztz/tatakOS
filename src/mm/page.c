@@ -11,6 +11,8 @@
 #define __MODULE_NAME__ PAGE
 #include "debug.h"
 
+#include "atomic/sleeplock.h"
+
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
 
@@ -139,19 +141,57 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
   }
 }
 
-void get_page(page_t *page){
-  acquire(&reflock);
-  page->refcnt++;
-  release(&reflock);
+
+
+
+pgref_t get_page(uint64_t pa){
+  return ref_page(pa);
 }
 
-void put_page(page_t *page){
-  acquire(&reflock);
-  page->refcnt--;
-  if(page->refcnt == 0){
-    //may be do someting, release the page?
-    // todo();
+pgref_t put_page(uint64_t pa ){
+  return deref_page(pa);
+}
 
+
+
+/* lock a page, if it's lock is null, allocate for it */
+void lock_page(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  if(page->sleeplock == NULL){
+    page->sleeplock = kzalloc(sizeof(sleeplock_t));
+    initsleeplock((sleeplock_t *)page->sleeplock, NULL);
   }
-  release(&reflock);
+
+  acquiresleep((sleeplock_t *)page->sleeplock);
+}
+
+void unlock_page(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+  
+  releasesleep((sleeplock_t *)page->sleeplock);
+}
+
+void set_page_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  page->flags |= PG_dirty;
+}
+
+
+void clear_page_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  page->flags &= ~PG_dirty;
+}
+
+int page_is_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  return page->flags & PG_dirty;
+}
+
+void unlock_put_page(uint64_t pa){
+  unlock_page(pa);
+  put_page(pa);
 }

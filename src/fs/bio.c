@@ -205,12 +205,18 @@ bunpin(struct buf *b) {
 
 /*************************new add func**************************/
 void free_bio(bio_t *bio){
-
+  bio_vec_t *cur_bio_vec;
+  cur_bio_vec = bio->bi_io_vec;
+  while(cur_bio_vec){
+    kfree(cur_bio_vec);
+    cur_bio_vec = cur_bio_vec->bv_next;
+  } 
+  kfree(bio);
 }
 
 // request_queue_t rq = {.rq_head = NULL, .rq_tail = NULL, .rq_lock = {0, 0, 0, 0}};
 
-void submit_bio( bio_t *bio){
+void submit_bio(bio_t *bio){
   /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
   // acquire(&rq.rq_lock);
   // // bio->bi_next = rq.rq_head;
@@ -232,12 +238,21 @@ void submit_bio( bio_t *bio){
   while(cur_bio_vec){
     for(int i = 0; i < cur_bio_vec->bv_count; i++){
       struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
-      memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
+      if (bio->bi_rw == READ){
+        memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
+      }
+      else if (bio->bi_rw == WRITE) {
+        memmove((void*)b->data, (void*)cur_bio_vec->bv_buff, BSIZE);
+        bwrite(b);
+      }
+      else
+        panic("submit bio");
       brelse(b);
       cur_bio_vec->bv_buff += BSIZE;
     } 
     cur_bio_vec = cur_bio_vec->bv_next;
   }
+  free_bio(bio);
 }
 
 

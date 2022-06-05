@@ -11,6 +11,8 @@
  * stacking drivers)
  */
 
+/* bio is private to process, there must only one process access it 
+at a time, so no need lock protect list */
 typedef struct bio {
   struct bio_vec *bi_io_vec;
   uint8 bi_rw;

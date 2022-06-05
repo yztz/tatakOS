@@ -118,7 +118,8 @@ int luaO_log2 (unsigned int x) {
   return l + log_2[x];
 }
 
-void TODO(char *info, char *s, const char *s1, int d)
+/* TODO */
+void TD(char *info, char *s, const char *s1, int d)
 {
   printf(ylw("TODO INFO:\n"));
   printf(bl("%s\n"), info);

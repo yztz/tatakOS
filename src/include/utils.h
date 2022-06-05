@@ -64,13 +64,13 @@ void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
 void print_block(uint8_t *b) ;
 
-void TODO(char *info, char *s, const char *s1, int d);
+void TD(char *info, char *s, const char *s1, int d);
 void print_all_vma();
 void printf_radix_tree();
 void print_bio_vec(struct bio *);
 void print_page_contents(uint64 *pa);
 
-#define todo(str)  TODO(str, __FILE__, __func__, __LINE__)
+#define todo(str)  TD(str, __FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)
 
 
@@ -79,4 +79,6 @@ void print_page_contents(uint64 *pa);
 #define rd(str) 	"\e[31;1m"str"\e[0m"
 #define bl(str) 	"\e[34;1m"str"\e[0m"
 
+
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #endif

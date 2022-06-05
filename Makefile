@@ -15,6 +15,8 @@ gdb_port := 1234
 # architecture
 arch := riscv64
 
+display_todo_info ?= off
+
 #==========================DIR INFO================================#
 ROOT 	:= $(shell pwd)
 SCRIPT	:= $(ROOT)/script
@@ -55,6 +57,10 @@ endif
 # debug
 ifeq ("${debug}", "on")
   CFLAGS += -DDEBUG
+endif
+
+ifeq ("${display_todo_info}", "on")
+	CFLAGS += -DTODO
 endif
 
 include $(SCRIPT)/cflags.mk

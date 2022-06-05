@@ -25,7 +25,9 @@
 #include "mm/mm.h"
 #include "radix-tree.h"
 #include "debug.h"
+#include "bitops.h"
 
+#include "fs/mpage.h"
 //基数树(radix tree, rdt)相关
 
 // struct radix_tree_node {
@@ -201,4 +203,172 @@ radix_tree_node_alloc(){
 	for(int i = 0; i < RADIX_TREE_MAP_SIZE; i++)
 		ret->slots[i] = NULL;
 	return ret;
+}
+
+
+static inline void tag_set(radix_tree_node_t *node, uint32_t tag_type, int offset){
+	__set_bit(offset, node->tags[tag_type]);
+}
+
+static inline void tag_clear(struct radix_tree_node *node, unsigned int tag,
+		int offset)
+{
+	__clear_bit(offset, node->tags[tag]);
+}
+
+static inline int tag_get(struct radix_tree_node *node, unsigned int tag, int offset)
+{
+	return test_bit(offset, node->tags[tag]);
+}
+
+/*
+ * Returns 1 if any slot in the node has this tag set.
+ * Otherwise returns 0.
+ */
+static inline int any_tag_set(struct radix_tree_node *node, unsigned int tag)
+{
+	int idx;
+	for (idx = 0; idx < RADIX_TREE_TAG_LONGS; idx++) {
+		if (node->tags[tag][idx])
+			return 1;
+	}
+	return 0;
+}
+
+
+void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
+	uint height, shift;
+	radix_tree_node_t *slot;
+
+	height = root->height;
+	if(pg_id > radix_tree_maxindex(height))
+		panic("rdt tag set");
+
+	shift = (height-1)*RADIX_TREE_MAP_SHIFT;
+	slot = root->rnode;
+	
+	while (height > 0)
+	{
+		int slot_num;
+		if(slot == NULL)
+			panic("rdt tag set");
+			// return;
+		
+		slot_num = (pg_id >> shift) & RADIX_TREE_MAP_MASK;
+		tag_set(slot, tag_type, slot_num);
+		slot = (radix_tree_node_t *)(slot->slots[slot_num]);
+		shift -= RADIX_TREE_MAP_SHIFT;
+		height--;
+	}
+
+	/* the index of page to set is empty */
+	if(slot == NULL)
+		panic("rdt tag set 2");
+
+	return;
+}
+
+
+void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
+	/*
+	 * The radix tree path needs to be one longer than the maximum path
+	 * since the "list" is null terminated.
+	 * path[0]作为结束符？
+	 */
+	radix_tree_path_t path[RADIX_TREE_MAX_PATH + 1], *pathp = path;
+	radix_tree_node_t *slot = NULL;
+	uint32_t height, shift;
+
+	height = root->height;
+	if(pg_id > radix_tree_maxindex(height))
+		panic("rdt tag clear");
+
+	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
+	pathp->node = NULL;
+	slot = root->rnode;
+
+	while (height > 0)
+	{
+		int offset;
+
+		if(slot == NULL)
+			goto out;
+		
+		offset = (pg_id >> shift) & RADIX_TREE_MAP_MASK;
+		pathp[1].offset = offset;
+		pathp[1].node = slot;
+
+		slot = slot->slots[offset];
+		pathp++;
+		shift -= RADIX_TREE_MAP_SHIFT;
+		height--;
+	}
+
+	if (slot == NULL)
+	{
+		goto out;
+	}
+	
+	while(pathp->node) {
+		if(!tag_get(pathp->node, tag_type, pathp->offset))
+			goto out;
+		tag_clear(pathp->node, tag_type, pathp->offset);
+		if(any_tag_set(pathp->node, tag_type))
+			goto out;
+		pathp--;
+	}
+
+out:
+	return;
+}
+
+/**
+ * @brief recursive lookup tagged page
+ * 
+ */
+void lookup_tag(radix_tree_node_t *node, uint32_t tag, pages_be_found_head_t *pg_head, int height, uint64_t pg_id_base){
+	int i, shift;
+	shift = (height-1)*RADIX_TREE_MAP_SHIFT;
+
+	for(i=0; i<RADIX_TREE_MAP_SIZE; i++){
+		if(tag_get(node, tag, i)){
+			if(height == 1){
+				pages_be_found_t *page = kzalloc(sizeof(pages_be_found_t));
+
+				page->pa = (uint64_t)node->slots[i];
+				page->pg_id = pg_id_base + i;
+
+				if(pg_head->head == NULL && pg_head->tail == NULL){
+					pg_head->head = page;
+					pg_head->tail = page;
+				}
+				else{
+					pg_head->tail->next = page;
+					pg_head->tail = page;
+				}
+
+				pg_head->nr_pages++;
+			}
+			else{
+
+				lookup_tag((radix_tree_node_t *)node->slots[i], tag, pg_head, height - 1, pg_id_base + i * (1<<shift));
+			}
+		}
+	}
+}
+
+
+
+/**
+ * @brief find all pages with tag in the rdt
+ * 
+ * @param mapping 
+ * @param tag 
+ * @param pg_head 
+ * @return pages_be_found_head_t* 
+ */
+pages_be_found_head_t *
+radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head){
+	lookup_tag(root->rnode, tag, pg_head, root->height, 0);
+	return pg_head;
 }

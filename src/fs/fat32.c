@@ -11,6 +11,7 @@
 #include "bio.h"
 
 #include "profile.h"
+#include "fs/mpage.h"
 
 #define QUIET
 #define __MODULE_NAME__ FAT
@@ -935,6 +936,8 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, trav
  * 使用一个bio_vec结构体表示。
  * 以簇cluster为单位进行查找，因为一个簇内的扇区sector是连续的。
  * 
+ * 给出一段文件在内存空间中连续的地址，长度为n，找到对应的sectors，尽量
+ * 使其连续。
  * @param fat 
  * @param cclus 
  * @param off 
@@ -1007,4 +1010,9 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     
 
     return first_bio_vec;
+}
+
+
+int fat_writepages(address_space_t *mapping){
+    return mpage_writepages(mapping);
 }

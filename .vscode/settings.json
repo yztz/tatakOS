@@ -10,6 +10,18 @@
     "device.h": "c",
     "profile.h": "c",
     "type_traits": "c",
-    "profile_gen.h": "c"
+    "profile_gen.h": "c",
+    "types.h": "c",
+    "mpage.h": "c",
+    "mm.h": "c",
+    "sleeplock.h": "c",
+    "atomic.h": "c",
+    "hlist.h": "c",
+    "fat.h": "c",
+    "stat.h": "c",
+    "param.h": "c",
+    "radix-tree.h": "c",
+    "fs.h": "c",
+    "fcntl.h": "c"
   }
 }
