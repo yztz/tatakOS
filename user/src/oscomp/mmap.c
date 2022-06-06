@@ -58,7 +58,7 @@ void test_mmap(void){
     fstat(fd, &kst);
     printf(bl("file len: %d\n"), kst.st_size);
 
-    /* 先关闭再打开一下，否则文件的偏移为末尾，读不出来 */
+    /* 先关闭再打开一下，否则文件的偏移为末尾(write?)，读不出来 */
     close(fd);
     fd = open("test_mmap.txt", O_RDWR | O_CREATE);
     char buf[50];

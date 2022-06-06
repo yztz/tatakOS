@@ -148,7 +148,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
         // printf(bl("walk free pa: %p\n"), pa);
         // kfree(pa);
         #ifdef TODO
-        todo("is the page mapping, not kfree, else ,free the page");
+        todo("is the page mapping, not kfree, else ,free the page(wrong, mmap has dup the file");
         #endif
         break;
       }
@@ -314,6 +314,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       #ifdef TODO
       todo("use prepare_write");
       #endif
+      /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
       readpage(entry, pa, pg_id);
       add_to_page_cache(pa, mapping, pg_id);
     }
@@ -357,6 +358,8 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
 
   radix_tree_find_tags(&mapping->page_tree, tag, pg_head);
 
-  pg_head->tail->next = NULL;
+  /* if no dirty page, pg_head and pg_tail is null */
+  if(pg_head->head != NULL)
+    pg_head->tail->next = NULL;
   return pg_head;
 }

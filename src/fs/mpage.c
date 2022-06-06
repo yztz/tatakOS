@@ -30,7 +30,8 @@
  */
 int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
   
-  bio_t *bio = do_readpage(entry, buff, flpgnum);
+  // bio_t *bio = do_readpage(entry, buff, flpgnum);
+  bio_t *bio = get_rw_pages_bio(entry, buff, flpgnum, 1, READ);
   if(bio)
     submit_bio(bio);
   
@@ -39,7 +40,7 @@ int readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
 
 /**
  * @brief give a list of bio_vec and a start address buff, assign to 
- * bio_vec buff with the value of "buff" plus offset.
+ * bio_vec buff with the value of "buff", and plus offset for it.
  * 
  * @param first_bio_vec 
  * @param buff 
@@ -53,35 +54,36 @@ void bio_vec_buff_assignment(bio_vec_t *first_bio_vec, uint64 buff, uint32_t bps
     cur_bio_vec = cur_bio_vec->bv_next;
   }
 }
-/**
- * @brief 找出所有要读的磁盘块号，记录在bio中，把一个页(page)按照扇区(sector)连续的原则分为段(segment)
- * 
- */
-bio_t *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
-  bio_t *bio = kzalloc(sizeof(bio_t));
-  struct bio_vec *first_bio_vec;
-  /* 用来统计扇区总数是否符合条件 */
-  // int sect_num = 0;
-  uint32 bps = entry->fat->bytes_per_sec;
 
-  first_bio_vec = fat_get_sectors(entry->fat, entry->clus_start, flpgnum*PGSIZE, PGSIZE);
-  // cur_bio_vec = first_bio_vec;
-  // while(cur_bio_vec != NULL){
-  //   cur_bio_vec->bv_buff = (void *)buff;
-  //   buff += cur_bio_vec->bv_count * bps;
+// /**
+//  * @brief 找出所有要读的磁盘块号，记录在bio中，把一个页(page)按照扇区(sector)连续的原则分为段(segment)
+//  * 
+//  */
+// bio_t *do_readpage(entry_t *entry, uint64 buff, uint32 flpgnum){
+//   bio_t *bio = kzalloc(sizeof(bio_t));
+//   struct bio_vec *first_bio_vec;
+//   /* 用来统计扇区总数是否符合条件 */
+//   // int sect_num = 0;
+//   uint32 bps = entry->fat->bytes_per_sec;
 
-  //   cur_bio_vec = cur_bio_vec->bv_next;
-  // }
-  bio_vec_buff_assignment(first_bio_vec, buff, bps);
+//   first_bio_vec = fat_get_sectors(entry->fat, entry->clus_start, flpgnum*PGSIZE, PGSIZE);
+//   // cur_bio_vec = first_bio_vec;
+//   // while(cur_bio_vec != NULL){
+//   //   cur_bio_vec->bv_buff = (void *)buff;
+//   //   buff += cur_bio_vec->bv_count * bps;
 
-  // if(PGSIZE / bps != sect_num)
-  //   panic("do_readpage: sector num is wrong!");
-  bio->bi_io_vec = first_bio_vec; 
-  bio->bi_rw = READ;
-  bio->bi_dev = entry->fat->dev;
-  // print_bio_vec(bio);
-  return bio;
-}
+//   //   cur_bio_vec = cur_bio_vec->bv_next;
+//   // }
+//   bio_vec_buff_assignment(first_bio_vec, buff, bps);
+
+//   // if(PGSIZE / bps != sect_num)
+//   //   panic("do_readpage: sector num is wrong!");
+//   bio->bi_io_vec = first_bio_vec; 
+//   bio->bi_rw = READ;
+//   bio->bi_dev = entry->fat->dev;
+//   // print_bio_vec(bio);
+//   return bio;
+// }
 
 
 /**
@@ -120,6 +122,13 @@ bio_t *get_rw_pages_bio(entry_t *entry, uint64 buff, uint32 pg_id, int pg_cnt, i
   return bio;
 }
 
+/**
+ * @brief get dirty pages from mapping, and get corresponding sectors,
+ * write back to disk.
+ * 
+ * @param mapping 
+ * @return int 
+ */
 int mpage_writepages(address_space_t *mapping){
   entry_t *entry = mapping->host;
   pages_be_found_head_t *pg_head;
@@ -128,6 +137,9 @@ int mpage_writepages(address_space_t *mapping){
   
 
   pg_head = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
+  /* no page in mapping is dirty */
+  if(pg_head->head == NULL)
+    return 0;
   /** 
    * 合并pg_id连续的页, 一批连续的页调用一次get_sectors, 这样可以使得得到的一个bio_vec
    * 包含的sectors尽可能多。因为在lookup_tag递归查询时，是按照页index递增的顺序查询的，所以

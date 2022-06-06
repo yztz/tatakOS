@@ -12,6 +12,7 @@
 #define __MODULE_NAME__ FS
 #include "debug.h"
 #include "mm/mm.h"
+#include "fs/mpage.h"
 
 fat32_t *fat;
 
@@ -189,6 +190,13 @@ static void __eput(entry_t *entry) {
       acquire(&entry->fat->cache_lock);
     }
 
+    /* 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免 */
+    #ifdef TODO
+    todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
+    #endif
+    release(&entry->fat->cache_lock);
+    mpage_writepages(entry->i_mapping);
+    acquire(&entry->fat->cache_lock);
     /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
     free_mapping(entry);
 
@@ -360,16 +368,16 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 }
 
 // caller holds lock
-int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
-  int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
-  int newsize = off + ret;
-  if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
-    entry->raw.size = newsize;
-    debug("update size");
-    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-  }
-  return ret;
-}
+// int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
+//   int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
+//   int newsize = off + ret;
+//   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
+//     entry->raw.size = newsize;
+//     debug("update size");
+//     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+//   }
+//   return ret;
+// }
 
 /**
  * @brief int 类型最大表示的整数为1<<31-1,折合2G-1个字节。不知是否会有溢出的危险。
@@ -381,29 +389,34 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
  * @param n 
  * @return int 
  */
-// int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
-//   /* maybe overflow */
-//   if(off < 0 || n < 0)
-//     panic("writee");
+int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
+  /* maybe overflow */
+  if(off < 0 || n < 0)
+    panic("writee");
 
-//   uint64_t ret, newsize;
+  uint64_t ret, newsize;
 
-//   ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
-//   newsize = off + ret; 
+  newsize = off + n; 
+  /* enlarge file to make sure the file size >= off + n(or more accurately the file's all sectors' capacity) */
+  if(newsize > entry->raw.size)
+    fat_enlarge_file(entry->fat, entry->clus_start, off, n);
 
-//   /* 更改文件在父目录中的元数据 */
-//   if(ret > 0 && newsize > entry->raw.size){
-//     entry->raw.size = newsize;
-//     debug("updata size");
-//     /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */
-//     // todo();
-//     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-//     // if(do_generic_mapping_write(entry->parent->i_mapping, 0, (uint64_t)&entry->raw, entry->clus_offset, sizeof(dir_item_t))  != sizeof(dir_item_t))
-//       // panic("writee!");
-//   }
-//   return ret;
+  ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
 
-// }
+  newsize = off + ret;
+  /* 更改文件在父目录中的元数据 */
+  if(ret > 0 && newsize > entry->raw.size){
+    entry->raw.size = newsize;
+    debug("updata size");
+    /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */
+    // todo();
+    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+    // if(do_generic_mapping_write(entry->parent->i_mapping, 0, (uint64_t)&entry->raw, entry->clus_offset, sizeof(dir_item_t))  != sizeof(dir_item_t))
+      // panic("writee!");
+  }
+  return ret;
+
+}
 
 
 // /* 如果有vfs，reade可以类比为一个通用的读文件函数，即linux中的do_generic_file_read */

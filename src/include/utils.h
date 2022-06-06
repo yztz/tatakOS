@@ -80,5 +80,6 @@ void print_page_contents(uint64 *pa);
 #define bl(str) 	"\e[34;1m"str"\e[0m"
 
 
+#define ROUNDUP(size, align_size) (((uint64_t)size + align_size-1) & ~(align_size - 1))
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #endif

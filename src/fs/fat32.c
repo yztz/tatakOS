@@ -12,6 +12,7 @@
 
 #include "profile.h"
 #include "fs/mpage.h"
+#include "utils.h"
 
 #define QUIET
 #define __MODULE_NAME__ FAT
@@ -1015,4 +1016,34 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
 
 int fat_writepages(address_space_t *mapping){
     return mpage_writepages(mapping);
+}
+
+/**
+ * @brief enlarge file to make the capcity of the file's all clusters
+ * >= off + n
+ * 
+ * @param fat 
+ * @param cclus 
+ * @param off 
+ * @param n 
+ * @return int 
+ */
+int fat_enlarge_file(fat32_t *fat, uint32_t cclus, int off, int n){
+   uint32_t bpc = BPC(fat); 
+   uint64_t size = ROUNDUP((off+n), bpc);
+   uint32_t prev_clus;
+   int alloc_num = 1;
+
+   while(size > 0){
+       prev_clus = cclus;
+       cclus = fat_next_cluster(fat, cclus);
+       if(cclus == FAT_CLUS_END) {
+           if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR)
+                panic("fat enlarge file");
+           fat_append_cluster(fat, prev_clus, cclus);
+            // alloc_num++;
+       } 
+       size -= alloc_num*bpc;
+   }
+   return 0;
 }
