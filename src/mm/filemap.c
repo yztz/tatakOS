@@ -340,6 +340,11 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 }
 
 
+void init_pg_head(pages_be_found_head_t *pg_head){
+  pg_head->head = NULL;
+  pg_head->tail = NULL;
+  pg_head->nr_pages = 0;
+}
 
 /**
  * @brief find all pages in the mapping with tag
@@ -352,10 +357,7 @@ pages_be_found_head_t *
 find_pages_tag(address_space_t *mapping, uint32_t tag){
   pages_be_found_head_t *pg_head = kzalloc(sizeof(pages_be_found_head_t));
   
-  pg_head->head = NULL;
-  pg_head->tail = NULL;
-  pg_head->nr_pages = 0;
-
+  init_pg_head(pg_head);
   radix_tree_find_tags(&mapping->page_tree, tag, pg_head);
 
   /* if no dirty page, pg_head and pg_tail is null */

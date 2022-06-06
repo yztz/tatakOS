@@ -1033,6 +1033,9 @@ int fat_enlarge_file(fat32_t *fat, uint32_t cclus, int off, int n){
    uint64_t size = ROUNDUP((off+n), bpc);
    uint32_t prev_clus;
    int alloc_num = 1;
+   
+   /* 先减去起始簇的容量 */
+   size -= bpc;
 
    while(size > 0){
        prev_clus = cclus;
