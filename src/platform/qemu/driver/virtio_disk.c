@@ -259,7 +259,7 @@ virtio_disk_rw(struct buf *b, int write)
 
   disk.info[idx[0]].status = 0xff; // device writes 0 on success
   disk.desc[idx[2]].addr = (uint64) &disk.info[idx[0]].status;
-  disk.desc[idx[2]].len = 1;
+  disk.desc[idx[2]].len = 1; // char为1个字节
   disk.desc[idx[2]].flags = VRING_DESC_F_WRITE; // device writes the status
   disk.desc[idx[2]].next = 0;
 
@@ -313,7 +313,9 @@ virtio_disk_intr()
   while(disk.used_idx != disk.used->idx){
     __sync_synchronize();
     int id = disk.used->ring[disk.used_idx % NUM].id;
+    // printf("used_idx: %d\n", disk.used_idx);
 
+    /* 如果为0，说明操作成功，否则失败，见前面的赋值为ff */
     if(disk.info[id].status != 0)
       panic("virtio_disk_intr status");
 

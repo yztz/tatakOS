@@ -19,6 +19,14 @@
  * 
  */
 
+void print_pages_be_found(pages_be_found_head_t *pg_head){
+  pages_be_found_t *pg = pg_head->head;
+  while(pg){
+    printf(bl("\npa:%p\tpg_id:%d\n"), pg->pa, pg->pg_id);
+    // print_page_contents((char*)pg->pa);
+    pg = pg->next;
+  } 
+}
 
 /**
  * @brief 得到bio结构体，记录了此次读操作涉及到的sector信息。
@@ -137,6 +145,9 @@ int mpage_writepages(address_space_t *mapping){
   
 
   pg_head = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
+  
+  print_pages_be_found(pg_head);
+
   /* no page in mapping is dirty */
   if(pg_head->head == NULL)
     return 0;
@@ -155,7 +166,7 @@ int mpage_writepages(address_space_t *mapping){
     next_page = cur_page->next;
     pages_be_found_t *tmp = cur_page;
     while(next_page){
-      if((next_page->pg_id == tmp->pg_id+1) && (next_page->pa = tmp->pa + PGSIZE)){
+      if((next_page->pg_id == tmp->pg_id+1) && (next_page->pa == tmp->pa + PGSIZE)){
         nr_continuous_pages++;
         next_page = next_page->next;
         tmp = tmp->next;
@@ -165,6 +176,8 @@ int mpage_writepages(address_space_t *mapping){
     }
 
     bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
+
+    print_bio_vec(bio);
 
     submit_bio(bio);
 

@@ -398,6 +398,10 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 
   newsize = off + n; 
   /* enlarge file to make sure the file size >= off + n(or more accurately the file's all sectors' capacity) */
+  /* 下面这个语句在qemu中非常限制性能，需要借助fat表的磁盘优化 */
+  #ifdef TODO
+  todo("modify the enlarge file, it restrict the performance!");
+  #endif
   if(newsize > entry->raw.size)
     fat_enlarge_file(entry->fat, entry->clus_start, off, n);
 

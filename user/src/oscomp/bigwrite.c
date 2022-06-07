@@ -13,7 +13,7 @@ void print_cache() {
 
 #define BUF_SIZE 4096 // 4KB
 // #define FILE_SIZE (512 * 1024) // 1MB
-#define FILE_SIZE (50 * 1024 * 1024) // 2MB
+#define FILE_SIZE (260 * 1024) 
 
 int main() {
     char buff[BUF_SIZE];
@@ -24,12 +24,16 @@ int main() {
         return 0;
     }
 
-    memset(buff, 'A', BUF_SIZE);
+    char letter = 'A';
 
     printf("start write\n");
     print_cache();
 
     for(int i = 0; i < FILE_SIZE / BUF_SIZE; i++) { // 50MB
+
+        letter = 'A' + i % 26;
+        memset(buff, letter, BUF_SIZE);
+
         int nwrite = write(fd, buff, BUF_SIZE);
         if(nwrite < 0) {
             printf("write fail\n");
@@ -45,5 +49,6 @@ int main() {
     
     close(fd);
 
+    printf("bigwrite test end!\n");
     return 0;
 }

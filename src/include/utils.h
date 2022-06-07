@@ -68,7 +68,7 @@ void TD(char *info, char *s, const char *s1, int d);
 void print_all_vma();
 void printf_radix_tree();
 void print_bio_vec(struct bio *);
-void print_page_contents(uint64 *pa);
+void print_page_contents(char* pa);
 
 #define todo(str)  TD(str, __FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)

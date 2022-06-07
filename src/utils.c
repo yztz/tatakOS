@@ -188,9 +188,13 @@ print_bio_vec(struct bio *cur_bio){
 }
 
 /* 打印一个页的内容 */
-void print_page_contents(uint64 *pa){
-  for(int i = 0; i < PGSIZE/sizeof(uint64); i++){
-    printf(rd("%d  %p\n"), i*8, *pa);
+void print_page_contents(char *pa){
+  for(int i = 0; i < PGSIZE; i++){
+    if(i % BSIZE == 0){
+      printf(rd("\n%d\n"), i);
+    }
+    printf(grn("%c"), *pa);
     pa++;
   }
+  printf("\n");
 }
