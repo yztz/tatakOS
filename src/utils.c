@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "bio.h"
 
+#include "radix-tree.h"
+
 static char* indents[] = {
   ".. .. ..",
   ".. ..",
@@ -143,16 +145,15 @@ print_all_vma(){
   printf("\n");
 }
 
-#include "radix-tree.h"
 void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
-  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++){
+  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++){
     if(node->slots[i] != NULL){
       for(int j = 0; j < c_h; j++){
         printf(".. ");
       }
       /* the leaf node */
       if(c_h == height){
-        printf("%-3d  "rd("pa: %p"), i, node->slots[i]);
+        printf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
       }
       else{
         printf("%-3d\n", i);
