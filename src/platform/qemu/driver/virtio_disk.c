@@ -289,6 +289,7 @@ virtio_disk_rw(struct buf *b, int write)
 
   release(&disk.vdisk_lock);
 }
+
 #include "printf.h"
 int
 virtio_disk_intr()

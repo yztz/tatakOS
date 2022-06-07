@@ -69,9 +69,9 @@ void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
 	struct radix_tree_node **slot;
 
 	height = root->height;
+	/* 当要查的页号大于当前rdt所能表示的最大页号，返回null，在写时可能会出现 */
 	if (index > radix_tree_maxindex(height))
-    panic("radix tree lookup 1");
-		// return NULL;
+		return NULL;
 
 	// printf(rd("index: %d height: %d\n"), index, root->height);
 	

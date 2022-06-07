@@ -204,7 +204,7 @@ bunpin(struct buf *b) {
 
 
 /*************************new add func**************************/
-void free_bio(bio_t *bio){
+void free_bio(bio_t *bio) {
   bio_vec_t *cur_bio_vec;
   cur_bio_vec = bio->bi_io_vec;
   while(cur_bio_vec){
@@ -216,7 +216,7 @@ void free_bio(bio_t *bio){
 
 // request_queue_t rq = {.rq_head = NULL, .rq_tail = NULL, .rq_lock = {0, 0, 0, 0}};
 
-void submit_bio(bio_t *bio){
+void submit_bio(bio_t *bio) {
   /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
   // acquire(&rq.rq_lock);
   // // bio->bi_next = rq.rq_head;

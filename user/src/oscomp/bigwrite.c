@@ -12,8 +12,8 @@ void print_cache() {
 }
 
 #define BUF_SIZE 4096 // 4KB
-#define FILE_SIZE (512 * 1024) // 1MB
-// #define FILE_SIZE (2 * 1024 * 1024) // 2MB
+// #define FILE_SIZE (512 * 1024) // 1MB
+#define FILE_SIZE (50 * 1024 * 1024) // 2MB
 
 int main() {
     char buff[BUF_SIZE];
