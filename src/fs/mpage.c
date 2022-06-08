@@ -167,6 +167,9 @@ int mpage_writepages(address_space_t *mapping){
     /* find max counts of continuous page */
     next_page = cur_page->next;
     pages_be_found_t *tmp = cur_page;
+    #ifdef TODO
+    todo("modify the allocated page address, make the later allocated one bigger than the former one");
+    #endif
     while(next_page){
       if((next_page->pg_id == tmp->pg_id+1) && (next_page->pa == tmp->pa + PGSIZE)){
         nr_continuous_pages++;

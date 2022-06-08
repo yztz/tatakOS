@@ -7,6 +7,7 @@
 #include "bio.h"
 
 #include "radix-tree.h"
+// #include "mm/mm.h"
 
 static char* indents[] = {
   ".. .. ..",
@@ -146,6 +147,7 @@ print_all_vma(){
 }
 
 void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
+  printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
   for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++){
     if(node->slots[i] != NULL){
       for(int j = 0; j < c_h; j++){
@@ -156,7 +158,8 @@ void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
         printf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
       }
       else{
-        printf("%-3d\n", i);
+        printf("%-3d  ", i);
+        // printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
         _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
       }
     }
@@ -165,6 +168,8 @@ void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
 
 void
 printf_radix_tree(struct radix_tree_root *root){
+  printf(rd("root:  "));
+  // printf(bl("count: %-3d, dirty tags: %5p"), root->rnode->count, root->rnode->tags[0][0]);
   printf("\n");
   _printf_radix_tree(root->rnode, root->height, 1); 
   printf("\n");
@@ -188,7 +193,7 @@ print_bio_vec(struct bio *cur_bio){
   }
 }
 
-/* 打印一个页的内容 */
+/* 打印一个页的内容, 以块为单位*/
 void print_page_contents(char *pa){
   for(int i = 0; i < PGSIZE; i++){
     if(i % BSIZE == 0){

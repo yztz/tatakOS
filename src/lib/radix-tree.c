@@ -106,22 +106,16 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 	uint32 height, shift;
 	// int error;
 
-	// printf(rd("insert0: index: %d height: %d\n"), index, root->height);
 
-	// printf(rd("insert: index: %d maxindex: %d\n"), index, radix_tree_maxindex(root->height));
 	/* make sure the tree is high enough */
 	if(root->height == 0 || index > radix_tree_maxindex(root->height)){
-	// printf(rd("insert1: index: %d height: %d\n"), index, root->height);
 		if(radix_tree_extend(root, index))	
 			panic("rdt insert 1");
 	}
-	// printf(grn("root->rnode: %p\n"), root->rnode);
-	// printf(rd("insert2: index: %d height: %d\n"), index, root->height);
 	slot = &root->rnode;
 	height = root->height;
 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;	
 
-  // printf(rd("slot1: %p\n"), *slot);
 	while (height > 0)
 	{
 		if(*slot == NULL){
@@ -134,28 +128,40 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 				node->count++;
 		}
 
-  // printf(rd("slot2: %p\n"), *slot);
-	// printf(rd("index: %p\n"), ((*slot)->slots[0]));
 		/* Go a level down. */
 		node = *slot;
 		slot = (struct radix_tree_node **)
 						(node->slots + ((index >> shift) & RADIX_TREE_MAP_MASK));
-  // printf(rd("slot3: %p\n"), *slot);
 		shift -= RADIX_TREE_MAP_SHIFT;
 		height--;
 	}
 	/* slot should be null 当打印之后，*slot就不为0了，很奇怪, 莫非分配节点时应该把指针初始化为NULL？*/
-	// for(int i = 0; i <= 1280; i+=1)
-  	// printf(ylw("slot: %p\n"), *(slot+i-10));
 	if(*slot != NULL)
 		panic("rdt insert 3");
 	if(node)
 		node->count++;
 
 	*slot = item;	
-  // printf(ylw("slot1: %p\n"), *slot);
 	
 	return 0;
+}
+
+/**
+ * @brief Set the extend node tags object
+ * the child is parent->slots[0] when extend a tree.
+ * 
+ * @param parent 
+ * @param child 
+ */
+static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
+	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
+		for(int j = 0; j < RADIX_TREE_TAG_LONGS; i++){
+			if(child->tags[i][j] > 0){
+				parent->tags[i][0] = 1;
+				break;
+			}
+		}
+	}	
 }
 
 /*
@@ -183,6 +189,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
 			node->count = 1;
 			root->rnode = node;
 			root->height++;
+			set_extend_node_tags(node, node->slots[0]);
 		} while (height > root->height);
 	} else{
 		// for(;;);
@@ -369,6 +376,8 @@ void lookup_tag(radix_tree_node_t *node, uint32_t tag, pages_be_found_head_t *pg
  */
 pages_be_found_head_t *
 radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head){
+	/* 打印出来是2，赋值为3试一试。*/
+	// root->rnode->tags[0][0] = 3;
 	lookup_tag(root->rnode, tag, pg_head, root->height, 0);
 	return pg_head;
 }
