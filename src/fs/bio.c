@@ -24,25 +24,37 @@
 #include "fs/blk_device.h"
 #include "bio.h"
 #include "utils.h"
-
-#ifdef K210
-extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-#else 
-extern void virtio_disk_rw(struct buf *, int);
-#endif
+#include "driver/disk.h"
 
 
-static void (disk_io)(struct buf *b, int write) {
-  #ifdef K210
-  if(write) {
-    sd_write_sector_dma(b->data, b->blockno, 1);
-  } else {
-    sd_read_sector_dma(b->data, b->blockno, 1);
-  }
-  #else
-  virtio_disk_rw(b, write);
-  #endif
+
+// static void (disk_io)(struct buf *b, int write) {
+//   #ifdef K210
+//   if(write) {
+//     sd_write_sector_dma(b->data, b->blockno, 1);
+//   } else {
+//     sd_read_sector_dma(b->data, b->blockno, 1);
+//   }
+//   #else
+//   virtio_disk_rw(b, write);
+//   #endif
+// }
+
+static bio_t *buf_to_bio(struct buf *b, int rw){
+  bio_t *bio = kzalloc(sizeof(bio_t));
+  bio_vec_t *bio_vec = kzalloc(sizeof(bio_vec_t));
+
+  bio_vec->bv_buff = (void *)b->data;
+  bio_vec->bv_count = 1;
+  bio_vec->bv_start_num = b->blockno;
+  bio_vec->bv_next = NULL;
+
+  bio->bi_dev = b->dev;
+  bio->bi_io_vec = bio_vec;
+  bio->bi_rw = rw;
+  bio->bi_next = NULL;
+
+  return bio;
 }
 
 struct {
@@ -140,7 +152,10 @@ struct buf*
   b = bget(dev, blockno);
 
   if(!b->valid) {
-    disk_io(b, 0);
+    // disk_io(b, 0);
+    bio_t *bio = buf_to_bio(b, READ);
+    submit_bio(bio);
+
     b->valid = 1;
     b->dirty = 0;
   }
@@ -166,7 +181,11 @@ void
     panic("brelse");
   
   if(b->dirty == 1) {
-      disk_io(b, 1);
+      // disk_io(b, 1);
+    
+      bio_t *bio = buf_to_bio(b, WRITE);
+      submit_bio(bio);
+    
       b->dirty = 0;
   }
 
@@ -236,20 +255,21 @@ void submit_bio(bio_t *bio) {
   bio_vec_t *cur_bio_vec;
   cur_bio_vec = bio->bi_io_vec;
   while(cur_bio_vec){
-    for(int i = 0; i < cur_bio_vec->bv_count; i++){
-      struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
-      if (bio->bi_rw == READ){
-        memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
-      }
-      else if (bio->bi_rw == WRITE) {
-        memmove((void*)b->data, (void*)cur_bio_vec->bv_buff, BSIZE);
-        bwrite(b);
-      }
-      else
-        panic("submit bio");
-      brelse(b);
-      cur_bio_vec->bv_buff += BSIZE;
-    } 
+    // for(int i = 0; i < cur_bio_vec->bv_count; i++){
+    //   struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
+    //   if (bio->bi_rw == READ){
+    //     memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
+    //   }
+    //   else if (bio->bi_rw == WRITE) {
+    //     memmove((void*)b->data, (void*)cur_bio_vec->bv_buff, BSIZE);
+    //     bwrite(b);
+    //   }
+    //   else
+    //     panic("submit bio");
+    //   brelse(b);
+    //   cur_bio_vec->bv_buff += BSIZE;
+    // } 
+    disk_io(cur_bio_vec, bio->bi_rw);
     cur_bio_vec = cur_bio_vec->bv_next;
   }
   free_bio(bio);

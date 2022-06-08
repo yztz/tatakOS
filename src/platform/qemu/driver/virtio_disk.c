@@ -20,6 +20,8 @@
 #include "driver/plic.h"
 #include "mm/io.h"
 #include "mm/page.h"
+#include "bio.h"
+
 // the address of virtio mmio register r.
 static uint64 virtio_base_address;
 #define R(r) ((volatile uint32 *)(virtio_base_address + (r)))
@@ -65,7 +67,7 @@ static struct disk {
   // for use when completion interrupt arrives.
   // indexed by first descriptor index of chain.
   struct {
-    struct buf *b;
+    bio_vec_t *bio_vec;
     char status;
   } info[NUM];
 
@@ -212,9 +214,11 @@ alloc3_desc(int *idx)
 
 /* 给这个函数加上一个while，搞一个线程专门运行它 */
 void
-virtio_disk_rw(struct buf *b, int write)
+// virtio_disk_rw(struct buf *b, int write)
+virtio_disk_rw(bio_vec_t *bio_vec, int write)
 {
-  uint64 sector = b->blockno * (BSIZE / 512);
+  // uint64 sector = b->blockno * (BSIZE / 512);
+  uint64 sector = bio_vec->bv_start_num;
 
   acquire(&disk.vdisk_lock);
 
@@ -236,6 +240,7 @@ virtio_disk_rw(struct buf *b, int write)
 
   struct virtio_blk_req *buf0 = &disk.ops[idx[0]];
 
+  // if(write)
   if(write)
     buf0->type = VIRTIO_BLK_T_OUT; // write the disk
   else
@@ -248,8 +253,10 @@ virtio_disk_rw(struct buf *b, int write)
   disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;
   disk.desc[idx[0]].next = idx[1];
 
-  disk.desc[idx[1]].addr = (uint64) b->data;
-  disk.desc[idx[1]].len = BSIZE;
+  // disk.desc[idx[1]].addr = (uint64) b->data;
+  disk.desc[idx[1]].addr = (uint64) bio_vec->bv_buff;
+  // disk.desc[idx[1]].len = BSIZE;
+  disk.desc[idx[1]].len = BSIZE * bio_vec->bv_count;
   if(write)
     disk.desc[idx[1]].flags = 0; // device reads b->data
   else
@@ -264,8 +271,9 @@ virtio_disk_rw(struct buf *b, int write)
   disk.desc[idx[2]].next = 0;
 
   // record struct buf for virtio_disk_intr().
-  b->disk = 1;
-  disk.info[idx[0]].b = b;
+  // b->disk = 1;
+  bio_vec->disk = 1;
+  disk.info[idx[0]].bio_vec = bio_vec;
 
   // tell the device the first index in our chain of descriptors.
   disk.avail->ring[disk.avail->idx % NUM] = idx[0];
@@ -280,11 +288,11 @@ virtio_disk_rw(struct buf *b, int write)
   *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
 
   // Wait for virtio_disk_intr() to say request has finished.
-  while(b->disk == 1) {
-    sleep(b, &disk.vdisk_lock);
+  while(bio_vec->disk == 1) {
+    sleep(bio_vec, &disk.vdisk_lock);
   }
 
-  disk.info[idx[0]].b = 0;
+  disk.info[idx[0]].bio_vec = 0;
   free_chain(idx[0]);
 
   release(&disk.vdisk_lock);
@@ -319,9 +327,9 @@ virtio_disk_intr()
     if(disk.info[id].status != 0)
       panic("virtio_disk_intr status");
 
-    struct buf *b = disk.info[id].b;
-    b->disk = 0;   // disk is done with buf
-    wakeup(b);
+    bio_vec_t *bio_vec = disk.info[id].bio_vec;
+    bio_vec->disk = 0;   // disk is done with buf
+    wakeup(bio_vec);
 
     disk.used_idx += 1;
   }

@@ -18,7 +18,7 @@ typedef struct bio {
   uint8 bi_rw;
   struct bio *bi_next;
   uint bi_dev;
-}bio_t;
+} bio_t;
 
 
 
@@ -31,7 +31,8 @@ typedef struct bio_vec {
   uint32 bv_count;/* the counts of sectors */
   struct bio_vec *bv_next;/* the pointer of next bio segment */
   void *bv_buff; /* the address to begin read/write */
-}bio_vec_t;
+  int disk;
+} bio_vec_t;
 
 
 typedef struct request_queue {

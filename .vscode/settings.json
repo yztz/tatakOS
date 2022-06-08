@@ -23,6 +23,7 @@
     "radix-tree.h": "c",
     "fs.h": "c",
     "fcntl.h": "c",
-    "utils.h": "c"
+    "utils.h": "c",
+    "disk.h": "c"
   }
 }
