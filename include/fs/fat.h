@@ -164,5 +164,7 @@ FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
 
 
 struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n);
-int fat_enlarge_file(fat32_t *fat, uint32_t cclus, int off, int n);
+int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n);
+uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus);
+uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus);
 #endif

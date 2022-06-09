@@ -144,11 +144,11 @@ int mpage_writepages(address_space_t *mapping){
   uint32_t nr_continuous_pages;
   
 
-  printf_radix_tree(&mapping->page_tree);
+  // printf_radix_tree(&mapping->page_tree);
 
   pg_head = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
   
-  print_pages_be_found(pg_head);
+  // print_pages_be_found(pg_head);
 
   /* no page in mapping is dirty */
   if(pg_head->head == NULL)
@@ -182,7 +182,7 @@ int mpage_writepages(address_space_t *mapping){
 
     bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
 
-    print_bio_vec(bio);
+    // print_bio_vec(bio);
 
     submit_bio(bio);
 

@@ -119,6 +119,8 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   
   entry->i_mapping  = kzalloc(sizeof(struct address_space));
   entry->i_mapping->host = entry;
+  entry->clus_end = 0;// initialize 
+  entry->clus_cnt = 0;
 
   release(&fat->cache_lock);
   return entry;
@@ -400,10 +402,21 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   /* enlarge file to make sure the file size >= off + n(or more accurately the file's all sectors' capacity) */
   /* 下面这个语句在qemu中非常限制性能，需要借助fat表的磁盘优化 */
   #ifdef TODO
-  todo("modify the enlarge file, it restrict the performance!");
+  todo("enlarge file: optimize point 2:modify the enlarge file, it restrict the performance!");
   #endif
+  if(entry->clus_end == 0){
+    if((entry->clus_end = get_clus_end(entry->fat, entry->clus_start)) == 0)
+      panic("writee 1");
+  }
+
+  if(entry->clus_cnt == 0){
+    if((entry->clus_cnt = get_clus_cnt(entry->fat, entry->clus_start)) == 0)
+      panic("writee 2");
+  }
+
+
   if(newsize > entry->raw.size)
-    fat_enlarge_file(entry->fat, entry->clus_start, off, n);
+    fat_enlarge_file(entry->fat, &(entry->clus_end), &(entry->clus_cnt), off, n);
 
   ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
 

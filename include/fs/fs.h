@@ -28,12 +28,14 @@ struct fat_entry {
     uint32_t    clus_start; /* 数据起始簇号 */
     
     struct fat_entry* parent; /* 父目录 */
-    uint32_t    clus_offset; /* 簇内字节偏移量 */
+    uint32_t    clus_offset; /* 簇内字节偏移量(在父目录中的偏移量) */
 
     sleeplock_t  lock;       /* io */
     
     /* 在entry读到内存中时，分配对象 */
     struct address_space *i_mapping;
+    uint32_t    clus_end; /* 数据结束簇号(下一个簇为FAT_CLUS_END) */
+    uint64_t    clus_cnt; /* 总数据簇号 */
 };
 
 typedef struct fat_entry entry_t;
