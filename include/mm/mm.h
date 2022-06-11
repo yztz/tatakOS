@@ -19,6 +19,7 @@ void free_mapping(entry_t *entry);
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n);
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n);
 pages_be_found_head_t * find_pages_tag(address_space_t *mapping, uint32_t tag);
+void writeback_file_to_disk(entry_t *entry);
 
 
 

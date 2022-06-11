@@ -1045,14 +1045,60 @@ uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus){
     return clus_cnt;
 }
 
-int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n){
-    if(*clus_end == 0 || *clus_cnt == 0)
-        panic("fat enlarge file 1");
+// int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n){
+//     if(*clus_end == 0 || *clus_cnt == 0)
+//         panic("fat enlarge file 1");
+    
+//     uint32_t bpc = BPC(fat);
+//     uint64_t size = ROUNDUP((off+n), bpc);
+//     int alloc_num;
+//     uint32_t new_clus;
+
+//     alloc_num = size/bpc - *clus_cnt;
+    
+//     if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
+//         panic("fat enlarge file 2");
+//     fat_append_cluster(fat, *clus_end, new_clus);
+
+//     if(alloc_num == 1)
+//         *clus_end = new_clus; 
+//     else
+//         *clus_end = get_clus_end(fat, *clus_end);
+
+//     *clus_cnt += alloc_num;
+
+//     return 0; 
+// }
+
+
+
+/**
+ * @brief given an entry in mem, allocate and append enough clusters in disk.
+ * 文件扩大了，在写回磁盘之前，预先分配新的簇。
+ * 
+ * @param fat 
+ * @param clus_start 
+ * @param clus_end 
+ * @param clus_cnt 
+ * @param size_in_mem 
+ * @return int 
+ */
+int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem){
+    /**
+     * @brief 在eget中将这两个值赋为0，如果这两个值都为0，说明这个entry对应的file自从
+     * 读入打开以来，还没有调用过此函数。
+     * 
+     */
     
     uint32_t bpc = BPC(fat);
-    uint64_t size = ROUNDUP((off+n), bpc);
+    uint64_t size = ROUNDUP(size_in_mem, bpc);
     int alloc_num;
     uint32_t new_clus;
+
+    if(*clus_end == 0 || *clus_cnt == 0){
+        *clus_end = get_clus_end(fat, clus_start);
+        *clus_cnt = get_clus_cnt(fat, clus_start);
+    }
 
     alloc_num = size/bpc - *clus_cnt;
     
@@ -1060,6 +1106,7 @@ int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int o
         panic("fat enlarge file 2");
     fat_append_cluster(fat, *clus_end, new_clus);
 
+    /* update clus_end and clus_cnt */
     if(alloc_num == 1)
         *clus_end = new_clus; 
     else
@@ -1069,37 +1116,3 @@ int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int o
 
     return 0; 
 }
-
-
-// /**
-//  * @brief enlarge file to make the capcity of the file's all clusters
-//  * >= off + n
-//  * 
-//  * @param fat 
-//  * @param cclus 
-//  * @param off 
-//  * @param n 
-//  * @return int 
-//  */
-// int fat_enlarge_file(fat32_t *fat, uint32_t cclus, int off, int n){
-//    uint32_t bpc = BPC(fat); 
-//    uint64_t size = ROUNDUP((off+n), bpc);
-//    uint32_t prev_clus;
-//    int alloc_num = 1;
-   
-//    /* 先减去起始簇的容量 */
-//    size -= bpc;
-
-//    while(size > 0){
-//        prev_clus = cclus;
-//        cclus = fat_next_cluster(fat, cclus);
-//        if(cclus == FAT_CLUS_END) {
-//            if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR)
-//                 panic("fat enlarge file");
-//            fat_append_cluster(fat, prev_clus, cclus);
-//             // alloc_num++;
-//        } 
-//        size -= alloc_num*bpc;
-//    }
-//    return 0;
-// }

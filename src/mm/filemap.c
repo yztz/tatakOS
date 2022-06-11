@@ -315,7 +315,9 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       #ifdef TODO
       todo("readpage: optimize point 1: use prepare_write, if the write is all page, no need to read!");
       #endif
-      readpage(mapping->host, pa, pg_id);
+      /* 整个页都要重新写过的，就没必要从磁盘中读了 */
+      if(!(pg_off == 0 && rest >= PGSIZE))
+        readpage(mapping->host, pa, pg_id);
       add_to_page_cache(pa, mapping, pg_id);
     }
 
@@ -364,4 +366,31 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
   if(pg_head->head != NULL)
     pg_head->tail->next = NULL;
   return pg_head;
+}
+
+
+/**
+ * @brief 把内存中的文件映像写回磁盘。对于fat32来说，包括写fat表（给文件分配适当的簇），写文件的页，改写
+ * 父目录中的文件元数据。
+ * 
+ */
+void writeback_file_to_disk(entry_t *entry){
+  /* 如果文件在内存中的大小和磁盘上的不一样（变大或变小）*/
+  if(entry->size_in_mem != entry->raw.size){
+
+    /* bigger than disk */
+    if(entry->size_in_mem > entry->raw.size){
+      fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
+    }
+    /* smaller than disk */
+    else {
+      todo("consider delete part of file!");
+    }
+
+    entry->raw.size = entry->size_in_mem;
+    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+  }
+
+  /* wirte back dirty pages to disk */
+  mpage_writepages(entry->i_mapping);
 }

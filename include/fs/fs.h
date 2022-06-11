@@ -36,6 +36,7 @@ struct fat_entry {
     struct address_space *i_mapping;
     uint32_t    clus_end; /* 数据结束簇号(下一个簇为FAT_CLUS_END) */
     uint64_t    clus_cnt; /* 总数据簇号 */
+    uint32_t    size_in_mem; /* 内存中保留的当前文件的大小，在文件写回时，如果和磁盘上的不一致，则更新磁盘 */
 };
 
 typedef struct fat_entry entry_t;

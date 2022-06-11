@@ -121,6 +121,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->i_mapping->host = entry;
   entry->clus_end = 0;// initialize 
   entry->clus_cnt = 0;
+  entry->size_in_mem = entry->raw.size;
 
   release(&fat->cache_lock);
   return entry;
@@ -197,7 +198,7 @@ static void __eput(entry_t *entry) {
     todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
     #endif
     release(&entry->fat->cache_lock);
-    mpage_writepages(entry->i_mapping);
+    writeback_file_to_disk(entry); 
     acquire(&entry->fat->cache_lock);
     /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
     free_mapping(entry);
@@ -396,40 +397,43 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   if(off < 0 || n < 0)
     panic("writee");
 
-  uint64_t ret, newsize;
+  uint64_t ret = 0;
+  // uint64_t newsize;
 
-  newsize = off + n; 
+  // newsize = off + n; 
   /* enlarge file to make sure the file size >= off + n(or more accurately the file's all sectors' capacity) */
   /* 下面这个语句在qemu中非常限制性能，需要借助fat表的磁盘优化 */
   #ifdef TODO
   todo("enlarge file: optimize point 2:modify the enlarge file, it restrict the performance!");
   #endif
-  if(entry->clus_end == 0){
-    if((entry->clus_end = get_clus_end(entry->fat, entry->clus_start)) == 0)
-      panic("writee 1");
-  }
+  // if(entry->clus_end == 0){
+  //   if((entry->clus_end = get_clus_end(entry->fat, entry->clus_start)) == 0)
+  //     panic("writee 1");
+  // }
 
-  if(entry->clus_cnt == 0){
-    if((entry->clus_cnt = get_clus_cnt(entry->fat, entry->clus_start)) == 0)
-      panic("writee 2");
-  }
+  // if(entry->clus_cnt == 0){
+  //   if((entry->clus_cnt = get_clus_cnt(entry->fat, entry->clus_start)) == 0)
+  //     panic("writee 2");
+  // }
 
 
-  if(newsize > entry->raw.size)
-    fat_enlarge_file(entry->fat, &(entry->clus_end), &(entry->clus_cnt), off, n);
+  // if(newsize > entry->raw.size)
+  //   fat_enlarge_file(entry->fat, &(entry->clus_end), &(entry->clus_cnt), off, n);
 
   ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
 
-  newsize = off + ret;
-  /* 更改文件在父目录中的元数据 */
+  int newsize = off + ret;
+  // /* 更改文件在父目录中的元数据 */
   if(ret > 0 && newsize > entry->raw.size){
-    entry->raw.size = newsize;
-    debug("updata size");
-    /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */
-    // todo();
-    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-    // if(do_generic_mapping_write(entry->parent->i_mapping, 0, (uint64_t)&entry->raw, entry->clus_offset, sizeof(dir_item_t))  != sizeof(dir_item_t))
-      // panic("writee!");
+    /* update the file's size in mem */
+    entry->size_in_mem = newsize;
+  //   entry->raw.size = newsize;
+  //   debug("updata size");
+  //   /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */
+  //   // todo();
+  //   fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+  //   // if(do_generic_mapping_write(entry->parent->i_mapping, 0, (uint64_t)&entry->raw, entry->clus_offset, sizeof(dir_item_t))  != sizeof(dir_item_t))
+  //     // panic("writee!");
   }
   return ret;
 

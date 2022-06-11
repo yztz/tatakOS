@@ -24,6 +24,9 @@
     "fs.h": "c",
     "fcntl.h": "c",
     "utils.h": "c",
-    "disk.h": "c"
+    "disk.h": "c",
+    "string.h": "c",
+    "stdio.h": "c",
+    "stdlib.h": "c"
   }
 }
