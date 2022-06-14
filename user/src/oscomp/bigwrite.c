@@ -17,8 +17,8 @@ void print_cache() {
 #define BUF_SIZE 4096 // 4KB
 // #define FILE_SIZE (512 * 1024) // 1MB
 
-// #define FILE_SIZE (1 * 1024 * 1024) //1mb, the last letter is 'V'
-#define FILE_SIZE (10 * 1024 * 1024) //10 mb the last letter is 'L'
+#define FILE_SIZE (1 * 1024 * 1024) //1mb, the last letter is 'V'
+// #define FILE_SIZE (10 * 1024 * 1024) //10 mb the last letter is 'L'
 
 int main() {
     char buff[BUF_SIZE];

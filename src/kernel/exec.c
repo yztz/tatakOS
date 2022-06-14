@@ -19,6 +19,12 @@ static int loadseg(pde_t *pgdir, uint64 addr, entry_t *ip, uint offset, uint sz)
 int
 exec(char *path, char **argv)
 {
+  // for(int i = 0; i < 10; i++){
+  //   uint64_t va = (uint64_t)kalloc();
+  //   printf(bl("va: %p\n"), va);
+  // }
+  // for(;;);
+
   char *s, *last;
   int i, off;
   uint64 argc, sz = 0, sp, ustack[MAXARG + 1], stackbase;

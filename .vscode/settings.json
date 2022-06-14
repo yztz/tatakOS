@@ -27,6 +27,8 @@
     "disk.h": "c",
     "string.h": "c",
     "stdio.h": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "stddef.h": "c",
+    "syscall.h": "c"
   }
 }

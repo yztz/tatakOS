@@ -20,8 +20,11 @@
 
 
 /////////////MM//////////////
+#if defined K210
 #define MAX_ORDER 10
-
+#elif defined QEMU
+#define MAX_ORDER 15
+#endif
 ////////////COW//////////////
 #define COW
 

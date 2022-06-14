@@ -34,6 +34,29 @@ buddy_list_t lists[MAX_ORDER];
 static atomic_t used;
 static uint total;
 
+/**
+ * @brief this func and the next one is for debug
+ * 
+ * @param order 
+ */
+void print_order(int order) {
+  printf(grn("[order %d head: %p] "), order, &lists[order].head);
+  for(buddy_t *cur = lists[order].head.next; cur != &lists[order].head; cur = cur->next) {
+      printf(bl("-> %p"), cur);
+  }
+}
+
+
+void print_buddy() {
+  for(int i = 0; i < MAX_ORDER; i++) {
+    print_order(i);
+    printf("\n");
+  }
+}
+
+
+
+
 void buddy_init() {
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);
@@ -70,6 +93,9 @@ static inline int empty(int order) {
 
 #include "printf.h"
 void *buddy_alloc(size_t size) {
+  // print_buddy();
+  // printf("\n");
+
   int pgnums;
   int order, oorder;
   buddy_t *b;
@@ -110,8 +136,11 @@ void *buddy_alloc(size_t size) {
     order--;
 
     acquire(&lists[order].lock);
-    insert(order, b);
+    // insert(order, b);
+    // insert(order, (buddy_t *)NUM2PAGE(ppgnum));
+    /* 因为插入是插入在头结点，所以低地址的页放后面插入，这样分配时先分配到低地址的页 */
     insert(order, (buddy_t *)NUM2PAGE(ppgnum));
+    insert(order, b);
     pages[pgnum].order = order;
     pages[ppgnum].order = order;
   }

@@ -956,6 +956,8 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     uint32 sect;
 
 
+    printf(rd("sec_total_num: %d\n"), sec_total_num);
+
     if(off & ~PGMASK)
         panic("fat_readpage: offset not page aligned!");
     
@@ -971,11 +973,14 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             return 0;
         }
     }
+
+    printf(rd("cclus: %d\n"), cclus);
     
     /* the initial offset number of a sector in a cluster */
     sec_off_num = off / BPS(fat);
     // 计算簇内起始扇区号
     sect = clus2datsec(fat, cclus) + sec_off_num % spc;
+    printf(rd("sect: %d\n"), sect);
 
     while(cclus != FAT_CLUS_END && sec_total_num > 0){
         // printf(grn("sect: %d\n"), sect);
@@ -991,6 +996,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             }
         }
 
+        uint32_t sect_nums = min(spc - sec_off_num, sec_total_num);
         /* the bio_vec is new allocated in this loop (we use kzalloc) */
         if(cur_bio_vec->bv_start_num == 0){
             cur_bio_vec->bv_start_num = sect;
@@ -1001,8 +1007,10 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             cur_bio_vec->bv_count += min(spc - sec_off_num, sec_total_num);
         }
 
-        sec_off_num = (sec_off_num + cur_bio_vec->bv_count) % spc;
-        sec_total_num -= cur_bio_vec->bv_count;
+        // sec_off_num = (sec_off_num + cur_bio_vec->bv_count) % spc;
+        // sec_total_num -= cur_bio_vec->bv_count;
+        sec_off_num = (sec_off_num + sect_nums) % spc;
+        sec_total_num -= sect_nums;
 
         cclus = fat_next_cluster(fat, cclus);
         sect = clus2datsec(fat, cclus);
