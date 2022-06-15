@@ -128,8 +128,8 @@ bio_t *get_rw_pages_bio(entry_t *entry, uint64 buff, uint32 pg_id, int pg_cnt, i
   bio->bi_rw = rw;
   bio->bi_dev = entry->fat->dev;
 
-  print_bio_vec(bio);
-  printf("\n");
+  // print_bio_vec(bio);
+  // printf("\n");
 
   return bio;
 }
@@ -188,7 +188,7 @@ int mpage_writepages(address_space_t *mapping){
 
     bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
 
-    // print_bio_vec(bio);
+    print_bio_vec(bio);
 
     submit_bio(bio);
 
