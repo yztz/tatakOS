@@ -138,15 +138,6 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // 常规字段初始化
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
-
-    memset(buf, 'F', 8 * 512);
-    for(int i = 0; i < 256; i++) { // 1MB
-        sd_write_sector_dma(buf, i * 8, 8);
-    }
-    sys_profile();
-
-
-    for(;;);
     buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
@@ -154,7 +145,6 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // bwrite(buffer);
     // print_block(buffer->data);
     brelse(buffer);
-    // for(;;);
     fat->root = get_root(fat);
 
     *ppfat = fat;
