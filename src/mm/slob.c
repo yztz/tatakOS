@@ -6,7 +6,7 @@
 #include "debug.h"
 
 // 16bits for an unit
-typedef uint16_t slobidx_t;
+typedef int16_t slobidx_t;
 
 typedef struct slob_block {
 	/*
