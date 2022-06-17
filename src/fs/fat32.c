@@ -378,6 +378,11 @@ FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
                 //     *news = clus_num;
                 // }
 
+                /**
+                 * @brief 循环读取了新的sect之后，这里又改写上个sect，
+                 * 但是没有对上个sect设置dirty，未写入磁盘出错。
+                 * 
+                 */
                 // if(pre != NULL){
                 //     *pre = clus_num;
                 // }
@@ -1189,17 +1194,18 @@ int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_
 
     alloc_num = size/bpc - *clus_cnt;
     
-    if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
-        panic("fat enlarge file 2");
-    fat_append_cluster(fat, *clus_end, new_clus);
+    // if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
+    //     panic("fat enlarge file 2");
+    // fat_append_cluster(fat, *clus_end, new_clus);
+
     // for(;;);
-    // for(int i = 0; i < alloc_num; i++){
-    //     if(fat_alloc_cluster(fat, &new_clus, 1) == FR_ERR){
-    //         panic("fat alloc append culsters");
-    //     }
-    //     fat_append_cluster(fat, *clus_end, new_clus);
-    //     *clus_end = new_clus;
-    // }
+    for(int i = 0; i < alloc_num; i++){
+        if(fat_alloc_cluster(fat, &new_clus, 1) == FR_ERR){
+            panic("fat alloc append culsters");
+        }
+        fat_append_cluster(fat, *clus_end, new_clus);
+        *clus_end = new_clus;
+    }
 
     /* update clus_end and clus_cnt */
     if(alloc_num == 1)

@@ -161,6 +161,9 @@ void lock_page(uint64_t pa){
   if(page->sleeplock == NULL){
     page->sleeplock = kzalloc(sizeof(sleeplock_t));
     initsleeplock((sleeplock_t *)page->sleeplock, NULL);
+    #ifdef TODO
+    todo("free sleeplock!");
+    #endif
   }
 
   acquiresleep((sleeplock_t *)page->sleeplock);

@@ -80,6 +80,7 @@ typedef struct _page_t {
     // uint8_t resv[2]; // reserved for special use
 
     uint8_t flags;
+    /* 初始化为null */
     void *sleeplock;
 } page_t;
 
