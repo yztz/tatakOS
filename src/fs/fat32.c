@@ -119,6 +119,7 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
 
 static entry_t *get_root(fat32_t *fat) {
     entry_t *root = (entry_t *)kmalloc(sizeof(entry_t));
+    printf("root addr is %x sizeof entry is %ld\n", root, sizeof(entry_t));
     if(!root) {
         panic("get_root: alloc fail");
     }
@@ -128,13 +129,18 @@ static entry_t *get_root(fat32_t *fat) {
     root->parent = NULL;
     root->raw.attr = FAT_ATTR_DIR;
     root->clus_start = fat->root_cluster;
-
-    root->i_mapping = kzalloc(sizeof(address_space_t));
+    // printf("root clus is %d\n", root->clus_start);
+    address_space_t *tmp = kzalloc(sizeof(address_space_t));
+    printf("i_mapping addr is %x\n", tmp);
+    root->i_mapping = tmp;
+    // printf("root clus is %d\n", root->clus_start);
     
     initsleeplock(&root->lock, "root_lock");
     return root;
 }
-
+extern uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, uint32_t count);
+uint8_t buf[8 * 512]; //4KB
+#include "profile.h"
 /* 读取fat超级块并做解析 */
 FR_t fat_mount(uint dev, fat32_t **ppfat) {
     fat32_t *fat = (fat32_t *)kmalloc(sizeof(fat32_t));
@@ -150,7 +156,6 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // bwrite(buffer);
     // print_block(buffer->data);
     brelse(buffer);
-    // for(;;);
     fat->root = get_root(fat);
 
     *ppfat = fat;

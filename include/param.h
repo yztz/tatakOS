@@ -2,7 +2,7 @@
 #define _H_PARAM_
 
 #define NPROC        32  // maximum number of processes
-#define NOFILE       128  // open files per process
+#define NOFILE       5  // open files per process
 #define NFILE        30  // open files per system
 #define NDEV         10  // maximum major device number
 #define ROOTDEV       1  // device number of file system root disk

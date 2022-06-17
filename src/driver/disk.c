@@ -20,9 +20,9 @@ extern void virtio_disk_rw(bio_vec_t *, int);
 void (disk_io)(bio_vec_t *bio_vec, int write) {
   #ifdef K210
   if(write) {
-    sd_write_sector_dma(b->data, b->blockno, 1);
+    sd_write_sector_dma(bio_vec->bv_buff, bio_vec->bv_start_num, bio_vec->bv_count);
   } else {
-    sd_read_sector_dma(b->data, b->blockno, 1);
+    sd_read_sector_dma(bio_vec->bv_buff, bio_vec->bv_start_num, bio_vec->bv_count);
   }
   #else
   virtio_disk_rw(bio_vec, write);

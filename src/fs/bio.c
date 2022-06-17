@@ -224,12 +224,11 @@ bunpin(struct buf *b) {
 
 /*************************new add func**************************/
 void free_bio(bio_t *bio) {
-  bio_vec_t *cur_bio_vec, *tmp;
-  cur_bio_vec = bio->bi_io_vec;
-  while(cur_bio_vec){
-    tmp = cur_bio_vec;
-    kfree(cur_bio_vec);
-    cur_bio_vec = tmp->bv_next;
+  bio_vec_t **cur_bio_vec = &bio->bi_io_vec;
+  while(*cur_bio_vec){
+    bio_vec_t *t = *cur_bio_vec;
+    *cur_bio_vec = t->bv_next;
+    kfree(t);
   } 
   kfree(bio);
 }

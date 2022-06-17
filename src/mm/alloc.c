@@ -35,6 +35,9 @@ void kinit(void) {
 void *kmalloc(size_t size) {
     void *ret = NULL;
     if(size < PGSIZE) { // Smaller, we use slob
+        // printf("alloc from slob\n");
+        // if(size == 1)
+        //     panic("one byte?");
         ret = slob_alloc(size);
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);

@@ -173,7 +173,7 @@ umnt: $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
 sdcard: user
-	sudo mkfs.vfat -F 32 /dev/sdb
+	sudo mkfs.vfat -F 32 -s 8 /dev/sdb
 	sudo mount /dev/sdb /mnt
 	sudo cp -r $(U_PROG_DIR)/* /mnt/
 	sudo umount /dev/sdb
