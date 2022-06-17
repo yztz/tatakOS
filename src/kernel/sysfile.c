@@ -33,18 +33,59 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
+
+static struct file *get_file(int fd) {
+    proc_t *p = myproc();
+    if(fd < 0 || fd > p->nfd)
+        return NULL;
+    if(fd < NOFILE) 
+        return p->ofile[fd];
+    else 
+        return p->ext_ofile[fd - NOFILE];
+}
+
+static void set_file(int fd, struct file *f) {
+    proc_t *p = myproc();
+    if(fd < 0 || fd > p->nfd)
+        return;
+    if(fd < NOFILE)
+        p->ofile[fd] = f;
+    else 
+        p->ext_ofile[fd - NOFILE] = f; 
+}
+
 static int argfd(int n, int* pfd, struct file** pf) {
     int fd;
     struct file* f;
 
     if (argint(n, &fd) < 0)
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL)
+    if ((f = get_file(fd)) == NULL)
         return -1;
     if (pfd)
         *pfd = fd;
     if (pf)
         *pf = f;
+    return 0;
+}
+
+static int fdrealloc(int nfd) {
+    if(nfd < NOFILE) 
+        return -1;
+
+    proc_t *p = myproc();
+    int oldsz = max(p->nfd - NOFILE, 0) * sizeof(struct file *);
+    int newsz = (nfd - NOFILE) * sizeof(struct file *);
+    struct file **newfdarray;
+
+    if((newfdarray = (struct file **)kzalloc(newsz)) == NULL) {
+        debug("alloc fail");
+        return -1;
+    }
+    memmove(newfdarray, p->ext_ofile, oldsz);
+    p->nfd = nfd;
+    kfree((void *)p->ext_ofile);
+    p->ext_ofile = newfdarray;
     return 0;
 }
 
@@ -60,7 +101,17 @@ static int fdalloc(struct file* f) {
             return fd;
         }
     }
-    return -1;
+    for (fd = 0; fd < p->nfd - NOFILE; fd++) {
+        if (p->ext_ofile[fd] == 0) {
+            p->ext_ofile[fd] = f;
+            return fd;
+        }
+    }
+    
+    if(fdrealloc(p->nfd + 10) < 0)
+        return -1;
+
+    return fd;
 }
 
 uint64 sys_dup(void) {
@@ -83,8 +134,11 @@ uint64 sys_dup3(void) {
     if (argfd(0, 0, &f) < 0 || argint(1, &new) < 0)
         return -1;
 
-    if (p->ofile[new] == 0) {
-        p->ofile[new] = f;
+    if(new >= p->nfd && fdrealloc(new + 1) < 0) 
+        return -1;
+
+    if (get_file(new) == 0) {
+        set_file(new, f);
         filedup(f);
         return new;
     }
@@ -122,7 +176,7 @@ uint64 sys_close(void) {
 
     if (argfd(0, &fd, &f) < 0)
         return -1;
-    myproc()->ofile[fd] = 0;
+    set_file(fd, NULL);
     fileclose(f);
     return 0;
 }
@@ -280,7 +334,6 @@ uint64 sys_openat(void) {
     // }
 
     eunlock(ep);
-    debug("fd is %d", fd);
     return fd;
 }
 

@@ -134,8 +134,14 @@ void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
  * @param height
  * @param c_h
  */
+char tab[][10] = {
+  "",
+  "  ",
+  "   ",
+};
 void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 {
+  printf("%s::%x level %d\n", tab[c_h - 1], node, c_h); 
   for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++)
   {
     if (node->slots[i] != NULL)
@@ -161,7 +167,9 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
       }
     }
   }
+  printf("free node %x\n", node);
   kfree((void *)node);
+  printf("node freed\n");
 }
 
 /**
@@ -186,6 +194,7 @@ void free_mapping(entry_t *entry)
   void *addr;
   if (root->height > 0)
   {
+    printf("rott node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
     /* free rnode */
     // addr = root->rnode;

@@ -22,6 +22,8 @@ void page_init(void) {
     pages[i].refcnt = 1;
     pages[i].order = 0;
     pages[i].alloc = 1;
+    pages[i].sleeplock = NULL;
+    pages[i].flags = 0;
   }
 }
 
@@ -160,6 +162,8 @@ void lock_page(uint64_t pa){
 
   if(page->sleeplock == NULL){
     page->sleeplock = kzalloc(sizeof(sleeplock_t));
+    if(page->sleeplock == NULL)
+      panic("lock alloc failed");
     initsleeplock((sleeplock_t *)page->sleeplock, NULL);
   }
 

@@ -6,7 +6,7 @@
 #include "debug.h"
 
 // 16bits for an unit
-typedef uint16_t slobidx_t;
+typedef int16_t slobidx_t;
 
 typedef struct slob_block {
 	/*
@@ -89,7 +89,7 @@ static int slob_last(slob_t *s)
 }
 
 static void print_slob(sp_t *sp) {
-	#ifdef __log__slob
+	// #ifdef __log__slob
 	slob_t *b = sp->freelist;
 	debug("sp@%p slob_page units: %d", sp, sp->units);
 	if(b) {
@@ -99,7 +99,7 @@ static void print_slob(sp_t *sp) {
 			debug("slob@%p {units: %d, next: %p}", b, slob_units(b), slob_next(b));
 		}
 	}
-	#endif
+	// #endif
 }
 
 static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int align)

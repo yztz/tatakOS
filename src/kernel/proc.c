@@ -139,6 +139,8 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->nfd = NOFILE;
+  p->ext_ofile = NULL;
 
   // 申请Trapframe
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -216,6 +218,8 @@ freeproc(struct proc *p)
     kfree((void*)p->trapframe);
   if(p->kstack)
     kfree((void*)p->kstack);
+  if(p->ext_ofile)
+    kfree((void *)p->ext_ofile);
   p->trapframe = 0;
   p->kstack = 0;
 
@@ -636,6 +640,7 @@ forkret(void)
     fat_mount(ROOTDEV, &fat);
     printf("mount done\n");
     myproc()->cwd = namee(NULL, "/");
+    printf("ok\n");
     // LOOP();
     // fsinit(ROOTDEV);
 

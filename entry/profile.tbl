@@ -1,14 +1,1 @@
-nonvoid fat_write
-nonvoid bread
-nonvoid fat_next_cluster
-nonvoid fat_alloc_cluster
-void brelse
-void disk_io
 nonvoid sd_write_sector_dma
-void sd_end_cmd
-nonvoid sd_get_response
-void sd_send_cmd
-void sd_write_data
-void sd_read_data
-void sd_write_data_dma
-nonvoid sd_get_dataresponse

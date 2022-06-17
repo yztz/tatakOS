@@ -151,6 +151,8 @@ void estat(entry_t *entry, struct kstat *stat) {
 }
 
 entry_t *edup(entry_t *entry) {
+    // printf("lock state: %d\n", entry->fat->cache_lock.locked);
+  // printf("%d\n", entry->clus_start);
   acquire(&entry->fat->cache_lock);
   entry->ref++;
   release(&entry->fat->cache_lock);
@@ -198,10 +200,14 @@ static void __eput(entry_t *entry) {
     todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
     #endif
     release(&entry->fat->cache_lock);
+    printf("start writeback\n");
     writeback_file_to_disk(entry); 
+    printf("writeback end\n");
     acquire(&entry->fat->cache_lock);
+    printf("start feeemapping\n");
     /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
     free_mapping(entry);
+    printf("freemapping end\n");
 
     __eput(entry->parent);
   }
@@ -337,6 +343,8 @@ void etrunc(entry_t *entry) {
 static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 {
   entry_t*ep, *next;
+  // printf("lock state: %d\n", fat->cache_lock.locked);
+  // printf("fat clus %d\n", fat->fat_tbl_num);
   if(*path == '/') 
     ep = edup(fat->root); // use global fat now
   else if(parent) {
