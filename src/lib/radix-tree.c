@@ -155,7 +155,7 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
  */
 static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
 	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
-		for(int j = 0; j < RADIX_TREE_TAG_LONGS; i++){
+		for(int j = 0; j < RADIX_TREE_TAG_LONGS; j++){
 			if(child->tags[i][j] > 0){
 				parent->tags[i][0] = 1;
 				break;

@@ -20,6 +20,7 @@ void print_cache() {
 #define FILE_SIZE (1 * 1024 * 1024) //1mb, the last letter is 'V'
 // #define FILE_SIZE (10 * 1024 * 1024) //10 mb the last letter is 'L'
 
+// #define FILE_SIZE (256 * 1024) //64page
 int main() {
     char buff[BUF_SIZE];
     int fd = open("test_write.txt", O_CREATE|O_RDWR);
