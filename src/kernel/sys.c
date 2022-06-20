@@ -20,7 +20,6 @@ utsname_t sysname = {
 
 
 uint64 sys_timetag(void) {
-  // printf("tick %ld\n", ticks);
   return ticks;
 }
 
@@ -55,10 +54,8 @@ uint64_t sys_times(void) {
   if(argaddr(0, &addr) < 0) 
     return -1;
   
-  acquire(&tickslock);
   if(copyout(myproc()->pagetable, addr, (char *)&ticks, sizeof(ticks)) == -1)  
     ret = -1;
-  release(&tickslock);
 
   return ret;
 }
@@ -80,11 +77,7 @@ uint64_t sys_gettimeofday(void) {
   if(argaddr(0, &addr) < 0) 
     return -1;
 
-  acquire(&tickslock);
   time = TICK2TIMESPEC(ticks);
-  release(&tickslock);
-  uint64_t old_ticks = ticks;
-  while(ticks - old_ticks < 10); // 测试用例不合理
 
   if(copyout(myproc()->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
     ret = -1;
