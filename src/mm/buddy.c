@@ -68,7 +68,6 @@ static inline int empty(int order) {
 }
 
 
-#include "printf.h"
 void *buddy_alloc(size_t size) {
   int pgnums;
   int order, oorder;
@@ -78,12 +77,12 @@ void *buddy_alloc(size_t size) {
     panic("buddy_alloc: size");
   
   pgnums = ROUND_COUNT(size);
+  // 获取最小的大于size的2^order
   oorder = order = IS_POW2(pgnums) ? get_order(pgnums) : get_order(pgnums) + 1;
   if(order >= MAX_ORDER) 
     return NULL;
 
-  // acquire lock
-  // avoid last not empty list's block being allocated
+  // 从当前order向上，直到寻找到有空闲空间的order
   acquire(&lists[order].lock);
   while(order + 1 < MAX_ORDER && empty(order)){
     release(&lists[order].lock);
@@ -95,14 +94,19 @@ void *buddy_alloc(size_t size) {
     release(&lists[order].lock);
     return NULL;
   }
-
+  // 当当前的order大于预订的order时，需要分裂
   while(order > oorder) {
     int pgnum, ppgnum;
 
     b = lists[order].head.next;
     remove(b);
+    // 当前buddy的页号
     pgnum = PAGE2NUM(b);
-    ppgnum = PARTNER_NO(PAGE2NUM(b), order - 1);
+    // 兄弟buddy的页号
+    // 为什么是order-1，因为我们这里的兄弟页号是指分裂后的兄弟页号
+    ppgnum = PARTNER_NO(pgnum, order - 1);
+    // 为了避免作为兄弟页被合并的风险
+    // 比如当兄弟buddy被释放了，而当前的buddy正在处于分裂状态，所以存在竞争
     pages[pgnum].order = INVAIL_ORDER;
     pages[ppgnum].order = INVAIL_ORDER;
     release(&lists[order].lock);
@@ -110,16 +114,17 @@ void *buddy_alloc(size_t size) {
     order--;
 
     acquire(&lists[order].lock);
-    insert(order, b);
+    // 先插大地址，后插小地址，尽可能保证后续分配地址连续
     insert(order, (buddy_t *)NUM2PAGE(ppgnum));
+    insert(order, b); 
     pages[pgnum].order = order;
     pages[ppgnum].order = order;
   }
   b = lists[order].head.next;
   remove(b);
-  pages[PAGE2NUM(b)].alloc = 1;
   release(&lists[order].lock);
   
+  pages[PAGE2NUM(b)].alloc = 1;
   mark_page((uint64_t)b, ALLOC_BUDDY);
   ref_page((uint64_t)b);
 
@@ -148,16 +153,17 @@ void buddy_free(void *pa) {
     panic("buddy_free: page not allocated");
   }
   b = (buddy_t *) pa;
-  //release
+  // release
   page->alloc = 0;
+  atomic_add(&used, -(1 << page->order));
+
   // insert back
   acquire(&lists[page->order].lock);
   insert(page->order, b);
 
   ppgnum = PARTNER_NO(pgnum, page->order);
   ppage = &pages[ppgnum];
-  atomic_add(&used, -(1 << page->order));
-  // we need hold lock to avoid partner being allocated
+  // 尝试合并
   while(page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
     int order;
     // remove from list
