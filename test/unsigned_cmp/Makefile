@@ -2,4 +2,4 @@ all: unsigned
 	./unsigned
 
 unsigned: main.c
-	gcc -Og main.c -o $@
+	gcc -O0 main.c -o $@
