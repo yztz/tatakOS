@@ -4,12 +4,14 @@
 #ifndef _H_MM2_
 #define _H_MM2_
 
+#include "fs/fs.h"
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
 
 /* functions defined in mmap.c */
 uint64 do_mmap(struct file *file, unsigned long addr, unsigned long len, int prot, int flag, unsigned long offset);
 unsigned long do_mmap_pgoff(struct file * file, unsigned long addr, unsigned long len, int prot, int flags, unsigned long pgoff);
+void exit_mmap(mm_struct_t *mm);
 
 /* functions defined in filemap.c */
 uint64 find_get_page(struct address_space *mapping, unsigned long offset);

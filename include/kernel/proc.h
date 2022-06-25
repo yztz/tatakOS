@@ -119,6 +119,8 @@ struct vm_area_struct
   struct file *vm_file;
 };
 
+typedef struct vm_area_struct vm_area_struct_t;
+
 
 
 struct mm_struct {
@@ -128,6 +130,8 @@ struct mm_struct {
   int map_count;              //number of vmas
   spinlock_t lock;
 };
+
+typedef struct mm_struct mm_struct_t;
 
 struct fat_entry;
 // Per-process state

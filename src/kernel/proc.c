@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "defs.h"
 #include "mm/vm.h"
+#include "mm/mm.h"
 
 #include "debug.h"
 #include "fs/fcntl.h"
@@ -368,6 +369,48 @@ growproc(int n)
   return 0;
 }
 
+/**
+ * @brief copy the vm_area_struct of oldmm to mm, the linux version also copy_page_range
+ * 
+ * @param mm 
+ * @param oldmm 
+ * @return int 
+ */
+static int 
+dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
+  vm_area_struct_t *mpnt, *tmp, **pprev;
+
+  acquire(&oldmm->lock);
+  pprev = &mm->mmap;
+
+  for(mpnt = oldmm->mmap; mpnt != NULL; mpnt = mpnt->vm_next){
+    if(mpnt == NULL) 
+      break;
+    
+    struct file *f;
+
+    tmp = kmalloc(sizeof(vm_area_struct_t));
+    if(!tmp)
+      panic("do mmap1!");
+
+    *tmp = *mpnt;
+    tmp->vm_mm = mm;
+    tmp->vm_next = NULL;
+    f = tmp->vm_file;
+    if(f){
+      filedup(f);
+    }
+
+    *pprev = tmp;
+    pprev = &tmp->vm_next;
+
+    mm->map_count++;
+  } 
+
+  release(&oldmm->lock);
+  return 0;
+}
+
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
@@ -422,6 +465,10 @@ do_clone(uint64_t stack)
 
 
   np->cur_mmap_sz = p->cur_mmap_sz;
+  // #ifdef TODO
+  // todo("duplicate vm aera")
+  // #endif
+  dup_mmap(np->mm, p->mm);
   return pid;
 }
 
@@ -438,6 +485,29 @@ reparent(struct proc *p)
       wakeup(initproc);
     }
   }
+}
+
+
+/**
+ * @brief free the mm_struct, in linux it's no be freeed in this func
+ * 
+ * @param mm 
+ */
+static void
+mmput(mm_struct_t *mm){
+  exit_mmap(mm);
+  kfree(mm);
+}
+
+static void 
+exit_mm(struct proc *tsk){
+  mm_struct_t *mm = tsk->mm;
+
+  if(!mm)
+    return;
+  
+  tsk->mm = NULL;
+  mmput(mm);
 }
 
 // Exit the current process.  Does not return.
@@ -466,6 +536,9 @@ exit(int status)
 
   eput(p->cwd);
   p->cwd = 0;
+
+  /* free the mm field of the process */
+  exit_mm(p);
 
   acquire(&wait_lock);
 

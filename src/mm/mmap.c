@@ -59,6 +59,8 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	struct vm_area_struct *vma = kmalloc(sizeof(struct vm_area_struct));
 	struct mm_struct *mm = p->mm;
 
+	/* increase the ref to the file */
+	filedup(file);
 	vma->vm_file = file;
 	vma->vm_start = get_unmapped_area(len);
 	vma->vm_end = vma->vm_start + len;
@@ -74,6 +76,31 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	release(&mm->lock);
 
 	return vma->vm_start;
+}
+
+
+static void
+remove_vm_struct(vm_area_struct_t *vma){
+	struct file *f = vma->vm_file;
+
+	if(f){
+		fileclose(f);
+	}
+	kfree(vma);
+}
+
+void
+exit_mmap(mm_struct_t *mm){
+	vm_area_struct_t *vma;
+
+	vma = mm->mmap;
+	mm->mmap = mm->mmap_cache = NULL;
+
+	while(vma){
+		vm_area_struct_t *next = vma->vm_next;
+		remove_vm_struct(vma);
+		vma = next;
+	}
 }
 
 // /*

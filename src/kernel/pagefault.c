@@ -63,3 +63,9 @@ int handle_pagefault(uint64_t scause) {
     p->killed = 1;
     return 0;
 }
+
+
+/**
+ * @brief a more sophisticated function to handle pagefault
+ * 
+ */
