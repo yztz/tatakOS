@@ -5,19 +5,24 @@ void printf(const char *fmt, ...);
 void read_test();
 
 // FS
-char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-                      "mount", "umount", "test_echo"};
-//
-char *proc_testcase[] = { "getppid", "getpid",
-                       "clone", "wait", "waitpid",
-                      "yield", "fork",  "execve", "exit", "sleep"};
+// char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
+//                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+//                       "mount", "umount", "test_echo"};
+// //
+// char *proc_testcase[] = { "getppid", "getpid",
+//                        "clone", "wait", "waitpid",
+//                       "yield", "fork",  "execve", "exit", "sleep"};
 
-char *mm_testcase[] = {"brk", "mmap", "munmap"};
+// char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
-char *other_testcase[] = {"gettimeofday", "times", "uname"};
-//  单项测试
-char* prog_name[] = {"ls"};
+// char *other_testcase[] = {"gettimeofday", "times", "uname"};
+// //  单项测试
+// char* prog_name[] = {"ls"};
+
+// void readcase(int fd, char buf[]) {
+//   while(read(fd, buf, ))
+// }
+
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
@@ -28,9 +33,30 @@ void main() {
     // run(proc_testcase);
     // run(mm_testcase);
     // run(other_testcase);
-    run(prog_name);
+    // run(prog_name);
+    // int fd = openat(AT_FDCWD, "run_static.sh", O_RDONLY);
+    char *argv[5];
+    argv[0] = "runtest.exe";
+    argv[1] = "-w";
+    argv[2] = "entry-static.exe";
+    argv[3] = "argv";
+    argv[4] = 0;
+    printf("ready to run %s\n", argv[3]);
+    int npid = fork();
+    if(npid < 0) {
+        printf("fork failed");
+        for(;;);
+    }
+    if (npid == 0) { //子进程
+        int ret = exec(argv[0], argv);
+        printf("exec fail with %d\n", ret);
+    } else {          // 父进程
+        int status;
+        wait(&status);
+        printf("child exit with %d\n", status);
+    }
     memuse();
-  for(;;);
+    for(;;);
 }
 #undef run
 
