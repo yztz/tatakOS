@@ -21,9 +21,9 @@
 uint64 find_page(struct address_space *mapping, unsigned long offset){
   uint64 pa = 0;
 
-  acquire(&mapping->page_lock);
+  acquire(&mapping->tree_lock);
   pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
-  release(&mapping->page_lock);
+  release(&mapping->tree_lock);
   return pa;
 }
 /*
@@ -119,9 +119,9 @@ int filemap_nopage(uint64 address)
 
 void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
 {
-  acquire(&mapping->page_lock);
+  acquire(&mapping->tree_lock);
   radix_tree_insert(&mapping->page_tree, offset, (void *)pa);
-  release(&mapping->page_lock);
+  release(&mapping->tree_lock);
 }
 
 /**

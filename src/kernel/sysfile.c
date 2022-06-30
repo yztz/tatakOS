@@ -533,7 +533,8 @@ sys_mmap(void)
 
   filedup(p->ofile[fd]);
   #ifdef TODO
-  todo("manual said file close, i think it's entry close");
+  todo("filedup here??");
+  todo("manual said file close, i think it's entry close, put the last line filedup in do_mmap or last line?");
   #endif
   return do_mmap(p->ofile[fd], addr, length, prot, 
           flags, offset);

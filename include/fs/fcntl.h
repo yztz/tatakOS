@@ -14,8 +14,13 @@
 #define PROT_EXEC       0x4
 
 #define MAP_FILE 0
-#define MAP_SHARED      0x01
-#define MAP_PRIVATE     0x02
+// #define MAP_SHARED      0x01
+// #define MAP_PRIVATE     0x02
+#define MAP_SHARED	0x01		/* Share changes */
+#define MAP_PRIVATE	0x02		/* Changes are private */
+#define MAP_TYPE	0x0f		/* Mask for type of mapping */
+#define MAP_FIXED	0x10		/* Interpret addr exactly */
+#define MAP_ANONYMOUS	0x20		/* don't use a file */
 #define MAP_FAILED ((void *) -1)
 
 

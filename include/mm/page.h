@@ -81,7 +81,10 @@ typedef struct _page_t {
 
     uint8_t flags;
     /* 初始化为null */
-    void *sleeplock;
+    // void *sleeplock;
+    /* 当此页被插入page cache时， 指向其address_space；
+        当此页属于一个anonymous区域时，指向anon_vma */
+    address_space_t *mapping;
 } page_t;
 
 #define PG_locked (1L << 0)
@@ -138,4 +141,6 @@ void unlock_put_page(uint64_t pa);
 
 #define PAGE_CACHE_SHIFT PGSHIFT
 #define PAGE_CACHE_SIZE PGSIZE
+
+#define PAGE_SHIFT PGSHIFT
 #endif

@@ -29,6 +29,7 @@
     "stdio.h": "c",
     "stdlib.h": "c",
     "stddef.h": "c",
-    "syscall.h": "c"
+    "syscall.h": "c",
+    "rbtree.h": "c"
   }
 }
