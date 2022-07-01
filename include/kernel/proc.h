@@ -125,8 +125,6 @@ struct vm_area_struct
   uint64 vm_pgoff;
   struct file *vm_file;
   enum vma_type type;
-  list_head_t anon_vma_node;
-  anon_vma_t *anon_vma;
 };
 
 typedef struct vm_area_struct vm_area_struct_t;

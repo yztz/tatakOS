@@ -1,15 +1,3 @@
-/**
- * @file linked_list.h
- * @author DavidZyy (1929772352@qq.com)
- * @brief this .h file defines some functions and MACROS about linked list operations, 
- *        we steal code from linux list.h file.
- * @version 0.1
- * @date 2022-04-21
- * 
- * @copyright Copyright (c) 2022
- * 
- */
-
 #ifndef _H_LINKED_LIST
 #define _H_LINKED_LIST
 

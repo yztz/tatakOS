@@ -1,3 +1,14 @@
+/**
+ * @file mmap.c
+ * @author DavidZyy (1929772352@qq.com)
+ * @brief 这个c文件主要参考了linux2.6版本的代码。有的函数直接复制过来了，有的针对我们
+ * 自己的情形作了简化或者很小的改动。在此向kernel作者们致敬。 
+ * @version 0.1
+ * @date 2022-06-30
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
@@ -21,6 +32,57 @@
 #include "rbtree.h"
 #include "utils.h"
 #include "memlayout.h"
+
+#ifdef DEBUG_MM_RB
+static int browse_rb(struct rb_root *root)
+{
+	int i = 0, j;
+	struct rb_node *nd, *pn = NULL;
+	unsigned long prev = 0, pend = 0;
+
+	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
+		struct vm_area_struct *vma;
+		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
+		if (vma->vm_start < prev)
+			printf("vm_start %lx prev %lx\n", vma->vm_start, prev), i = -1;
+		if (vma->vm_start < pend)
+			printf("vm_start %lx pend %lx\n", vma->vm_start, pend);
+		if (vma->vm_start > vma->vm_end)
+			printf("vm_end %lx < vm_start %lx\n", vma->vm_end, vma->vm_start);
+		i++;
+		pn = nd;
+		prev = vma->vm_start;
+		pend = vma->vm_end;
+	}
+	j = 0;
+	for (nd = pn; nd; nd = rb_prev(nd)) {
+		j++;
+	}
+	if (i != j)
+		printf("backwards %d, forwards %d\n", j, i), i = 0;
+	return i;
+}
+
+void validate_mm(struct mm_struct *mm)
+{
+	int bug = 0;
+	int i = 0;
+	struct vm_area_struct *tmp = mm->mmap;
+	while (tmp) {
+		tmp = tmp->vm_next;
+		i++;
+	}
+	if (i != mm->map_count)
+		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
+	i = browse_rb(&mm->mm_rb);
+	if (i != mm->map_count)
+		printk("map_count %d rb %d\n", mm->map_count, i), bug = 1;
+	// BUG_ON(bug);
+}
+#else
+#define validate_mm(mm) do { } while (0)
+#endif
+
 
 /*
  * Optimisation macro.  It is equivalent to:
@@ -57,6 +119,60 @@ calc_vm_prot_bits(unsigned long prot)
 // 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
 // }
 
+static inline void
+__vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+		struct vm_area_struct *prev, struct rb_node *rb_parent)
+{
+	if (prev) {
+		vma->vm_next = prev->vm_next;
+		prev->vm_next = vma;
+	} else {
+		mm->mmap = vma;
+		if (rb_parent)
+			vma->vm_next = rb_entry(rb_parent,
+					struct vm_area_struct, vm_rb);
+		else
+			vma->vm_next = NULL;
+	}
+}
+
+void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+		struct rb_node **rb_link, struct rb_node *rb_parent)
+{
+	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
+	rb_insert_color(&vma->vm_rb, &mm->mm_rb);
+}
+
+
+static void
+__vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+	struct vm_area_struct *prev, struct rb_node **rb_link,
+	struct rb_node *rb_parent)
+{
+	__vma_link_list(mm, vma, prev, rb_parent);
+	__vma_link_rb(mm, vma, rb_link, rb_parent);
+}
+
+static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
+			struct vm_area_struct *prev, struct rb_node **rb_link,
+			struct rb_node *rb_parent)
+{
+
+
+	__vma_link(mm, vma, prev, rb_link, rb_parent);
+	mm->map_count++;
+	validate_mm(mm);
+}
+
+static inline void
+__vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+		struct vm_area_struct *prev)
+{
+	prev->vm_next = vma->vm_next;
+	rb_erase(&vma->vm_rb, &mm->mm_rb);
+	if (mm->mmap_cache == vma)
+		mm->mmap_cache = prev;
+}
 
 uint64
 file_get_unmapped_area(uint64 len){
@@ -238,28 +354,33 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	 * 来描述它了，合并进已有的即可。
 	 */
 	if (!file && !(vm_flags & VM_SHARED) &&
-	    vma_merge(mm, prev, addr, addr + len, vm_flags, NULL, NULL, pgoff))
+	    vma_merge(mm, prev, addr, addr + len, vm_flags, NULL, pgoff))
 		goto out;
 
-	// /* increase the ref to the file */
-	// if(file != NULL){
-		// filedup(file);
-	// }
 
-	vma->vm_file = file;
+	vma = (vm_area_struct_t *)kzalloc(sizeof(vm_area_struct_t));
+	if(!vma)
+		panic("dommapoff5");
+
+	vma->vm_file = NULL;
 	vma->vm_start = addr;
 	vma->vm_end = vma->vm_start + len;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = prot;
 	vma->vm_pgoff = pgoff;
 
-	/* insert to mm_struct list */
-	vma->vm_next = mm->mmap;
-	acquire(&mm->lock);
-	mm->mmap = vma;
-	mm->map_count++;
-	release(&mm->lock);
-
+	if(file){
+		vma->vm_file = file;
+  	#ifdef TODO
+  	todo("filedup here??");
+  	#endif
+		filedup(file);
+	}
+	else if(vm_flags & VM_SHARED){
+		/* shared anonymous region, mainly used for interprocess communications */
+	}
+	vma_link(mm, vma, prev, rb_link, rb_parent);
+	mm->total_vm += len >> PAGE_SHIFT;
 out:
 	return vma->vm_start;
 }
@@ -334,79 +455,38 @@ struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
  * are necessary.  The "insert" vma (if any) is to be inserted
  * before we drop the necessary locks.
  * 
- * 简化版，相比于linux的原版，省略了mprotect的情况的区间合并。
+ * 相比于linux的原版函数的简化版，省略了mprotect的情况的区间合并。
+ * 由于vma可能是anonymous或者mapping-file，所以要对这两种情况分类讨论。
+ * 根据vma->file和vma->anon哪个不为空来判断vma的类型。
+ * 
+ * 对一个进程的地址空间来说，调整vma在红黑树中的位置。
+ * 对于反向映射来说：
+ * 1.如果vma为匿名，调整其在anon_vma链表中的位置。
+ * 2.如果为mapping-file,调整其（在linux2.6优先级树）中的位置。
  */
 void vma_adjust(struct vm_area_struct *vma, unsigned long start,
 	unsigned long end, pgoff_t pgoff)
 {
 	#ifdef TODO
-	todo("influence page reclaiming!");
+	todo("adjust reverse mapping!");
 	#endif
 	struct mm_struct *mm = vma->vm_mm;
 	struct vm_area_struct *next = vma->vm_next;
-	struct vm_area_struct *importer = NULL;
-	struct address_space *mapping = NULL;
-	struct prio_tree_root *root = NULL;
-	struct file *file = vma->vm_file;
-	struct anon_vma *anon_vma = NULL;
-	long adjust_next = 0;
-	int remove_next = 0;
 
 	if (next) {
 		if (end == next->vm_end) {
 			/*
-			 * case 1
+			 * case 1，next vma需要合并进当前vma中，需要从红黑树和链表中移除。
 			 */
-			remove_next = 1;
-			// end = next->vm_end;
-			// anon_vma = next->anon_vma;
-			// importer = vma;
+			__vma_unlink(mm, next, vma);
 		} 
-// 	else if (end > next->vm_start) {
-// 			/*
-// 			 * vma expands, overlapping part of the next:
-// 			 * mprotect case 5 shifting the boundary up.
-// 			 */
-// 			adjust_next = (end - next->vm_start) >> PAGE_SHIFT;
-// 			anon_vma = next->anon_vma;
-// 			importer = vma;
-// 		} else if (end < vma->vm_end) {
-// 			/*
-// 			 * vma shrinks, and !insert tells it's not
-// 			 * split_vma inserting another: so it must be
-// 			 * mprotect case 4 shifting the boundary down.
-// 			 */
-// 			adjust_next = - ((vma->vm_end - end) >> PAGE_SHIFT);
-// 			anon_vma = next->anon_vma;
-// 			importer = next;
-// 		}
 	}
 
-	if(file) {
-		mapping = file->ep->i_mapping;
-		root = &mapping->i_mmap;
-	}
-
-	/*
-	 * When changing only vma->vm_end, we don't really need
-	 * anon_vma lock: but is that case worth optimizing out?
-	 */
-	if (vma->anon_vma)
-		anon_vma = vma->anon_vma;
-	if (anon_vma) {
-		spin_lock(&anon_vma->lock);
-		/*
-		 * Easily overlooked: when mprotect shifts the boundary,
-		 * make sure the expanding vma has anon_vma set if the
-		 * shrinking vma had, to cover any anon pages imported.
-		 */
-		if (importer && !importer->anon_vma) {
-			importer->anon_vma = anon_vma;
-			/* 将importer添加到anon_vma链表中 */
-			__anon_vma_link(importer);
-		}
-	}
-	
+	/* 虽然vma->end改变了，但是相对于其他vma->end的大小没变，所以不需要调整
+			其在rbtree和链表中的位置。 */
+	vma->vm_start = start;
+	vma->vm_end = end;
+	vma->vm_pgoff = pgoff;	
 }
 
 static inline int is_mergeable_vma(struct vm_area_struct *vma,
@@ -421,11 +501,6 @@ static inline int is_mergeable_vma(struct vm_area_struct *vma,
 	return 1;
 }
 
-static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
-					struct anon_vma *anon_vma2)
-{
-	return !anon_vma1 || !anon_vma2 || (anon_vma1 == anon_vma2);
-}
 
 /*
  * Return true if we can merge this (vm_flags,anon_vma,file,vm_pgoff)
@@ -440,10 +515,9 @@ static inline int is_mergeable_anon_vma(struct anon_vma *anon_vma1,
  */
 static int
 can_vma_merge_before(struct vm_area_struct *vma, unsigned long vm_flags,
-	struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+	struct file *file, pgoff_t vm_pgoff)
 {
-	if (is_mergeable_vma(vma, file, vm_flags) &&
-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
+	if (is_mergeable_vma(vma, file, vm_flags)) {
 		if (vma->vm_pgoff == vm_pgoff)
 			return 1;
 	}
@@ -458,10 +532,9 @@ can_vma_merge_before(struct vm_area_struct *vma, unsigned long vm_flags,
  * anon_vmas, nor if same anon_vma is assigned but offsets incompatible.
  */
 static int
-can_vma_merge_after(struct vm_area_struct *vma, unsigned long vm_flags, struct anon_vma *anon_vma, struct file *file, pgoff_t vm_pgoff)
+can_vma_merge_after(struct vm_area_struct *vma, unsigned long vm_flags, struct file *file, pgoff_t vm_pgoff)
 {
-	if (is_mergeable_vma(vma, file, vm_flags) &&
-	    is_mergeable_anon_vma(anon_vma, vma->anon_vma)) {
+	if (is_mergeable_vma(vma, file, vm_flags)) {
 		pgoff_t vm_pglen;
 		vm_pglen = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
 		if (vma->vm_pgoff + vm_pglen == vm_pgoff)
@@ -509,7 +582,7 @@ can_vma_merge_after(struct vm_area_struct *vma, unsigned long vm_flags, struct a
 struct vm_area_struct *vma_merge(struct mm_struct *mm,
 			struct vm_area_struct *prev, unsigned long addr,
 			unsigned long end, unsigned long vm_flags,
-		     	struct anon_vma *anon_vma, struct file *file, pgoff_t pgoff)
+		  struct file *file, pgoff_t pgoff)
 {
 	pgoff_t pglen = (end - addr) >> PAGE_SHIFT;
 	struct vm_area_struct *next;
@@ -523,14 +596,12 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	/*
 	 * Can it merge with the predecessor?
 	 */
-	if (prev && prev->vm_end == addr && can_vma_merge_after(prev, vm_flags, anon_vma, file, pgoff)) {
+	if (prev && prev->vm_end == addr && can_vma_merge_after(prev, vm_flags, file, pgoff)) {
 		/*
 		 * OK, it can.  Can we now merge in the successor as well?
-		 * 最后is_mergeable_anon_vma(prev->anon_vma, next->anon_vma)做一遍检查，防止当前anon_vma为NULL，但是prev->anon_vma和next->anon_vma不同的情况
 		 */
 		if (next && end == next->vm_start &&
-				can_vma_merge_before(next, vm_flags, anon_vma, file, pgoff+pglen) &&
-				is_mergeable_anon_vma(prev->anon_vma, next->anon_vma)) 
+				can_vma_merge_before(next, vm_flags, file, pgoff+pglen))
 		{
 			/* cases 1, 新区间和前后两个区间合并成一个 */
 			vma_adjust(prev, prev->vm_start, next->vm_end, prev->vm_pgoff);
@@ -543,7 +614,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	 * Can this new request be merged in front of next?
 	 */
 	if (next && end == next->vm_start &&
-			can_vma_merge_before(next, vm_flags, anon_vma, file, pgoff+pglen)) {
+			can_vma_merge_before(next, vm_flags, file, pgoff+pglen)) {
 		/* cases 3*/
 			vma_adjust(next, addr, next->vm_end, next->vm_pgoff - pglen);
 		return next;

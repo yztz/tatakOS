@@ -1,3 +1,13 @@
+/**
+ * @file rmap.h
+ * @author DavidZyy (1929772352@qq.com)
+ * @brief 参考资料：http://www.embeddedlinux.org.cn/emb-linux/system-development/201810/14-8352.html
+ * @version 0.1
+ * @date 2022-06-30
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #ifndef _LINUX_RMAP_H
 #define _LINUX_RMAP_H
 /*
@@ -20,12 +30,12 @@
  * the anon_vma object itself: we're guaranteed no page can be
  * pointing to this anon_vma once its vma list is empty.
  */
-struct anon_vma {
-	spinlock_t lock;	/* Serialize access to vma list */
-	struct list_head head;	/* List of private "related" vmas */
-};
+// struct anon_vma {
+// 	spinlock_t lock;	/* Serialize access to vma list */
+// 	struct list_head head;	/* List of private "related" vmas */
+// };
 
-typedef struct anon_vma anon_vma_t;
+// typedef struct anon_vma anon_vma_t;
 
 // #ifdef CONFIG_MMU
 

@@ -531,7 +531,7 @@ sys_mmap(void)
     panic("sys_mmap 2");
 
 
-  filedup(p->ofile[fd]);
+//   filedup(p->ofile[fd]);
   #ifdef TODO
   todo("filedup here??");
   todo("manual said file close, i think it's entry close, put the last line filedup in do_mmap or last line?");
