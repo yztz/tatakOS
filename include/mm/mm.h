@@ -44,6 +44,7 @@ typedef struct vm_area_struct vm_area_struct_t;
 uint64 do_mmap(struct file *file, unsigned long addr, unsigned long len, int prot, int flag, unsigned long offset, int type);
 unsigned long do_mmap_pgoff(struct file * file, unsigned long addr, unsigned long len, int prot, int flags, unsigned long pgoff, int type);
 void exit_mmap(mm_struct_t *mm);
+uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len);
 
 /* functions defined in filemap.c */
 uint64 find_get_page(struct address_space *mapping, unsigned long offset);

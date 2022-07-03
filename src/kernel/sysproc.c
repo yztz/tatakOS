@@ -12,6 +12,7 @@
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
+#include "mm/mm.h"
 
 uint64
 sys_exit(void)
@@ -125,13 +126,27 @@ sys_brk(void){
   if(oldbrk == newbrk)
     goto set_brk;
   
-  /* 减小brk区间 */
+  /* 减小堆区间 */
   if(brk <= mm->brk){
-    if(!do)
+    if(!do_munmap(mm, newbrk, oldbrk - newbrk))
+      mm->brk = addr;
+    goto out; 
   }
+
+  /* Check against existing mmap mappings. */
+	if (find_vma_intersection(mm, oldbrk, newbrk+PGSIZE))
+		goto out;
+  
+  /* Ok, looks good - let it rip. */
+	if (do_brk(oldbrk, newbrk-oldbrk) != oldbrk)
+		goto out;
 
 set_brk:
   mm->brk = brk;
+
+out:
+  release(&mm->mmap_lock);
+  return mm->brk;
 }
 
 uint64

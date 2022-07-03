@@ -257,7 +257,7 @@ uint64
 get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 		unsigned long pgoff, unsigned long flags){
 	if(flags & MAP_FIXED){
-		panic("get unmapped area 1: not implemented");
+		ERROR("get unmapped area 1: not implemented");
 	}
 
 	/* mapping for file */ 
@@ -413,6 +413,17 @@ struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
 				mm->mmap_cache = vma;
 		}
 	}
+	return vma;
+}
+
+/* Look up the first VMA which intersects the interval start_addr..end_addr-1,
+   NULL if none.  Assume start_addr < end_addr. */
+struct vm_area_struct * find_vma_intersection(struct mm_struct * mm, unsigned long start_addr, unsigned long end_addr)
+{
+	struct vm_area_struct * vma = find_vma(mm,start_addr);
+
+	if (vma && end_addr <= vma->vm_start)
+		vma = NULL;
 	return vma;
 }
 
@@ -644,10 +655,9 @@ do_mmap(struct file *file, unsigned long addr,
 {
 	// int ret;
 	if((offset + PGROUNDUP(len)) < offset)//if len < 0
-		panic("do mmap 1");
-	if(offset & ~PGMASK)
-		panic("do mmap 2");// offset is not page aligned
-
+		ER();
+	if(offset & ~PGMASK)// offset is not page aligned
+		ER();
 
 	// print_all_vma();
 	return do_mmap_pgoff(file, addr, len, prot, flag, offset >> PGSHIFT, type);	
@@ -666,14 +676,14 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	
 
 	if(!len)
-		panic("do mmap pgoff 1");
+		ERROR("do mmap pgoff 1");
 		// return addr;
 	len = PGROUNDUP(len);
 	if(!len || len > USER_TASK_SIZE)
-		panic("do mmap pgoff 2");
+		ERROR("do mmap pgoff 2");
 
 	if(mm->map_count > DEFAULT_MAX_MAP_COUNT)
-		panic("do mmap pgoff 3");
+		ERROR("do mmap pgoff 3");
 
 	addr = get_unmapped_area(file, addr, len, pgoff, flags);
 
@@ -684,7 +694,7 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 		if(!vma || vma->vm_start >= addr + len)
 			break;
 		if(do_munmap(mm, addr, len))
-			panic("do mmap pgoff 4");
+			ERROR("do mmap pgoff 4");
 	}
 
 	/*
@@ -701,7 +711,7 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 
 	vma = (vm_area_struct_t *)kzalloc(sizeof(vm_area_struct_t));
 	if(!vma)
-		panic("dommapoff5");
+		ERROR("dommapoff5");
 
 	vma->vm_file = NULL;
 	vma->vm_start = addr;
@@ -811,10 +821,10 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){
 	vm_area_struct_t *vma, *prev, *last;
 
 	if((start & ~PGMASK) || start > USER_TASK_SIZE || start + len > USER_TASK_SIZE)
-		panic("domunmap1");
+		ERROR("domunmap1");
 
 	if((len = PGROUNDUP(len)) == 0)
-		panic("domunmap2");
+		ERROR("domunmap2");
 	
 	/* Find the first overlapping VMA */
 	vma = find_vma_prev(mm, start, &prev);
@@ -857,4 +867,61 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){
 	remove_vma_list(mm, vma);
 
 	return 0;
+}
+
+/*
+ *  this is really a simplified "do_mmap".  it only handles
+ *  anonymous maps.  eventually we may be able to do some
+ *  brk-specific accounting here.
+ */
+unsigned long do_brk(unsigned long addr, unsigned long len)
+{
+	struct mm_struct * mm = myproc()->mm;
+	struct vm_area_struct * vma, * prev;
+	unsigned long flags;
+	struct rb_node ** rb_link, * rb_parent;
+
+	len = PGROUNDUP(len);
+	if(!len)
+		return addr;
+
+	if((addr + len) > USER_TASK_SIZE || (addr + len) < addr)
+		ER();
+
+	/*
+	 * Clear old maps.  this also does some error checking for us
+	 */
+ munmap_back:
+	vma = find_vma_prepare(mm, addr, &prev, &rb_link, &rb_parent);
+	if (vma && vma->vm_start < addr + len) {
+		if (do_munmap(mm, addr, len))
+			ER();
+		goto munmap_back;
+	}
+
+	if(mm->map_count > DEFAULT_MAX_MAP_COUNT)
+		ER();
+
+	/* Can we just expand an old anonymous mapping? */
+	if (vma_merge(mm, prev, addr, addr + len, flags, NULL, 0))
+		goto out;
+
+	vma = kzalloc(sizeof(vm_area_struct_t));
+	if(!vma){
+		ER();
+	}
+
+	vma->vm_mm = mm;
+	vma->vm_start = addr;
+	vma->vm_end = addr + len;
+	vma->vm_flags = flags;
+	vma->vm_page_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+	vma->vm_pgoff = 0;
+	vma->vm_file = NULL;
+
+	vma_link(mm, vma, prev, rb_link, rb_parent);
+
+out:
+	mm->total_vm += len>>PGSHIFT;
+	return addr;
 }

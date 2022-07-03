@@ -537,14 +537,21 @@ sys_mmap(void)
   todo("manual said file close, i think it's entry close, put the last line filedup in do_mmap or last line?");
   #endif
   return do_mmap(p->ofile[fd], addr, length, prot, 
-          flags, offset);
+          flags, offset, MMAP_FILE);
 
   // return 0;
 }
 
-uint64
-sys_munmap(void){
-  return 0;
+uint64_t
+sys_munmap(unsigned long addr, size_t len)
+{
+	int ret;
+	struct mm_struct *mm = myproc()->mm;
+
+    acquire(&mm->mmap_lock);
+	ret = do_munmap(mm, addr, len);
+    release(&mm->mmap_lock);
+	return ret;
 }
 
 // /**
