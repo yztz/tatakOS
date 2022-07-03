@@ -69,8 +69,11 @@ void print_all_vma();
 void printf_radix_tree();
 void print_bio_vec(struct bio *);
 void print_page_contents(char* pa);
+void error(char *info, char *s, const char *s1, int d);
 
 #define todo(str)  TD(str, __FILE__, __func__, __LINE__)
+#define ERROR(str)    error(str, __FILE__, __func__, __LINE__)
+#define ER()    ERROR("")
 #define get_order(x) luaO_log2(x)
 
 

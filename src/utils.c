@@ -131,6 +131,14 @@ void TD(char *info, char *s, const char *s1, int d)
 }
 
 
+void error(char *info, char *s, const char *s1, int d)
+{
+  printf(ylw("ERROR INFO:\n"));
+  printf(bl("%s\n"), info);
+  printf(grn("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
+  for(;;);
+}
+
 void
 print_all_vma(){
   struct proc *p = myproc();

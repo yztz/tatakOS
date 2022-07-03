@@ -546,13 +546,14 @@ uint64
 sys_munmap(void){
   return 0;
 }
-/**
- * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以
- * 要求va是页对齐的，并且len为PGSIZE的整数倍，或者等于区域的总长度
- * 否则需要考虑区域的分割等问题。
- *
- * @return uint64
- */
+
+// /**
+//  * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以
+//  * 要求va是页对齐的，并且len为PGSIZE的整数倍，或者等于区域的总长度
+//  * 否则需要考虑区域的分割等问题。
+//  *
+//  * @return uint64
+//  */
 // uint64 sys_munmap(void) {
 //     uint64 va, len;
 //     if (argaddr(0, &va) < 0 || argaddr(1, &len) < 0)

@@ -100,6 +100,40 @@ sys_sbrk(void)
   return addr;
 }
 
+
+/**
+ * @brief modify the size of the heap directly, the addr parameter 
+ * specifies the new value of current process's mm->brk.
+ * 
+ * @return uint64_t 
+ */
+uint64_t
+sys_brk(void){
+  uint64_t addr;
+  uint64_t newbrk, oldbrk, brk;
+  mm_struct_t *mm = myproc()->mm;
+
+  if(argaddr(0, &brk) < 0)
+    return -1;
+
+  acquire(&mm->mmap_lock);
+
+  if(newbrk < mm->start_brk)
+    panic("sysbrk1");
+  newbrk = PGROUNDUP(brk);
+  oldbrk = PGROUNDUP(mm->brk);
+  if(oldbrk == newbrk)
+    goto set_brk;
+  
+  /* 减小brk区间 */
+  if(brk <= mm->brk){
+    if(!do)
+  }
+
+set_brk:
+  mm->brk = brk;
+}
+
 uint64
 sys_nanosleep(void)
 {

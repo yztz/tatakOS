@@ -9,10 +9,12 @@
 #include "common.h"
 #include "mm/vm.h"
 #include "fs/fs.h"
+#include "mm/mm.h"
 
 // #define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
+#include "fs/fcntl.h"
 
 static int loadseg(pde_t *pgdir, uint64 addr, entry_t *ip, uint offset, uint sz);
 
@@ -222,12 +224,13 @@ exec(char *path, char **argv)
     if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
       goto bad;
     
-    /* alloc a vma */
     sz = sz1;
     if((ph.vaddr % PGSIZE) != 0)
       goto bad;
     if(loadseg(pagetable, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
+
+    do_mmap(NULL, PGROUNDUP(sz)-PGROUNDUP(ph.vaddr+ph.memsz), PGROUNDUP(ph.vaddr+ph.memsz), PROT_READ|PROT_EXEC, 0, 0, LOAD); 
   }
 
   // printf("ph: %d\n", ph.vaddr + ph.memsz);
@@ -247,6 +250,8 @@ exec(char *path, char **argv)
   uvmclear(pagetable, sz - (PGSIZE + USTACKSIZE));
   sp = sz;
   stackbase = sp - USTACKSIZE;
+
+  do_mmap(NULL, stackbase, USTACKSIZE, PROT_READ|PROT_WRITE, 0, 0, STACK);
 
   // Push argument strings, prepare rest of stack in ustack.
   

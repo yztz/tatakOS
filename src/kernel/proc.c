@@ -465,9 +465,6 @@ do_clone(uint64_t stack)
 
 
   np->cur_mmap_sz = p->cur_mmap_sz;
-  // #ifdef TODO
-  // todo("duplicate vm aera")
-  // #endif
   dup_mmap(np->mm, p->mm);
   return pid;
 }

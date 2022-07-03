@@ -9,7 +9,6 @@
 #include "fs/stat.h"
 #include "param.h"
 #include "radix-tree.h"
-#include "prio_tree.h"
 
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
@@ -73,8 +72,8 @@ struct address_space {
 	struct radix_tree_root	page_tree;	/* radix tree of all pages */
 	spinlock_t		tree_lock;	/* and spinlock protecting it */
 	// unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
-	struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
-	spinlock_t		i_mmap_lock;	/* protect tree, count, list */
+	// struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
+	// spinlock_t		i_mmap_lock;	/* protect tree, count, list */
 	// unsigned int		truncate_count;	/* Cover race condition with truncate */
 	unsigned long		nrpages;	/* number of total pages */
 	// spinlock_t		page_lock;	

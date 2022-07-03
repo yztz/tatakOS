@@ -227,6 +227,7 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 
 // Free user memory pages,
 // then free page-table pages.
+/* 现在可以通过vma来释放了 */
 void
 uvmfree(pagetable_t pagetable, uint64 sz, uint64 mmap_sz)
 {

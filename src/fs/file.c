@@ -64,6 +64,10 @@ filedup(struct file *f)
   return f;
 }
 
+void get_file(struct file *f){
+  filedup(f);  
+}
+
 // Close file f.  (Decrement ref count, close when reaches 0.)
 void
 fileclose(struct file *f)

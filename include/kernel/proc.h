@@ -6,6 +6,7 @@
 #include "rbtree.h"
 #include "rmap.h"
 #include "list.h"
+#include "mm/mm.h"
 
 // Saved registers for kernel context switches.
 struct context {
@@ -34,8 +35,6 @@ struct cpu {
   int noff;                   // Depth of push_off() nesting.
   int intena;                 // Were interrupts enabled before push_off()?
 };
-
-
 
 extern struct cpu cpus[NUM_CORES];
 
@@ -93,51 +92,17 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// #define VMA_NUM 16
-// struct vma{
-//   uint64 addr;
-//   uint64 end;
-//   uint64 len;
-//   int prot;
-//   int flags;
-//   uint16 pgoff;
-
-//   struct file *map_file;
-//   enum{VMA_UNUSED, VMA_USED} state;
-// };
-enum vma_type { NONE, LOAD, TEXT, DATA, BSS, HEAP, MMAP, STACK };
-
-struct vm_area_struct
-{
-  struct mm_struct *vm_mm;
-  uint64 vm_start;
-  uint64 vm_end;
-
-  /* 按照树中 中序遍历 的顺序链起来？ */
-  struct vm_area_struct *vm_next;//linked list of vm areas per task
-  
-  int vm_page_prot;
-  int vm_flags;
-
-  struct rb_node vm_rb;
-
-  /* 对于文件映射区间，为映射的文件的偏移量（以页为单位）；对于匿名区间，为0或vm_start/PAGE_SIZE*/
-  uint64 vm_pgoff;
-  struct file *vm_file;
-  enum vma_type type;
-};
-
-typedef struct vm_area_struct vm_area_struct_t;
-
-
 struct mm_struct {
   struct vm_area_struct *mmap;//list of vmas
   struct rb_root mm_rb;
   struct vm_area_struct *mmap_cache;
   int map_count;              //number of vmas
-  spinlock_t lock;
+  spinlock_t mmap_lock;        // 保护mmap链表和mm_rb树
   uint64_t free_area_cache; /* 用来查找地址空间中的未映射区域 */
   uint32_t total_vm; /* 地址空间包含的总页数 */
+  uint64_t start_brk; // initial address of the heap
+  uint64_t brk; // current final address of the heap
+  uint64_t start_stack; /* initial adress of user mode stack */
 };
 
 typedef struct mm_struct mm_struct_t;
