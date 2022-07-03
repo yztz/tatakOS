@@ -723,10 +723,7 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 
 	if(file){
 		vma->vm_file = file;
-  	#ifdef TODO
-  	todo("filedup here??");
-  	#endif
-		filedup(file);
+		get_file(file);
 	}
 	else if(vm_flags & VM_SHARED){
 		/* shared anonymous region, mainly used for interprocess communications */
