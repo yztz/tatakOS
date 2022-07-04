@@ -21,9 +21,15 @@
 #define MAP_TYPE	0x0f		/* Mask for type of mapping */
 #define MAP_FIXED	0x10		/* Interpret addr exactly */
 #define MAP_ANONYMOUS	0x20		/* don't use a file */
+
+/* These are linux-specific */
+#define MAP_GROWSDOWN	0x01000		/* stack-like segment */
+#define MAP_DENYWRITE	0x02000		/* ETXTBSY */
+#define MAP_EXECUTABLE	0x04000		/* mark it as an executable */
+#define MAP_LOCKED	0x08000		/* lock the mapping */
+
+
 #define MAP_FAILED ((void *) -1)
-
-
 #define AT_FDCWD -100
 
 #endif

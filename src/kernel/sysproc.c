@@ -82,23 +82,29 @@ sys_wait4(void)
 
 }
 
-uint64
-sys_sbrk(void)
-{
-  int addr;
-  int n;
+// uint64
+// sys_sbrk(void)
+// {
+//   int addr;
+//   int n;
 
+//   if(argint(0, &n) < 0)
+//     return -1;
+//   addr = myproc()->sz;
+
+//   if(n == 0)
+//     return addr;
+  
+//   if(growproc(n - addr) < 0)
+//     return -1;
+    
+//   return addr;
+// }
+uint64_t
+sys_sbrk(void){
+  int addr, n;
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-
-  if(n == 0)
-    return addr;
-  
-  if(growproc(n - addr) < 0)
-    return -1;
-    
-  return addr;
 }
 
 
@@ -107,6 +113,8 @@ sys_sbrk(void)
  * specifies the new value of current process's mm->brk.
  * 
  * @return uint64_t 
+ * 
+ * 用什么表示当前堆顶的位置？？mm->brk
  */
 uint64_t
 sys_brk(void){

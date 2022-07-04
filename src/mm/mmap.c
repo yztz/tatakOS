@@ -106,17 +106,17 @@ calc_vm_prot_bits(unsigned long prot)
 	       _calc_vm_trans(prot, PROT_EXEC,  VM_EXEC );
 }
 
-// /*
-//  * Combine the mmap "flags" argument into "vm_flags" used internally.
-//  */
-// static inline unsigned long
-// calc_vm_flag_bits(unsigned long flags)
-// {
-// 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
-// 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
-// 	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
-// 	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
-// }
+/*
+ * Combine the mmap "flags" argument into "vm_flags" used internally.
+ */
+static inline unsigned long
+calc_vm_flag_bits(unsigned long flags)
+{
+	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+	       _calc_vm_trans(flags, MAP_EXECUTABLE, VM_EXECUTABLE) |
+	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+}
 
 static inline void
 __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
@@ -380,6 +380,10 @@ exit_mmap(mm_struct_t *mm){
 
 /* zyy: a region is represented as [addr, end), end is not included in the region */
 /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+/* 红黑树中是根据vm_end的值给vma排序的，所以
+	find_vma找到的是第一个vma->vm_end大于addr的vma，不包括等于，因为vma的包括的范围是
+	[vma->vm_start, vma->vm_end), 所以在返回vma时，还要通过vm_start<=addr才能
+	确定addr在这个vma的区域中*/
 struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
 {
 	struct vm_area_struct *vma = NULL;
@@ -687,7 +691,7 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 
 	addr = get_unmapped_area(file, addr, len, pgoff, flags);
 
-	vm_flags = calc_vm_prot_bits(prot);
+	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
 
 	for(;;){
 		vma = find_vma_prepare(mm, addr, &prev, &rb_link, &rb_parent);
@@ -716,8 +720,8 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	vma->vm_file = NULL;
 	vma->vm_start = addr;
 	vma->vm_end = vma->vm_start + len;
-	vma->vm_flags = flags;
-	vma->vm_page_prot = prot;
+	vma->vm_flags = vm_flags;
+	// vma->vm_page_prot = prot;
 	vma->vm_pgoff = pgoff;
 	vma->type = type;
 
@@ -758,44 +762,6 @@ detach_vmas_to_be_unmapped(mm_struct_t *mm, vm_area_struct_t *vma,
 	/* kill the cache */
 	mm->mmap_cache = NULL;
 }	
-
-static void
-unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
-	uint64_t start = start_addr;
-
-	for(; vma && vma->vm_start < end_addr; vma = vma->vm_next){
-		uint64_t end;
-
-		start = max(vma->vm_start, start_addr);
-		if(start >= vma->vm_end)
-			continue;
-		end = min(vma->vm_end, end_addr);
-		if (end <= vma->vm_start)
-			continue;
-
-    // write back to disk
-    if (vma->vm_flags & MAP_SHARED) {
-        // write back page first, than write back to disk
-        todo("write back shared vma");
-    }
-
-		//zyy: my ugly code...
-		uint64_t va = PGROUNDUP(start);
-		pte_t *pte;
-		struct proc *p = myproc();
-    // if a virtual address has been mapped to physic address,
-    // unmap it, otherwise do noting.
-    if (va <= PGROUNDDOWN(end))
-        for (int a = va; a <= PGROUNDDOWN(end); a += PGSIZE) {
-            if ((pte = walk(p->pagetable, a, 0)) == 0)
-                continue;
-            if ((*pte & PTE_V) == 0)
-                continue;
-
-            uvmunmap(p->pagetable, a, 1, 1);
-        }
-	}
-}
 
 /*
  * Get rid of page table information in the indicated region.
@@ -870,6 +836,8 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){
  *  this is really a simplified "do_mmap".  it only handles
  *  anonymous maps.  eventually we may be able to do some
  *  brk-specific accounting here.
+ * 
+ * 使用了lazy
  */
 unsigned long do_brk(unsigned long addr, unsigned long len)
 {
@@ -899,6 +867,8 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	if(mm->map_count > DEFAULT_MAX_MAP_COUNT)
 		ER();
 
+	flags = VM_DATA_DEFAULT_FLAGS;
+
 	/* Can we just expand an old anonymous mapping? */
 	if (vma_merge(mm, prev, addr, addr + len, flags, NULL, 0))
 		goto out;
@@ -912,7 +882,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	vma->vm_start = addr;
 	vma->vm_end = addr + len;
 	vma->vm_flags = flags;
-	vma->vm_page_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+	// vma->vm_page_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	vma->vm_pgoff = 0;
 	vma->vm_file = NULL;
 

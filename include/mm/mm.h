@@ -19,7 +19,8 @@ struct vm_area_struct
   /* 按照树中 中序遍历 的顺序链起来？ */
   struct vm_area_struct *vm_next;//linked list of vm areas per task
   
-  int vm_page_prot;
+  /* 感觉下面两个标志功能有点重复 */
+  // int vm_page_prot;
   int vm_flags;
 
   struct rb_node vm_rb;
@@ -39,6 +40,17 @@ typedef struct vm_area_struct vm_area_struct_t;
 #define VM_WRITE	0x00000002
 #define VM_EXEC		0x00000004
 #define VM_SHARED	0x00000008
+
+#define VM_GROWSDOWN	0x00000100	/* general info on the segment 向下增长，栈区域使用 */
+#define VM_GROWSUP	0x00000200
+#define VM_SHM		0x00000400	/* shared memory area, don't swap out */
+#define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+
+#define VM_EXECUTABLE	0x00001000
+#define VM_LOCKED	0x00002000
+#define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+
+#define VM_DATA_DEFAULT_FLAGS		(VM_READ | VM_WRITE | VM_EXEC)
 
 /* functions defined in mmap.c */
 uint64 do_mmap(struct file *file, unsigned long addr, unsigned long len, int prot, int flag, unsigned long offset, int type);

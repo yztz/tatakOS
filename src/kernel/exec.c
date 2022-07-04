@@ -251,7 +251,7 @@ exec(char *path, char **argv)
   sp = sz;
   stackbase = sp - USTACKSIZE;
 
-  do_mmap(NULL, stackbase, USTACKSIZE, PROT_READ|PROT_WRITE, 0, 0, STACK);
+  do_mmap(NULL, stackbase, USTACKSIZE, PROT_READ|PROT_WRITE, VM_GROWSDOWN, 0, STACK);
 
   // Push argument strings, prepare rest of stack in ustack.
   
@@ -296,6 +296,11 @@ exec(char *path, char **argv)
   p->trapframe->epc = elf.entry;  // initial program counter = main
   // debug("entry addr is %lx", elf.entry);
   p->trapframe->sp = sp; // initial stack pointer
+
+  /* set the start heap */
+  p->mm->start_brk= p->sz;
+  p->mm->start_stack = sp;
+
   switchuvm(p);
   proc_freepagetable(oldpagetable, oldsz, MMAP_BASE);
   return argc; // this ends up in a0, the first argument to main(argc, argv)
