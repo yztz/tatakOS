@@ -53,7 +53,7 @@ void *kzalloc(size_t size) {
  * @deprecated use kmalloc(PGSIZE) instead
 */
 void *kalloc(void) {
-    return kmalloc(PGSIZE);
+    return kzalloc(PGSIZE);
 }
 
 /**

@@ -1,6 +1,7 @@
-#ifndef _H_MM_
-#define _H_MM_
+#ifndef _H_VM_
+#define _H_VM_
 
+#include "mm/mmap.h"
 #include "mm/page.h"
 #include "mm/alloc.h"
 
@@ -23,26 +24,26 @@ pagetable_t uvmcreate(void);
 void        uvminit(pagetable_t, uchar *, uint);
 uint64      uvmalloc(pagetable_t, uint64, uint64);
 uint64      uvmdealloc(pagetable_t, uint64, uint64);
-int         uvmcopy(pagetable_t, pagetable_t, uint64);
+int         uvmcopy(pagetable_t old, pagetable_t new, uint64 addr, uint64_t len);
 void        uvmfree(pagetable_t, uint64);
 void        uvmclear(pagetable_t, uint64);
 uint64      _walkaddr(pagetable_t pagetable, uint64 va, int pg_spec);
-int         copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len);
 
+void        __copyout(mm_t *mm, uint64_t dstva, char *src, uint64 len, int walk);
+int         copyout(uint64 dstva, char *src, uint64 len);
 /** @deprecated use copy_from_user instead */
-int         copyin(pagetable_t, char *, uint64, uint64);
-int         copyinstr(pagetable_t, char *, uint64, uint64);
-int         cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte);
+int         copyin(char *, uint64, uint64);
+int         copyinstr(char *, uint64, uint64);
+int         cow_copy(uint64_t va, pte_t *pte);
 int         copy_from_user(void *to, void *from, size_t n);
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 
+void        vmprint(pagetable_t pagetable);
+void        print_map(struct _kmap_t map);
+
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
-
-#include "kernel/proc.h"
-void switchuvm(struct proc *p);
-void switchkvm();
 
 #define walkaddr(pagetable, va) \
     _walkaddr(pagetable, va, PGSPEC_NORMAL)

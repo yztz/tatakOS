@@ -8,14 +8,14 @@
 #include "defs.h"
 #include "mm/vm.h"
 
-#include "debug.h"
+
 #include "fs/fcntl.h"
 #include "fs/stat.h"
 #include "fs/fs.h"
 #include "fs/file.h"
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
+#define __MODULE_NAME__ PROC
+#include "debug.h"
 
 struct cpu cpus[NUM_CORES];
 
@@ -48,7 +48,7 @@ procinit(void)
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
-      // p->kstack = KSTACK((int) (p - proc));
+      memset(&p->mm, 0, sizeof(mm_t));
       for(int i = 0; i < NOFILE; i++) {
         p->ofile[i] = NULL;
       }
@@ -115,23 +115,10 @@ found:
   p->state = USED;
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
+  p->mm = (mm_t *)kzalloc(sizeof(mm_t));
 
-  // 申请Trapframe
-  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
-  // 申请内核栈
-  if((p->kstack = (uint64_t)kmalloc(KSTACK_SZ)) == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
-
-  // 获取空页表（已经映射了内核地址空间，trapfram以及内核栈）
-  p->pagetable = proc_pagetable(p);
-  if(p->pagetable == 0){
+  if(mmap_init(p->mm, NULL) == -1){
+    debug("mmap_init failure");
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -141,44 +128,39 @@ found:
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
-  p->context.sp = p->kstack + PGSIZE;
+  p->context.sp = get_kstack(p->mm) + KSTACK_SZ;
 
-  p->cur_mmap_sz = MMAP_BASE;
+  // p->cur_mmap_sz = MMAP_BASE;
   return p;
 }
 
-void
-free_vma(struct proc *p){
-  pte_t *pte;
-  struct vma *v;
-  int i;
-  uint64 a;
+// void
+// free_vma(struct proc *p){
+//   pte_t *pte;
+//   struct vma *v;
+//   int i;
+//   uint64 a;
 
-  // for(;;);
-  for(i=0; i < VMA_NUM; i++){
-    v = &(p->vma[i]);
-    // v->state is cleared in sys_munmap
-    if(v->state == VMA_USED){
-      for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
-      if ((pte = walk(p->pagetable, a, 0)) == 0)
-        continue;
-      if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
-        continue;
-
-      // printf(ylw("a: %p\n"), a);
-      //may have bug here!
-      if (v->flags & MAP_SHARED)
-      {
-        // printf(ylw("PGMASK & : %p\n"), (v->end - a));
-        // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
-      }
-      // printf(ylw("free_vam a: %p\n"), a); 
-      uvmunmap(p->pagetable, a, 1, 1);
-
-      }
-    }
-  }
-}
+//   // for(;;);
+//   list_for_each_entry(v, &PROC_VMA_HEAD(p), head) {
+//     // v->state is cleared in sys_munmap
+//     for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
+//       if ((pte = walk(p->pagetable, a, 0)) == 0)
+//         continue;
+//       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
+//         continue;
+//       //may have bug here!
+//       if (v->flags & MAP_SHARED)
+//       {
+//         // printf(ylw("PGMASK & : %p\n"), (v->end - a));
+//         // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
+//       }
+//       // printf(ylw("free_vam a: %p\n"), a); 
+//       uvmunmap(p->pagetable, a, 1, 1);
+//     }
+    
+//   }
+// }
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -186,23 +168,9 @@ free_vma(struct proc *p){
 static void
 freeproc(struct proc *p)
 {
-  if(p->trapframe)
-    kfree((void*)p->trapframe);
-  if(p->kstack)
-    kfree((void*)p->kstack);
-  if(p->ext_ofile)
-    kfree((void *)p->ext_ofile);
-  p->trapframe = 0;
-  p->kstack = 0;
+  mmap_free(&p->mm);
 
-  free_vma(p);
-
-  // for(;;);
-  if(p->pagetable){
-    proc_freepagetable(p->pagetable, p->sz);
-    p->pagetable = 0;
-  } 
-  p->sz = 0;
+  // p->sz = 0;
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
@@ -214,35 +182,35 @@ freeproc(struct proc *p)
 
 // Create a user page table for a given process,
 // with no user memory, but with trampoline pages.
-pagetable_t
-proc_pagetable(struct proc *p)
-{
-  pagetable_t pagetable;
+// pagetable_t
+// proc_pagetable(struct proc *p)
+// {
+//   pagetable_t pagetable;
 
-  // An empty page table with kernel page table copy.
-  pagetable = uvmcreate();
-  if(pagetable == 0)
-    return 0;
-  // 映射内核栈
-  if(mappages(pagetable, KSTACK, KSTACK_SZ,
-              (uint64)(p->kstack), PTE_R | PTE_W) < 0){
-    erasekvm(pagetable);
-    uvmfree(pagetable, 0);
-    return 0;
-  }
+//   // An empty page table with kernel page table copy.
+//   pagetable = uvmcreate();
+//   if(pagetable == 0)
+//     return 0;
+//   // 映射内核栈
+//   if(mappages(pagetable, KSTACK, KSTACK_SZ,
+//               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
+//     erasekvm(pagetable);
+//     uvmfree(pagetable, 0);
+//     return 0;
+//   }
 
-  return pagetable;
-}
+//   return pagetable;
+// }
 
 // Free a process's page table, and free the
 // physical memory it refers to.
-void
-proc_freepagetable(pagetable_t pagetable, uint64 sz)
-{
-  uvmunmap(pagetable, KSTACK, 1, 0);
-  erasekvm(pagetable);
-  uvmfree(pagetable, sz);
-}
+// void
+// proc_freepagetable(proc_t *p)
+// {
+
+//   erasekvm(p->mm.pagetable);
+//   uvmfree(pagetable, sz);
+// }
 
 // a user program that calls exec("/init")
 // od -t xC initcode
@@ -279,21 +247,31 @@ void
 userinit(void)
 {
   struct proc *p;
-
   p = allocproc();
   initproc = p;
 
-  // allocate one user page and copy init's instructions
-  // and data into it.
-  uvminit(p->pagetable, initcode, sizeof(initcode));
-  p->sz = PGSIZE;
+  if(sizeof(initcode) >= PGSIZE)
+    panic("inituvm: more than a page");
+
+  switchuvm(p->mm);
+
+  if(do_mmap_alloc(p->mm, NULL, 0, PGSIZE, MAP_ANONYMOUS, MAP_PROT_WRITE|MAP_PROT_READ|MAP_PROT_EXEC|MAP_PROT_USER) == -1) {
+    panic("mmap alloc failure");
+  }
+
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  enable_sum();
+  #endif
+  memmove(0, initcode, sizeof(initcode));
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  disable_sum();
+  #endif
 
   // prepare for the very first "return" from kernel to user.
-  p->trapframe->epc = 0;      // user program counter
-  p->trapframe->sp = PGSIZE;  // user stack pointer
+  get_trapframe(p->mm)->epc = 0;      // user program counter
+  get_trapframe(p->mm)->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-    // p->cwd = namei("/");
 
   init_std(p);
 
@@ -303,22 +281,16 @@ userinit(void)
 }
 
 
-int
-growproc(int n)
-{
-  uint sz;
+uint64 growproc(int n) {
   struct proc *p = myproc();
-
-  sz = p->sz;
-  if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
-      return -1;
-    }
-  } else if(n < 0){
-    sz = uvmdealloc(p->pagetable, sz, sz + n);
+  if(n == 0) {
+    return PROGRAM_BREAK(p->mm);
   }
-  p->sz = sz;
-  return 0;
+  if(mmap_ext_heap(p->mm, n) == -1) {
+    return -1;
+  }
+  
+  return PROGRAM_BREAK(p->mm);
 }
 
 // Create a new process, copying the parent.
@@ -336,22 +308,18 @@ do_clone(uint64_t stack)
   }
 
   // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  if(mmap_dup(np->mm, p->mm) == -1){
     freeproc(np);
     release(&np->lock);
     return -1;
   }
-  np->sz = p->sz;
 
-  // 复制trapframe
-  *(np->trapframe) = *(p->trapframe);
-
-  // 将返回地址重置为0
-  np->trapframe->a0 = 0;
+  // 将返回值置为0
+  get_trapframe(np->mm)->a0 = 0;
 
   // 如果指定了栈，那么重设sp
   if(stack)
-    np->trapframe->sp = stack;
+    get_trapframe(np->mm)->sp = stack;
 
   // 增加文件描述符引用
   for(i = 0; i < NOFILE; i++)
@@ -374,7 +342,7 @@ do_clone(uint64_t stack)
   release(&np->lock);
 
 
-  np->cur_mmap_sz = p->cur_mmap_sz;
+  // np->cur_mmap_sz = p->cur_mmap_sz;
   return pid;
 }
 
@@ -469,7 +437,7 @@ waitpid(int cid, uint64 addr)
         if(np->state == ZOMBIE){
           // Found one.
           
-          if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
+          if(addr != 0 && copyout(addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
             release(&np->lock);
             release(&wait_lock);
@@ -521,7 +489,7 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        switchuvm(p);
+        switchuvm(p->mm);
         swtch(&c->context, &p->context);
         switchkvm();
         // Process is done running for now.
@@ -578,9 +546,9 @@ void
 forkret(void)
 {
   static int first = 1;
-
+  proc_t *p = myproc();
   // Still holding p->lock from scheduler.
-  release(&myproc()->lock);
+  release(&p->lock);
 
   if (first) {
     // File system initialization must be run in the context of a
@@ -589,10 +557,10 @@ forkret(void)
     first = 0;
 
     extern fat32_t *fat;
-    printf("ready to mount\n");
+    debug("ready to mount\n");
     fat_mount(ROOTDEV, &fat);
-    printf("mount done\n");
-    myproc()->cwd = namee(NULL, "/");
+    debug("mount done\n");
+    p->cwd = namee(NULL, "/");
     // LOOP();
     // fsinit(ROOTDEV);
 
@@ -683,9 +651,8 @@ kill(int pid)
 int
 either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 {
-  struct proc *p = myproc();
   if(user_dst){
-    return copyout(p->pagetable, dst, src, len);
+    return copyout(dst, src, len);
   } else {
     memmove((char *)dst, src, len);
     return 0;
@@ -698,13 +665,20 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 int
 either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
-  struct proc *p = myproc();
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    return copyin(dst, src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;
   }
+}
+
+
+void proc_setmm(proc_t *p, mm_t *newmm) {
+  mm_t *oldmm = p->mm;
+  p->mm = newmm;
+  switchuvm(p->mm);
+  mmap_free(&oldmm);
 }
 
 // Print a process listing to console.  For debugging.

@@ -3,6 +3,7 @@
 #include "defs.h"
 #include "profile.h"
 #include "mm/buddy.h"
+#include "mm/vm.h"
 
 typedef struct {
     uint64_t hit;
@@ -34,7 +35,7 @@ uint64 sys_bio_cache(void) {
   extern uint64_t bio_cache_hit, bio_cache_miss;
   rate.hit = bio_cache_hit;
   rate.miss = bio_cache_miss;
-  return copyout(myproc()->pagetable, addr, (char *)&rate, sizeof(rate));
+  return copyout(addr, (char *)&rate, sizeof(rate));
   #endif
 
 
@@ -54,7 +55,7 @@ uint64_t sys_times(void) {
   if(argaddr(0, &addr) < 0) 
     return -1;
   
-  if(copyout(myproc()->pagetable, addr, (char *)&ticks, sizeof(ticks)) == -1)  
+  if(copyout(addr, (char *)&ticks, sizeof(ticks)) == -1)  
     ret = -1;
 
   return ret;
@@ -67,7 +68,7 @@ uint64_t sys_uname(void) {
     return -1;
   }
 
-  return copyout(myproc()->pagetable, addr, (char *)&sysname, sizeof(utsname_t));
+  return copyout(addr, (char *)&sysname, sizeof(utsname_t));
 }
 uint64_t sys_gettimeofday(void) {
   timespec_t time;
@@ -79,7 +80,7 @@ uint64_t sys_gettimeofday(void) {
 
   time = TICK2TIMESPEC(ticks);
 
-  if(copyout(myproc()->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
+  if(copyout(addr, (char *)&time, sizeof(time)) == -1) {
     ret = -1;
   } 
   return ret;

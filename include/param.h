@@ -14,7 +14,7 @@
 
 #define BSIZE 512
 #define NENTRY 40
-#define MAX_FILE_NAME 20
+#define MAX_FILE_NAME 128
 
 #define USTACKSIZE 8192
 

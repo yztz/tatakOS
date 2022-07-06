@@ -54,6 +54,11 @@ usertrap(void)
     printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
     panic("usertrap: not from user mode");
   }
+
+  // if(!IS_INTR(scause)) {
+  //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
+  //   LOOP();
+  // }
   // send interrupts and exceptions to kerneltrap(),
   // since we're now in the kernel.
   // w_stvec((uint64)kernelvec);
@@ -62,8 +67,7 @@ usertrap(void)
   struct proc *p = myproc();
 
   // save user program counter.
-  // p->trapframe->epc = r_sepc();
-  p->trapframe->epc = read_csr(sepc);
+  get_trapframe(p->mm)->epc = read_csr(sepc);
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
@@ -71,7 +75,7 @@ usertrap(void)
     }
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
-    p->trapframe->epc += 4;
+    get_trapframe(p->mm)->epc += 4;
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     // debug("usertrap: proc is %s syscall num is %d", p->name, p->trapframe->a7);
@@ -98,7 +102,7 @@ usertrap(void)
 //
 // return to user space
 //
-void userret(struct trapframe *trapfram);
+void userret(uint64 trapfram);
 void uservec();
 void
 usertrapret(void)
@@ -113,9 +117,9 @@ usertrapret(void)
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.        // kernel page table
-  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
-  p->trapframe->kernel_trap = (uint64)usertrap;
-  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+  get_trapframe(p->mm)->kernel_sp = get_kstack(p->mm) + KSTACK_SZ; // process's kernel stack
+  get_trapframe(p->mm)->kernel_trap = (uint64)usertrap;
+  get_trapframe(p->mm)->kernel_hartid = r_tp();         // hartid for cpuid()
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
@@ -127,14 +131,14 @@ usertrapret(void)
   w_sstatus(x);
 
   // set S Exception Program Counter to the saved user pc.
-  w_sepc(p->trapframe->epc);
+  w_sepc(get_trapframe(p->mm)->epc);
   // tell trampoline.S the user page table to switch to.
   // uint64 satp = MAKE_SATP(p->pagetable);
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
   // and switches to user mode with sret.
-  userret(p->trapframe);
+  userret((uint64)get_trapframe(p->mm));
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,
@@ -145,10 +149,17 @@ kerneltrap()
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  // debug("kerneltrap: sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
-
+  
+  
   if(myproc()) {
     myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
+  }
+
+  if(!IS_INTR(scause)) {
+    debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
+    debug("kstack: %lx", myproc()->mm->kstack);
+    // backtrace(myproc());
+    LOOP();
   }
 
   if((sstatus & SSTATUS_SPP) == 0)
@@ -157,6 +168,8 @@ kerneltrap()
     panic("kerneltrap: interrupts enabled");
 
   if(devintr(scause) == 0) {
+    // ok
+  } else if(handle_pagefault(scause) == 0) {
     // ok
   } else{
     printf("scause %p\n", scause);

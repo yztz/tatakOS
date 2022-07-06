@@ -22,6 +22,7 @@
 #include "defs.h"
 #include "atomic/spinlock.h"
 #include "mm/io.h"
+#include "mm/vm.h"
 #include "printf.h"
 
 uint64_t spi_pa[4] =

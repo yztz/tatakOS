@@ -25,6 +25,8 @@ r_mhartid()
 #define EXCP_LOAD_PAGE_FAULT (EXCEPTION  + 13)
 #define EXCP_STORE_PAGE_FAULT (EXCEPTION  + 15)
 
+#define IS_INTR(scause) ((scause) & INTERRUPT)
+
 static inline uint64
 r_mstatus()
 {
@@ -242,7 +244,7 @@ static inline uint64
 r_fp()
 {
   uint64 x;
-  asm volatile("mv %0, fp" : "=r" (x) );
+  asm volatile("mv %0, s0" : "=r" (x) );
   return x;
 }
 

@@ -98,7 +98,8 @@
         "syscall_ids.h": "c",
         "syscall_arch.h": "c",
         "profile_gen.h": "c",
-        "profile.h": "c"
+        "profile.h": "c",
+        "mmap.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

@@ -2,7 +2,6 @@
 #define _H_UTILS_
 
 #include "printf.h"
-#include "mm/vm.h"
 #include "sbi.h"
 
 #define LOOP() {while(1) continue;}
@@ -51,10 +50,9 @@ static inline uint32_t get_gpio_bit(volatile uint32_t *bits, size_t offset)
     }
 
 struct dir_item;
+struct proc;
 
-void vmprint(pagetable_t pagetable);
-void backtrace(proc_t *p);
-void print_map(kmap_t map);
+void backtrace(struct proc *p);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);

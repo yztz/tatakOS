@@ -8,7 +8,7 @@
 #include "str.h"
 #include "profile.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
 

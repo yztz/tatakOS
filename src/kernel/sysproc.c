@@ -8,6 +8,7 @@
 #include "kernel/proc.h"
 #include "common.h"
 #include "kernel/time.h"
+#include "mm/vm.h"
 
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
@@ -84,20 +85,12 @@ sys_wait4(void)
 uint64
 sys_sbrk(void)
 {
-  int addr;
   int n;
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-
-  if(n == 0)
-    return addr;
-  
-  if(growproc(n - addr) < 0)
-    return -1;
     
-  return addr;
+  return growproc(n);
 }
 
 uint64

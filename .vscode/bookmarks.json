@@ -4,12 +4,12 @@
 			"path": "src/kernel/syscall.c",
 			"bookmarks": [
 				{
-					"line": 94,
+					"line": 93,
 					"column": 0,
 					"label": ""
 				},
 				{
-					"line": 99,
+					"line": 98,
 					"column": 0,
 					"label": ""
 				}

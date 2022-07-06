@@ -20,6 +20,8 @@
 #include "utils.h"
 #include "driver/plic.h"
 #include "mm/io.h"
+#include "kernel/proc.h"
+#include "mm/vm.h"
 
 volatile dmac_t *dmac;
 
@@ -584,25 +586,6 @@ void dmac_init(void)
     dmac_enable();
 }
 
-static void list_add(struct list_head_t *new, struct list_head_t *prev,
-        struct list_head_t *next)
-{
-    next->prev = new;
-    new->next = next;
-    new->prev = prev;
-    prev->next = new;
-}
-
-void list_add_tail(struct list_head_t *new, struct list_head_t *head)
-{
-    list_add(new, head->prev, head);
-}
-
-void INIT_LIST_HEAD(struct list_head_t *list)
-{
-    list->next = list;
-    list->prev = list;
-}
 
 void dmac_link_list_item(dmac_channel_number_t channel_num,
     uint8_t LLI_row_num, int8_t LLI_last_row,

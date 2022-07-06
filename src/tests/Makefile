@@ -1,1 +1,1 @@
-obj-y+=mm.o
+obj-y+=mmtest.o

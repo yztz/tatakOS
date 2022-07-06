@@ -5,6 +5,7 @@
 #include "defs.h"
 #include "mm/vm.h"
 #include "platform.h"
+#include "kernel/proc.h"
 #include "driver/plic.h"
 #include "test.h"
 #include "fs/blk_device.h"
@@ -54,6 +55,7 @@ main()
     fs_init();
     
     userinit();      // first user process
+    printf("user init success\n");
     __sync_synchronize();
     started = 1;
   } else {

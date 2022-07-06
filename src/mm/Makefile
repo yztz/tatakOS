@@ -5,4 +5,5 @@ obj-y += copy.o
 obj-y += page.o
 obj-y += buddy.o
 obj-y += alloc.o
+obj-y += mmap.o
 obj-y += slob.o

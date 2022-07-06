@@ -1,5 +1,6 @@
 #include "atomic/spinlock.h"
 #include "common.h"
+#include "mm/page.h"
 
 #define QUIET
 #define __MODULE_NAME__ SLOB
