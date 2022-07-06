@@ -31,6 +31,12 @@
     "stddef.h": "c",
     "syscall.h": "c",
     "rbtree.h": "c",
-    "mm_types.h": "c"
+    "mm_types.h": "c",
+    "array": "c",
+    "functional": "c",
+    "istream": "c",
+    "ostream": "c",
+    "tuple": "c",
+    "utility": "c"
   }
 }

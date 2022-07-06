@@ -84,7 +84,7 @@ typedef struct _page_t {
     // void *sleeplock;
     /* 当此页被插入page cache时， 指向其address_space；
         当此页属于一个anonymous区域时，指向anon_vma */
-    address_space_t *mapping;
+    // address_space_t *mapping;
 } page_t;
 
 #define PG_locked (1L << 0)

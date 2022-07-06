@@ -5,6 +5,7 @@
 #define _H_MM2_
 
 #include "fs/fs.h"
+#include "proc.h"
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
 

@@ -123,6 +123,7 @@ static inline int handle_pte_fault(struct mm_struct *mm,
     entry = *pte;
     /* 如果pte不存在(无效)  x86是present，riscv是valid */
     if (!pte_valid(entry)) {
+        /* entry的值为0 */
 		if (pte_none(entry)) {
 			if (vma->vm_file) {
 					return do_linear_fault(address);
