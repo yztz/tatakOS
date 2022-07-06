@@ -115,7 +115,7 @@ init_mm(struct proc *p){
   p->mm->mmap = NULL;
   p->mm->mmap_cache = NULL;
   p->mm->map_count = 0;
-  initlock(&p->mm->lock, "mm lock");
+  initlock(&p->mm->mm_lock, "mm lock");
 }
 
 // Look in the process table for an UNUSED proc.
@@ -380,7 +380,7 @@ static int
 dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
   vm_area_struct_t *mpnt, *tmp, **pprev;
 
-  acquire(&oldmm->lock);
+  acquire(&oldmm->mm_lock);
   pprev = &mm->mmap;
 
   for(mpnt = oldmm->mmap; mpnt != NULL; mpnt = mpnt->vm_next){
@@ -407,7 +407,7 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
     mm->map_count++;
   } 
 
-  release(&oldmm->lock);
+  release(&oldmm->mm_lock);
   return 0;
 }
 

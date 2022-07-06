@@ -125,7 +125,7 @@ sys_brk(void){
   if(argaddr(0, &brk) < 0)
     return -1;
 
-  acquire(&mm->mmap_lock);
+  acquire(&mm->mm_lock);
 
   if(newbrk < mm->start_brk)
     panic("sysbrk1");
@@ -153,7 +153,7 @@ set_brk:
   mm->brk = brk;
 
 out:
-  release(&mm->mmap_lock);
+  release(&mm->mm_lock);
   return mm->brk;
 }
 

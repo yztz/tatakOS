@@ -157,10 +157,10 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
 			struct vm_area_struct *prev, struct rb_node **rb_link,
 			struct rb_node *rb_parent)
 {
-	acquire(&mm->mmap_lock);
+	acquire(&mm->mm_lock);
 	__vma_link(mm, vma, prev, rb_link, rb_parent);
 	mm->map_count++;
-	release(&mm->mmap_lock);
+	release(&mm->mm_lock);
 	validate_mm(mm);
 }
 
@@ -168,12 +168,12 @@ static inline void
 vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
 		struct vm_area_struct *prev)
 {
-	acquire(&mm->mmap_lock);
+	acquire(&mm->mm_lock);
 	prev->vm_next = vma->vm_next;
 	rb_erase(&vma->vm_rb, &mm->mm_rb);
 	if (mm->mmap_cache == vma)
 		mm->mmap_cache = prev;
-	release(&mm->mmap_lock);
+	release(&mm->mm_lock);
 }
 
 static void
@@ -182,14 +182,14 @@ insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
 	struct vm_area_struct * __vma, * prev;
 	struct rb_node ** rb_link, * rb_parent;
 
-	acquire(&mm->mmap_lock);
+	acquire(&mm->mm_lock);
 	__vma = find_vma_prepare(mm, vma->vm_start, &prev, &rb_link, &rb_parent);
 	/* 新的vma需要插入到__vma和prev之间 */
 	if (__vma && __vma->vm_start < vma->vm_end)
 		ER();
 	__vma_link(mm, vma, prev, rb_link, rb_parent);
 	mm->map_count++;
-	release(&mm->mmap_lock);
+	release(&mm->mm_lock);
 	validate_mm(mm);
 }
 

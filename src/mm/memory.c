@@ -127,8 +127,7 @@ static inline int handle_pte_fault(struct mm_struct *mm,
 			if (vma->vm_file) {
 					return do_linear_fault(address);
 			}
-			return do_anonymous_page(mm, vma, address,
-						 pte, write);
+			return do_anonymous_page(mm, address, write);
 		}
         /* Linux非线性文件映射，我们没有实现 */
 		// if (pte_file(entry))
@@ -153,11 +152,6 @@ static inline int handle_pte_fault(struct mm_struct *mm,
 /**
  * @brief 如果pte valid，则为copy on write，否则为demand paging
  * 
- * @param mm 
- * @param vma 
- * @param address 
- * @param write 
- * @return int 
  */
 int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		unsigned long address, unsigned int write)

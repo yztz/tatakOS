@@ -543,9 +543,9 @@ sys_munmap(unsigned long addr, size_t len)
 	int ret;
 	struct mm_struct *mm = myproc()->mm;
 
-    acquire(&mm->mmap_lock);
+    acquire(&mm->mm_lock);
 	ret = do_munmap(mm, addr, len);
-    release(&mm->mmap_lock);
+    release(&mm->mm_lock);
 	return ret;
 }
 

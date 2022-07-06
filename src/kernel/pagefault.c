@@ -82,7 +82,7 @@ int do_page_fault(uint64_t scause){
     vm_area_struct_t *vma;
     mm_struct_t *mm = p->mm;
 
-    acquire(&mm->mmap_lock);
+    acquire(&mm->mm_lock);
 
     vma = find_vma(mm, address);
     if(!vma)
@@ -119,10 +119,10 @@ good_area:
 
 
     handle_mm_fault(mm, vma, address, write); 
-    release(&mm->mmap_lock);
+    release(&mm->mm_lock);
     return 0;
 bad_area:
-    release(&mm->mmap_lock);
+    release(&mm->mm_lock);
     debug("page fault va is %lx sepc is %lx", va, r_sepc());
     p->killed = 1;
     ER();
