@@ -72,4 +72,9 @@ void writeback_file_to_disk(entry_t *entry);
 
 /* functions defined in write-pageback.c */
 void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
+
+
+/* memory.c */
+int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+		unsigned long address, unsigned int flags);
 #endif

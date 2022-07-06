@@ -22,7 +22,7 @@ void page_init(void) {
     pages[i].refcnt = 1;
     pages[i].order = 0;
     pages[i].alloc = 1;
-    pages[i].sleeplock = NULL;
+    // pages[i].sleeplock = NULL;
     pages[i].flags = 0;
   }
 }
@@ -158,25 +158,25 @@ pgref_t put_page(uint64_t pa ){
 
 /* lock a page, if it's lock is null, allocate for it */
 void lock_page(uint64_t pa){
-  page_t *page = &pages[PAGE2NUM(pa)];
+  // page_t *page = &pages[PAGE2NUM(pa)];
 
-  if(page->sleeplock == NULL){
-    page->sleeplock = kzalloc(sizeof(sleeplock_t));
-    if(page->sleeplock == NULL)
-      panic("lock alloc failed");
-    initsleeplock((sleeplock_t *)page->sleeplock, NULL);
-    #ifdef TODO
-    todo("free sleeplock!");
-    #endif
-  }
+  // if(page->sleeplock == NULL){
+  //   page->sleeplock = kzalloc(sizeof(sleeplock_t));
+  //   if(page->sleeplock == NULL)
+  //     panic("lock alloc failed");
+  //   initsleeplock((sleeplock_t *)page->sleeplock, NULL);
+  //   #ifdef TODO
+  //   todo("free sleeplock!");
+  //   #endif
+  // }
 
-  acquiresleep((sleeplock_t *)page->sleeplock);
+  // acquiresleep((sleeplock_t *)page->sleeplock);
 }
 
 void unlock_page(uint64_t pa){
-  page_t *page = &pages[PAGE2NUM(pa)];
+  // page_t *page = &pages[PAGE2NUM(pa)];
   
-  releasesleep((sleeplock_t *)page->sleeplock);
+  // releasesleep((sleeplock_t *)page->sleeplock);
 }
 
 void set_page_dirty(uint64_t pa){

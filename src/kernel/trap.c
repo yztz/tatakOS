@@ -13,7 +13,10 @@
 #include "debug.h"
 
 extern char trampoline[], uservec[], userret[];
-extern int handle_pagefault(uint64_t scause);
+// extern int handle_pagefault(uint64_t scause);
+
+extern int do_page_fault(uint64_t scause);
+extern int is_pagefault(uint64_t scause);
 
 // in kernelvec.S, calls kerneltrap().
 void kernelvec();
@@ -80,9 +83,8 @@ usertrap(void)
     syscall();
   } else if(devintr(scause) == 0) {
     // ok
-  } else if(handle_pagefault(scause) == 0) {
-
-    // printf(grn("cur_mmap_sz: %p\n"), myproc()->cur_mmap_sz);
+  } else if(is_pagefault(scause)) {
+    do_page_fault(scause);
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);

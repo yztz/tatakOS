@@ -30,6 +30,7 @@
     "stdlib.h": "c",
     "stddef.h": "c",
     "syscall.h": "c",
-    "rbtree.h": "c"
+    "rbtree.h": "c",
+    "mm_types.h": "c"
   }
 }

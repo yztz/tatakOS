@@ -143,4 +143,9 @@ void unlock_put_page(uint64_t pa);
 #define PAGE_CACHE_SIZE PGSIZE
 
 #define PAGE_SHIFT PGSHIFT
+
+#define pte_none(pte)           (!pte)
+#define pte_valid(pte)          (pte & PTE_V) 
+#define pte_write(pte)          (pte & PTE_W)
+
 #endif
