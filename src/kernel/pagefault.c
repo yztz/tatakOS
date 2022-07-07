@@ -123,7 +123,7 @@ good_area:
     return 0;
 bad_area:
     release(&mm->mm_lock);
-    debug("page fault va is %lx sepc is %lx", va, r_sepc());
+    debug("page fault va is %lx sepc is %lx", address, r_sepc());
     p->killed = 1;
     ER();
     return 0;
@@ -132,7 +132,8 @@ bad_area:
 int is_pagefault(uint64_t scause){
     #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
     if(scause == EXCP_STORE_PAGE_FAULT || scause == EXCP_LOAD_PAGE_FAULT)
-    #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
+    #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9 
+    /* 1.9 的pagefault触发的错误号是否有遗漏？ */
     if(scause == EXCP_STORE_FAULT)
     #else
     ER();

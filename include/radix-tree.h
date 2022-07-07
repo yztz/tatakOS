@@ -8,7 +8,7 @@
 #include "fs/fat.h"
 #include "fs/stat.h"
 #include "param.h"
-#include "utils.h"
+// #include "utils.h" //循环引用了
 
 /*** radix-tree API starts here ***/
 
@@ -81,6 +81,9 @@ void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type
 pages_be_found_head_t * radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head);
 
 
+
+/* functions defined in write-pageback.c */
+void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 
 
 #endif

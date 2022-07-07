@@ -1,11 +1,11 @@
-
-
 // vm.h is defined as _H_MM_
 #ifndef _H_MM2_
 #define _H_MM2_
 
 #include "fs/fs.h"
-#include "proc.h"
+/* 这行加上之后，两个头文件相互引用，导致出错 */
+// #include "kernel/proc.h"
+
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
 
@@ -34,6 +34,23 @@ struct vm_area_struct
 
 typedef struct vm_area_struct vm_area_struct_t;
 
+struct mm_struct {
+  struct vm_area_struct *mmap;//list of vmas
+  struct rb_root mm_rb;
+  struct vm_area_struct *mmap_cache;
+  int map_count;              //number of vmas
+  spinlock_t mm_lock;        // 保护mmap链表和mm_rb树,页表
+  uint64_t free_area_cache; /* 用来查找地址空间中的未映射区域 */
+  uint32_t total_vm; /* 地址空间包含的总页数 */
+  uint32_t rss;     /*分配的物理页框数*/
+  uint64_t start_brk; // initial address of the heap
+  uint64_t brk; // current final address of the heap
+  uint64_t start_stack; /* initial adress of user mode stack */
+  // spinlock_t page_table_lock; /* memory regions' and page tables' spin lock */
+};
+
+typedef struct mm_struct mm_struct_t;
+
 /*
  * vm_flags..
  */
@@ -58,24 +75,13 @@ uint64 do_mmap(struct file *file, unsigned long addr, unsigned long len, int pro
 unsigned long do_mmap_pgoff(struct file * file, unsigned long addr, unsigned long len, int prot, int flags, unsigned long pgoff, int type);
 void exit_mmap(mm_struct_t *mm);
 uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len);
-
-/* functions defined in filemap.c */
-uint64 find_get_page(struct address_space *mapping, unsigned long offset);
-int filemap_nopage(uint64 address);
-void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset);
-void free_mapping(entry_t *entry);
-int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n);
-uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n);
-pages_be_found_head_t * find_pages_tag(address_space_t *mapping, uint32_t tag);
-void writeback_file_to_disk(entry_t *entry);
-
-
-
-/* functions defined in write-pageback.c */
-void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
-
+unsigned long do_brk(unsigned long addr, unsigned long len);
+struct vm_area_struct * find_vma_intersection(struct mm_struct * mm, unsigned long start_addr, unsigned long end_addr);
+struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
 
 /* memory.c */
 int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		unsigned long address, unsigned int flags);
+
+void unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr);
 #endif

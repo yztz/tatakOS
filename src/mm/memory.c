@@ -22,7 +22,7 @@
 #include "utils.h"
 #include "memlayout.h"
 
-static void
+void
 unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	uint64_t start = start_addr;
 
@@ -81,6 +81,7 @@ static int do_anonymous_page(struct mm_struct *mm, unsigned long address, unsign
     /* 读触发的错误，linux中将其映射到一个共享的0页中，清除write位，再要写这个页时，触发
     copy on write，分配一个新页 */
     ER();
+    return 0;
 }
 
 /**
@@ -89,6 +90,7 @@ static int do_anonymous_page(struct mm_struct *mm, unsigned long address, unsign
  */
 static int do_linear_fault(uint64_t address){
     filemap_nopage(address);
+    return 0;
 }
 
 /**
@@ -99,6 +101,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
 		unsigned long address, pte_t *page_table, unsigned int write, pte_t orig_pte)
 {
     ERROR(" not implemented");
+    return 0;
 }
 
 /**
@@ -118,13 +121,14 @@ static inline int handle_pte_fault(struct mm_struct *mm,
 		pte_t *pte, unsigned int write)
 {
     pte_t entry;
-    spinlock_t *ptl;
+    // spinlock_t *ptl;
 
     entry = *pte;
-    /* 如果pte不存在(无效)  x86是present，riscv是valid */
+    /* 如果pte不存在(无效)  x86是present，risc-v是valid */
     if (!pte_valid(entry)) {
         /* entry的值为0 */
 		if (pte_none(entry)) {
+            /* 这段vma有对应的文件，说明这段内存区间映射的是文件 */
 			if (vma->vm_file) {
 					return do_linear_fault(address);
 			}

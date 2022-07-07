@@ -102,9 +102,46 @@ sys_wait4(void)
 // }
 uint64_t
 sys_sbrk(void){
-  int addr, n;
+  int n;
+  uint64_t newbrk, oldbrk, brk;
+  mm_struct_t *mm = myproc()->mm;
+
   if(argint(0, &n) < 0)
     return -1;
+
+  brk = mm->brk + n;
+
+  /*下面和sys_brk一样*/
+  acquire(&mm->mm_lock);
+
+  if(brk < mm->start_brk)
+    ER();
+  newbrk = PGROUNDUP(brk);
+  oldbrk = PGROUNDUP(mm->brk);
+  if(oldbrk == newbrk)
+    goto set_brk;
+  
+  /* 减小堆区间 */
+  if(brk <= mm->brk){
+    if(!do_munmap(mm, newbrk, oldbrk - newbrk))
+      goto set_brk;
+    goto out; 
+  }
+
+  /* Check against existing mmap mappings. */
+	if (find_vma_intersection(mm, oldbrk, newbrk+PGSIZE))
+		goto out;
+  
+  /* Ok, looks good - let it rip. */
+	if (do_brk(oldbrk, newbrk-oldbrk) != oldbrk)
+		goto out;
+
+set_brk:
+  mm->brk = brk;
+
+out:
+  release(&mm->mm_lock);
+  return mm->brk;
 }
 
 
@@ -118,7 +155,6 @@ sys_sbrk(void){
  */
 uint64_t
 sys_brk(void){
-  uint64_t addr;
   uint64_t newbrk, oldbrk, brk;
   mm_struct_t *mm = myproc()->mm;
 
@@ -127,8 +163,8 @@ sys_brk(void){
 
   acquire(&mm->mm_lock);
 
-  if(newbrk < mm->start_brk)
-    panic("sysbrk1");
+  if(brk < mm->start_brk)
+    ER();
   newbrk = PGROUNDUP(brk);
   oldbrk = PGROUNDUP(mm->brk);
   if(oldbrk == newbrk)
@@ -137,7 +173,7 @@ sys_brk(void){
   /* 减小堆区间 */
   if(brk <= mm->brk){
     if(!do_munmap(mm, newbrk, oldbrk - newbrk))
-      mm->brk = addr;
+      goto set_brk;
     goto out; 
   }
 

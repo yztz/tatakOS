@@ -92,23 +92,6 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-struct mm_struct {
-  struct vm_area_struct *mmap;//list of vmas
-  struct rb_root mm_rb;
-  struct vm_area_struct *mmap_cache;
-  int map_count;              //number of vmas
-  spinlock_t mm_lock;        // 保护mmap链表和mm_rb树,页表
-  uint64_t free_area_cache; /* 用来查找地址空间中的未映射区域 */
-  uint32_t total_vm; /* 地址空间包含的总页数 */
-  uint32_t rss;     /*分配的物理页框数*/
-  uint64_t start_brk; // initial address of the heap
-  uint64_t brk; // current final address of the heap
-  uint64_t start_stack; /* initial adress of user mode stack */
-  // spinlock_t page_table_lock; /* memory regions' and page tables' spin lock */
-};
-
-typedef struct mm_struct mm_struct_t;
-
 struct fat_entry;
 // Per-process state
 struct proc {
@@ -144,7 +127,6 @@ struct proc {
 };
 
 typedef struct proc proc_t;
-
 
 void            exit(int);
 int             do_clone(uint64_t stack);

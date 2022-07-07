@@ -37,6 +37,12 @@
     "istream": "c",
     "ostream": "c",
     "tuple": "c",
-    "utility": "c"
+    "utility": "c",
+    "vm.h": "c",
+    "page.h": "c",
+    "alloc.h": "c",
+    "sstream": "c",
+    "printf.h": "c",
+    "riscv.h": "c"
   }
 }

@@ -15,8 +15,8 @@ set(ASM_DIR asm)
 set(BIN_DIR bin)
 
 # Toolchain
-# set(PREFIX ${ARCH}-unknown-elf-)
-set(PREFIX /opt/kendryte-toolchain/bin/${ARCH}-unknown-elf-)
+set(PREFIX ${ARCH}-unknown-elf-)
+# set(PREFIX /opt/kendryte-toolchain/bin/${ARCH}-unknown-elf-)
 # riscv64-unknown-elf-
 
 if (${ARCH} STREQUAL riscv32)

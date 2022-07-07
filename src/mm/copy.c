@@ -4,7 +4,7 @@
 #include "platform.h"
 
 /* 复制COW页 */
-static inline int __cow_copy(uint64_t va, pte_t *pte) {
+int __cow_copy(uint64_t va, pte_t *pte) {
   uint64 pa = PTE2PA(*pte);
   if(page_ref(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
     *pte |= PTE_W;

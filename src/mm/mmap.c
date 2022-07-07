@@ -176,23 +176,6 @@ vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
 	release(&mm->mm_lock);
 }
 
-static void
-insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
-{
-	struct vm_area_struct * __vma, * prev;
-	struct rb_node ** rb_link, * rb_parent;
-
-	acquire(&mm->mm_lock);
-	__vma = find_vma_prepare(mm, vma->vm_start, &prev, &rb_link, &rb_parent);
-	/* 新的vma需要插入到__vma和prev之间 */
-	if (__vma && __vma->vm_start < vma->vm_end)
-		ER();
-	__vma_link(mm, vma, prev, rb_link, rb_parent);
-	mm->map_count++;
-	release(&mm->mm_lock);
-	validate_mm(mm);
-}
-
 uint64
 file_get_unmapped_area(uint64 len){
 	uint64 old_addr;
@@ -304,6 +287,23 @@ find_vma_prepare(struct mm_struct *mm, unsigned long addr,
 	return vma;
 }
 
+static void
+insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+{
+	struct vm_area_struct * __vma, * prev;
+	struct rb_node ** rb_link, * rb_parent;
+
+	acquire(&mm->mm_lock);
+	__vma = find_vma_prepare(mm, vma->vm_start, &prev, &rb_link, &rb_parent);
+	/* 新的vma需要插入到__vma和prev之间 */
+	if (__vma && __vma->vm_start < vma->vm_end)
+		ER();
+	__vma_link(mm, vma, prev, rb_link, rb_parent);
+	mm->map_count++;
+	release(&mm->mm_lock);
+	validate_mm(mm);
+}
+
 /*
  * Split a vma into two pieces at address 'addr', a new vma is allocated
  * either for the first part or the the tail.
@@ -313,7 +313,6 @@ int split_vma(mm_struct_t *mm, vm_area_struct_t *vma,
 							uint64_t addr, int new_below)
 {
 	vm_area_struct_t *new;
-	address_space_t *mapping = NULL;
 
 	if(mm->map_count >= DEFAULT_MAX_MAP_COUNT){
 		ER();
@@ -334,7 +333,7 @@ int split_vma(mm_struct_t *mm, vm_area_struct_t *vma,
 	}
 
 	if (new->vm_file)
-		get_file(new->vm_file);
+		filedup(new->vm_file);
 
 	if (new_below) {
 		vma->vm_start = addr;
@@ -424,7 +423,7 @@ struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
    NULL if none.  Assume start_addr < end_addr. */
 struct vm_area_struct * find_vma_intersection(struct mm_struct * mm, unsigned long start_addr, unsigned long end_addr)
 {
-	struct vm_area_struct * vma = find_vma(mm,start_addr);
+	struct vm_area_struct *vma = find_vma(mm, start_addr);
 
 	if (vma && end_addr <= vma->vm_start)
 		vma = NULL;
@@ -727,7 +726,7 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 
 	if(file){
 		vma->vm_file = file;
-		get_file(file);
+		filedup(file);
 	}
 	else if(vm_flags & VM_SHARED){
 		/* shared anonymous region, mainly used for interprocess communications */
@@ -748,7 +747,6 @@ detach_vmas_to_be_unmapped(mm_struct_t *mm, vm_area_struct_t *vma,
 {
 	struct vm_area_struct **insertion_point;
 	struct vm_area_struct *tail_vma = NULL;
-	unsigned long addr;
 
 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
 	do {
@@ -772,8 +770,8 @@ static void unmap_region(struct mm_struct *mm,
 		struct vm_area_struct *vma, struct vm_area_struct *prev,
 		unsigned long start, unsigned long end)
 {
-	struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
-	unsigned long nr_accounted = 0;
+	// struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
+	// unsigned long nr_accounted = 0;
 
 	// lru_add_drain();
 	unmap_vmas(vma, start, end);

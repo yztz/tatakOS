@@ -36,6 +36,7 @@ int         cow_copy(pagetable_t pagetable, uint64_t va, pte_t **pppte);
 int         copy_from_user(void *to, void *from, size_t n);
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
+int         __cow_copy(uint64_t va, pte_t *pte);
 
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
