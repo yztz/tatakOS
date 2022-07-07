@@ -24,5 +24,6 @@
 #endif // DEBUG
 
 
+#define DEBUG_MM_RB
 
 #endif // _H_DEBUG_

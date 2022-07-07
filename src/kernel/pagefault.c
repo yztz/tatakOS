@@ -123,8 +123,9 @@ good_area:
     return 0;
 bad_area:
     release(&mm->mm_lock);
-    debug("page fault va is %lx sepc is %lx", address, r_sepc());
+    debug("page fault va is %lx, sepc is %lx, scause is %lx.", address, r_sepc(), scause);
     p->killed = 1;
+    // vmprint(p->pagetable);
     ER();
     return 0;
 }

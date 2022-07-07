@@ -134,8 +134,8 @@ void TD(char *info, char *s, const char *s1, int d)
 void error(char *info, char *s, const char *s1, int d)
 {
   printf(rd("ERROR INFO:\n"));
-  printf(bl("%s\n"), info);
-  printf(grn("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
+  printf(rd("%s\n"), info);
+  printf(rd("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
   for(;;);
 }
 

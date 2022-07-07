@@ -35,7 +35,7 @@ char* prog_name[] = {"bigwrite"};
 
 void run(char *testcases[], int cnt);
 #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
-__attribute__((section(".startup"))) 
+// __attribute__((section(".startup"))) 
 void main() {
     memuse();
     // printf("hello world %d\n", 123);
@@ -55,7 +55,9 @@ void run(char *testcases[], int cnt) {
   for (int t = 0; t < cnt; t++) {
       // printf(rd("cnt: %d\n"), cnt);
       printf("ready to run %s\n", testcases[t]);
+      printf("yyyyyyyyyyyyy\n");
       int npid = fork();
+      printf("hhhhhhhhhhhhh\n");
       if(npid < 0) {
           printf("fork failed");
           for(;;);

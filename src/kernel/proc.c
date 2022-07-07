@@ -331,9 +331,11 @@ userinit(void)
   p = allocproc();
   initproc = p;
 
+  mycpu()->proc = p;
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
+  do_mmap(NULL, 0, PGSIZE, PROT_EXEC|PROT_READ|PROT_WRITE, 0, 0, LOAD);
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
@@ -406,6 +408,8 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
 
     mm->map_count++;
   } 
+
+  ERROR("the copy of vmas is not true, rbtree is not right!!");
 
   release(&oldmm->mm_lock);
   return 0;

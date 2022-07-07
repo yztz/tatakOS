@@ -67,16 +67,24 @@ void validate_mm(struct mm_struct *mm)
 	int bug = 0;
 	int i = 0;
 	struct vm_area_struct *tmp = mm->mmap;
+
+	printf(rd("begin to print vma debug info:\n"));
+
 	while (tmp) {
 		tmp = tmp->vm_next;
 		i++;
 	}
 	if (i != mm->map_count)
-		printf("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
+		printf(ylw("map_count %d vm_next %d\n"), mm->map_count, i), bug = 1;
 	i = browse_rb(&mm->mm_rb);
 	if (i != mm->map_count)
-		printf("map_count %d rb %d\n", mm->map_count, i), bug = 1;
-	// BUG_ON(bug);
+		printf(ylw("map_count %d rb %d\n"), mm->map_count, i), bug = 1;
+
+	printf(rd("ended to print vma debug info\n"));
+
+	print_all_vma();
+	if(bug)
+		ER();	
 }
 #else
 #define validate_mm(mm) do { } while (0)
