@@ -65,7 +65,7 @@ void print_dir_item(struct dir_item *item);
 void print_block(uint8_t *b) ;
 
 void TD(char *info, char *s, const char *s1, int d);
-void print_all_vma();
+void print_all_vma(mm_struct_t *mm);
 void printf_radix_tree();
 void print_bio_vec(struct bio *);
 void print_page_contents(char* pa);

@@ -82,7 +82,7 @@ void validate_mm(struct mm_struct *mm)
 
 	printf(rd("ended to print vma debug info\n"));
 
-	print_all_vma();
+	print_all_vma(mm);
 	if(bug)
 		ER();	
 }
@@ -208,14 +208,17 @@ arch_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 	if(len > USER_TASK_SIZE)
 		ER();
 	addr = PGROUNDUP(addr);
-	/* the mapping area is not zero(means the mapping address is specified(predefined)) */
-	if(addr && addr + len <= USER_TASK_SIZE){
+	/* the mapping area is not zero(means the mapping address is specified(predefined)) 
+	addr 不为0，表示指定了映射地址，这里有个问题，如果指定从0开始映射，反而被认为没有指定,
+	所以使用了 MAP_EXECUTABLE来表示 */
+	if((addr || flags & MAP_EXECUTABLE) && addr + len <= USER_TASK_SIZE){
 		vma = find_vma(mm, addr);
 		if(!vma || addr + len <= vma->vm_start)
 			return addr;
 	}
 
-	/* the "addr" is zero, means that the addr is not specified, the kernel find one free memory region */
+	/* the "addr" is zero, means that the addr is not specified, the kernel find one free memory region 
+	addr为0， 表示没有指定映射地址，从free_are_cache找一段空闲地址 */
 	start_addr = addr = mm->free_area_cache;
 	for(vma = find_vma(mm, addr); ; vma = vma->vm_next){
 		if(addr + len > USER_TASK_SIZE){
@@ -355,10 +358,10 @@ int split_vma(mm_struct_t *mm, vm_area_struct_t *vma,
 }
 
 static vm_area_struct_t *remove_vma(vm_area_struct_t *vma){
-	vm_area_struct_t *next = vma->vm_next;
-
 	if (vma == NULL)
 		return NULL;
+
+	vm_area_struct_t *next = vma->vm_next;
 	
 	if(vma->vm_file){
 		fileclose(vma->vm_file);
@@ -369,9 +372,10 @@ static vm_area_struct_t *remove_vma(vm_area_struct_t *vma){
 
 static void remove_vma_list(struct mm_struct *mm, struct vm_area_struct *vma)
 {
-	do {
+	while(vma){
 		vma = remove_vma(vma);
-	} while (vma);
+		mm->map_count--;
+	}
 	validate_mm(mm);
 }
 
@@ -381,8 +385,14 @@ exit_mmap(mm_struct_t *mm){
 
 	vma = mm->mmap;
 	mm->mmap = mm->mmap_cache = NULL;
+	mm->mm_rb.rb_node = NULL;
 
-	remove_vma_list(mm, vma);
+	// remove_vma_list(mm, vma);
+	/* 解除进程用户空间的映射 */
+	unmap_vmas(vma, 0, USER_TASK_SIZE);
+
+	while(vma)
+		vma = remove_vma(vma);
 }
 
 /* zyy: a region is represented as [addr, end), end is not included in the region */

@@ -140,13 +140,12 @@ void error(char *info, char *s, const char *s1, int d)
 }
 
 void
-print_all_vma(){
-  struct proc *p = myproc();
+print_all_vma(mm_struct_t *mm){
   struct vm_area_struct *vma;
   int i = 0;
 
-  vma = p->mm->mmap;
-  printf(ylw("number of vmas: %d\n"), p->mm->map_count);
+  vma = mm->mmap;
+  printf(ylw("number of vmas: %d\n"), mm->map_count);
   while(vma != NULL){
    printf(grn("no.%d start: %p end: %p\n"), i++, vma->vm_start, vma->vm_end); 
    vma = vma->vm_next;

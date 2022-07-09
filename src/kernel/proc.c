@@ -109,13 +109,15 @@ allocpid() {
 }
 
 void
-init_mm(struct proc *p){
-
-  p->mm = kmalloc(sizeof(struct mm_struct));
+alloc_init_mm(struct proc *p){
+  p->mm = kzalloc(sizeof(struct mm_struct));
   p->mm->mmap = NULL;
+  p->mm->mm_rb.rb_node = NULL;
   p->mm->mmap_cache = NULL;
   p->mm->map_count = 0;
-  initlock(&p->mm->mm_lock, "mm lock");
+  initlock(&p->mm->mm_lock, "mm_lock");
+  p->mm->free_area_cache = TASK_UNMAPPED_BASE;
+  // p->mm->free_area_cache = 0;
 }
 
 // Look in the process table for an UNUSED proc.
@@ -171,7 +173,7 @@ found:
   p->context.sp = p->kstack + PGSIZE;
 
   p->cur_mmap_sz = MMAP_BASE;
-  init_mm(p);
+  alloc_init_mm(p);
 
   return p;
 }
@@ -335,11 +337,11 @@ userinit(void)
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
-  do_mmap(NULL, 0, PGSIZE, PROT_EXEC|PROT_READ|PROT_WRITE, 0, 0, LOAD);
+  do_mmap(NULL, USER_START, PGSIZE, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_EXECUTABLE, 0, LOAD);
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->trapframe->epc = 0;      // user program counter
+  p->trapframe->epc = USER_START;      // user program counter
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
@@ -380,9 +382,22 @@ growproc(int n)
  */
 static int 
 dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
+
   vm_area_struct_t *mpnt, *tmp, **pprev;
+  struct rb_node **rb_link, *rb_parent;
+  // int retval;
 
   acquire(&oldmm->mm_lock);
+  mm->mmap = NULL;
+  mm->mmap_cache = NULL;
+  mm->free_area_cache = oldmm->free_area_cache;
+  mm->map_count = 0;
+  mm->rss = oldmm->rss;
+  mm->mm_rb.rb_node = NULL;
+
+  rb_link = &mm->mm_rb.rb_node;
+	rb_parent = NULL;
+
   pprev = &mm->mmap;
 
   for(mpnt = oldmm->mmap; mpnt != NULL; mpnt = mpnt->vm_next){
@@ -403,13 +418,19 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
       filedup(f);
     }
 
+    /* 新分配的vma插入到链表 */
     *pprev = tmp;
     pprev = &tmp->vm_next;
+
+    /* 新分配的vma插入到红黑树 */
+    __vma_link_rb(mm, tmp, rb_link, rb_parent);
+		rb_link = &tmp->vm_rb.rb_right;
+		rb_parent = &tmp->vm_rb;
 
     mm->map_count++;
   } 
 
-  ERROR("the copy of vmas is not true, rbtree is not right!!");
+  // ERROR("the copy of vmas is not true, rbtree is not right!!");
 
   release(&oldmm->mm_lock);
   return 0;
@@ -500,6 +521,10 @@ mmput(mm_struct_t *mm){
   kfree(mm);
 }
 
+/**
+ * @brief 在free_proc函数中调用
+ * 
+ */
 static void 
 exit_mm(struct proc *tsk){
   mm_struct_t *mm = tsk->mm;
@@ -538,8 +563,9 @@ exit(int status)
   eput(p->cwd);
   p->cwd = 0;
 
-  /* free the mm field of the process */
-  exit_mm(p);
+  /* free the mm field of the process 
+  释放页表和结构体，在waitpid中释放*/
+  // exit_mm(p);
 
   acquire(&wait_lock);
 

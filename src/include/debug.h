@@ -24,6 +24,7 @@
 #endif // DEBUG
 
 
+/* 调试选项 */
 #define DEBUG_MM_RB
 
 #endif // _H_DEBUG_

@@ -126,7 +126,7 @@ bad_area:
     debug("page fault va is %lx, sepc is %lx, scause is %lx.", address, r_sepc(), scause);
     p->killed = 1;
     // vmprint(p->pagetable);
-    ER();
+    // ER();
     return 0;
 }
 

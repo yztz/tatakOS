@@ -36,28 +36,33 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 		if (end <= vma->vm_start)
 			continue;
 
-    // write back to disk
-    if (vma->vm_flags & MAP_SHARED) {
-        // write back page first, than write back to disk
-        todo("write back shared vma");
-    }
-
-		//zyy: my ugly code...
-		uint64_t va = PGROUNDUP(start);
-		pte_t *pte;
-		struct proc *p = myproc();
-    // if a virtual address has been mapped to physic address,
-    // unmap it, otherwise do noting.
-    if (va <= PGROUNDDOWN(end))
-        for (int a = va; a <= PGROUNDDOWN(end); a += PGSIZE) {
-            if ((pte = walk(p->pagetable, a, 0)) == 0)
-                continue;
-            if ((*pte & PTE_V) == 0)
-                continue;
-
-            uvmunmap(p->pagetable, a, 1, 1);
+        /* write back to disk */
+        if (vma->vm_flags & VM_SHARED) {
+            /* write back page first, than write back to disk */
+            todo("write back shared vma");
         }
-	}
+
+        /* 边界未对齐 */
+        if(start & ~PGMASK || end & ~PGMASK)
+            ER();
+     
+	    /* zyy: my code... */
+	    uint64_t va = start;
+	    pte_t *pte;
+	    struct proc *p = myproc();
+       /* if a virtual address has been mapped to physic address,
+        unmap it, otherwise do noting.
+        注意从start开始释放，到end-PGSIZE为止 */
+       if (va < end)
+           for (int a = va; a < end; a += PGSIZE) {
+               if ((pte = walk(p->pagetable, a, 0)) == 0)
+                   continue;
+               if ((*pte & PTE_V) == 0)
+                   continue;
+
+               uvmunmap(p->pagetable, a, 1, 1);
+           }
+	}   
 }
 
 /**

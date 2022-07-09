@@ -78,6 +78,7 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len);
 unsigned long do_brk(unsigned long addr, unsigned long len);
 struct vm_area_struct * find_vma_intersection(struct mm_struct * mm, unsigned long start_addr, unsigned long end_addr);
 struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
+void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma, struct rb_node **rb_link, struct rb_node *rb_parent);
 
 /* memory.c */
 int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
