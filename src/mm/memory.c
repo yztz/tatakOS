@@ -43,8 +43,9 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
         }
 
         /* 边界未对齐 */
-        if(start & ~PGMASK || end & ~PGMASK)
+        if(start & ~PGMASK || end & ~PGMASK){
             ER();
+        }
      
 	    /* zyy: my code... */
 	    uint64_t va = start;

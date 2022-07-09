@@ -184,19 +184,25 @@ vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
 	release(&mm->mm_lock);
 }
 
-uint64
-file_get_unmapped_area(uint64 len){
-	uint64 old_addr;
-	struct proc *p = myproc();
+// uint64
+// file_get_unmapped_area(uint64 len){
+// 	uint64 old_addr;
+// 	struct proc *p = myproc();
 
-	old_addr = p->cur_mmap_sz;
-  // printf(rd("cur_de 1: %p\n"), myproc()->cur_mmap_sz);
-	p->cur_mmap_sz += PGROUNDUP(len);
-  // printf(ylw("cur_de 2: %p\n"), myproc()->cur_mmap_sz);
+// 	old_addr = p->cur_mmap_sz;
+//   // printf(rd("cur_de 1: %p\n"), myproc()->cur_mmap_sz);
+// 	p->cur_mmap_sz += PGROUNDUP(len);
+//   // printf(ylw("cur_de 2: %p\n"), myproc()->cur_mmap_sz);
 
-	return old_addr;
-}
+// 	return old_addr;
+// }
 
+/**
+ * @brief 如果addr不为0，则视为指定了要映射的地址；否为没有指定地址，自动寻找一个空闲的区间。
+ * 如果指定要将程序映射到addr为0的地址，需要加个flag: MAP_EXECUTABLE
+ * (这并非规范的做法，可能MAP_EXECUTABLE并不是这么用的)
+ * 
+ */
 uint64
 arch_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 		unsigned long pgoff, unsigned long flags){
@@ -254,9 +260,9 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 		ERROR("get unmapped area 1: not implemented");
 	}
 
-	/* mapping for file */ 
-	if(file != NULL)
-		return file_get_unmapped_area(len);
+	/* mapping for file 似乎没有把文件和非文件分开的必要 */ 
+	// if(file != NULL)
+	// 	return file_get_unmapped_area(len);
 	
 	return arch_get_unmapped_area(file, addr, len, pgoff, flags);
 }

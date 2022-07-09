@@ -122,7 +122,7 @@ struct proc {
   uint64 ktrap_fp;
 
   // struct vma vma[VMA_NUM];
-  uint64 cur_mmap_sz;
+  // uint64 cur_mmap_sz;
   struct mm_struct *mm;
 };
 
@@ -133,7 +133,7 @@ int             do_clone(uint64_t stack);
 int             growproc(int);
 void            proc_mapstacks();
 pagetable_t     proc_pagetable(struct proc *);
-void            proc_freepagetable(pagetable_t, uint64, uint64);
+void            proc_freepagetable(pagetable_t);
 int             kill(int);
 struct cpu*     mycpu(void);
 struct cpu*     getmycpu(void);
@@ -147,4 +147,5 @@ int             waitpid(int cid, uint64 addr);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);
+static void exit_mm(struct proc *tsk);
 #endif

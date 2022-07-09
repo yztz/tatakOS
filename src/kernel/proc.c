@@ -172,44 +172,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
-  p->cur_mmap_sz = MMAP_BASE;
+  // p->cur_mmap_sz = MMAP_BASE;
   alloc_init_mm(p);
 
   return p;
 }
-
-// void
-// free_vma(struct proc *p){
-//   pte_t *pte;
-//   struct vma *v;
-//   int i;
-//   uint64 a;
-
-//   // for(;;);
-//   for(i=0; i < VMA_NUM; i++){
-//     v = &(p->vma[i]);
-//     // v->state is cleared in sys_munmap
-//     if(v->state == VMA_USED){
-//       for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
-//       if ((pte = walk(p->pagetable, a, 0)) == 0)
-//         continue;
-//       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
-//         continue;
-
-//       // printf(ylw("a: %p\n"), a);
-//       //may have bug here!
-//       if (v->flags & MAP_SHARED)
-//       {
-//         // printf(ylw("PGMASK & : %p\n"), (v->end - a));
-//         // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
-//       }
-//       // printf(ylw("free_vam a: %p\n"), a); 
-//       uvmunmap(p->pagetable, a, 1, 1);
-
-//       }
-//     }
-//   }
-// }
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -229,8 +196,12 @@ freeproc(struct proc *p)
   // free_vma(p);
 
   // for(;;);
+
   if(p->pagetable){
-    proc_freepagetable(p->pagetable, p->sz, p->cur_mmap_sz);
+    /* 释放用户空间 */
+    exit_mm(p);
+    /* 释放内核空间 */
+    proc_freepagetable(p->pagetable);
     p->pagetable = 0;
   } 
   p->sz = 0;
@@ -268,7 +239,8 @@ proc_pagetable(struct proc *p)
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
               (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
-    uvmfree(pagetable, 0, MMAP_BASE);
+    // uvmfree(pagetable, 0, MMAP_BASE);
+    ER();
     return 0;
   }
 
@@ -276,7 +248,8 @@ proc_pagetable(struct proc *p)
               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
     uvmunmap(pagetable, TRAPFRAME, 1, 0);
-    uvmfree(pagetable, 0, MMAP_BASE);
+    // uvmfree(pagetable, 0, MMAP_BASE);
+    ER();
     return 0;
   }
 
@@ -286,12 +259,12 @@ proc_pagetable(struct proc *p)
 // Free a process's page table, and free the
 // physical memory it refers to.
 void
-proc_freepagetable(pagetable_t pagetable, uint64 sz, uint64 mmap_sz)
+proc_freepagetable(pagetable_t pagetable)
 {
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmunmap(pagetable, KSTACK, 1, 0);
   erasekvm(pagetable);
-  uvmfree(pagetable, sz, mmap_sz);
+  // uvmfree(pagetable, sz);
 }
 
 // a user program that calls exec("/init")
@@ -489,7 +462,7 @@ do_clone(uint64_t stack)
   release(&np->lock);
 
 
-  np->cur_mmap_sz = p->cur_mmap_sz;
+  // np->cur_mmap_sz = p->cur_mmap_sz;
   dup_mmap(np->mm, p->mm);
   return pid;
 }
