@@ -701,7 +701,6 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	rb_node_t **rb_link, *rb_parent;
 	uint32_t vm_flags;
 	
-
 	if(!len)
 		ERROR("do mmap pgoff 1");
 		// return addr;

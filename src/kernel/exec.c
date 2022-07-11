@@ -211,7 +211,8 @@ exec(char *path, char **argv)
   // exit_mmap(p->mm);
 
   if((ep = namee(NULL, path)) == 0){
-    return -1;
+    ERROR("open excutable file failed, maybe need to modify CMakelists.txt, line 55.");
+    // return -1;
   }
   elock(ep);
 

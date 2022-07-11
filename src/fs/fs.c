@@ -140,7 +140,10 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_mode = item->attr;
   stat->st_blksize = entry->fat->bytes_per_sec;
   stat->st_blocks = 0;
-  stat->st_size = item->size;
+  // stat->st_size = item->size;//文件在磁盘上的大小
+  /* 这里遇到了问题，如果在文件还没有写回磁盘时就获取其大小，获得的数据可能时错误的，所以这里返回其
+  在内存中的大小 */
+  stat->st_size = entry->size_in_mem;//文件在内存上的大小，不一定同步更新到磁盘上了
   stat->st_atime_nsec = 0;
   stat->st_atime_sec = 0;
   stat->st_mtime_sec = 0;
