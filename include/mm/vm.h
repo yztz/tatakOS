@@ -23,7 +23,7 @@ pagetable_t uvmcreate(void);
 void        uvminit(pagetable_t, uchar *, uint);
 uint64      uvmalloc(pagetable_t, uint64, uint64);
 uint64      uvmdealloc(pagetable_t, uint64, uint64);
-int         uvmcopy(pagetable_t, pagetable_t, uint64);
+int         uvmcopy(pagetable_t, pagetable_t, uint64, uint64);
 // void        uvmfree(pagetable_t, uint64, uint64);
 void        uvmclear(pagetable_t, uint64);
 uint64      _walkaddr(pagetable_t pagetable, uint64 va, int pg_spec);
@@ -42,7 +42,7 @@ int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
 
 #include "kernel/proc.h"
-void switchuvm(struct proc *p);
+void switchuvm(mm_struct_t *mm);
 void switchkvm();
 
 #define walkaddr(pagetable, va) \

@@ -15,6 +15,7 @@
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
 #include "fs/fcntl.h"
+#include "kernel/proc.h"
 
 static int loadseg(pde_t *pgdir, uint64 addr, entry_t *ip, uint offset, uint sz);
 
@@ -174,6 +175,10 @@ loadseg(pagetable_t pagetable, uint64 va, entry_t *ip, uint offset, uint sz)
 }
 
 
+/**
+ * @brief 更换mm_struct结构体
+ * 
+ */
 int
 exec(char *path, char **argv)
 {
@@ -189,9 +194,21 @@ exec(char *path, char **argv)
   struct elfhdr elf;
   entry_t *ep;
   struct proghdr ph;
-  pagetable_t pagetable = 0, oldpagetable;
+  pagetable_t pagetable;
   struct proc *p = myproc();
 
+  /* 切换新页表 */
+  mm_struct_t *newmm = kmalloc(sizeof(mm_struct_t));
+  mm_init(newmm);
+
+  switchuvm(newmm);
+
+  exit_mm(myproc());
+
+  myproc()->mm = newmm;
+  
+  // /* 释放用户页表和vma */
+  // exit_mmap(p->mm);
 
   if((ep = namee(NULL, path)) == 0){
     return -1;
@@ -204,9 +221,9 @@ exec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
-  if((pagetable = proc_pagetable(p)) == 0)
-    goto bad;
-
+  // if((pagetable = proc_pagetable(p->mm)) == 0)
+  //   goto bad;
+  pagetable = newmm->pagetable;
 
   // vmprint(pagetable);
   // Load program into memory.
@@ -286,7 +303,7 @@ exec(char *path, char **argv)
   // arguments to user main(argc, argv)
   // argc is returned via the system call return
   // value, which goes in a0.
-  p->trapframe->a1 = sp;
+  p->mm->trapframe->a1 = sp;
 
   // Save program name for debugging.
   for(last=s=path; *s; s++)
@@ -294,21 +311,24 @@ exec(char *path, char **argv)
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
     
-  // Commit to the user image.
-  oldpagetable = p->pagetable;
-  p->pagetable = pagetable;
-  p->sz = sz;
-  // printf(rd("sz: %x\n"), sz);
-  p->trapframe->epc = elf.entry;  // initial program counter = main
-  // debug("entry addr is %lx", elf.entry);
-  p->trapframe->sp = sp; // initial stack pointer
+  // // Commit to the user image.
+  // oldpagetable = p->mm->pagetable;
+  // p->mm->pagetable = pagetable;
+  // // p->sz = sz;
+  // // printf(rd("sz: %x\n"), sz);
+  p->mm->trapframe->epc = elf.entry;  // initial program counter = main
+  // // debug("entry addr is %lx", elf.entry);
+  p->mm->trapframe->sp = sp; // initial stack pointer
 
-  /* set the start heap */
-  p->mm->start_brk= p->sz;
+  // /* set the start heap */
+  // // p->mm->start_brk= p->sz;
+  p->mm->start_brk= sz;
   p->mm->start_stack = sp;
 
-  switchuvm(p);
-  proc_freepagetable(oldpagetable);
+  // switchuvm(p);
+  // /* 释放内核页表 */
+  // proc_freepagetable(oldpagetable);
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:

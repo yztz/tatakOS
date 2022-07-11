@@ -261,14 +261,23 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.'
 #include "kernel/proc.h"
+/**
+ * @brief 复制一段用户空间的页表，在dup_mmap中调用，功能等价于linux的
+ * copy_page_range函数。
+ * 
+ */
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+uvmcopy(pagetable_t old, pagetable_t new, uint64 start, uint64 end)
 {
   pte_t *pte;
   uint64 pa, i;
   uint flags;
 
-  for(i = 0; i < sz; i += PGSIZE){
+  /* 未页对齐 */
+  if((start & ~PGMASK) || (end & ~PGMASK))
+    ER();
+
+  for(i = start; i < end; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
       panic("uvmcopy: pte should exist");
     if((*pte & PTE_V) == 0)
@@ -339,15 +348,15 @@ freewalk(pagetable_t pagetable)
   kfree((void*)pagetable);
 }
 
-void switchuvm(struct proc *p) {
-  if(p == 0)
+void switchuvm(mm_struct_t *mm) {
+  if(mm == NULL)
     panic("switchuvm: no process");
-  if(p->kstack == 0)
+  if(mm->kstack == 0)
     panic("switchuvm: no kstack");
-  if(p->pagetable == 0)
+  if(mm->pagetable == 0)
     panic("switchuvm: no pgdir");
 
-  write_csr(satp, MAKE_SATP(p->pagetable));
+  write_csr(satp, MAKE_SATP(mm->pagetable));
   sfence_vma();
 }
 

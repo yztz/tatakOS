@@ -35,7 +35,7 @@ uint64 sys_bio_cache(void) {
   extern uint64_t bio_cache_hit, bio_cache_miss;
   rate.hit = bio_cache_hit;
   rate.miss = bio_cache_miss;
-  return copyout(myproc()->pagetable, addr, (char *)&rate, sizeof(rate));
+  return copyout(myproc()->mm->pagetable, addr, (char *)&rate, sizeof(rate));
   #endif
 
 
@@ -56,7 +56,7 @@ uint64_t sys_times(void) {
     return -1;
   
   acquire(&tickslock);
-  if(copyout(myproc()->pagetable, addr, (char *)&ticks, sizeof(ticks)) == -1)  
+  if(copyout(myproc()->mm->pagetable, addr, (char *)&ticks, sizeof(ticks)) == -1)  
     ret = -1;
   release(&tickslock);
 
@@ -70,7 +70,7 @@ uint64_t sys_uname(void) {
     return -1;
   }
 
-  return copyout(myproc()->pagetable, addr, (char *)&sysname, sizeof(utsname_t));
+  return copyout(myproc()->mm->pagetable, addr, (char *)&sysname, sizeof(utsname_t));
 }
 uint64_t sys_gettimeofday(void) {
   timespec_t time;
@@ -86,7 +86,7 @@ uint64_t sys_gettimeofday(void) {
   // uint64_t old_ticks = ticks;
   // while(ticks - old_ticks < 10); // 测试用例不合理
 
-  if(copyout(myproc()->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
+  if(copyout(myproc()->mm->pagetable, addr, (char *)&time, sizeof(time)) == -1) {
     ret = -1;
   } 
   return ret;

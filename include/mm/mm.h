@@ -46,7 +46,13 @@ struct mm_struct {
   uint64_t start_brk; // initial address of the heap
   uint64_t brk; // current final address of the heap
   uint64_t start_stack; /* initial adress of user mode stack */
-  // spinlock_t page_table_lock; /* memory regions' and page tables' spin lock */
+  spinlock_t page_table_lock; /* page tables' spin lock */
+
+  pagetable_t pagetable;       // User page table
+  uint64 kstack;               // Virtual address of kernel stack
+  struct trapframe *trapframe; // data page for trampoline.S
+
+  struct list_head mmlist;
 };
 
 typedef struct mm_struct mm_struct_t;
@@ -70,6 +76,32 @@ typedef struct mm_struct mm_struct_t;
 
 #define VM_DATA_DEFAULT_FLAGS		(VM_READ | VM_WRITE | VM_EXEC)
 
+
+
+/*
+ * cloning flags:
+ */
+#define CSIGNAL		0x000000ff	/* signal mask to be sent at exit */
+/* 使用这个标志后，再do_clone中copy_mm时，子进程使用父进程的mm_struct，共用 */
+#define CLONE_VM	0x00000100	/* set if VM shared between processes */
+#define CLONE_FS	0x00000200	/* set if fs info shared between processes */
+#define CLONE_FILES	0x00000400	/* set if open files shared between processes */
+#define CLONE_SIGHAND	0x00000800	/* set if signal handlers and blocked signals shared */
+#define CLONE_PTRACE	0x00002000	/* set if we want to let tracing continue on the child too */
+#define CLONE_VFORK	0x00004000	/* set if the parent wants the child to wake it up on mm_release */
+#define CLONE_PARENT	0x00008000	/* set if we want to have the same parent as the cloner */
+#define CLONE_THREAD	0x00010000	/* Same thread group? */
+#define CLONE_NEWNS	0x00020000	/* New namespace group? */
+#define CLONE_SYSVSEM	0x00040000	/* share system V SEM_UNDO semantics */
+#define CLONE_SETTLS	0x00080000	/* create a new TLS for the child */
+#define CLONE_PARENT_SETTID	0x00100000	/* set the TID in the parent */
+#define CLONE_CHILD_CLEARTID	0x00200000	/* clear the TID in the child */
+#define CLONE_DETACHED		0x00400000	/* Unused, ignored */
+#define CLONE_UNTRACED		0x00800000	/* set if the tracing process can't force CLONE_PTRACE on this clone */
+#define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
+#define CLONE_STOPPED		0x02000000	/* Start in stopped state */
+
+
 /* functions defined in mmap.c */
 uint64 do_mmap(struct file *file, unsigned long addr, unsigned long len, int prot, int flag, unsigned long offset, int type);
 unsigned long do_mmap_pgoff(struct file * file, unsigned long addr, unsigned long len, int prot, int flags, unsigned long pgoff, int type);
@@ -84,5 +116,5 @@ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma, struct rb_n
 int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		unsigned long address, unsigned int flags);
 
-void unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr);
+void unmap_vmas(mm_struct_t *mm, vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr);
 #endif

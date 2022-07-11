@@ -108,10 +108,10 @@ struct proc {
   struct proc *parent;         // Parent process
 
   // these are private to the process, so p->lock need not be held.
-  uint64 kstack;               // Virtual address of kernel stack
-  uint64 sz;                   // Size of process memory (bytes)
-  pagetable_t pagetable;       // User page table
-  struct trapframe *trapframe; // data page for trampoline.S
+  // uint64 kstack;               // Virtual address of kernel stack
+  // uint64 sz;                   // Size of process memory (bytes)
+  // pagetable_t pagetable;       // User page table
+  // struct trapframe *trapframe; // data page for trampoline.S
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct file **ext_ofile;
@@ -132,7 +132,7 @@ void            exit(int);
 int             do_clone(uint64_t stack);
 int             growproc(int);
 void            proc_mapstacks();
-pagetable_t     proc_pagetable(struct proc *);
+pagetable_t     proc_pagetable(mm_struct_t *);
 void            proc_freepagetable(pagetable_t);
 int             kill(int);
 struct cpu*     mycpu(void);
@@ -147,5 +147,6 @@ int             waitpid(int cid, uint64 addr);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);
-static void exit_mm(struct proc *tsk);
+void exit_mm(struct proc *tsk);
+mm_struct_t *mm_init(mm_struct_t *mm);
 #endif

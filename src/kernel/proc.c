@@ -32,6 +32,8 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
+mm_struct_t *mm_init(mm_struct_t *mm);
+static void init_new_context(proc_t *tsk, mm_struct_t *mm);
 // helps ensure that wakeups of wait()ing
 // parents are not lost. helps obey the
 // memory model when using p->parent.
@@ -145,35 +147,35 @@ found:
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
 
-  // 申请Trapframe
-  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
-  // 申请内核栈
-  if((p->kstack = (uint64_t)kalloc()) == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
+  // // 申请Trapframe
+  // if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+  //   freeproc(p);
+  //   release(&p->lock);
+  //   return 0;
+  // }
+  // // 申请内核栈
+  // if((p->kstack = (uint64_t)kalloc()) == 0){
+  //   freeproc(p);
+  //   release(&p->lock);
+  //   return 0;
+  // }
 
   // 获取空页表（已经映射了内核地址空间，trapfram以及内核栈）
-  p->pagetable = proc_pagetable(p);
-  if(p->pagetable == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
+  // p->pagetable = proc_pagetable(p);
+  // if(p->pagetable == 0){
+    // freeproc(p);
+    // release(&p->lock);
+    // return 0;
+  // }
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
-  memset(&p->context, 0, sizeof(p->context));
-  p->context.ra = (uint64)forkret;
-  p->context.sp = p->kstack + PGSIZE;
+  // memset(&p->context, 0, sizeof(p->context));
+  // p->context.ra = (uint64)forkret;
+  // p->context.sp = p->kstack + PGSIZE;
 
   // p->cur_mmap_sz = MMAP_BASE;
-  alloc_init_mm(p);
+  // alloc_init_mm(p);
 
   return p;
 }
@@ -184,29 +186,29 @@ found:
 static void
 freeproc(struct proc *p)
 {
-  if(p->trapframe)
-    kfree((void*)p->trapframe);
-  if(p->kstack)
-    kfree((void*)p->kstack);
+  // if(p->trapframe)
+  //   kfree((void*)p->trapframe);
+  // if(p->kstack)
+  //   kfree((void*)p->kstack);
   if(p->ext_ofile)
     kfree((void *)p->ext_ofile);
-  p->trapframe = 0;
-  p->kstack = 0;
+  // p->trapframe = 0;
+  // p->kstack = 0;
 
   // free_vma(p);
 
   // for(;;);
 
-  if(p->pagetable){
+  if(p->mm){
     /* 释放用户空间 */
     exit_mm(p);
     /*exit_mm 造成 user_trap*/
     // ER();
     /* 释放内核空间 */
-    proc_freepagetable(p->pagetable);
-    p->pagetable = 0;
+    // proc_freepagetable(p->mm->pagetable);
+    // p->mm = 0;
   } 
-  p->sz = 0;
+  // p->sz = 0;
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
@@ -219,7 +221,7 @@ freeproc(struct proc *p)
 // Create a user page table for a given process,
 // with no user memory, but with trampoline pages.
 pagetable_t
-proc_pagetable(struct proc *p)
+proc_pagetable(mm_struct_t *mm)
 {
   pagetable_t pagetable;
 
@@ -239,7 +241,7 @@ proc_pagetable(struct proc *p)
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
-              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+              (uint64)(mm->trapframe), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
     // uvmfree(pagetable, 0, MMAP_BASE);
     ER();
@@ -247,7 +249,7 @@ proc_pagetable(struct proc *p)
   }
 
   if(mappages(pagetable, KSTACK, PGSIZE,
-              (uint64)(p->kstack), PTE_R | PTE_W) < 0){
+              (uint64)(mm->kstack), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
     uvmunmap(pagetable, TRAPFRAME, 1, 0);
     // uvmfree(pagetable, 0, MMAP_BASE);
@@ -308,18 +310,22 @@ userinit(void)
   p = allocproc();
   initproc = p;
 
+  p->mm = kmalloc(sizeof(mm_struct_t));
+  mm_init(p->mm);
+  init_new_context(p, p->mm);
+
   mycpu()->proc = p;
   // allocate one user page and copy init's instructions
   // and data into it.
-  uvminit(p->pagetable, initcode, sizeof(initcode));
+  uvminit(p->mm->pagetable, initcode, sizeof(initcode));
   do_mmap(NULL, USER_START, PGSIZE, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_EXECUTABLE, 0, LOAD);
-  p->sz = PGSIZE;
+  // p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->trapframe->epc = USER_START;      // user program counter
+  p->mm->trapframe->epc = USER_START;      // user program counter
 
   /* 栈是否过小，要不奥为其创建一个vma？ */
-  p->trapframe->sp = PGSIZE;  // user stack pointer
+  p->mm->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
     // p->cwd = namei("/");
@@ -332,27 +338,27 @@ userinit(void)
 }
 
 
-int
-growproc(int n)
-{
-  uint sz;
-  struct proc *p = myproc();
+// int
+// growproc(int n)
+// {
+//   uint sz;
+//   struct proc *p = myproc();
 
-  sz = p->sz;
-  if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
-      return -1;
-    }
-  } else if(n < 0){
-    sz = uvmdealloc(p->pagetable, sz, sz + n);
-  }
-  p->sz = sz;
-  return 0;
-}
+//   sz = p->sz;
+//   if(n > 0){
+//     if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+//       return -1;
+//     }
+//   } else if(n < 0){
+//     sz = uvmdealloc(p->pagetable, sz, sz + n);
+//   }
+//   p->sz = sz;
+//   return 0;
+// }
 
 /**
- * @brief copy the vm_area_struct of oldmm to mm, the linux version also copy_page_range
- * 
+ * @brief copy the vm_area_struct of oldmm to mm,  also copy_page_range
+ * 复制vma和页表
  * @param mm 
  * @param oldmm 
  * @return int 
@@ -377,6 +383,7 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
 
   pprev = &mm->mmap;
 
+  /* 遍历oldmm中所有的vma */
   for(mpnt = oldmm->mmap; mpnt != NULL; mpnt = mpnt->vm_next){
     if(mpnt == NULL) 
       break;
@@ -396,6 +403,7 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
     }
 
     /* 新分配的vma插入到链表 */
+    acquire(&mm->page_table_lock);
     *pprev = tmp;
     pprev = &tmp->vm_next;
 
@@ -405,11 +413,84 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
 		rb_parent = &tmp->vm_rb;
 
     mm->map_count++;
+    /* 复制页表到新的mm中 */
+    uvmcopy(oldmm->pagetable, mm->pagetable, tmp->vm_start, tmp->vm_end);
+    release(&mm->page_table_lock);
   } 
 
-  // ERROR("the copy of vmas is not true, rbtree is not right!!");
-
   release(&oldmm->mm_lock);
+  return 0;
+}
+
+/**
+ * @brief 初始化复制的mm结构体，并且分配新页表
+ * 
+ */
+mm_struct_t *mm_init(mm_struct_t *mm){
+  initlock(&mm->page_table_lock, "");
+  initlock(&mm->mm_lock, "");
+  mm->free_area_cache = TASK_UNMAPPED_BASE;
+  
+  // 申请Trapframe
+  if((mm->trapframe = (struct trapframe *)kalloc()) == 0){
+    ER();
+  }
+
+  // 申请内核栈
+  if((mm->kstack = (uint64_t)kalloc()) == 0){
+    ER();
+  }
+
+  if((mm->pagetable = proc_pagetable(mm)) == NULL)
+    ER();
+
+  return mm;
+}
+
+static void init_new_context(proc_t *tsk, mm_struct_t *mm){
+  // Set up new context to start executing at forkret,
+  // which returns to user space.
+  memset(&tsk->context, 0, sizeof(tsk->context));
+  tsk->context.ra = (uint64_t)forkret;
+  tsk->context.sp = mm->kstack + PGSIZE;
+}
+
+/**
+ * @brief 给tsk分配新的mm，把当前进程的mm复制给它，
+ * 如果为lightweight进程，则和父进程共用一个mm.
+ * 
+ */
+static int copy_mm(uint64_t clone_flags, proc_t * tsk){
+  mm_struct_t *mm, *oldmm;
+  proc_t *current = myproc();
+
+  oldmm = current->mm;
+  if(!oldmm)
+    ER(); 
+
+  /* 轻量级进程，亲子共用一个mm_struct*/
+  if(clone_flags & CLONE_VM){
+    ERROR("not implemented!");
+  }
+
+  if((mm = kmalloc(sizeof(mm_struct_t))) == NULL)
+    ER();
+
+  memcpy(mm, oldmm, sizeof(*mm));
+
+  /* 给mm分配页表，并且映射内核空间 */
+  if(!mm_init(mm))
+    ER();
+
+  /* 复制vma和用户空间的页表 */
+  dup_mmap(mm, oldmm);
+  // 复制trapframe
+  *(mm->trapframe) = *(oldmm->trapframe);
+
+  // 将返回地址重置为0
+  mm->trapframe->a0 = 0;
+
+  tsk->mm = mm;
   return 0;
 }
 
@@ -427,23 +508,27 @@ do_clone(uint64_t stack)
     return -1;
   }
 
+  copy_mm(0, np);
+
+  init_new_context(np, np->mm);
+
   // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-    freeproc(np);
-    release(&np->lock);
-    return -1;
-  }
-  np->sz = p->sz;
+  // if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  //   freeproc(np);
+  //   release(&np->lock);
+  //   return -1;
+  // }
+  // np->sz = p->sz;
 
   // 复制trapframe
-  *(np->trapframe) = *(p->trapframe);
+  // *(np->trapframe) = *(p->trapframe);
 
   // 将返回地址重置为0
-  np->trapframe->a0 = 0;
+  // np->trapframe->a0 = 0;
 
   // 如果指定了栈，那么重设sp
   if(stack)
-    np->trapframe->sp = stack;
+    np->mm->trapframe->sp = stack;
 
   // 增加文件描述符引用
   for(i = 0; i < NOFILE; i++)
@@ -467,7 +552,7 @@ do_clone(uint64_t stack)
 
 
   // np->cur_mmap_sz = p->cur_mmap_sz;
-  dup_mmap(np->mm, p->mm);
+  // dup_mmap(np->mm, p->mm);
 
   // vmprint(p->pagetable);
   // vmprint(np->pagetable);
@@ -498,6 +583,16 @@ reparent(struct proc *p)
  */
 static void
 mmput(mm_struct_t *mm){
+  if(mm->trapframe)
+    kfree((void*)mm->trapframe);
+  if(mm->kstack)
+    kfree((void*)mm->kstack);
+  mm->trapframe = 0;
+  mm->kstack = 0;
+
+  /* unmap内核空间 */
+  proc_freepagetable(mm->pagetable);
+  /* unmap 用户空间并释放对应的vma */
   exit_mmap(mm);
   kfree(mm);
 }
@@ -506,7 +601,7 @@ mmput(mm_struct_t *mm){
  * @brief 在free_proc函数中调用
  * 
  */
-static void 
+void 
 exit_mm(struct proc *tsk){
   mm_struct_t *mm = tsk->mm;
 
@@ -597,7 +692,7 @@ waitpid(int cid, uint64 addr)
         if(np->state == ZOMBIE){
           // Found one.
           
-          if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
+          if(addr != 0 && copyout(p->mm->pagetable, addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
             release(&np->lock);
             release(&wait_lock);
@@ -649,7 +744,7 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        switchuvm(p);
+        switchuvm(p->mm);
         swtch(&c->context, &p->context);
         switchkvm();
         // Process is done running for now.
@@ -814,7 +909,7 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_dst){
-    return copyout(p->pagetable, dst, src, len);
+    return copyout(p->mm->pagetable, dst, src, len);
   } else {
     memmove((char *)dst, src, len);
     return 0;
@@ -829,7 +924,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    return copyin(p->mm->pagetable, dst, src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;

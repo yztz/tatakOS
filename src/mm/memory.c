@@ -23,8 +23,9 @@
 #include "memlayout.h"
 
 void
-unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
+unmap_vmas(mm_struct_t *mm, vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	uint64_t start = start_addr;
+    pagetable_t pagetable = mm->pagetable;
 
 	for(; vma && vma->vm_start < end_addr; vma = vma->vm_next){
 		uint64_t end;
@@ -54,20 +55,23 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	    uint64_t va = start;
 	    pte_t *pte;
         /* 这里应该释放对应的mm的页表，而非 p的页表 */
-	    struct proc *p = myproc();
         
-        ER();
+        // ER();
        /* if a virtual address has been mapped to physic address,
         unmap it, otherwise do noting.
         注意从start开始释放，到end-PGSIZE为止 */
        if (va < end)
            for (int a = va; a < end; a += PGSIZE) {
-               if ((pte = walk(p->pagetable, a, 0)) == 0)
+               if ((pte = walk(pagetable, a, 0)) == 0)
                    continue;
                if ((*pte & PTE_V) == 0)
                    continue;
 
-               uvmunmap(p->pagetable, a, 1, 1);
+                /* 上面已经walk一遍了，进里面再walk一遍，太低效了 */
+                #ifdef TODO
+                todo("modify here.");
+                #endif
+               uvmunmap(pagetable, a, 1, 1);
            }
 	} 
 }
@@ -85,7 +89,7 @@ static int do_anonymous_page(struct mm_struct *mm, unsigned long address, unsign
         acquire(&mm->mm_lock);
 
         pa = (uint64)kalloc();
-        if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
+        if (mappages(mm->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
             ER();
 
         release(&mm->mm_lock);
@@ -174,9 +178,9 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		unsigned long address, unsigned int write)
 {
   pte_t *pte;
-  proc_t *p = myproc();
+//   proc_t *p = myproc();
 
-  pte = walk(p->pagetable, address, 0);
+  pte = walk(mm->pagetable, address, 0);
 
   return handle_pte_fault(mm, vma, address, pte, write);
 }

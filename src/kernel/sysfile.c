@@ -196,7 +196,7 @@ uint64 sys_fstat(void) {
     estat(entry, &stat);
     eunlock(entry);
 
-    return copyout(p->pagetable, addr, (char*)&stat, sizeof(stat));
+    return copyout(p->mm->pagetable, addr, (char*)&stat, sizeof(stat));
 }
 
 uint64 sys_getcwd(void) {
@@ -212,7 +212,7 @@ uint64 sys_getcwd(void) {
     char* end = getcwd(p->cwd, buf);
     assert(*end == '\0');
     // debug("%s", buf);
-    if (copyout(p->pagetable, addr, buf, size) == -1) {
+    if (copyout(p->mm->pagetable, addr, buf, size) == -1) {
         return 0;
     }
 
@@ -269,7 +269,7 @@ uint64 sys_getdents64(void) {
     int ret = read_dents(f->ep, &f->off, buf, len);
     eunlock(f->ep);
 
-    if (copyout(p->pagetable, addr, buf, len) == -1) {
+    if (copyout(p->mm->pagetable, addr, buf, len) == -1) {
         kfree(buf);
         return -1;
     }
@@ -444,8 +444,8 @@ uint64 sys_pipe2(void) {
         fileclose(wf);
         return -1;
     }
-    if (copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
-        copyout(p->pagetable, fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) <
+    if (copyout(p->mm->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+        copyout(p->mm->pagetable, fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) <
             0) {
         p->ofile[fd0] = 0;
         p->ofile[fd1] = 0;
@@ -476,7 +476,7 @@ uint64 sys_pipe2(void) {
 //   uint64 old_addr = p->cur_mmap_sz;
 
 //   // printf(rd("old_addr: %p\n"), old_addr);
-//   // pte_t *pte = walk(p->pagetable, old_addr, 0);
+//   // pte_t *pte = walk(p->mm->pagetable, old_addr, 0);
   
 //   // printf(ylw("pte: %p\n"), *pte);
 //   // printf("pa: %p\n", PTE2PA(*pte));
@@ -584,7 +584,7 @@ sys_munmap(unsigned long addr, size_t len)
 //     if (va <= PGROUNDDOWN(va + len))
 //         for (int a = va; a <= PGROUNDDOWN(va + len); a += PGSIZE) {
 //             // printf(rd("a: %p\n"), a);
-//             if ((pte = walk(p->pagetable, a, 0)) == 0)
+//             if ((pte = walk(p->mm->pagetable, a, 0)) == 0)
 //                 continue;
 //             if ((*pte & PTE_V) == 0)
 //                 continue;
@@ -596,7 +596,7 @@ sys_munmap(unsigned long addr, size_t len)
 //                 // write back page first, than write back to disk
 //                 todo();
 //             }
-//             uvmunmap(p->pagetable, a, 1, 1);
+//             uvmunmap(p->mm->pagetable, a, 1, 1);
 //         }
 //     // free the entire vma
 //     if (va == v->addr && len == v->len) {

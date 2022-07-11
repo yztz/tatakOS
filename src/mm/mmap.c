@@ -395,7 +395,7 @@ exit_mmap(mm_struct_t *mm){
 
 	// remove_vma_list(mm, vma);
 	/* 解除进程用户空间的映射 */
-	unmap_vmas(vma, 0, USER_TASK_SIZE);
+	unmap_vmas(mm, vma, 0, USER_TASK_SIZE);
 
 	while(vma)
 		vma = remove_vma(vma);
@@ -798,7 +798,7 @@ static void unmap_region(struct mm_struct *mm,
 	// unsigned long nr_accounted = 0;
 
 	// lru_add_drain();
-	unmap_vmas(vma, start, end);
+	unmap_vmas(mm, vma, start, end);
 }
 
 uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){

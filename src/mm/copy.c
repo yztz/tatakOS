@@ -130,7 +130,8 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   #endif
   char *p = (char *)srcva;
   // no consider wrap
-  while(max > 0 && (uint64_t)p < proc->sz){
+  // while(max > 0 && (uint64_t)p < proc->sz){
+  while(max > 0){
     *dst = *p;
     if(*p == '\0'){
       got_null = 1;

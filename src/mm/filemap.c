@@ -87,7 +87,7 @@ int filemap_nopage(uint64 address)
   /* 页缓存命中，把address和pa映射 */
   if (pa)
   {
-    pagetable_t pagetable = myproc()->pagetable;
+    pagetable_t pagetable = myproc()->mm->pagetable;
     if (mappages(pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
       panic("filemap no page 2");
 
@@ -99,7 +99,7 @@ int filemap_nopage(uint64 address)
   // 没有命中，分配页，读磁盘
   pa = (uint64)kalloc();
   // printf(bl("pa: %p\n"), pa);
-  if (mappages(myproc()->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
+  if (mappages(myproc()->mm->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
     panic("filemap no page 3");
 
   //如果文件的最后一个页的内容不满一页，reade返回值大于0。
