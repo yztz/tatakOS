@@ -117,7 +117,6 @@ good_area:
         write = 1;
     }
 
-
     handle_mm_fault(mm, vma, address, write); 
     release(&mm->mm_lock);
     return 0;

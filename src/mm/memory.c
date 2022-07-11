@@ -180,7 +180,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
   pte_t *pte;
 //   proc_t *p = myproc();
 
-  pte = walk(mm->pagetable, address, 0);
+  pte = walk(mm->pagetable, address, 1);
 
   return handle_pte_fault(mm, vma, address, pte, write);
 }
