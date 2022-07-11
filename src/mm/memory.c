@@ -29,6 +29,9 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	for(; vma && vma->vm_start < end_addr; vma = vma->vm_next){
 		uint64_t end;
 
+        // if(vma->vm_start == 0)
+            // continue;
+
 		start = max(vma->vm_start, start_addr);
 		if(start >= vma->vm_end)
 			continue;
@@ -50,7 +53,10 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	    /* zyy: my code... */
 	    uint64_t va = start;
 	    pte_t *pte;
+        /* 这里应该释放对应的mm的页表，而非 p的页表 */
 	    struct proc *p = myproc();
+        
+        ER();
        /* if a virtual address has been mapped to physic address,
         unmap it, otherwise do noting.
         注意从start开始释放，到end-PGSIZE为止 */
@@ -63,7 +69,7 @@ unmap_vmas(vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 
                uvmunmap(p->pagetable, a, 1, 1);
            }
-	}   
+	} 
 }
 
 /**

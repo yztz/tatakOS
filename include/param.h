@@ -29,7 +29,7 @@
 #define MAX_ORDER 15
 #endif
 ////////////COW//////////////
-#define COW
+// #define COW
 
 
 ////////////DEBUG////////////

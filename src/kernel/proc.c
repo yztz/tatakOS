@@ -200,6 +200,8 @@ freeproc(struct proc *p)
   if(p->pagetable){
     /* 释放用户空间 */
     exit_mm(p);
+    /*exit_mm 造成 user_trap*/
+    // ER();
     /* 释放内核空间 */
     proc_freepagetable(p->pagetable);
     p->pagetable = 0;
@@ -315,6 +317,8 @@ userinit(void)
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = USER_START;      // user program counter
+
+  /* 栈是否过小，要不奥为其创建一个vma？ */
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
@@ -464,6 +468,10 @@ do_clone(uint64_t stack)
 
   // np->cur_mmap_sz = p->cur_mmap_sz;
   dup_mmap(np->mm, p->mm);
+
+  // vmprint(p->pagetable);
+  // vmprint(np->pagetable);
+
   return pid;
 }
 
