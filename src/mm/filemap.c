@@ -385,7 +385,8 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
  */
 void writeback_file_to_disk(entry_t *entry){
   /* 如果文件在内存中的大小和磁盘上的不一样（变大或变小）*/
-  if(entry->size_in_mem != entry->raw.size){
+  // if(entry->size_in_mem != entry->raw.size){
+  if(entry->dirty){
 
     /* bigger than disk */
     if(entry->size_in_mem > entry->raw.size){
@@ -398,8 +399,10 @@ void writeback_file_to_disk(entry_t *entry){
 
     entry->raw.size = entry->size_in_mem;
     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+    mpage_writepages(entry->i_mapping);
   }
+    /* wirte back dirty pages to disk, 即使大小没变，但是内容可能也变了，所以要写回 */
+    // if(entry->dirty)
+      // mpage_writepages(entry->i_mapping);
 
-  /* wirte back dirty pages to disk */
-  mpage_writepages(entry->i_mapping);
 }

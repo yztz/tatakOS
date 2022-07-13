@@ -130,6 +130,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->clus_cnt = 0;
   entry->size_in_mem = entry->raw.size;
 
+  entry->dirty = 0;
   release(&fat->cache_lock);
   return entry;
 
@@ -449,6 +450,7 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   if(ret > 0 && newsize > entry->raw.size){
     /* update the file's size in mem */
     entry->size_in_mem = newsize;
+    entry->dirty = 1;
   //   entry->raw.size = newsize;
   //   debug("updata size");
   //   /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */

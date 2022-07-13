@@ -155,8 +155,11 @@ int mpage_writepages(address_space_t *mapping){
   // print_pages_be_found(pg_head);
 
   /* no page in mapping is dirty */
-  if(pg_head->head == NULL)
+  if(pg_head->head == NULL){
+    /* free the pg_head !!!*/
+    kfree(pg_head);
     return 0;
+  }
   /** 
    * 合并pg_id连续的页, 一批连续的页调用一次get_sectors, 这样可以使得得到的一个bio_vec
    * 包含的sectors尽可能多。因为在lookup_tag递归查询时，是按照页index递增的顺序查询的，所以
