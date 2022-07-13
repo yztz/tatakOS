@@ -123,6 +123,7 @@ fileread(struct file *f, uint64 addr, int n)
   } else if(f->type == FD_DEVICE){
     r = f->dev->read(1, addr, n);
   } else if(f->type == FD_ENTRY){
+    /* openat打开不了目录，这里不用区分目录和普通文件 */
     elock(f->ep);
     if((r = reade(f->ep, 1, addr, f->off, n)) > 0)
       f->off += r;

@@ -198,7 +198,7 @@ exec(char *path, char **argv)
   struct proc *p = myproc();
 
   /* 切换新页表 */
-  mm_struct_t *newmm = kmalloc(sizeof(mm_struct_t));
+  mm_struct_t *newmm = kzalloc(sizeof(mm_struct_t));
   mm_init(newmm);
 
   switchuvm(newmm);

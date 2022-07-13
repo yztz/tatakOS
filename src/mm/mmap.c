@@ -161,6 +161,10 @@ __vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
 	__vma_link_rb(mm, vma, rb_link, rb_parent);
 }
 
+/**
+ * @brief 添加vma进链表和红黑树
+ * 
+ */
 static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
 			struct vm_area_struct *prev, struct rb_node **rb_link,
 			struct rb_node *rb_parent)
@@ -172,6 +176,10 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
 	validate_mm(mm);
 }
 
+/**
+ * @brief 把vma从链表和红黑树中取出
+ * 
+ */
 static inline void
 vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
 		struct vm_area_struct *prev)
@@ -181,6 +189,7 @@ vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
 	rb_erase(&vma->vm_rb, &mm->mm_rb);
 	if (mm->mmap_cache == vma)
 		mm->mmap_cache = prev;
+	mm->map_count--;
 	release(&mm->mm_lock);
 }
 
@@ -711,11 +720,13 @@ uint64 do_mmap_pgoff(struct file * file, unsigned long addr,
 	if(mm->map_count > DEFAULT_MAX_MAP_COUNT)
 		ERROR("do mmap pgoff 3");
 
+	/* 寻找内存映射区域 */
 	addr = get_unmapped_area(file, addr, len, pgoff, flags);
 
 	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
 
 	for(;;){
+		/* 寻找vma是否已经存在了，有没有区间重叠的情况，并且为其插入链表和红黑树中做准备 */
 		vma = find_vma_prepare(mm, addr, &prev, &rb_link, &rb_parent);
 		if(!vma || vma->vm_start >= addr + len)
 			break;

@@ -117,8 +117,15 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   strncpy(entry->name, name, MAX_FILE_NAME);
   parent->ref++;
   
-  entry->i_mapping  = kzalloc(sizeof(struct address_space));
-  entry->i_mapping->host = entry;
+  /* 只有当entry的类型为FILE时，才需要i_mapping，否则为DIR时不需要 */
+  if(item->attr == FAT_ATTR_FILE){
+    entry->i_mapping  = kzalloc(sizeof(struct address_space));
+    entry->i_mapping->host = entry;
+  }
+  else{
+    entry->i_mapping = NULL;
+  }
+
   entry->clus_end = 0;// initialize 
   entry->clus_cnt = 0;
   entry->size_in_mem = entry->raw.size;
@@ -202,15 +209,19 @@ static void __eput(entry_t *entry) {
     #ifdef TODO
     todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
     #endif
-    release(&entry->fat->cache_lock);
-    printf("start writeback\n");
-    writeback_file_to_disk(entry); 
-    printf("writeback end\n");
-    acquire(&entry->fat->cache_lock);
-    printf("start feeemapping\n");
-    /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
-    free_mapping(entry);
-    printf("freemapping end\n");
+
+    /* 如果为普通文件，则写回。（为目录则不写回） */
+    if(entry->raw.attr == FAT_ATTR_FILE){
+        release(&entry->fat->cache_lock);
+        // printf("start writeback\n");
+        writeback_file_to_disk(entry); 
+        // printf("writeback end\n");
+        acquire(&entry->fat->cache_lock);
+        // printf("start freemapping\n");
+        /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
+        free_mapping(entry);
+        // printf("freemapping end\n");
+    }
 
     __eput(entry->parent);
   }

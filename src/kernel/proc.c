@@ -310,7 +310,7 @@ userinit(void)
   p = allocproc();
   initproc = p;
 
-  p->mm = kmalloc(sizeof(mm_struct_t));
+  p->mm = kzalloc(sizeof(mm_struct_t));
   mm_init(p->mm);
   init_new_context(p, p->mm);
 
@@ -390,7 +390,7 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
     
     struct file *f;
 
-    tmp = kmalloc(sizeof(vm_area_struct_t));
+    tmp = kzalloc(sizeof(vm_area_struct_t));
     if(!tmp)
       panic("do mmap1!");
 
@@ -441,6 +441,7 @@ mm_struct_t *mm_init(mm_struct_t *mm){
     ER();
   }
 
+  /* 创建页表并映射内核空间, trapframe, kstack */
   if((mm->pagetable = proc_pagetable(mm)) == NULL)
     ER();
 
@@ -473,7 +474,7 @@ static int copy_mm(uint64_t clone_flags, proc_t * tsk){
     ERROR("not implemented!");
   }
 
-  if((mm = kmalloc(sizeof(mm_struct_t))) == NULL)
+  if((mm = kzalloc(sizeof(mm_struct_t))) == NULL)
     ER();
 
   memcpy(mm, oldmm, sizeof(*mm));

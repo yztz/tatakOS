@@ -22,6 +22,10 @@
 #include "utils.h"
 #include "memlayout.h"
 
+/**
+ * @brief 释放一段连续地址空间的所有vma，并unmap其页表
+ * 
+ */
 void
 unmap_vmas(mm_struct_t *mm, vm_area_struct_t *vma, uint64_t start_addr, uint64_t end_addr){
 	uint64_t start = start_addr;
