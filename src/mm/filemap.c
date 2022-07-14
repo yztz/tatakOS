@@ -141,7 +141,7 @@ char tab[][10] = {
 };
 void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 {
-  printf("%s::%x level %d\n", tab[c_h - 1], node, c_h); 
+  // printf("%s::%x level %d\n", tab[c_h - 1], node, c_h); 
   for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++)
   {
     if (node->slots[i] != NULL)
@@ -149,27 +149,27 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
       /* the leaf node, 释放叶节点记录的物理地址的页 */
       if (c_h == height)
       {
-        // void *pa = (node->slots[i]);
+        void *pa = (node->slots[i]);
         // /* 是释放一整个物理页吗？ */
         // printf(bl("walk free pa: %p\n"), pa);
-        // kfree(pa);
-        #ifdef TODO
-        todo("is the page mapping, not kfree, else ,free the page(wrong, mmap has dup the file");
-        #endif
-        break;
+        kfree(pa);
+        // #ifdef TODO
+        // todo("is the page mapping, not kfree, else ,free the page(wrong, mmap has dup the file");
+        // #endif
+        // break;
       }
       else
       {
         /* 递归释放下一级节点的内容 */
         walk_free_rdt((struct radix_tree_node *)node->slots[i], height, c_h + 1);
-        // void *addr = node->slots[i];
-        // kfree(addr);
+        void *addr = node->slots[i];
+        kfree(addr);
       }
     }
   }
-  printf("free node %x\n", node);
+  // printf("free node %x\n", node);
   kfree((void *)node);
-  printf("node freed\n");
+  // printf("node freed\n");
 }
 
 /**
@@ -180,21 +180,16 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
  * 补充：以上似乎不对，一个页加入某个文件的page cache，似乎引用数加1，这个文件关闭时，kfree
  * 减去这个引用数，引用数为0则释放。或者区分一下page cache中哪些页是mmap的？然后分别处理。
  * 
- * 现在文件关闭时，还要检测脏页，并写回。
+ * 以上论述都是错的，mmap会增加文件引用数，到了这一步说明文件引用数为0，释放。
  * 
- * @param entry 
  */
 void free_mapping(entry_t *entry)
 {
-
-  #ifdef TODO
-  todo("(before free invoke )invoke write pages method to write dirty pages");
-  #endif
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
   void *addr;
   if (root->height > 0)
   {
-    printf("rott node addr is %x root height is %d\n", root->rnode, root->height);
+    // printf("root node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
     /* free rnode */
     // addr = root->rnode;

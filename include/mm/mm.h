@@ -9,7 +9,7 @@
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
 
-enum vma_type { NONE, LOAD, TEXT, DATA, BSS, HEAP, MMAP_FILE, STACK, MMAP_ANON};
+enum vma_type { NONE, LOAD, TEXT, DATA, BSS, HEAP, MMAP_FILE, STACK, MMAP_ANON, GUARD};
 
 struct vm_area_struct
 {

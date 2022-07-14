@@ -174,7 +174,7 @@ loadseg(pagetable_t pagetable, uint64 va, entry_t *ip, uint offset, uint sz)
   return 0;
 }
 
-
+extern uint64_t sys_memuse(void);
 /**
  * @brief 更换mm_struct结构体
  * 
@@ -186,6 +186,7 @@ exec(char *path, char **argv)
   //   uint64_t va = (uint64_t)kalloc();
   //   printf(bl("va: %p\n"), va);
   // }
+  // sys_memuse();
   // for(;;);
 
   char *s, *last;
@@ -203,7 +204,9 @@ exec(char *path, char **argv)
 
   switchuvm(newmm);
 
+  // sys_memuse();
   exit_mm(myproc());
+  // sys_memuse();
 
   myproc()->mm = newmm;
   
@@ -215,6 +218,7 @@ exec(char *path, char **argv)
     // return -1;
   }
   elock(ep);
+  // sys_memuse();
 
   // Check ELF header
   if(reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
@@ -258,6 +262,8 @@ exec(char *path, char **argv)
 
   // printf("ph: %d\n", ph.vaddr + ph.memsz);
   // vmprint(pagetable);
+  // sys_memuse();
+
   eunlockput(ep);
   ep = NULL;
 
@@ -273,6 +279,8 @@ exec(char *path, char **argv)
   uvmclear(pagetable, sz - (PGSIZE + USTACKSIZE));
   sp = sz;
   stackbase = sp - USTACKSIZE;
+
+  do_mmap(NULL, stackbase-PGSIZE, PGSIZE, 0, 0, 0, GUARD);
 
   /* 创建栈的vma */
   do_mmap(NULL, stackbase, USTACKSIZE, PROT_READ|PROT_WRITE, VM_GROWSDOWN, 0, STACK);

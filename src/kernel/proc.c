@@ -32,6 +32,10 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
+extern uint64_t sys_memuse(void);
+void
+freewalk(pagetable_t pagetable);
+
 mm_struct_t *mm_init(mm_struct_t *mm);
 static void init_new_context(proc_t *tsk, mm_struct_t *mm);
 // helps ensure that wakeups of wait()ing
@@ -442,8 +446,10 @@ mm_struct_t *mm_init(mm_struct_t *mm){
   }
 
   /* 创建页表并映射内核空间, trapframe, kstack */
+  // sys_memuse();
   if((mm->pagetable = proc_pagetable(mm)) == NULL)
     ER();
+  // sys_memuse();
 
   return mm;
 }
@@ -480,11 +486,14 @@ static int copy_mm(uint64_t clone_flags, proc_t * tsk){
   memcpy(mm, oldmm, sizeof(*mm));
 
   /* 给mm分配页表，并且映射内核空间 */
+  // sys_memuse();
   if(!mm_init(mm))
     ER();
 
   /* 复制vma和用户空间的页表 */
+  // sys_memuse();
   dup_mmap(mm, oldmm);
+  // sys_memuse();
   // 复制trapframe
   *(mm->trapframe) = *(oldmm->trapframe);
 
@@ -500,6 +509,7 @@ static int copy_mm(uint64_t clone_flags, proc_t * tsk){
 int
 do_clone(uint64_t stack)
 {
+  // sys_memuse();
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
@@ -509,7 +519,9 @@ do_clone(uint64_t stack)
     return -1;
   }
 
+  // sys_memuse();
   copy_mm(0, np);
+  // sys_memuse();
 
   init_new_context(np, np->mm);
 
@@ -558,6 +570,7 @@ do_clone(uint64_t stack)
   // vmprint(p->pagetable);
   // vmprint(np->pagetable);
 
+  // sys_memuse();
   return pid;
 }
 
@@ -595,6 +608,11 @@ mmput(mm_struct_t *mm){
   proc_freepagetable(mm->pagetable);
   /* unmap 用户空间并释放对应的vma */
   exit_mmap(mm);
+
+  // vmprint(mm->pagetable);
+  /* 重要！之前是在uvmfree中调用的 */
+  freewalk(mm->pagetable);
+
   kfree(mm);
 }
 

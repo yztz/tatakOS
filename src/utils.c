@@ -139,6 +139,8 @@ void error(char *info, char *s, const char *s1, int d)
   for(;;);
 }
 
+char *vma_type_string[10] =  { "NONE", "LOAD", "TEXT", "DATA", "BSS", "HEAP", "MMAP_FILE", "STACK", "MMAP_ANON", "GUARD"};
+
 void
 print_all_vma(mm_struct_t *mm){
   struct vm_area_struct *vma;
@@ -147,7 +149,7 @@ print_all_vma(mm_struct_t *mm){
   vma = mm->mmap;
   printf(ylw("number of vmas: %d\n"), mm->map_count);
   while(vma != NULL){
-   printf(grn("no.%d start: %p end: %p\n"), i++, vma->vm_start, vma->vm_end); 
+   printf(grn("no.%d start: %p end: %p type: %s\n"), i++, vma->vm_start, vma->vm_end, vma_type_string[vma->type]); 
    vma = vma->vm_next;
   }
   printf("\n");

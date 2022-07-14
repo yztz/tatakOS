@@ -43,6 +43,9 @@
     "alloc.h": "c",
     "sstream": "c",
     "printf.h": "c",
-    "riscv.h": "c"
+    "riscv.h": "c",
+    "atomic": "c",
+    "*.tcc": "c",
+    "fstream": "c"
   }
 }
