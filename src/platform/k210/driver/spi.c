@@ -392,7 +392,6 @@ void spi_send_data_normal_dma(dmac_channel_number_t channel_num, spi_device_num_
     dmac_set_single_mode(channel_num, buf, SPI_DR(spi_num), DMAC_ADDR_INCREMENT, DMAC_ADDR_NOCHANGE,
                                 DMAC_MSIZE_4, DMAC_TRANS_WIDTH_32, tx_len);
     spi_handle->ser = 1U << chip_select;
-    intr_on();
 
     dmac_wait_done(channel_num);
     // if(spi_transfer_width != SPI_TRANS_INT)
@@ -402,7 +401,6 @@ void spi_send_data_normal_dma(dmac_channel_number_t channel_num, spi_device_num_
         ;
     spi_handle->ser = 0x00;
     spi_handle->ssienr = 0x00;
-    intr_off();
 }
 
 
@@ -522,13 +520,11 @@ void spi_receive_data_normal_dma(dmac_channel_number_t dma_receive_channel_num,
         spi[spi_num]->dr[0] = 0xffffffff;
 
     spi_handle->ser = 1U << chip_select;
-    intr_on();
 
     dmac_wait_done(dma_receive_channel_num);
 
     spi_handle->ser = 0x00;
     spi_handle->ssienr = 0x00;
-    intr_off();
 }
 
 

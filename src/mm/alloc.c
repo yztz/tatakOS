@@ -1,8 +1,8 @@
 #include "printf.h"
 #include "defs.h"
 #include "mm/freelist.h"
+#include "mm/alloc.h"
 #include "mm/buddy.h"
-#include "mm/page.h"
 #include "mm/slob.h"
 #include "param.h"
 
@@ -73,4 +73,11 @@ void kfree(void *addr) {
     
 }
 
+
+void _kfree_safe(void **paddr) {
+    if(paddr && *paddr) {
+        kfree(*paddr);
+        *paddr = NULL;
+    }
+}
 

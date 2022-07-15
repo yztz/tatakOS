@@ -16,7 +16,7 @@ struct file {
     entry_t *ep; // FD_ENTRY
     device_t *dev;
   };
-  uint off;
+  off_t off;
 };
 
 #define major(dev)  ((dev) >> 16 & 0xFFFF)
@@ -24,9 +24,15 @@ struct file {
 #define	mkdev(m,n)  ((uint)((m)<<16| (n)))
 
 
-#define CONSOLE 1
 
+struct file     *filealloc(void);
+struct file     *filealloc(void);
+void            fileclose(struct file*);
+struct file     *filedup(struct file*);
+void            fileinit(void);
+int             fileread(struct file*, uint64, int n);
+int             filestat(struct file*, uint64 addr);
+int             filewrite(struct file *f, uint64 addr, int n);
 
-struct file* filealloc(void);
 
 #endif

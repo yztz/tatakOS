@@ -100,6 +100,7 @@ int     page_type(uint64_t pa);
 int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int perm, int spec);
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
+void    pte_print(pte_t *pte);
 
 /* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
 /* Out of convenient and compatibility, we define the default behavior for the func below */

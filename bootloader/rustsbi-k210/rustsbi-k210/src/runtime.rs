@@ -58,6 +58,8 @@ impl Generator for Runtime {
         let trap = match mcause::read().cause() {
             Trap::Exception(Exception::SupervisorEnvCall) => MachineTrap::SbiCall(),
             Trap::Exception(Exception::IllegalInstruction) => MachineTrap::IllegalInstruction(),
+            Trap::Exception(Exception::LoadMisaligned) => MachineTrap::LoadMisaligned(),
+            Trap::Exception(Exception::StoreMisaligned) => MachineTrap::StoreMisaligned(),
             Trap::Exception(Exception::InstructionFault) => MachineTrap::InstructionFault(mtval),
             Trap::Exception(Exception::LoadFault) => MachineTrap::LoadFault(mtval),
             Trap::Exception(Exception::StoreFault) => MachineTrap::StoreFault(mtval),
@@ -81,6 +83,8 @@ pub enum MachineTrap {
     ExternalInterrupt(),
     MachineTimer(),
     MachineSoft(),
+    LoadMisaligned(),
+    StoreMisaligned(),
     InstructionFault(usize),
     LoadFault(usize),
     StoreFault(usize),

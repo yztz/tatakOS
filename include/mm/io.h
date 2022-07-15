@@ -61,6 +61,11 @@
         (*(volatile uint64_t *)(addr)) &= ~(v); \
     }
 
+struct iovec {
+    void  *iov_base;    /* Starting address */
+    size_t iov_len;     /* Number of bytes to transfer */
+};
+
 extern uint64_t ioremap(uint64_t addr, size_t size);
 
 

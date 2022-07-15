@@ -27,6 +27,8 @@ r_mhartid()
 
 #define IS_INTR(scause) ((scause) & INTERRUPT)
 
+char *riscv_cause2str(uint64 scause);
+
 static inline uint64
 r_mstatus()
 {

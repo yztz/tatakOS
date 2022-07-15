@@ -34,11 +34,11 @@ char *getcwd(entry_t *entry, char *buf) {
     goto slash;
   }
   end = getcwd(entry->parent, buf);
-  if(end - buf > MAXPATH - (MAX_FILE_NAME + 1)) {
+  int len = strlen(entry->name);
+  if(end - buf > MAXPATH - (len + 1)) {
     debug("too long");
     return end;
   }
-  int len = strlen(entry->name);
   strncpy(end, entry->name, len);
   buf = end + len;
 slash:
@@ -51,10 +51,10 @@ slash:
 /* 没什么实际意义，仅仅用来保存状态 */
 struct dents_state {
   buf_desc_t desc;
-  uint32_t *offset;
+  off_t *offset;
 };
 
-FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *s) {
+FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
   const int dirent_size = sizeof(struct linux_dirent64);
   struct dents_state *state = (struct dents_state *) s;
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
@@ -64,7 +64,7 @@ FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *s) {
   if(total_size > state->desc.size) 
     return FR_OK;
 
-  dirent->d_ino = (uint64_t)offset << 32 | FAT_FETCH_CLUS(item);
+  dirent->d_ino = offset << 32 | FAT_FETCH_CLUS(item);
   dirent->d_off = offset;
   dirent->d_reclen = total_size;
   dirent->d_type = FAT_IS_DIR(item->attr) ? T_DIR : T_FILE; 
@@ -79,7 +79,7 @@ FR_t dents_handler(dir_item_t *item, const char *name, int offset, void *s) {
 }
 
 // caller holds lock
-int read_dents(entry_t *entry, uint32_t *offset, char *buf, int n) {
+int read_dents(entry_t *entry, off_t *offset, char *buf, int n) {
   struct dents_state state = {{.buf = buf, .size = n}, .offset = offset};
   fat_traverse_dir(fat, entry->clus_start, *offset, dents_handler, &state);
   return n - state.desc.size;
@@ -348,7 +348,7 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 }
 
 // caller holds lock
-int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
+int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
   int newsize = off + ret;
   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
@@ -360,10 +360,10 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 }
 
 
-int reade(entry_t *entry, int user, uint64_t buff, int off, int n) {
+int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   if(off >= E_FILESIZE(entry)) 
     return 0;
-  int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, n);
+  int ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
   return ret;
 }
 

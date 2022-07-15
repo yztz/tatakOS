@@ -1,9 +1,8 @@
 .text : {
     *(.text.entry)
     *(.text .text.*)
-    . = ALIGN(0x1000);
     PROVIDE(cp_start = .);
-    *(.copy.*)
+    *(.copy_*)
     PROVIDE(cp_end = .);
     . = ALIGN(0x1000);
     PROVIDE(etext = .);
@@ -25,9 +24,11 @@
 
 .bss : {
     . = ALIGN(16);
+    PROVIDE(bss_start = .);
     *(.sbss .sbss.*) /* do not need to distinguish this from .bss */
     . = ALIGN(16);
     *(.bss .bss.*)
+    PROVIDE(bss_end = .);
 }
 . = ALIGN(0x1000); /* 保证end为页对齐 */
 PROVIDE(end = .);

@@ -143,7 +143,7 @@ typedef enum _FAT_RESULT_t{
 	FR_CONTINUE, // 用于目录继续遍历的标识
 } FR_t;
 
-typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, int offset, void *state);
+typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset, void *state);
 
 // char *DOT;
 // char *DOTDOT;
@@ -156,9 +156,11 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
 FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
-FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
-int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
-int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, int off, int n);
-FR_t fat_update(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
-FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, int offset, dir_item_t *item);
+
+int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
+int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
+
+FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
+FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
+FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
 #endif

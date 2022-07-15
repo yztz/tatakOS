@@ -10,41 +10,17 @@
 #include "fs/fcntl.h"
 #include "fs/file.h"
 #include "fs/fs.h"
+#include "fs/ioctl.h"
 #include "fs/stat.h"
 #include "kernel/proc.h"
 #include "mm/mmap.h"
 #include "mm/vm.h"
-#include "param.h"
-#include "riscv.h"
+#include "mm/io.h"
+#include "common.h"
 
 // #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
-
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-// Fetch the nth word-sized system call argument as a file descriptor
-// and return both the descriptor and the corresponding struct file.
-
-static struct file *get_file(int fd) {
-    proc_t *p = myproc();
-    if(fd < 0 || fd > p->nfd)
-        return NULL;
-    if(fd < NOFILE) 
-        return p->ofile[fd];
-    else 
-        return p->ext_ofile[fd - NOFILE];
-}
-
-static void set_file(int fd, struct file *f) {
-    proc_t *p = myproc();
-    if(fd < 0 || fd > p->nfd)
-        return;
-    if(fd < NOFILE)
-        p->ofile[fd] = f;
-    else 
-        p->ext_ofile[fd - NOFILE] = f; 
-}
 
 static int argfd(int n, int* pfd, struct file** pf) {
     int fd;
@@ -52,7 +28,7 @@ static int argfd(int n, int* pfd, struct file** pf) {
 
     if (argint(n, &fd) < 0)
         return -1;
-    if ((f = get_file(fd)) == NULL)
+    if ((f = get_file(myproc(), fd)) == NULL)
         return -1;
     if (pfd)
         *pfd = fd;
@@ -61,82 +37,41 @@ static int argfd(int n, int* pfd, struct file** pf) {
     return 0;
 }
 
-static int fdrealloc(int nfd) {
-    if(nfd < NOFILE) 
-        return -1;
-
-    proc_t *p = myproc();
-    int oldsz = max(p->nfd - NOFILE, 0) * sizeof(struct file *);
-    int newsz = (nfd - NOFILE) * sizeof(struct file *);
-    struct file **newfdarray;
-
-    if((newfdarray = (struct file **)kzalloc(newsz)) == NULL) {
-        debug("alloc fail");
-        return -1;
-    }
-    memmove(newfdarray, p->ext_ofile, oldsz);
-    p->nfd = nfd;
-    kfree((void *)p->ext_ofile);
-    p->ext_ofile = newfdarray;
-    return 0;
-}
-
-// Allocate a file descriptor for the given file.
-// Takes over file reference from caller on success.
-static int fdalloc(struct file* f) {
-    int fd;
-    struct proc* p = myproc();
-
-    for (fd = 0; fd < NOFILE; fd++) {
-        if (p->ofile[fd] == 0) {
-            p->ofile[fd] = f;
-            return fd;
-        }
-    }
-    for (fd = 0; fd < p->nfd - NOFILE; fd++) {
-        if (p->ext_ofile[fd] == 0) {
-            p->ext_ofile[fd] = f;
-            return fd;
-        }
-    }
-    
-    if(fdrealloc(p->nfd + 10) < 0)
-        return -1;
-
-    return fd;
-}
 
 uint64 sys_dup(void) {
     struct file* f;
+    proc_t *p = myproc();
     int fd;
 
     if (argfd(0, 0, &f) < 0)
         return -1;
-    if ((fd = fdalloc(f)) < 0)
+    if ((fd = fdalloc(p, f)) < 0)
         return -1;
     filedup(f);
     return fd;
 }
 
 uint64 sys_dup3(void) {
-    struct file* f;
+    struct file* f, *oldf;
     int new;
     struct proc* p = myproc();
 
     if (argfd(0, 0, &f) < 0 || argint(1, &new) < 0)
         return -1;
 
-    if(new >= p->nfd && fdrealloc(new + 1) < 0) 
+    if(new >= p->nfd && fdrealloc(p, new + 1) < 0) 
         return -1;
 
-    if (get_file(new) == 0) {
-        set_file(new, f);
-        filedup(f);
-        return new;
+    if((oldf = get_file(p, new)) != NULL) {
+        fileclose(oldf);
     }
+    set_file(p, new, f);
+    filedup(f);
+    return new;
 
-    return -1;
+    return 0;
 }
+
 
 uint64 sys_read(void) {
     struct file* f;
@@ -146,7 +81,6 @@ uint64 sys_read(void) {
     if (argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
         return -1;
     int size = fileread(f, p, n);
-    // debug("size is %d", size);
     return size;
 }
 
@@ -161,14 +95,61 @@ uint64 sys_write(void) {
     return filewrite(f, p, n);
 }
 
+uint64 sys_writev(void) {
+    struct file* f;
+    struct iovec iov;
+    uint64 iovcnt;
+    uint64 addr;
+    uint64 len = 0;
+
+
+    if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0 || argaddr(2, &iovcnt) < 0)
+        return -1;
+
+    // debug("writev iov %#lx iovcnt %d", addr, iovcnt);
+
+    for(int i = 0; i < iovcnt; i++) {
+        if(copyin(&iov, addr + i * sizeof(struct iovec), sizeof(struct iovec)) < 0)
+            return -1;
+        int res = filewrite(f, (uint64)iov.iov_base, iov.iov_len);
+        len += res;
+    }
+
+    return len;
+}
+
+uint64 sys_readv(void) {
+    struct file* f;
+    struct iovec iov;
+    uint64 iovcnt;
+    uint64 addr;
+    uint64 len = 0;
+
+    if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0 || argaddr(2, &iovcnt) < 0)
+        return -1;
+
+    for(int i = 0; i < iovcnt; i++) {
+        if(copyin(&iov, addr + i * sizeof(struct iovec), sizeof(struct iovec)) < 0)
+            return -1;
+        int res = fileread(f, (uint64)iov.iov_base, iov.iov_len);
+        len += res;
+        if(res < iov.iov_len)
+            break;
+    }
+
+    return len;
+
+}
+
 // OK:
 uint64 sys_close(void) {
     int fd;
     struct file* f;
+    proc_t *p = myproc();
 
     if (argfd(0, &fd, &f) < 0)
         return -1;
-    set_file(fd, NULL);
+    set_file(p, fd, NULL);
     fileclose(f);
     return 0;
 }
@@ -266,30 +247,57 @@ uint64 sys_getdents64(void) {
     kfree(buf);
     return ret;
 }
+static struct file* getdevfile(char *path) {
+    if(strncmp(path, "/dev/null", 9) == 0) {
+        struct file *fnull = filealloc();
+        if(fnull == NULL) {
+            debug("alloc fail");
+            return NULL;
+        }
+        fnull->type = T_DEVICE;
+        fnull->dev = &devs[DEVNULL];
+        fnull->readable = 1;
+        fnull->writable = 1;
+        return fnull;
+    } 
+
+    return NULL;
+}
 
 // todo: trunc
 uint64 sys_openat(void) {
     // owner mode is ignored
     char path[MAXPATH];
     int dirfd, fd, omode;
-    struct file* f;
+    struct file *pf, *f;
     entry_t* ep;
     entry_t* from;
     int n;
-    debug("entered");
+    proc_t *p = myproc();
+
     if (argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 ||
         argint(2, &omode) < 0)
         return -1;
 
-    debug("dirfd is %d path is %s omode is %x", dirfd, path, omode);
-    if (dirfd == AT_FDCWD) {
-        from = myproc()->cwd;
-    } else if (dirfd < 0 || dirfd >= NOFILE || myproc()->ofile[dirfd] == NULL) {
-        return -1;
-    } else {
-        from = myproc()->ofile[dirfd]->ep;
+    // sepcial for device...
+    f = getdevfile(path);
+    if(f != NULL) {
+        if((fd = fdalloc(p, f)) == -1) {
+            fileclose(f);
+            return -EMFILE;
+        }
+        return fd;
     }
 
+    // debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
+    if (dirfd == AT_FDCWD) {
+        from = p->cwd;
+    } else if ((pf = get_file(p, dirfd)) != NULL) {
+        from = pf->ep;
+    } else {
+        return -1;
+    }
+        
     if (omode & O_CREATE) {  // 创建标志
         if ((ep = create(from, path, T_FILE)) == 0) {
             return -1;
@@ -307,11 +315,11 @@ uint64 sys_openat(void) {
         }
     }
 
-    if ((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0) {
+    if ((f = filealloc()) == 0 || (fd = fdalloc(p, f)) < 0) {
         if (f)
             fileclose(f);
         eunlockput(ep);
-        return -1;
+        return -EMFILE;
     }
 
     f->ep = ep;
@@ -374,11 +382,13 @@ uint64 sys_chdir(void) {
     debug("quit") return 0;
 }
 
+extern int exec(char *path, char **argv, char **envp);
+
+int debug_flag = 0;
 uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];
     int i;
     uint64 uargv, uarg;
-
     if (argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0) {
         return -1;
     }
@@ -401,8 +411,10 @@ uint64 sys_exec(void) {
         if (fetchstr(uarg, argv[i], PGSIZE) < 0)
             goto bad;
     }
+    char *envp[1] = {NULL};
 
-    int ret = exec(path, argv);
+    int ret = exec(path, argv, envp);
+
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
 
@@ -427,16 +439,15 @@ uint64 sys_pipe2(void) {
         return -1;
 
     fd0 = -1;
-    if ((fd0 = fdalloc(rf)) < 0 || (fd1 = fdalloc(wf)) < 0) {
+    if ((fd0 = fdalloc(p, rf)) < 0 || (fd1 = fdalloc(p, wf)) < 0) {
         if (fd0 >= 0)
-            p->ofile[fd0] = 0;
+            set_file(p, fd0, NULL);
         fileclose(rf);
         fileclose(wf);
         return -1;
     }
     if (copyout(fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
-        copyout(fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) <
-            0) {
+        copyout(fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) < 0) {
         p->ofile[fd0] = 0;
         p->ofile[fd1] = 0;
         fileclose(rf);
@@ -446,28 +457,58 @@ uint64 sys_pipe2(void) {
     return 0;
 }
 
-// todo: fd换file
-// uint64 sys_mmap(void) {
-//     uint64 addr, length, offset;
-//     int prot, flags, fd, i;
-//     struct proc* p = myproc();
 
-//     if (argaddr(0, &addr) < 0 || argaddr(1, &length) < 0 ||
-//         argint(2, &prot) < 0 || argint(3, &flags) < 0 || argint(4, &fd) < 0 ||
-//         argaddr(5, &offset) < 0)
-//         return -1;
-//     struct file *fp = get_file(fd);
-//     if (fp && (fp->writable == 0) && (prot & PROT_WRITE) &&
-//         (flags & MAP_SHARED))
-//         return -1;
+uint64 sys_ioctl(void) {
+    int fd;
+    uint64 request;
 
-//     if(do_file_mmap(&p->mm, fp, offset, addr, length, flags)) {
-//         return addr;
-//     } else {
-//         return addr;
-//     }
+    if(argfd(0, &fd, NULL) < 0 && argaddr(1, &request) < 0) 
+        return -1;
+    // debug("req %#x TIOCGWINSZ is %#x", request, TIOCGWINSZ);
+    // if(request != TIOCGWINSZ) {
+    //     panic("unsupport req");
+    // }
+    return -1;
+}
 
-// }
+uint64 sys_lseek(void) {
+    struct file* f;
+    off_t offset;
+    int whence;
+
+    if(argfd(0, NULL, &f) < 0 || argaddr(1, (uint64 *)&offset) < 0 || argint(2, &whence) < 0)
+        return -1;
+    if(whence == SEEK_SET) {
+        f->off = offset;
+    } else if(whence == SEEK_CUR) {
+        f->off += offset;
+    } else if(whence == SEEK_END) {
+        f->off = E_FILESIZE(f->ep) + offset;
+    } else {
+        panic("unsupport whence");
+    }
+
+    return f->off;
+}
+
+uint64 sys_mmap(void) {
+    uint64 addr, length, offset;
+    int prot, flags;
+    struct file *fp;
+    struct proc* p = myproc();
+
+    if (argaddr(0, &addr) < 0 || argaddr(1, &length) < 0 ||
+        argint(2, &prot) < 0 || argint(3, &flags) < 0 || argfd(4, NULL, &fp) < 0 ||
+        argaddr(5, &offset) < 0)
+        return -1;
+
+    // if (fp && (fp->writable == 0) && (prot & PROT_WRITE) &&
+    //     (flags & MAP_SHARED))
+    //     return -1;
+    debug("prot is %b", prot);
+    panic("stopped");
+    return do_mmap(p->mm, fp, offset, addr, length, flags);
+}
 
 // /**
 //  * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以

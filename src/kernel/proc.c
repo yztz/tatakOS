@@ -23,7 +23,7 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
-int nextpid = 1;
+int nextpid = 0;
 struct spinlock pid_lock;
 
 extern void forkret(void);
@@ -42,13 +42,15 @@ void
 procinit(void)
 {
   struct proc *p;
-  
+  nextpid = 0;
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
-      memset(&p->mm, 0, sizeof(mm_t));
+      p->mm = NULL;
+      p->kstack = 0;
+      p->trapframe = NULL;
       for(int i = 0; i < NOFILE; i++) {
         p->ofile[i] = NULL;
       }
@@ -117,50 +119,37 @@ found:
   p->ext_ofile = NULL;
   p->mm = (mm_t *)kzalloc(sizeof(mm_t));
 
-  if(mmap_init(p->mm, NULL) == -1){
+  if((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
+    debug("kstack alloc failure");
+    goto bad;
+  }
+
+  if((p->trapframe = kalloc()) == 0) {
+    debug("trapframe alloc failure");
+    goto bad;
+  }
+
+  if(mmap_init(p->mm) == -1){
     debug("mmap_init failure");
-    freeproc(p);
-    release(&p->lock);
-    return 0;
+    goto bad;
   }
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
-  p->context.sp = get_kstack(p->mm) + KSTACK_SZ;
+  p->context.sp = p->kstack + KSTACK_SZ;
 
   // p->cur_mmap_sz = MMAP_BASE;
   return p;
+
+
+bad:
+  freeproc(p);
+  release(&p->lock);
+  return NULL;
 }
 
-// void
-// free_vma(struct proc *p){
-//   pte_t *pte;
-//   struct vma *v;
-//   int i;
-//   uint64 a;
-
-//   // for(;;);
-//   list_for_each_entry(v, &PROC_VMA_HEAD(p), head) {
-//     // v->state is cleared in sys_munmap
-//     for(a = PGROUNDDOWN(v->addr); a <= PGROUNDDOWN(v->end); a+=PGSIZE){
-//       if ((pte = walk(p->pagetable, a, 0)) == 0)
-//         continue;
-//       if ((*pte & PTE_V) == 0)//this include the case *pte == 0; or *pte not 0, but *pte &  PTE_V == 0
-//         continue;
-//       //may have bug here!
-//       if (v->flags & MAP_SHARED)
-//       {
-//         // printf(ylw("PGMASK & : %p\n"), (v->end - a));
-//         // writee(v->map_file->ep, 1, a, v->off + (a - v->addr), min(PGSIZE, (v->end - a)));
-//       }
-//       // printf(ylw("free_vam a: %p\n"), a); 
-//       uvmunmap(p->pagetable, a, 1, 1);
-//     }
-    
-//   }
-// }
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -169,8 +158,11 @@ static void
 freeproc(struct proc *p)
 {
   mmap_free(&p->mm);
-
-  // p->sz = 0;
+  if(p->kstack) kfree_safe(&p->kstack);
+  if(p->trapframe) kfree_safe(&p->trapframe);
+  if(p->ext_ofile) kfree_safe(&p->ext_ofile);
+  
+  memset(p->ofile, 0, NOFILE * sizeof(struct file *));
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
@@ -179,38 +171,6 @@ freeproc(struct proc *p)
   p->xstate = 0;
   p->state = UNUSED;
 }
-
-// Create a user page table for a given process,
-// with no user memory, but with trampoline pages.
-// pagetable_t
-// proc_pagetable(struct proc *p)
-// {
-//   pagetable_t pagetable;
-
-//   // An empty page table with kernel page table copy.
-//   pagetable = uvmcreate();
-//   if(pagetable == 0)
-//     return 0;
-//   // 映射内核栈
-//   if(mappages(pagetable, KSTACK, KSTACK_SZ,
-//               (uint64)(p->kstack), PTE_R | PTE_W) < 0){
-//     erasekvm(pagetable);
-//     uvmfree(pagetable, 0);
-//     return 0;
-//   }
-
-//   return pagetable;
-// }
-
-// Free a process's page table, and free the
-// physical memory it refers to.
-// void
-// proc_freepagetable(proc_t *p)
-// {
-
-//   erasekvm(p->mm.pagetable);
-//   uvmfree(pagetable, sz);
-// }
 
 // a user program that calls exec("/init")
 // od -t xC initcode
@@ -256,7 +216,11 @@ userinit(void)
   switchuvm(p->mm);
 
   if(do_mmap_alloc(p->mm, NULL, 0, PGSIZE, MAP_ANONYMOUS, MAP_PROT_WRITE|MAP_PROT_READ|MAP_PROT_EXEC|MAP_PROT_USER) == -1) {
-    panic("mmap alloc failure");
+    panic("mmap1 failure");
+  }
+
+  if(mmap_map_stack_heap(p->mm, USTACKSIZE, UHEAPSIZE) == -1) {
+    panic("mmap1 failure");
   }
 
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
@@ -268,8 +232,8 @@ userinit(void)
   #endif
 
   // prepare for the very first "return" from kernel to user.
-  get_trapframe(p->mm)->epc = 0;      // user program counter
-  get_trapframe(p->mm)->sp = PGSIZE;  // user stack pointer
+  proc_get_tf(p)->epc = 0;      // user program counter
+  proc_get_tf(p)->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
 
@@ -281,12 +245,12 @@ userinit(void)
 }
 
 
-uint64 growproc(int n) {
+uint64 growproc(uint64_t newbreak) {
   struct proc *p = myproc();
-  if(n == 0) {
+  if(newbreak == 0) {
     return PROGRAM_BREAK(p->mm);
   }
-  if(mmap_ext_heap(p->mm, n) == -1) {
+  if(mmap_ext_heap(p->mm, newbreak) == -1) {
     return -1;
   }
   
@@ -314,17 +278,30 @@ do_clone(uint64_t stack)
     return -1;
   }
 
+  // 拷贝trapframe
+  memcpy(proc_get_tf(np), proc_get_tf(p), sizeof(tf_t));
+
   // 将返回值置为0
-  get_trapframe(np->mm)->a0 = 0;
+  proc_get_tf(np)->a0 = 0;
 
   // 如果指定了栈，那么重设sp
   if(stack)
-    get_trapframe(np->mm)->sp = stack;
+    proc_get_tf(np)->sp = stack;
 
-  // 增加文件描述符引用
-  for(i = 0; i < NOFILE; i++)
-    if(p->ofile[i])
-      np->ofile[i] = filedup(p->ofile[i]);
+  // 增加文件描述符引用 
+  // TODO: mmap file dup
+  if(fdrealloc(np, p->nfd) == -1) {
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
+
+  for(i = 0; i < p->nfd; i++) {
+    struct file *fp;
+    if((fp = get_file(p, i)) != NULL)
+      set_file(np, i, filedup(fp));
+  }
+  
   np->cwd = edup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
@@ -368,20 +345,17 @@ void
 exit(int status)
 {
   struct proc *p = myproc();
-
   if(p == initproc) {
     panic("init exiting");
   }
-
-  if(status == -1) {
-    panic("exception quit");
-  }
+  // if(status == -1) {
+  //   panic("exception quit");
+  // }
   // Close all open files.
-  for(int fd = 0; fd < NOFILE; fd++){
-    if(p->ofile[fd]){
-      struct file *f = p->ofile[fd];
+  for(int fd = 0; fd < p->nfd; fd++){
+    struct file *f;
+    if((f = get_file(p, fd)) != NULL){
       fileclose(f);
-      p->ofile[fd] = 0;
     }
   }
 
@@ -480,7 +454,6 @@ scheduler(void)
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
@@ -499,6 +472,11 @@ scheduler(void)
       release(&p->lock);
     }
   }
+}
+
+
+tf_t *proc_get_tf(proc_t *p) {
+  return p->trapframe;
 }
 
 // Switch to scheduler.  Must hold only p->lock
@@ -561,6 +539,10 @@ forkret(void)
     fat_mount(ROOTDEV, &fat);
     debug("mount done\n");
     p->cwd = namee(NULL, "/");
+    // init dir...
+    entry_t *tmp = create(fat->root, "/tmp", T_DIR);
+    if(tmp)
+      eunlockput(tmp);
     // LOOP();
     // fsinit(ROOTDEV);
 
@@ -674,11 +656,9 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 }
 
 
-void proc_setmm(proc_t *p, mm_t *newmm) {
-  mm_t *oldmm = p->mm;
+void proc_switchmm(proc_t *p, mm_t *newmm) {
   p->mm = newmm;
   switchuvm(p->mm);
-  mmap_free(&oldmm);
 }
 
 // Print a process listing to console.  For debugging.
@@ -708,4 +688,77 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+
+struct file *get_file(proc_t *p, int fd) {
+    if(fd < 0 || fd >= p->nfd)
+        return NULL;
+    // debug("nfd is %d fd is %d ext_ofile is %#x", p->nfd, fd, p->ext_ofile);
+    if(fd < NOFILE) 
+        return p->ofile[fd];
+    else 
+        return p->ext_ofile[fd - NOFILE];
+}
+
+void set_file(proc_t *p, int fd, struct file *f) {
+    if(fd < 0 || fd >= p->nfd)
+        return;
+    if(fd < NOFILE)
+        p->ofile[fd] = f;
+    else 
+        p->ext_ofile[fd - NOFILE] = f; 
+}
+
+
+int fdrealloc(proc_t *p, int nfd) {
+    if(nfd > MAX_FD || nfd < NOFILE) 
+        return -1;
+    if(nfd == NOFILE)
+      return 0;
+
+    int oldsz = max(p->nfd - NOFILE, 0) * sizeof(struct file *);
+    int newsz = (nfd - NOFILE) * sizeof(struct file *);
+    struct file **newfdarray;
+
+    if((newfdarray = (struct file **)kzalloc(newsz)) == NULL) {
+        debug("alloc fail");
+        return -1;
+    }
+    memmove(newfdarray, p->ext_ofile, min(oldsz, newsz));
+    p->nfd = nfd;
+    kfree((void *)p->ext_ofile);
+    p->ext_ofile = newfdarray;
+    // debug("alloc newfdarray %#lx nfd %d addr %lx", newfdarray, nfd, &p->ext_ofile);
+    return 0;
+}
+
+// Allocate a file descriptor for the given file.
+// Takes over file reference from caller on success.
+int fdalloc(proc_t *p, struct file* f) {
+    int fd;
+
+    for (fd = 0; fd < NOFILE; fd++) {
+        if (p->ofile[fd] == 0) {
+            p->ofile[fd] = f;
+            return fd;
+        }
+    }
+    for (fd = 0; fd < p->nfd - NOFILE; fd++) {
+        if (p->ext_ofile[fd] == 0) {
+            p->ext_ofile[fd] = f;
+            return fd + NOFILE;
+        }
+    }
+    
+    if(p->nfd == MAX_FD || fdrealloc(p, min(p->nfd + 10, MAX_FD)) < 0)
+        return -1;
+
+    for (; fd < p->nfd - NOFILE; fd++) {
+        if (p->ext_ofile[fd] == 0) {
+            p->ext_ofile[fd] = f;
+            return fd + NOFILE;
+        }
+    }
+    panic("unreached");
 }

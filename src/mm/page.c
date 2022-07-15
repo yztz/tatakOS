@@ -63,9 +63,8 @@ _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
     if(*pte & PTE_V) {
       pagetable = (pagetable_t)PTE2PA(*pte);
     } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+      if(!alloc || (pagetable = (pde_t*)kzalloc(PGSIZE)) == 0)
         return 0;
-      memset(pagetable, 0, PGSIZE);
       *pte = PA2PTE(pagetable) | PTE_V;
     }
   }
@@ -134,4 +133,18 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     }
     *pte = 0;
   }
+}
+
+void pte_print(pte_t *pte) {
+  uint64 va = ((*pte >> 10) & ((1L << 44) - 1)) << 12;
+  char rwxuvc[7];
+  rwxuvc[0] = *pte & PTE_R ? 'r' : '-';
+  rwxuvc[1] = *pte & PTE_W ? 'w' : '-';
+  rwxuvc[2] = *pte & PTE_X ? 'x' : '-';
+  rwxuvc[3] = *pte & PTE_U ? 'u' : '-';
+  rwxuvc[4] = *pte & PTE_V ? 'v' : '-';
+  rwxuvc[5] = *pte & PTE_COW ? 'c' : '-';
+  rwxuvc[6] = '\0';
+  
+  printf("pte: pa %#lx %s\n", va, rwxuvc);
 }

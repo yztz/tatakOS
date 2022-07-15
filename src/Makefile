@@ -18,6 +18,7 @@ obj-y += string.o
 obj-y += panic.o
 obj-y += utils.o
 obj-y += main.o
+obj-y += riscv.o
 obj-y += profile.o
 
 #================GEN kernel=================#

@@ -717,15 +717,13 @@ int dmac_is_idle(dmac_channel_number_t channel_num)
     else
         return 1;
 }
-
+extern spinlock_t sdlock;
 void dmac_wait_idle(dmac_channel_number_t channel_num)
 {   
-    acquire(&myproc()->lock);
     while(!dmac_is_idle(channel_num)) {
         // printf("sleep...\n");
-        sleep((void *)dmac, &myproc()->lock);
+        sleep((void *)dmac, &sdlock);
     }
-    release(&myproc()->lock);
 }
 
 int dmac_intr(void *ctx)

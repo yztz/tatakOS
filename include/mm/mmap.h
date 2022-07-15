@@ -2,53 +2,11 @@
 #define _H_MM_
 #include "list.h"
 #include "common.h"
-// #include "mm/vm.h"
-// #include "proc.h"
+#include "mm/page.h"
 
 #define USERSPACE_END (0x80000000) // 2GB
-#define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->addr)
+#define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
 
-
-struct trapframe {
-  /*   0 @depercated */ uint64 kernel_satp;   // kernel page table 
-  /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
-  /*  16 */ uint64 kernel_trap;   // usertrap()
-  /*  24 */ uint64 epc;           // saved user program counter
-  /*  32 */ uint64 kernel_hartid; // saved kernel tp
-  /*  40 */ uint64 ra;
-  /*  48 */ uint64 sp;
-  /*  56 */ uint64 gp;
-  /*  64 */ uint64 tp;
-  /*  72 */ uint64 t0;
-  /*  80 */ uint64 t1;
-  /*  88 */ uint64 t2;
-  /*  96 */ uint64 s0;
-  /* 104 */ uint64 s1;
-  /* 112 */ uint64 a0;
-  /* 120 */ uint64 a1;
-  /* 128 */ uint64 a2;
-  /* 136 */ uint64 a3;
-  /* 144 */ uint64 a4;
-  /* 152 */ uint64 a5;
-  /* 160 */ uint64 a6;
-  /* 168 */ uint64 a7;
-  /* 176 */ uint64 s2;
-  /* 184 */ uint64 s3;
-  /* 192 */ uint64 s4;
-  /* 200 */ uint64 s5;
-  /* 208 */ uint64 s6;
-  /* 216 */ uint64 s7;
-  /* 224 */ uint64 s8;
-  /* 232 */ uint64 s9;
-  /* 240 */ uint64 s10;
-  /* 248 */ uint64 s11;
-  /* 256 */ uint64 t3;
-  /* 264 */ uint64 t4;
-  /* 272 */ uint64 t5;
-  /* 280 */ uint64 t6;
-};
-
-#define VMA_NUM 16
 /* 用于描述特定一段内存区域（段） */
 struct vma{
   uint64 addr;
@@ -79,8 +37,8 @@ typedef struct vma vma_t;
 /* 描述进程的内存段 */
 struct mmlayout
 {
-    uint64_t kstack; /* 内核栈 */
-    uint64_t trapframe; /* 陷入栈帧 */
+    // uint64_t kstack; /* 内核栈 */
+    // uint64_t trapframe; /* 陷入栈帧 */
 
     vma_t *ustack; /* 用户栈 */
     vma_t *uheap;  /* 用户堆 */
@@ -94,20 +52,23 @@ struct mmlayout
 typedef struct mmlayout mm_t;
 
 
-int do_mmap(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot);
-int do_mmap_alloc(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot);
-void do_unmap(mm_t *mm, uint64_t addr, int do_free);
-int mmap_init(mm_t *mm, mm_t *oldmm);
+vma_t *vma_new();
+void vma_print(vma_t *vma);
+void vma_free(vma_t **vma);
+
+int mmap_init(mm_t *mm);
 void mmap_free(mm_t **pmm);
+uint64_t do_mmap(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot);
+uint64_t do_mmap_alloc(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot);
+void do_unmap(mm_t *mm, uint64_t addr, int do_free);
 vma_t *vma_find(mm_t *mm, uint64 addr);
 vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
-struct trapframe *get_trapframe(mm_t *mm);
-uint64_t get_kstack(mm_t *mm);
 int mmap_dup(mm_t *newm, mm_t *oldm);
-int mmap_ext_heap(mm_t *mm, int newsize);
+int mmap_ext_heap(mm_t *mm, uint64_t newsize);
+int mmap_ext_stack(mm_t *mm, uint64_t newsize);
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
-void mmap_print_vmas(mm_t *mm);
-void mmap_print_vma(vma_t *vma);
+int mmap_map_stack_heap(mm_t *mm, uint64_t stacksize, uint64_t heapsize);
+void mmap_print(mm_t *mm);
 
 void switchuvm(mm_t *mm);
 void switchkvm();

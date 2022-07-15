@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) 启动",
+            "name": "kernel(gdb)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/kernel",
@@ -16,9 +16,14 @@
             "externalConsole": false,
             "MIMode": "gdb",
             // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
-            "miDebuggerPath": "/usr/bin/gdb-multiarch",
-            "miDebuggerServerAddress": "192.168.137.100:26000",
+            "miDebuggerPath": "/home/yztz/musl-cross-make/riscv64-unknown-elf-gdb",
+            "miDebuggerServerAddress": "localhost:26000",
             "setupCommands": [
+                {
+                    "description": "riscv",
+                    "text": "set architecture riscv:rv64",
+                    "ignoreFailures": true
+                },
                 {
                     "description": "为 gdb 启用整齐打印",
                     "text": "-enable-pretty-printing",
@@ -30,8 +35,42 @@
                 //     "ignoreFailures": true
                 // }
             ],
-            
+        },
+        {
+            "name": "user(gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/user_prog/entry-static.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
+            "miDebuggerPath": "gdb-multiarch",
+            "miDebuggerServerAddress": "192.168.137.100:26000",
+            "setupCommands": [
+                {
+                    "description": "riscv",
+                    "text": "set architecture riscv:rv64",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+            ],
         }
-
+    ],
+    "compounds": [
+        {
+            "name": "Compound",
+            "configurations": [
+                "kernel(gdb)",
+                "user(gdb)"
+            ]
+        }
     ]
 }

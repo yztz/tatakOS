@@ -52,12 +52,12 @@ typedef int pid_t;
 #define va_copy(d, s) (__builtin_va_copy(d, s))
 typedef __builtin_va_list va_list;
 
-#define O_RDONLY 0x000
-#define O_WRONLY 0x001
-#define O_RDWR 0x002 // 可读可写
+#define O_RDONLY 000
+#define O_WRONLY 001
+#define O_RDWR 002 // 可读可写
 //#define O_CREATE 0x200
-#define O_CREATE 0x40
-#define O_DIRECTORY 0x0200000
+#define O_CREATE 0100
+#define O_DIRECTORY 0200000
 
 #define DIR 0x040000
 #define FILE 0x100000

@@ -9,6 +9,8 @@ typedef struct _device_t {
   int (*write)(int, uint64, int);
 } device_t;
 
+#define CONSOLE 1
+#define DEVNULL 2
 
 extern device_t devs[];
 

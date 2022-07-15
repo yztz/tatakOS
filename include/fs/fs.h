@@ -42,19 +42,19 @@ void elock(entry_t *entry);
 void eunlock(entry_t *entry);
 void eunlockput(entry_t *entry);
 entry_t *create(entry_t *from, char *path, short type);
-int writee(entry_t *entry, int user, uint64_t buff, int off, int n);
-int reade(entry_t *entry, int user, uint64_t buff, int off, int n);
+int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n);
+int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n);
 void eput(entry_t *entry);
 entry_t *edup(entry_t *entry);
 char *getcwd(entry_t *entry, char *buf);
-int read_dents(entry_t *entry, uint32_t *offset, char *buf, int n);
+int read_dents(entry_t *entry, off_t *offset, char *buf, int n);
 void estat(entry_t *entry, struct kstat *stat);
 
 #define ROOTINO  1   // root i-number
 
 struct linux_dirent64 {
         uint64        d_ino;
-        int64_t         d_off;
+        off_t         d_off;
         unsigned short  d_reclen;
         unsigned char   d_type;
         char            d_name[];

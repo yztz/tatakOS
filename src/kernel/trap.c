@@ -55,6 +55,12 @@ usertrap(void)
     panic("usertrap: not from user mode");
   }
 
+  if(intr_get() != 0) {
+    printf("scause %s\n", riscv_cause2str(scause));
+    printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
+    panic("utrap: interrupts enabled");
+  }
+
   // if(!IS_INTR(scause)) {
   //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
   //   LOOP();
@@ -67,7 +73,7 @@ usertrap(void)
   struct proc *p = myproc();
 
   // save user program counter.
-  get_trapframe(p->mm)->epc = read_csr(sepc);
+  proc_get_tf(p)->epc = read_csr(sepc);
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
@@ -75,34 +81,40 @@ usertrap(void)
     }
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
-    get_trapframe(p->mm)->epc += 4;
+    proc_get_tf(p)->epc += 4;
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
-    // debug("usertrap: proc is %s syscall num is %d", p->name, p->trapframe->a7);
     intr_on();
+    // debug_if(p->pid == 2, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
     syscall();
   } else if(devintr(scause) == 0) {
     // ok
+    // printf("udev %s epc is %#lx\n", riscv_cause2str(scause), r_sepc());
+    // printf("sip is %#lx pc is %#lx\n", r_sip(), read_csr(sepc));
   } else if(handle_pagefault(scause) == 0) {
     // ok
+    // pte_t *pte = walk(p->mm->pagetable, r_stval(), 0);
+    // debug_if(p->pid == 2,"pagefault handled va is %#lx pa is %#lx", r_stval(), PTE2PA(*pte));
   } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
-    printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
+    info("sepc is %lx scause is "rd("%s")" stval is %lx", r_sepc(), riscv_cause2str(scause), r_stval());
     p->killed = 1;
   }
 
-  if(p->killed)
+  if(p->killed) {
+    tf_print(proc_get_tf(p));
     exit(-1);
+  }
 
-  if (scause == INTR_TIMER) yield();
-    
+  if (scause == INTR_TIMER) {
+    yield();
+  }
   usertrapret();
 }
 
 //
 // return to user space
 //
-void userret(uint64 trapfram);
+void userret(tf_t *trapfram);
 void uservec();
 void
 usertrapret(void)
@@ -117,9 +129,9 @@ usertrapret(void)
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.        // kernel page table
-  get_trapframe(p->mm)->kernel_sp = get_kstack(p->mm) + KSTACK_SZ; // process's kernel stack
-  get_trapframe(p->mm)->kernel_trap = (uint64)usertrap;
-  get_trapframe(p->mm)->kernel_hartid = r_tp();         // hartid for cpuid()
+  proc_get_tf(p)->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
+  proc_get_tf(p)->kernel_trap = (uint64)usertrap;
+  proc_get_tf(p)->kernel_hartid = r_tp();         // hartid for cpuid()
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
@@ -131,14 +143,14 @@ usertrapret(void)
   w_sstatus(x);
 
   // set S Exception Program Counter to the saved user pc.
-  w_sepc(get_trapframe(p->mm)->epc);
+  w_sepc(proc_get_tf(p)->epc);
   // tell trampoline.S the user page table to switch to.
   // uint64 satp = MAKE_SATP(p->pagetable);
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
   // and switches to user mode with sret.
-  userret((uint64)get_trapframe(p->mm));
+  userret(proc_get_tf(p));
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,
@@ -155,32 +167,45 @@ kerneltrap()
     myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
   }
 
-  if(!IS_INTR(scause)) {
-    debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
-    debug("kstack: %lx", myproc()->mm->kstack);
-    // backtrace(myproc());
-    LOOP();
-  }
+  // if(!IS_INTR(scause)) {
+  //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
+  //   debug("kstack: %lx", myproc()->mm->kstack);
+  //   // backtrace(myproc());
+  //   LOOP();
+  // }
 
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
-  if(intr_get() != 0)
+
+  // debug_if(scause != INTR_SOFT, "scause: "rd("%s")" SIE: %d va %#lx spec %#lx", riscv_cause2str(scause), intr_get(), r_stval(), sepc);
+  // debug_if(myproc(), "pagetable is %#lx", myproc()->mm->pagetable);
+  // debug_if(myproc(), "curr sp is %#lx", r_sp());
+  // debug_if(myproc(), "proc sp is %#lx", myproc()->kstack);
+  // if(IS_INTR(scause)) 
+  if(intr_get() != 0) {
+    printf("scause %s\n", riscv_cause2str(scause));
+    printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap: interrupts enabled");
+  }
 
   if(devintr(scause) == 0) {
     // ok
+    //  debug_if(debug_flag == 2, "kdev %s\n", riscv_cause2str(scause));
+    // debug_if(myproc() && myproc()->pid == 2, "ktrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
   } else if(handle_pagefault(scause) == 0) {
     // ok
+    // debug("lazy addr %#lx", r_stval());
   } else{
-    printf("scause %p\n", scause);
+    printf("scause %s\n", riscv_cause2str(scause));
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");
   }
 
   if(scause == INTR_TIMER) {
     // give up the CPU if this is a timer interrupt.
-      if(myproc() != 0 && myproc()->state == RUNNING)
-        yield();
+    if(myproc() != 0 && myproc()->state == RUNNING) {
+      yield();
+    }
   }
 
   // the yield() may have caused some traps to occur,
@@ -212,13 +237,14 @@ int devintr(uint64 scause) {
       sbi_set_mext();
       return ret;
     }
-    
+    panic("handle fail?");
     #endif
   } else if (scause == INTR_EXT) { // only qemu
     #ifdef QEMU
     if(handle_ext_irq() != 0) return -1;
     #endif
   } else if (scause == INTR_TIMER) {
+
     if(cpuid() == 0){
       // printf("clock...\n");
       // printf("time is: %X\n", READ_TIME());
@@ -226,7 +252,7 @@ int devintr(uint64 scause) {
     }
     // printf("timer...%d\n", ticks);
     reset_timer();
-    w_sip(r_sip() & ~0x10000);
+    // w_sip(r_sip() & ~0x10000);
   } else { // unknow
     return -1;
   }

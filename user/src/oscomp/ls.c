@@ -1,10 +1,15 @@
 #include "stddef.h"
 #include "stdio.h"
 #include "stdlib.h"
+#pragma GCC optimize ("O0")
+
+#define NUM (17 * 4096)
+static int data[NUM];
 
 void
 ls(char *path)
 {
+
   char buf[512], *p;
   int fd;
   struct linux_dirent64 *de = buf;
@@ -31,8 +36,18 @@ ls(char *path)
       pos += de->d_reclen;
     }
   }
-  
-  
+  int flag = 1;
+  for(int i = 0; i < NUM; i++) {
+    if(data[i]) {
+      flag = 0;
+      break;
+    }
+  }
+  if(flag)
+    printf("ok!!\n");
+  else 
+    printf("panic!!\n");
+
   close(fd);
 }
 

@@ -68,109 +68,110 @@ uint32_t sysctl_get_freq(void)
     return sysctl->clk_freq.clk_freq;
 }
 
-// static void sysctl_reset_ctl(sysctl_reset_t reset, uint8_t rst_value)
-// {
-//     switch (reset)
-//     {
-//         case SYSCTL_RESET_SOC:
-//             sysctl->soft_reset.soft_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_ROM:
-//             sysctl->peri_reset.rom_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_DMA:
-//             sysctl->peri_reset.dma_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_AI:
-//             sysctl->peri_reset.ai_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_DVP:
-//             sysctl->peri_reset.dvp_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_FFT:
-//             sysctl->peri_reset.fft_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_GPIO:
-//             sysctl->peri_reset.gpio_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_SPI0:
-//             sysctl->peri_reset.spi0_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_SPI1:
-//             sysctl->peri_reset.spi1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_SPI2:
-//             sysctl->peri_reset.spi2_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_SPI3:
-//             sysctl->peri_reset.spi3_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2S0:
-//             sysctl->peri_reset.i2s0_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2S1:
-//             sysctl->peri_reset.i2s1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2S2:
-//             sysctl->peri_reset.i2s2_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2C0:
-//             sysctl->peri_reset.i2c0_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2C1:
-//             sysctl->peri_reset.i2c1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_I2C2:
-//             sysctl->peri_reset.i2c2_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_UART1:
-//             sysctl->peri_reset.uart1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_UART2:
-//             sysctl->peri_reset.uart2_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_UART3:
-//             sysctl->peri_reset.uart3_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_AES:
-//             sysctl->peri_reset.aes_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_FPIOA:
-//             sysctl->peri_reset.fpioa_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_TIMER0:
-//             sysctl->peri_reset.timer0_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_TIMER1:
-//             sysctl->peri_reset.timer1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_TIMER2:
-//             sysctl->peri_reset.timer2_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_WDT0:
-//             sysctl->peri_reset.wdt0_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_WDT1:
-//             sysctl->peri_reset.wdt1_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_SHA:
-//             sysctl->peri_reset.sha_reset = rst_value;
-//             break;
-//         case SYSCTL_RESET_RTC:
-//             sysctl->peri_reset.rtc_reset = rst_value;
-//             break;
+static void sysctl_reset_ctl(sysctl_reset_t reset, uint8_t rst_value)
+{
+    switch (reset)
+    {
+        case SYSCTL_RESET_SOC:
+            sysctl->soft_reset.soft_reset = rst_value;
+            break;
+        case SYSCTL_RESET_ROM:
+            sysctl->peri_reset.rom_reset = rst_value;
+            break;
+        case SYSCTL_RESET_DMA:
+            sysctl->peri_reset.dma_reset = rst_value;
+            break;
+        case SYSCTL_RESET_AI:
+            sysctl->peri_reset.ai_reset = rst_value;
+            break;
+        case SYSCTL_RESET_DVP:
+            sysctl->peri_reset.dvp_reset = rst_value;
+            break;
+        case SYSCTL_RESET_FFT:
+            sysctl->peri_reset.fft_reset = rst_value;
+            break;
+        case SYSCTL_RESET_GPIO:
+            sysctl->peri_reset.gpio_reset = rst_value;
+            break;
+        case SYSCTL_RESET_SPI0:
+            sysctl->peri_reset.spi0_reset = rst_value;
+            break;
+        case SYSCTL_RESET_SPI1:
+            sysctl->peri_reset.spi1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_SPI2:
+            sysctl->peri_reset.spi2_reset = rst_value;
+            break;
+        case SYSCTL_RESET_SPI3:
+            sysctl->peri_reset.spi3_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2S0:
+            sysctl->peri_reset.i2s0_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2S1:
+            sysctl->peri_reset.i2s1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2S2:
+            sysctl->peri_reset.i2s2_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2C0:
+            sysctl->peri_reset.i2c0_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2C1:
+            sysctl->peri_reset.i2c1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_I2C2:
+            sysctl->peri_reset.i2c2_reset = rst_value;
+            break;
+        case SYSCTL_RESET_UART1:
+            sysctl->peri_reset.uart1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_UART2:
+            sysctl->peri_reset.uart2_reset = rst_value;
+            break;
+        case SYSCTL_RESET_UART3:
+            sysctl->peri_reset.uart3_reset = rst_value;
+            break;
+        case SYSCTL_RESET_AES:
+            sysctl->peri_reset.aes_reset = rst_value;
+            break;
+        case SYSCTL_RESET_FPIOA:
+            sysctl->peri_reset.fpioa_reset = rst_value;
+            break;
+        case SYSCTL_RESET_TIMER0:
+            sysctl->peri_reset.timer0_reset = rst_value;
+            break;
+        case SYSCTL_RESET_TIMER1:
+            sysctl->peri_reset.timer1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_TIMER2:
+            sysctl->peri_reset.timer2_reset = rst_value;
+            break;
+        case SYSCTL_RESET_WDT0:
+            sysctl->peri_reset.wdt0_reset = rst_value;
+            break;
+        case SYSCTL_RESET_WDT1:
+            sysctl->peri_reset.wdt1_reset = rst_value;
+            break;
+        case SYSCTL_RESET_SHA:
+            sysctl->peri_reset.sha_reset = rst_value;
+            break;
+        case SYSCTL_RESET_RTC:
+            sysctl->peri_reset.rtc_reset = rst_value;
+            break;
 
-//         default:
-//             break;
-//     }
-// }
+        default:
+            break;
+    }
+}
 
-// void sysctl_reset(sysctl_reset_t reset)
-// {
-//     sysctl_reset_ctl(reset, 1);
-//     usleep(10);
-//     sysctl_reset_ctl(reset, 0);
-// }
+void sysctl_reset(sysctl_reset_t reset)
+{
+    int i = 0xffff;
+    sysctl_reset_ctl(reset, 1);
+    while(i--);
+    sysctl_reset_ctl(reset, 0);
+}
 
 static int sysctl_clock_bus_en(sysctl_clock_t clock, uint8_t en)
 {
@@ -607,7 +608,8 @@ int sysctl_clock_get_threshold(sysctl_threshold_t which)
             threshold = (int)sysctl->clk_th5.i2c2_clk_threshold;
             break;
         case SYSCTL_THRESHOLD_WDT0:
-            threshold = (int)sysctl->clk_th6.wdt0_clk_threshold;
+            // threshold = (int)sysctl->clk_th6.wdt0_clk_threshold;
+            threshold = (*(uint32_t *)(&(sysctl->clk_th6))) & 0xff;
             break;
         case SYSCTL_THRESHOLD_WDT1:
             threshold = (int)sysctl->clk_th6.wdt1_clk_threshold;

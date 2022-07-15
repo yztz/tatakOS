@@ -37,17 +37,17 @@ argraw(int n)
   struct proc *p = myproc();
   switch (n) {
   case 0:
-    return get_trapframe(p->mm)->a0;
+    return proc_get_tf(p)->a0;
   case 1:
-    return get_trapframe(p->mm)->a1;
+    return proc_get_tf(p)->a1;
   case 2:
-    return get_trapframe(p->mm)->a2;
+    return proc_get_tf(p)->a2;
   case 3:
-    return get_trapframe(p->mm)->a3;
+    return proc_get_tf(p)->a3;
   case 4:
-    return get_trapframe(p->mm)->a4;
+    return proc_get_tf(p)->a4;
   case 5:
-    return get_trapframe(p->mm)->a5;
+    return proc_get_tf(p)->a5;
   }
   panic("argraw");
   return -1;
@@ -108,12 +108,12 @@ syscall(void)
   int num;
   struct proc *p = myproc();
 
-  num = get_trapframe(p->mm)->a7;
+  num = proc_get_tf(p)->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    get_trapframe(p->mm)->a0 = syscalls[num]();
+    proc_get_tf(p)->a0 = syscalls[num]();
   } else {
-    printf("%d %s: unknown sys call %d\n",
-            p->pid, p->name, num);
-    get_trapframe(p->mm)->a0 = -1;
+    printf("pid %d %s: unknown sys call %d sepc %lx\n",
+            p->pid, p->name, num, r_sepc());
+    proc_get_tf(p)->a0 = -1;
   }
 }

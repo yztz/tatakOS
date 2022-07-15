@@ -3,8 +3,13 @@ use core::{
     ops::{Generator, GeneratorState},
     pin::Pin,
 };
-use riscv::register::scause::{Exception, Trap};
 
+use riscv::register::{
+    scause::{self, Exception, Trap, Interrupt},
+    mepc,mtval,
+    mtvec::{self, TrapMode},
+};
+use rustsbi::println;
 use crate::feature;
 use crate::runtime::{MachineTrap, Runtime, SupervisorContext};
 
@@ -17,7 +22,7 @@ pub fn execute_supervisor(supervisor_mepc: usize, a0: usize, a1: usize) -> ! {
                 if emulate_sbi_call(ctx) {
                     continue;
                 }
-                feature::preprocess_supervisor_external(ctx); // specific for 1.9.1; see document for details
+                // feature::preprocess_supervisor_external(ctx); // specific for 1.9.1; see document for details
                 let param = [ctx.a0, ctx.a1, ctx.a2, ctx.a3, ctx.a4, ctx.a5];
                 let ans = rustsbi::ecall(ctx.a7, ctx.a6, param);
                 ctx.a0 = ans.error;
@@ -42,6 +47,7 @@ pub fn execute_supervisor(supervisor_mepc: usize, a0: usize, a1: usize) -> ! {
                 }
             }
             GeneratorState::Yielded(MachineTrap::ExternalInterrupt()) => unsafe {
+                // println!("external...");
                 let ctx = rt.context_mut();
                 feature::call_supervisor_interrupt(ctx)
             },
@@ -89,8 +95,57 @@ pub fn execute_supervisor(supervisor_mepc: usize, a0: usize, a1: usize) -> ! {
                     }
                 }
             }
+            GeneratorState::Yielded(MachineTrap::LoadMisaligned()) => {
+                let ctx = rt.context_mut();
+                unsafe {
+                    feature::do_transfer_trap(ctx, Trap::Exception(Exception::LoadMisaligned))
+                }
+            }
+            GeneratorState::Yielded(MachineTrap::StoreMisaligned()) => {
+                let ctx = rt.context_mut();
+                unsafe {
+                    feature::do_transfer_trap(ctx, Trap::Exception(Exception::StoreMisaligned))
+                }
+            }
             GeneratorState::Complete(()) => unreachable!(),
         }
+    }
+}
+
+#[inline]
+fn set_register_xi(ctx: &mut SupervisorContext, i: u8, data: usize) {
+    let registers = unsafe { &mut *(ctx as *mut _ as *mut [usize; 31]) };
+    assert!(i <= 31, "i should be valid register target");
+    if i == 0 {
+        // x0, don't modify
+        return;
+    }
+    registers[(i - 1) as usize] = data;
+}
+
+#[inline]
+fn get_register_xi(ctx: &mut SupervisorContext, i: u8) -> usize {
+    let registers = unsafe { &mut *(ctx as *mut _ as *mut [usize; 31]) };
+    assert!(i <= 31, "i should be valid register target");
+    if i == 0 {
+        // x0, don't modify
+        return 0;
+    }
+    registers[(i - 1) as usize]
+}
+
+#[inline]
+fn get_register_xic(ctx: &SupervisorContext, i: u8) -> usize {
+    match i {
+        0b010 => ctx.a0,
+        0b011 => ctx.a1,
+        0b100 => ctx.a2,
+        0b101 => ctx.a3,
+        0b110 => ctx.a4,
+        0b111 => ctx.a5,
+        0b000 => ctx.s0,
+        0b001 => ctx.s1,
+        _ => panic!("invalid get compressed target {}", i),
     }
 }
 
@@ -112,7 +167,7 @@ unsafe fn get_vaddr_u16(vaddr: usize) -> u16 {
 }
 
 fn emulate_sbi_call(ctx: &mut SupervisorContext) -> bool {
-    if feature::emulate_sbi_rustsbi_k210_sext(ctx) || feature::sbi_set_mext(ctx) {
+    if feature::sbi_set_mext(ctx) {
         return true;
     }
     false

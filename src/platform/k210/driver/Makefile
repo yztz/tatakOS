@@ -7,3 +7,4 @@ obj-y += fpioa.o
 obj-y += gpiohs.o
 # obj-y += diskio.o
 obj-y += uarths.o
+obj-y += wdt.o

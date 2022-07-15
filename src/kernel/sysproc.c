@@ -42,6 +42,46 @@ sys_fork(void)
   return do_clone(0);
 }
 
+uint64
+sys_set_tid_address(void)
+{
+  uint64 tid;
+  if(argaddr(0, &tid) < 0) {
+    return -1;
+  }
+  return tid;
+}
+
+uint64
+sys_rt_sigprocmask(void)
+{
+  return 0;
+}
+
+uint64
+sys_rt_sigtimedwait(void)
+{
+  return 0;
+}
+
+uint64
+sys_gettid(void)
+{
+  return sys_getpid();
+}
+
+
+uint64
+sys_exit_group(void)
+{
+  return sys_exit();
+}
+
+uint64
+sys_rt_sigaction(void)
+{
+  return 0;
+}
 
 uint64
 sys_clone(void)
@@ -89,7 +129,6 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
-    
   return growproc(n);
 }
 
@@ -102,7 +141,7 @@ sys_nanosleep(void)
 
   if(argaddr(0, &addr) < 0)
     return -1;
-  if(copy_from_user(&time, (void *)addr, sizeof(timespec_t)) == -1)
+  if(copy_from_user(&time, addr, sizeof(timespec_t)) == -1)
     return -1;
   acquire(&tickslock);
   ticks0 = ticks;

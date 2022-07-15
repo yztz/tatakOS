@@ -175,8 +175,11 @@ static uint8_t (sd_get_dataresponse)(void)
 		return 0xFF;
 	/*!< Wait null data */
 	sd_read_data(&response, 1);
-	while (response == 0)
+	uint64 i = 0xfffff;
+	while (response == 0) {
+		if(i-- == 0) panic("wait too long");
 		sd_read_data(&response, 1);
+	}
 	/*!< Return response */
 	return 0;
 }
@@ -362,7 +365,7 @@ void io_mux_init(void)
     fpioa_set_function(29, FUNC_SPI0_SS3);
 }
 
-static sleeplock_t sdlock;
+spinlock_t sdlock;
 
 static void sd_error(char *CMD) {
 	char buf[255];
@@ -381,7 +384,7 @@ uint8_t sd_init(void)
 {
 	uint8_t frame[10], index, result;
 
-	initsleeplock(&sdlock, "sdcard");
+	initlock(&sdlock, "sdlock");
 	/* 设置功能管脚 */
 	io_mux_init();
 	/*!< Initialize SD_SPI */
@@ -451,8 +454,7 @@ uint8_t sd_init(void)
 uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 {
 	uint8_t frame[2];
-	acquiresleep(&sdlock);
-	intr_off();
+	acquire(&sdlock);
 	/*!< Send CMD17 (SD_CMD17) to read one block */
 	sd_send_cmd(SD_CMD17, sector, 0);
 
@@ -472,9 +474,8 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 	sd_read_data(frame, 2);
 		
 	sd_end_cmd();
-	intr_on();
 
-	releasesleep(&sdlock);
+	release(&sdlock);
 	/*!< Returns the reponse */
 	return 0;
 }
@@ -485,8 +486,8 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
 	uint8_t frame[2] = {0xFF};
     frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
 
-	acquiresleep(&sdlock);
-	intr_off();
+	acquire(&sdlock);
+
 	sd_send_cmd(SD_CMD24, sector, 0);
 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
@@ -512,8 +513,7 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
 	sd_end_cmd();
 	sd_end_cmd();
 
-	intr_on();
-	releasesleep(&sdlock);
+	release(&sdlock);
 	/*!< Returns the reponse */
 	return 0;
 }

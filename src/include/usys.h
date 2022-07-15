@@ -9,6 +9,7 @@ int wait(int*);
 int pipe(int*);
 int write(int, const void*, int);
 int read(int, void*, int);
+int lseek(int, off_t, int);
 int close(int);
 int kill(int);
 int exec(char*, char**);

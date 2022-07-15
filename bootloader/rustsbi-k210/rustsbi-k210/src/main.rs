@@ -146,6 +146,11 @@ fn delegate_interrupt_exception() {
         // medeleg::set_store_fault();
         // 默认不打开mie::set_mext
         // 不打开mie::set_mtimer
+        medeleg::set_store_fault();
+        medeleg::set_load_fault();
+        // medeleg::set_load_misaligned();
+        // medeleg::set_store_misaligned();
+        // mie::set_mtimer();
         mie::set_mext();
         mie::set_msoft();
     }

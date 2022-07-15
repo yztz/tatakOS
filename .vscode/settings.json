@@ -99,7 +99,21 @@
         "syscall_arch.h": "c",
         "profile_gen.h": "c",
         "profile.h": "c",
-        "mmap.h": "c"
+        "mmap.h": "c",
+        "*.inc": "c",
+        "resource.h": "c",
+        "charconv": "c",
+        "hash_map": "c",
+        "hash_set": "c",
+        "bitset": "c",
+        "rope": "c",
+        "slist": "c",
+        "regex": "c",
+        "dynamic_bitset": "c",
+        "trapframe.h": "c",
+        "entry.h": "c",
+        "errno.h": "c",
+        "test.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

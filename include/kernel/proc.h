@@ -4,6 +4,7 @@
 #include "atomic/spinlock.h"
 #include "platform.h"
 #include "mm/mmap.h"
+#include "mm/trapframe.h"
 
 // Saved registers for kernel context switches.
 struct context {
@@ -61,11 +62,10 @@ struct proc {
   struct proc *parent;         // Parent process
 
   // these are private to the process, so p->lock need not be held.
-  // uint64 kstack;               // Virtual address of kernel stack
-  // uint64 sz;                   // Size of process memory (bytes)
   mm_t *mm;
+  uint64 kstack;
+  tf_t *trapframe;
 
-  // struct trapframe *trapframe; // data page for trampoline.S
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct file **ext_ofile;
@@ -74,8 +74,7 @@ struct proc {
   // struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   uint64 ktrap_fp;
-  // todo: mmap
-  // struct vma vma[VMA_NUM];
+
   uint64 cur_mmap_sz;
 };
 
@@ -84,7 +83,7 @@ typedef struct proc proc_t;
 
 void            exit(int);
 int             do_clone(uint64_t stack);
-uint64          growproc(int);
+uint64          growproc(uint64_t n);
 void            proc_mapstacks();
 pagetable_t     proc_pagetable(struct proc *);
 void            proc_freepagetable(pagetable_t, uint64);
@@ -101,7 +100,12 @@ int             waitpid(int cid, uint64 addr);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);
-void            proc_setmm(proc_t *p, mm_t *newmm);
+void            proc_switchmm(proc_t *p, mm_t *newmm);
+struct file *   get_file(proc_t *p, int fd);
+void            set_file(proc_t *p, int fd, struct file *f);
+int             fdrealloc(proc_t *p, int nfd);
+int             fdalloc(proc_t *p, struct file* f);
+tf_t           *proc_get_tf(proc_t *p);
 
 
 

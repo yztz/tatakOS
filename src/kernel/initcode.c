@@ -1,3 +1,75 @@
+#include "usys.h"
+#include "stdarg.h"
+#include "fs/fcntl.h"
+
+void printf(const char *fmt, ...);
+int strncmp(const char *p, const char *q, uint n);
+int read_test_name();
+#define MAX_LINE 70
+
+#define assert(cond, fmt, ...) if(!(cond)) {printf(fmt"\n", ##__VA_ARGS__);for(;;);}
+
+int fd = -1;
+char proc_name[40];
+char line[MAX_LINE];
+char *argv[] = {"./runtest.exe", "-w", "entry-static.exe", proc_name, 0};
+int foffset = 0;
+
+
+int main() {
+    fd = openat(AT_FDCWD, "run-static.sh", O_RDONLY);
+    assert(fd > 0, "bad fd1");
+    // run tests
+    int i = 0;
+    while(read_test_name() != -1) {
+        i++;
+        // filters //
+        // if(i != 5) continue;
+        if(strncmp(proc_name, "pthread", 7) == 0) continue;
+
+        printf("start to test[%d] %s\n", i, proc_name);
+        int npid = fork();
+        assert(npid >= 0, "bad fork");
+        if (npid == 0) { // child
+            exec(argv[0], argv);
+            printf("exec fail\n");
+            for(;;);
+        } else { // parent
+            int status;
+            wait(&status);
+            printf("child exit with %d\n", status);
+        }
+    }
+    printf("test end!\n");
+    for(;;);
+    return 0;
+}
+
+int read_test_name() {
+    off_t loffset = 0;
+    int i;
+    assert(fd > 0, "bad fd2");
+    lseek(fd, foffset, SEEK_SET);
+    int cnt = read(fd, line, MAX_LINE);
+    if(cnt <= 0) 
+      return -1;
+    // skip space
+    for (i = 0; i < 3; i++)
+    {
+        for (; line[loffset] != ' '; loffset++)
+            ;
+        loffset++;
+    }
+    
+    for (i = 0; line[loffset] != '\n'; i++, loffset++)
+        proc_name[i] = line[loffset];
+    *(proc_name + i) = '\0';
+    loffset++;
+    foffset+=loffset;
+    return 0;
+}
+
+//////////////////////////////////////////////////
 // #include "usys.h"
 // #include "stdarg.h"
 
@@ -5,24 +77,19 @@
 // void read_test();
 
 // // FS
-// // char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-// //                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-// //                       "mount", "umount", "test_echo"};
-// // //
-// // char *proc_testcase[] = { "getppid", "getpid",
-// //                        "clone", "wait", "waitpid",
-// //                       "yield", "fork",  "execve", "exit", "sleep"};
+// char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
+//                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+//                       "mount", "umount", "test_echo"};
+// //
+// char *proc_testcase[] = { "getppid", "getpid",
+//                        "clone", "wait", "waitpid",
+//                       "yield", "fork",  "execve", "exit", "sleep"};
 
-// // char *mm_testcase[] = {"brk", "mmap", "munmap"};
+// char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
-// // char *other_testcase[] = {"gettimeofday", "times", "uname"};
-// // //  单项测试
-// // char* prog_name[] = {"ls"};
-
-// // void readcase(int fd, char buf[]) {
-// //   while(read(fd, buf, ))
-// // }
-
+// char *other_testcase[] = {"gettimeofday", "times", "uname"};
+// //  单项测试
+// char* prog_name[] = { "ls" };
 
 // void run(char *testcases[], int cnt);
 // #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
@@ -33,34 +100,16 @@
 //     // run(proc_testcase);
 //     // run(mm_testcase);
 //     // run(other_testcase);
-//     // run(prog_name);
-//     // int fd = openat(AT_FDCWD, "run_static.sh", O_RDONLY);
-//     char *argv[5];
-//     argv[0] = "runtest.exe";
-//     argv[1] = "-w";
-//     argv[2] = "entry-static.exe";
-//     argv[3] = "argv";
-//     argv[4] = 0;
-//     printf("ready to run %s\n", argv[3]);
-//     int npid = fork();
-//     if(npid < 0) {
-//         printf("fork failed");
-//         for(;;);
-//     }
-//     if (npid == 0) { //子进程
-//         int ret = exec(argv[0], argv);
-//         printf("exec fail with %d\n", ret);
-//     } else {          // 父进程
-//         int status;
-//         wait(&status);
-//         printf("child exit with %d\n", status);
-//     }
+//     run(prog_name);
 //     memuse();
-//     for(;;);
+//   for(;;);
 // }
 // #undef run
 
 // void run(char *testcases[], int cnt) {
+//   // char *argv[3];
+//   // argv[1] = "this is only test args";
+//   // argv[2] = 0;
 //   char *argv[2];
 //   argv[1] = 0;
 //   for (int t = 0; t < cnt; t++) {
@@ -82,177 +131,7 @@
 //   }
 // }
 
-
-// static char digits[] = "0123456789ABCDEF";
-
-// static void
-// putc(int fd, char c)
-// {
-//   write(fd, &c, 1);
-// }
-
-// static void
-// printint(int fd, int xx, int base, int sgn)
-// {
-//   char buf[16];
-//   int i, neg;
-//   uint x;
-
-//   neg = 0;
-//   if(sgn && xx < 0){
-//     neg = 1;
-//     x = -xx;
-//   } else {
-//     x = xx;
-//   }
-
-//   i = 0;
-//   do{
-//     buf[i++] = digits[x % base];
-//   }while((x /= base) != 0);
-//   if(neg)
-//     buf[i++] = '-';
-
-//   while(--i >= 0)
-//     putc(fd, buf[i]);
-// }
-
-// static void
-// printptr(int fd, uint64 x) {
-//   int i;
-//   putc(fd, '0');
-//   putc(fd, 'x');
-//   for (i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
-//     putc(fd, digits[x >> (sizeof(uint64) * 8 - 4)]);
-// }
-
-// // Print to the given fd. Only understands %d, %x, %p, %s.
-// void
-// vprintf(int fd, const char *fmt, va_list ap)
-// {
-//   char *s;
-//   int c, i, state;
-
-//   state = 0;
-//   for(i = 0; fmt[i]; i++){
-//     c = fmt[i] & 0xff;
-//     if(state == 0){
-//       if(c == '%'){
-//         state = '%';
-//       } else {
-//         putc(fd, c);
-//       }
-//     } else if(state == '%'){
-//       if(c == 'd'){
-//         printint(fd, va_arg(ap, int), 10, 1);
-//       } else if(c == 'l') {
-//         printint(fd, va_arg(ap, uint64), 10, 0);
-//       } else if(c == 'x') {
-//         printint(fd, va_arg(ap, int), 16, 0);
-//       } else if(c == 'p') {
-//         printptr(fd, va_arg(ap, uint64));
-//       } else if(c == 's'){
-//         s = va_arg(ap, char*);
-//         if(s == 0)
-//           s = "(null)";
-//         while(*s != 0){
-//           putc(fd, *s);
-//           s++;
-//         }
-//       } else if(c == 'c'){
-//         putc(fd, va_arg(ap, uint));
-//       } else if(c == '%'){
-//         putc(fd, c);
-//       } else {
-//         // Unknown % sequence.  Print it to draw attention.
-//         putc(fd, '%');
-//         putc(fd, c);
-//       }
-//       state = 0;
-//     }
-//   }
-// }
-
-// void
-// fprintf(int fd, const char *fmt, ...)
-// {
-//   va_list ap;
-
-//   va_start(ap, fmt);
-//   vprintf(fd, fmt, ap);
-// }
-
-// void
-// printf(const char *fmt, ...)
-// {
-//   va_list ap;
-
-//   va_start(ap, fmt);
-//   vprintf(1, fmt, ap);
-// }
-
-
-
-////////////////////////////////////////////////////
-#include "usys.h"
-#include "stdarg.h"
-
-void printf(const char *fmt, ...);
-void read_test();
-
-// FS
-char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-                      "mount", "umount", "test_echo"};
-//
-char *proc_testcase[] = { "getppid", "getpid",
-                       "clone", "wait", "waitpid",
-                      "yield", "fork",  "execve", "exit", "sleep"};
-
-char *mm_testcase[] = {"brk", "mmap", "munmap"};
-
-char *other_testcase[] = {"gettimeofday", "times", "uname"};
-//  单项测试
-char* prog_name[] = {"ls"};
-
-void run(char *testcases[], int cnt);
-#define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
-__attribute__((section(".startup"))) 
-void main() {
-    memuse();
-    // run(fs_testcase);
-    // run(proc_testcase);
-    // run(mm_testcase);
-    // run(other_testcase);
-    run(prog_name);
-    memuse();
-  for(;;);
-}
-#undef run
-
-void run(char *testcases[], int cnt) {
-  char *argv[2];
-  argv[1] = 0;
-  for (int t = 0; t < cnt; t++) {
-      printf("ready to run %s\n", testcases[t]);
-      int npid = fork();
-      if(npid < 0) {
-          printf("fork failed");
-          for(;;);
-      }
-      printf("fork done\n");
-      if (npid == 0) { //子进程
-          argv[0] = testcases[t];
-          int ret = exec(argv[0], argv);
-          printf("exec fail with %d\n", ret);
-      } else {          // 父进程
-          int status;
-          wait(&status);
-          printf("child exit with %d\n", status);
-      }
-  }
-}
-
+///////////utils/////////////
 
 static char digits[] = "0123456789ABCDEF";
 
@@ -360,4 +239,14 @@ printf(const char *fmt, ...)
 
   va_start(ap, fmt);
   vprintf(1, fmt, ap);
+}
+
+int
+strncmp(const char *p, const char *q, uint n)
+{
+  while(n > 0 && *p && *p == *q)
+    n--, p++, q++;
+  if(n == 0)
+    return 0;
+  return (uchar)*p - (uchar)*q;
 }

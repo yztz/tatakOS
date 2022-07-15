@@ -8,76 +8,8 @@
 #define __MODULE_NAME__ COPY
 #include "debug.h"
 
-/* 复制COW页 */
-static inline int __cow_copy(uint64_t va, pte_t *pte) {
-  uint64 pa = PTE2PA(*pte);
-  if(page_ref(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
-    *pte |= PTE_W;
-    *pte &= ~PTE_COW;
-  } else {
-    char *mem;
-    if((mem = kalloc()) == 0) {
-      return -1;
-    }
-    // 复制页
-    memmove(mem, (char *)pa, PGSIZE);
-    uint flag = PTE_FLAGS(*pte);
-    flag |= PTE_W;
-    flag &= ~PTE_COW;
 
-    *pte = PA2PTE(mem) | flag;
-
-    kfree((void *)pa);
-  }
-  // IMPORTANT! Flush TLB
-  sfence_vma_addr(va);
-
-  return 0;
-}
-
-int cow_copy(uint64_t va, pte_t *pte) {
-  return __cow_copy(va, pte);
-}
-
-void __copyout(mm_t *mm, uint64_t dstva, char *src, uint64 len, int walk) {
-  if(walk) {
-    pte_t *pte;
-    uint64 va0, n, pa0;
-    while(len > 0){
-      va0 = PGROUNDDOWN(dstva);
-      pte = walk(mm->pagetable, va0, 0);
-      if(pte == NULL || (*pte & PTE_V) == 0) 
-        panic("unmapped");
-    
-      n = PGSIZE - (dstva - va0);
-      if(n > len) n = len;
-      pa0 = PTE2PA(*pte);
-      // 由于是直接访问实地址，因此不需要设置SUM状态位
-      memmove((void *)(pa0 + (dstva - va0)), src, n);
-
-      len -= n;
-      src += n;
-      dstva = va0 + PGSIZE;
-    }
-  } else {
-      #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-      enable_sum();
-      #endif
-      memmove((void *)dstva, src, len);
-      #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-      disable_sum();
-      #endif
-  }
-
-  
-}
-
-// Copy from kernel to user.
-// Copy len bytes from src to virtual address dstva in a given page table.
-// Return 0 on success, -1 on error.
-int
-copyout(uint64 dstva, char *src, uint64 len)
-{
+int copy_to_user(uint64 dstva, void *src, uint64 len) {
   vma_t *vma;
   proc_t *p = myproc();
   if(!p)
@@ -91,25 +23,38 @@ copyout(uint64 dstva, char *src, uint64 len)
   if((vma->prot & MAP_PROT_USER) == 0) {
     return -1;
   }
-  // 3. 由于存在映射，直接拷贝 
-  __copyout(p->mm, dstva, src, len, 0);
-
+  // 3. 直接拷贝 
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  enable_sum();
+  #endif
+  // memmove((void *)dstva, src, len);
+  char *s = (char *)src;
+  char *d = (char *)dstva;
+  if(s < d && s + len > d){
+    s += len;
+    d += len;
+    while(len-- > 0)
+      *--d = *--s;
+  } else
+    while(len-- > 0)
+      *d++ = *s++;
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  disable_sum();
+  #endif
   return 0;
 }
 
-
-
-// Copy from user to kernel.
-// Copy len bytes to dst from virtual address srcva in a given page table.
+// Copy from kernel to user.
+// Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
 int
-copyin(char *dst, uint64 srcva, uint64 len)
+copyout(uint64 dstva, char *src, uint64 len)
 {
-  return copy_from_user(dst, (void *)srcva, len);
+  return copy_to_user(dstva, src, len);
 }
 
 /* We trust that kernel address is legal... */
-int copy_from_user(void *to, void *from, size_t n) {
+int copy_from_user(void *to, uint64 from, size_t n) {
   proc_t *p = myproc();
   if(!p)
     panic("copy_from_user: no process ctx");
@@ -126,11 +71,30 @@ int copy_from_user(void *to, void *from, size_t n) {
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
   #endif
-  memmove(to, from, n);
+  // memmove(to, (void *)from, n);
+  char *s = (char *)from;
+  char *d = (char *)to;
+  if(s < d && s + n > d){
+    s += n;
+    d += n;
+    while(n-- > 0)
+      *--d = *--s;
+  } else
+    while(n-- > 0)
+      *d++ = *s++;
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
   #endif
   return 0;
+}
+
+// Copy from user to kernel.
+// Copy len bytes to dst from virtual address srcva in a given page table.
+// Return 0 on success, -1 on error.
+int
+copyin(void *dst, uint64 srcva, uint64 len)
+{
+  return copy_from_user(dst, srcva, len);
 }
 
 // Copy a null-terminated string from user to kernel.

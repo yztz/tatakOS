@@ -1,20 +1,27 @@
 ############Proc###############
  1     fork      sys_fork
-93     exit      sys_exit   
  3     wait      sys_wait
  6     kill      sys_kill    
 14     uptime    sys_uptime 
+93     exit      sys_exit  
+94     exit_group sys_exit_group
 101    nanosleep sys_nanosleep
 124    yield     sys_sched_yield
+134    rt_sigaction     sys_rt_sigaction
+135    rt_sigprocmask   sys_rt_sigprocmask
+137    rt_sigtimedwait  sys_rt_sigtimedwait
 172    getpid    sys_getpid 
 173    getppid   sys_getppid
+178    gettid    sys_gettid
 220    clone     sys_clone
 221    exec      sys_exec
 260    wait4     sys_wait4
+261    prlimit64 sys_prlimit64
 #############Fs################
 17     getcwd    sys_getcwd
 23     dup       sys_dup    
 24     dup3      sys_dup3 
+29     ioctl     sys_ioctl
 34     mkdirat   sys_mkdirat
 35     unlinkat  sys_unlinkat
 #37    linkat    sys_linkat  [doesn't impl]
@@ -25,14 +32,19 @@
 57     close     sys_close
 59     pipe2     sys_pipe2
 61     getdents64 sys_getdents64
+62     lseek     sys_lseek
 63     read      sys_read
 64     write     sys_write
+65     readv     sys_readv
+66     writev    sys_writev
 80     fstat     sys_fstat  
 ##############MM################
 214     sbrk      sys_sbrk  
 #215     munmap      sys_munmap
 #222     mmap      sys_mmap
-############Others##############
+##############Sys###############
+96      set_tid_address sys_set_tid_address
+113     clock_gettime   sys_clock_gettime
 153     times           sys_times
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday

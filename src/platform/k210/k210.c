@@ -8,6 +8,7 @@
 #include "sysctl.h"
 #include "gpiohs.h"
 #include "dmac.h"
+#include "wdt.h"
 
 #include "sdcard.h"
 
@@ -25,6 +26,7 @@ void platform_early_init() {
 void platform_plic_init() {
     plic_set_priority(UART_IRQ, 1);
     plic_set_priority(IRQN_DMA0_INTERRUPT, 1);
+    plic_set_priority(IRQN_WDT0_INTERRUPT, 1);
 }
 
 
@@ -40,6 +42,7 @@ void platform_plic_init() {
 void platform_plic_init_hart() {
     plic_irq_enable(UART_IRQ);
     plic_irq_enable(IRQN_DMA0_INTERRUPT);
+    plic_irq_enable(IRQN_WDT0_INTERRUPT);
 }
 
 void platform_dirver_init() {
@@ -71,7 +74,11 @@ void platform_dirver_init() {
     if(sd_init() != 0) 
         panic("sd init fail");
     debug("sdcard init success!");
-
+    
+    // int delay = wdt_init(10000);
+    // debug("WDT timeout: %d", delay);
+    
+    // wdt_feed();
+    // wdt_start();
     debug("driver init success!");
-
 }

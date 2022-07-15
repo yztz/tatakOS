@@ -10,6 +10,7 @@ extern void panic(char *s);
 #define TIMER_EXT 0x54494D45L
 #define HSM_EXT 0x48534DL
 #define PMU_EXT 0x504D55L
+#define IPI_EXT 0x735049L
 #define CONSOLE_PUT_CHAR_EXT 0x01L
 #define CONSOLE_GET_CHAR_EXT 0x02L
 #define LEGACY_SET_TIMER 0x00L
@@ -67,5 +68,8 @@ static inline struct sbiret sbi_pmu_num_counters() {
     return SBI_CALL_0(PMU_EXT, 0);
 }
 
+static inline struct sbiret sbi_send_ipi(uint64 mask, uint64 hart_mask_base) {
+    return SBI_CALL_2(IPI_EXT, 0, mask, hart_mask_base);
+}
 
 #endif

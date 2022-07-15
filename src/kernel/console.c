@@ -11,8 +11,7 @@
 
 // #include <stdarg.h>
 
-#include "types.h"
-#include "param.h"
+#include "common.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "fs/fs.h"
@@ -25,6 +24,7 @@
 #include "driver/plic.h"
 #include "mm/vm.h"
 
+#define __MODULE_NAME__ CONSOLE
 #include "debug.h"
 
 #define BACKSPACE 0x100
@@ -226,4 +226,6 @@ consoleinit(void)
   // to consoleread and consolewrite.
   devs[CONSOLE].read = consoleread;
   devs[CONSOLE].write = consolewrite;
+
+  debug("console init success!\n");
 }

@@ -56,41 +56,41 @@ pub fn sbi_set_mext(ctx: &mut SupervisorContext) -> bool {
 // id: 0x0A000004, function id: 0x210) to register S-level interrupt handler
 // for K210 chip only. This chip uses 1.9.1 version of privileged spec,
 // which did not declare any S-level external interrupts.
-#[inline]
-pub fn emulate_sbi_rustsbi_k210_sext(ctx: &mut SupervisorContext) -> bool {
-    if ctx.a7 == 0x0A000004 && ctx.a6 == 0x210 {
-        // unsafe {
-        //     DEVINTRENTRY = ctx.a0;
-        // }
-        // enable mext
-        unsafe {
-            // mie::set_mext();
-            mip::set_ssoft();
-            mie::clear_mext();
-        }
-        // println!("sbi call success!");
-        // unsafe {
-        //     // mie::clear_mext();
-        //     mip::set_sext();
-        // }
-        // return values
-        ctx.a0 = 0; // SbiRet::error = SBI_SUCCESS
-        ctx.a1 = 0; // SbiRet::value = 0
-        ctx.mepc = ctx.mepc.wrapping_add(4);
-        return true;
-    } else {
-        return false;
-    }
-}
+// #[inline]
+// pub fn emulate_sbi_rustsbi_k210_sext(ctx: &mut SupervisorContext) -> bool {
+//     if ctx.a7 == 0x0A000004 && ctx.a6 == 0x210 {
+//         // unsafe {
+//         //     DEVINTRENTRY = ctx.a0;
+//         // }
+//         // enable mext
+//         unsafe {
+//             // mie::set_mext();
+//             mip::set_ssoft();
+//             mie::clear_mext();
+//         }
+//         // println!("sbi call success!");
+//         // unsafe {
+//         //     // mie::clear_mext();
+//         //     mip::set_sext();
+//         // }
+//         // return values
+//         ctx.a0 = 0; // SbiRet::error = SBI_SUCCESS
+//         ctx.a1 = 0; // SbiRet::value = 0
+//         ctx.mepc = ctx.mepc.wrapping_add(4);
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
 
-fn devintr() {
-    #[cfg(target_arch = "riscv")]
-    unsafe {
-        // call devintr defined in application
-        // we have to ask compiler save ra explicitly
-        asm!("jalr 0({})", in(reg) DEVINTRENTRY, lateout("ra") _);
-    }
-}
+// fn devintr() {
+//     #[cfg(target_arch = "riscv")]
+//     unsafe {
+//         // call devintr defined in application
+//         // we have to ask compiler save ra explicitly
+//         asm!("jalr 0({})", in(reg) DEVINTRENTRY, lateout("ra") _);
+//     }
+// }
 
 // Due to legacy 1.9.1 version of privileged spec, if we are in S-level
 // timer handler (delegated from M mode), and we call SBI's `set_timer`,
@@ -98,18 +98,18 @@ fn devintr() {
 // data structures locked previously by S-level interrupt handler, which
 // results in a deadlock.
 // Ref: https://github.com/luojia65/rustsbi/pull/5
-pub fn preprocess_supervisor_external(ctx: &mut SupervisorContext) {
-    if ctx.a7 == 0x0 {
-        unsafe {
-            let mtip = mip::read().mtimer();
-            if mtip {
-                if DEVINTRENTRY != 0 {
-                    mie::set_mext();
-                }
-            }
-        }
-    }
-}
+// pub fn preprocess_supervisor_external(ctx: &mut SupervisorContext) {
+//     if ctx.a7 == 0x0 {
+//         unsafe {
+//             let mtip = mip::read().mtimer();
+//             if mtip {
+//                 if DEVINTRENTRY != 0 {
+//                     mie::set_mext();
+//                 }
+//             }
+//         }
+//     }
+// }
 
 pub fn forward_supervisor_timer() {
     // println!("forward timer intr!");

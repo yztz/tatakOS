@@ -27,15 +27,16 @@ uint64      uvmdealloc(pagetable_t, uint64, uint64);
 int         uvmcopy(pagetable_t old, pagetable_t new, uint64 addr, uint64_t len);
 void        uvmfree(pagetable_t, uint64);
 void        uvmclear(pagetable_t, uint64);
+void        freewalk(pagetable_t pagetable);
 uint64      _walkaddr(pagetable_t pagetable, uint64 va, int pg_spec);
 
 void        __copyout(mm_t *mm, uint64_t dstva, char *src, uint64 len, int walk);
 int         copyout(uint64 dstva, char *src, uint64 len);
 /** @deprecated use copy_from_user instead */
-int         copyin(char *, uint64, uint64);
-int         copyinstr(char *, uint64, uint64);
-int         cow_copy(uint64_t va, pte_t *pte);
-int         copy_from_user(void *to, void *from, size_t n);
+int         copyin(void *dst, uint64 srcva, uint64 len);
+int         copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
+int         copy_from_user(void *to, uint64 from, size_t n) _section(.copy_from_user);
+int         copy_to_user(uint64 dstva, void *src, uint64 len) _section(.copy_to_user);
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 

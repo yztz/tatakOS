@@ -1,4 +1,4 @@
-use k210_hal::{clint::msip, clock::Clocks, fpioa, pac::{self, sysctl}, prelude::*, sysctl};
+use k210_hal::{clint::msip, clock::Clocks, fpioa, pac::{self, sysctl}, prelude::*};
 use riscv::register::{mhartid, mip};
 use rustsbi::println;
 

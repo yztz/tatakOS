@@ -8,11 +8,14 @@
 
 #define KERN_BASE 0X80020000L
 #define MEM_START 0x80000000L
-#define MEM_END   0x80800000L // 8MB
+#define MEM_END   0x80600000L // 8MB
 
 #define PLIC_MODE M_MODE
 
-#define CLOCK_FREQ    770000 // 1/10s
+// #define CLOCK_FREQ    3000000 // 1/2.5s
+#define CLOCK_FREQ    1500000 // 1/5s
+// #define CLOCK_FREQ    770000 // 1/10s
+// #define CLOCK_FREQ    400000 // 1/20s
 // #define CLOCK_FREQ 40300000
 
 #define CLINT_BASE_ADDR     (0x02000000U)

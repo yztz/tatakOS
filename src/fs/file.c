@@ -113,7 +113,7 @@ filestat(struct file *f, uint64 addr)
 int
 fileread(struct file *f, uint64 addr, int n)
 {
-  int r = 0;
+  int r = -1;
 
   if(f->readable == 0)
     return -1;
@@ -124,8 +124,9 @@ fileread(struct file *f, uint64 addr, int n)
     r = f->dev->read(1, addr, n);
   } else if(f->type == FD_ENTRY){
     elock(f->ep);
-    if((r = reade(f->ep, 1, addr, f->off, n)) > 0)
+    if((r = reade(f->ep, 1, addr, f->off, n)) > 0) {
       f->off += r;
+    }
     eunlock(f->ep);
   } else {
     panic("fileread");

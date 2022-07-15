@@ -145,7 +145,7 @@ $(MNT_DIR):
 # $(fs.img): user
 $(fs.img): user $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=1M count=128
-	@mkfs.vfat -F 32 $@
+	@mkfs.vfat -F 32 -s 8 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
 	@sudo umount $(MNT_DIR)
@@ -155,7 +155,8 @@ $(fs.img): user $(MNT_DIR)
 
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
-	@make -C $U
+#	@make -C $U
+	@cp $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
 mnt: $(fs.img)
@@ -163,11 +164,8 @@ mnt: $(fs.img)
 umnt: $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
-sdcard: user
-	sudo mkfs.vfat -F 32 /dev/sdb
-	sudo mount /dev/sdb /mnt
-	sudo cp -r $(U_PROG_DIR)/* /mnt/
-	sudo umount /dev/sdb
+sdcard: $(fs.img)
+	sudo dd if=$(fs.img) of=/dev/sdb bs=4M
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@

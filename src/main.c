@@ -10,18 +10,24 @@
 #include "test.h"
 #include "fs/blk_device.h"
 #include "common.h"
+#include "fs/file.h"
 #include "fs/fs.h"
 
 volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
 
+static inline void clear_bss() {
+  extern char bss_start, bss_end;
+  memset(&bss_start, 0, (uint64_t)&bss_end - (uint64_t)&bss_start);
+  printf("\n.bss %#lx-%#lx cleared\n", &bss_start, &bss_end);
+}
 
 void
 main()
 {
   if(cpuid() == 0){
+    // clear_bss();
     printf("\nOS TATAKAI!\n\n");
-
     platform_early_init();
     /* PRCO && CPU */
     procinit();      // process table
@@ -45,7 +51,8 @@ main()
     platform_dirver_init(); // platform driver init
     /* CONSOLE */
     consoleinit(); // console
-    printf("console init success!\n");
+    /* DEVNULL */
+    devnull_init();
     // #ifdef K210
     // for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
     // #endif
@@ -53,20 +60,36 @@ main()
     binit();         // buffer cache
     fileinit();      // file table 
     fs_init();
-    
+
     userinit();      // first user process
-    printf("user init success\n");
+    // printf("user init success\n");
+
+    for (int i = 1; i < NUM_CORES; i ++) {
+			unsigned long mask = 1 << i;
+			// struct sbiret res = sbi_send_ipi(mask, 0);
+			sbi_send_ipi(mask, 0);
+		}
+
     __sync_synchronize();
     started = 1;
   } else {
     while(started == 0)
       ;
     __sync_synchronize();
-    printf("hart %d starting\n", cpuid());
-    kvminithart();    // turn on paging
-    trapinithart();   // install kernel trap vector
-    plic_init_hart();   // ask PLIC for device interrupts
-    platform_plic_init_hart();
+    // extern uint64 ticks;
+    while(1) {
+      // uint64 a1 = ticks;
+      // uint64 i = 0;
+      // while(i++ < 100000000);
+      // __sync_synchronize();
+      // uint64 a2 = ticks;
+      // printf("a1 is %ld a2 is %ld\n", a1, a2);
+      // if(a1 == a2) panic("wuwuwu");
+    }
+    // kvminithart();    // turn on paging
+    // trapinithart();   // install kernel trap vector
+    // plic_init_hart();   // ask PLIC for device interrupts
+    // platform_plic_init_hart();
   }
   scheduler();        
 }
