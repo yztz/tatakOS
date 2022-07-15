@@ -537,6 +537,7 @@ void vma_adjust(struct vm_area_struct *vma, unsigned long start,
 	vma->vm_start = start;
 	vma->vm_end = end;
 	vma->vm_pgoff = pgoff;	
+	validate_mm(mm);
 }
 
 static inline int is_mergeable_vma(struct vm_area_struct *vma,
@@ -902,7 +903,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	flags = VM_DATA_DEFAULT_FLAGS;
 
 	/* Can we just expand an old anonymous mapping? */
-	if (vma_merge(mm, prev, addr, addr + len, flags, NULL, 0))
+	if (vma_merge(mm, prev, addr, addr + len, flags, NULL, addr/PGSIZE))
 		goto out;
 
 	vma = kzalloc(sizeof(vm_area_struct_t));
@@ -915,7 +916,8 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	vma->vm_end = addr + len;
 	vma->vm_flags = flags;
 	// vma->vm_page_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
-	vma->vm_pgoff = 0;
+	// vma->vm_pgoff = 0;
+	vma->vm_pgoff = vma->vm_start/PGSIZE;
 	vma->vm_file = NULL;
 	
 	vma->type = HEAP;

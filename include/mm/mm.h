@@ -27,6 +27,8 @@ struct vm_area_struct
   struct rb_node vm_rb;
 
   /* 对于文件映射区间，为映射的文件的偏移量（以页为单位）；对于匿名区间，为0或vm_start/PAGE_SIZE*/
+  /* 现在统一这样处理， 对于vm_file不为空的vma，这个字段为映射的文件页的在文件中的偏移量，否为为vm_start，这样处理
+  方便can_vma_merge_(after/before)的判断*/
   uint64 vm_pgoff;
   struct file *vm_file;
   enum vma_type type;
