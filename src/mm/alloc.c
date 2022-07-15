@@ -42,6 +42,8 @@ void *kmalloc(size_t size) {
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
     }
+    // if((uint64_t)ret == 0x8025d000)
+        // for(;;);
     // printf(ylw("pa: %p\n"), ret);
     return ret;
 }

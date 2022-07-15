@@ -37,8 +37,8 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
   pa = find_page(mapping, offset);
   // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
-  if (pa)
-    get_page(pa);
+  // if (pa)
+    // get_page(pa);
   return pa;
 }
 
@@ -139,6 +139,9 @@ char tab[][10] = {
   "  ",
   "   ",
 };
+
+extern void print_buddy();
+
 void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 {
   // printf("%s::%x level %d\n", tab[c_h - 1], node, c_h); 
@@ -153,6 +156,8 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
         // /* 是释放一整个物理页吗？ */
         // printf(bl("walk free pa: %p\n"), pa);
         kfree(pa);
+        // printf("pa: %p\n", pa);
+        // print_buddy(); 
         // #ifdef TODO
         // todo("is the page mapping, not kfree, else ,free the page(wrong, mmap has dup the file");
         // #endif

@@ -614,7 +614,7 @@ mmput(mm_struct_t *mm){
   /* unmap 用户空间并释放对应的vma */
   exit_mmap(mm);
 
-  vmprint(mm->pagetable);
+  // vmprint(mm->pagetable);
   /* 重要！之前是在uvmfree中调用的 */
   freewalk(mm->pagetable);
 
