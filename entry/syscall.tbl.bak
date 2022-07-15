@@ -9,7 +9,7 @@
  9     chdir     sys_chdir  
 10     dup       sys_dup    
 11     getpid    sys_getpid 
-12     sbrk      sys_sbrk   
+12     brk      sys_brk   
 13     sleep     sys_sleep  
 14     uptime    sys_uptime 
 15     open      sys_open   

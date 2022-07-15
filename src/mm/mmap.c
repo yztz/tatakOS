@@ -917,6 +917,8 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	// vma->vm_page_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
 	vma->vm_pgoff = 0;
 	vma->vm_file = NULL;
+	
+	vma->type = HEAP;
 
 	vma_link(mm, vma, prev, rb_link, rb_parent);
 

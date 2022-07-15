@@ -112,7 +112,8 @@ sys_sbrk(void){
   brk = mm->brk + n;
 
   /*下面和sys_brk一样*/
-  acquire(&mm->mm_lock);
+  /* 这个锁和vma_link的锁冲突，mm_struct_t的锁的设计还有待商榷 */
+  // acquire(&mm->mm_lock);
 
   if(brk < mm->start_brk)
     ER();
@@ -140,7 +141,7 @@ set_brk:
   mm->brk = brk;
 
 out:
-  release(&mm->mm_lock);
+  // release(&mm->mm_lock);
   return mm->brk;
 }
 
@@ -161,7 +162,9 @@ sys_brk(void){
   if(argaddr(0, &brk) < 0)
     return -1;
 
-  acquire(&mm->mm_lock);
+  // acquire(&mm->mm_lock);
+  if(brk == 0)
+    return mm->brk;
 
   if(brk < mm->start_brk)
     ER();
@@ -189,7 +192,7 @@ set_brk:
   mm->brk = brk;
 
 out:
-  release(&mm->mm_lock);
+  // release(&mm->mm_lock);
   return mm->brk;
 }
 

@@ -29,7 +29,7 @@
 64     write          sys_write
 80     fstat          sys_fstat  
 ##############MM################
-214    sbrk           sys_sbrk  
+214    brk             sys_brk
 215    munmap         sys_munmap
 222    mmap           sys_mmap
 ############Others##############

@@ -338,6 +338,9 @@ exec(char *path, char **argv)
   // /* set the start heap */
   // // p->mm->start_brk= p->sz;
   p->mm->start_brk= sz;
+  /* brk 要初始化为start_brk，别忘了 */
+  p->mm->brk = p->mm->start_brk;
+
   p->mm->start_stack = sp;
 
   // switchuvm(p);
