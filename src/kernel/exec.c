@@ -244,11 +244,14 @@ exec(char *path, char **argv)
       goto bad;
     if(ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
-    uint64 sz1;
-    if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
+    // uint64 sz1;
+    // if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
+    //   goto bad;
+    // uint64 sz1;
+    if(uvmalloc(pagetable, ph.vaddr,  ph.vaddr + ph.memsz) == 0)
       goto bad;
     
-    sz = sz1;
+    // sz = sz1;
     if((ph.vaddr % PGSIZE) != 0)
       goto bad;
     if(loadseg(pagetable, ph.vaddr, ep, ph.off, ph.filesz) < 0)
@@ -258,8 +261,9 @@ exec(char *path, char **argv)
     得到，所以0地址也已经有东西了，这里重新装载程序将其覆盖，do_mmap需要先删除旧的
     vma，再创建新的vma，或者再前面的步骤里进行 */
     /* 创建可执行程序的vma */
-    do_mmap(NULL, PGROUNDUP(sz)-PGROUNDUP(ph.vaddr+ph.memsz), PGROUNDUP(ph.vaddr+ph.memsz), PROT_READ|PROT_EXEC, MAP_EXECUTABLE, 0, LOAD); 
+    do_mmap(NULL, ph.vaddr, PGROUNDUP(ph.memsz), PROT_READ|PROT_EXEC, MAP_EXECUTABLE, 0, LOAD); 
     // ER();
+    sz = PGROUNDUP(ph.vaddr + ph.memsz);
   }
 
   // printf("ph: %d\n", ph.vaddr + ph.memsz);
