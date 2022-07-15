@@ -92,6 +92,8 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, in
   start = a = PGROUNDDOWN_SPEC(va, spec);
   last = PGROUNDDOWN_SPEC(va + size - 1, spec);
   for(;;){
+    if(a == 0xf4000)
+      for(;;);
     if((pte = _walk(pagetable, a, 1, spec)) == 0)
       goto bad;
     if(*pte & PTE_V)

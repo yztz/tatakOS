@@ -49,10 +49,10 @@ struct mm_struct {
   spinlock_t page_table_lock; /* page tables' spin lock */
 
   pagetable_t pagetable;       // User page table
-  uint64 kstack;               // Virtual address of kernel stack
-  struct trapframe *trapframe; // data page for trampoline.S
+  // uint64 kstack;               // Virtual address of kernel stack
+  // struct trapframe *trapframe; // data page for trampoline.S
 
-  struct list_head mmlist;
+  struct list_head mmlist; /* 把所有的mm_struct 串联起来的链表 */
 };
 
 typedef struct mm_struct mm_struct_t;

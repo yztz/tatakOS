@@ -36,8 +36,8 @@ extern uint64_t sys_memuse(void);
 void
 freewalk(pagetable_t pagetable);
 
-mm_struct_t *mm_init(mm_struct_t *mm);
-static void init_new_context(proc_t *tsk, mm_struct_t *mm);
+mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk);
+static void init_new_context(proc_t *tsk);
 // helps ensure that wakeups of wait()ing
 // parents are not lost. helps obey the
 // memory model when using p->parent.
@@ -151,18 +151,20 @@ found:
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
 
-  // // 申请Trapframe
-  // if((p->trapframe = (struct trapframe *)kalloc()) == 0){
-  //   freeproc(p);
-  //   release(&p->lock);
-  //   return 0;
-  // }
-  // // 申请内核栈
-  // if((p->kstack = (uint64_t)kalloc()) == 0){
-  //   freeproc(p);
-  //   release(&p->lock);
-  //   return 0;
-  // }
+  // 申请Trapframe
+  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+    // freeproc(p);
+    // release(&p->lock);
+    // return 0;
+    ER();
+  }
+  // 申请内核栈
+  if((p->kstack = (uint64_t)kalloc()) == 0){
+    // freeproc(p);
+    // release(&p->lock);
+    // return 0;
+    ER();
+  }
 
   // 获取空页表（已经映射了内核地址空间，trapfram以及内核栈）
   // p->pagetable = proc_pagetable(p);
@@ -190,14 +192,14 @@ found:
 static void
 freeproc(struct proc *p)
 {
-  // if(p->trapframe)
-  //   kfree((void*)p->trapframe);
-  // if(p->kstack)
-  //   kfree((void*)p->kstack);
+  if(p->trapframe)
+    kfree((void*)p->trapframe);
+  if(p->kstack)
+    kfree((void*)p->kstack);
   if(p->ext_ofile)
     kfree((void *)p->ext_ofile);
-  // p->trapframe = 0;
-  // p->kstack = 0;
+  p->trapframe = 0;
+  p->kstack = 0;
 
   // free_vma(p);
 
@@ -225,7 +227,7 @@ freeproc(struct proc *p)
 // Create a user page table for a given process,
 // with no user memory, but with trampoline pages.
 pagetable_t
-proc_pagetable(mm_struct_t *mm)
+proc_pagetable(mm_struct_t *mm, proc_t *tsk)
 {
   pagetable_t pagetable;
 
@@ -245,21 +247,21 @@ proc_pagetable(mm_struct_t *mm)
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
-              (uint64)(mm->trapframe), PTE_R | PTE_W) < 0){
+              (uint64)(tsk->trapframe), PTE_R | PTE_W) < 0){
     erasekvm(pagetable);
     // uvmfree(pagetable, 0, MMAP_BASE);
     ER();
     return 0;
   }
 
-  if(mappages(pagetable, KSTACK, PGSIZE,
-              (uint64)(mm->kstack), PTE_R | PTE_W) < 0){
-    erasekvm(pagetable);
-    uvmunmap(pagetable, TRAPFRAME, 1, 0);
-    // uvmfree(pagetable, 0, MMAP_BASE);
-    ER();
-    return 0;
-  }
+  // if(mappages(pagetable, KSTACK, PGSIZE,
+  //             (uint64)(tsk->kstack), PTE_R | PTE_W) < 0){
+  //   erasekvm(pagetable);
+  //   uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  //   // uvmfree(pagetable, 0, MMAP_BASE);
+  //   ER();
+  //   return 0;
+  // }
 
   return pagetable;
 }
@@ -270,7 +272,7 @@ void
 proc_freepagetable(pagetable_t pagetable)
 {
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
-  uvmunmap(pagetable, KSTACK, 1, 0);
+  // uvmunmap(pagetable, KSTACK, 1, 0);
   erasekvm(pagetable);
   // uvmfree(pagetable, sz);
 }
@@ -315,8 +317,8 @@ userinit(void)
   initproc = p;
 
   p->mm = kzalloc(sizeof(mm_struct_t));
-  mm_init(p->mm);
-  init_new_context(p, p->mm);
+  mm_init(p->mm, p);
+  init_new_context(p);
 
   mycpu()->proc = p;
   // allocate one user page and copy init's instructions
@@ -326,10 +328,10 @@ userinit(void)
   // p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->mm->trapframe->epc = USER_START;      // user program counter
+  p->trapframe->epc = USER_START;      // user program counter
 
   /* 栈是否过小，要不奥为其创建一个vma？ */
-  p->mm->trapframe->sp = PGSIZE;  // user stack pointer
+  p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
     // p->cwd = namei("/");
@@ -430,36 +432,39 @@ dup_mmap(mm_struct_t *mm, mm_struct_t *oldmm){
  * @brief 初始化复制的mm结构体，并且分配新页表
  * 
  */
-mm_struct_t *mm_init(mm_struct_t *mm){
+mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk){
   initlock(&mm->page_table_lock, "");
   initlock(&mm->mm_lock, "");
   mm->free_area_cache = TASK_UNMAPPED_BASE;
   
   // 申请Trapframe
-  if((mm->trapframe = (struct trapframe *)kalloc()) == 0){
-    ER();
-  }
+  // if((mm->trapframe = (struct trapframe *)kalloc()) == 0){
+  //   ER();
+  // }
 
   // 申请内核栈
-  if((mm->kstack = (uint64_t)kalloc()) == 0){
-    ER();
-  }
+  // if((mm->kstack = (uint64_t)kalloc()) == 0){
+  //   ER();
+  // }
+  // printf(rd("kstack: %p\n"), mm->kstack);
 
   /* 创建页表并映射内核空间, trapframe, kstack */
   // sys_memuse();
-  if((mm->pagetable = proc_pagetable(mm)) == NULL)
+  if((mm->pagetable = proc_pagetable(mm, tsk)) == NULL)
     ER();
   // sys_memuse();
 
   return mm;
 }
 
-static void init_new_context(proc_t *tsk, mm_struct_t *mm){
+static void init_new_context(proc_t *tsk){
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&tsk->context, 0, sizeof(tsk->context));
   tsk->context.ra = (uint64_t)forkret;
-  tsk->context.sp = mm->kstack + PGSIZE;
+  /* 通过虚拟地址或者物理地址来映射内核栈 */
+  tsk->context.sp = tsk->kstack + PGSIZE;
+  // tsk->context.sp = KSTACK + PGSIZE;
 }
 
 /**
@@ -487,7 +492,7 @@ static int copy_mm(uint64_t clone_flags, proc_t * tsk){
 
   /* 给mm分配页表，并且映射内核空间 */
   // sys_memuse();
-  if(!mm_init(mm))
+  if(!mm_init(mm, tsk))
     ER();
 
   /* 复制vma和用户空间的页表 */
@@ -495,10 +500,10 @@ static int copy_mm(uint64_t clone_flags, proc_t * tsk){
   dup_mmap(mm, oldmm);
   // sys_memuse();
   // 复制trapframe
-  *(mm->trapframe) = *(oldmm->trapframe);
+  // *(mm->trapframe) = *(oldmm->trapframe);
 
   // 将返回地址重置为0
-  mm->trapframe->a0 = 0;
+  // mm->trapframe->a0 = 0;
 
   tsk->mm = mm;
   return 0;
@@ -523,7 +528,7 @@ do_clone(uint64_t stack)
   copy_mm(0, np);
   // sys_memuse();
 
-  init_new_context(np, np->mm);
+  init_new_context(np);
 
   // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
   // if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
@@ -534,14 +539,14 @@ do_clone(uint64_t stack)
   // np->sz = p->sz;
 
   // 复制trapframe
-  // *(np->trapframe) = *(p->trapframe);
+  *(np->trapframe) = *(p->trapframe);
 
   // 将返回地址重置为0
-  // np->trapframe->a0 = 0;
+  np->trapframe->a0 = 0;
 
   // 如果指定了栈，那么重设sp
   if(stack)
-    np->mm->trapframe->sp = stack;
+    np->trapframe->sp = stack;
 
   // 增加文件描述符引用
   for(i = 0; i < NOFILE; i++)
@@ -597,19 +602,19 @@ reparent(struct proc *p)
  */
 static void
 mmput(mm_struct_t *mm){
-  if(mm->trapframe)
-    kfree((void*)mm->trapframe);
-  if(mm->kstack)
-    kfree((void*)mm->kstack);
-  mm->trapframe = 0;
-  mm->kstack = 0;
+  // if(mm->trapframe)
+  //   kfree((void*)mm->trapframe);
+  // if(mm->kstack)
+  //   kfree((void*)mm->kstack);
+  // mm->trapframe = 0;
+  // mm->kstack = 0;
 
   /* unmap内核空间 */
   proc_freepagetable(mm->pagetable);
   /* unmap 用户空间并释放对应的vma */
   exit_mmap(mm);
 
-  // vmprint(mm->pagetable);
+  vmprint(mm->pagetable);
   /* 重要！之前是在uvmfree中调用的 */
   freewalk(mm->pagetable);
 

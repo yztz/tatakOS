@@ -43,8 +43,10 @@ uint64 sys_bio_cache(void) {
 }
 
 
+// extern void print_buddy();
 uint64_t sys_memuse(void) {
   buddy_print_free();
+  // print_buddy();
   return 0;
 }
 

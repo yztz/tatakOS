@@ -200,9 +200,11 @@ exec(char *path, char **argv)
 
   /* 切换新页表 */
   mm_struct_t *newmm = kzalloc(sizeof(mm_struct_t));
-  mm_init(newmm);
+  mm_init(newmm, p);
 
+  /* 切换页表自动刷新快表 */
   switchuvm(newmm);
+  // sfence_vma();
 
   // sys_memuse();
   exit_mm(myproc());
@@ -312,7 +314,7 @@ exec(char *path, char **argv)
   // arguments to user main(argc, argv)
   // argc is returned via the system call return
   // value, which goes in a0.
-  p->mm->trapframe->a1 = sp;
+  p->trapframe->a1 = sp;
 
   // Save program name for debugging.
   for(last=s=path; *s; s++)
@@ -325,9 +327,9 @@ exec(char *path, char **argv)
   // p->mm->pagetable = pagetable;
   // // p->sz = sz;
   // // printf(rd("sz: %x\n"), sz);
-  p->mm->trapframe->epc = elf.entry;  // initial program counter = main
+  p->trapframe->epc = elf.entry;  // initial program counter = main
   // // debug("entry addr is %lx", elf.entry);
-  p->mm->trapframe->sp = sp; // initial stack pointer
+  p->trapframe->sp = sp; // initial stack pointer
 
   // /* set the start heap */
   // // p->mm->start_brk= p->sz;

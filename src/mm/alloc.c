@@ -58,6 +58,7 @@ void *kzalloc(size_t size) {
  * @deprecated use kmalloc(PGSIZE) instead
 */
 void *kalloc(void) {
+    // return kzalloc(PGSIZE);
     return kmalloc(PGSIZE);
 }
 
@@ -73,7 +74,10 @@ void kfree(void *addr) {
     if((uint64)addr & ~PGMASK) { // piece
         slob_free(addr);
     } else {
+        // memset(addr, 0, PGSIZE);
         buddy_free(addr);
+        /* 为了安全，清零 */
+        // memset(addr, 0, PGSIZE);
     }
     
 }

@@ -142,6 +142,9 @@ void error(char *info, char *s, const char *s1, int d)
 char *vma_type_string[10] =  { "NONE", "LOAD", "TEXT", "DATA", "BSS", "HEAP", "MMAP_FILE", "STACK", "MMAP_ANON", "GUARD"};
 
 void
+print_pa(pagetable_t pagetable, uint64_t start, uint64_t end);
+
+void
 print_all_vma(mm_struct_t *mm){
   struct vm_area_struct *vma;
   int i = 0;
@@ -150,9 +153,26 @@ print_all_vma(mm_struct_t *mm){
   printf(ylw("number of vmas: %d\n"), mm->map_count);
   while(vma != NULL){
    printf(grn("no.%d start: %p end: %p type: %s\n"), i++, vma->vm_start, vma->vm_end, vma_type_string[vma->type]); 
+   print_pa(mm->pagetable, vma->vm_start, vma->vm_end);
    vma = vma->vm_next;
   }
   printf("\n");
+}
+
+/**
+ * @brief 给出一段连续的va，打印出pa
+ * 
+ */
+void
+print_pa(pagetable_t pagetable, uint64_t start, uint64_t end){
+  for (int i = start; i < end; i+=PGSIZE)
+  {
+    pte_t *pte;
+    pte = walk(pagetable, i, 0);
+    uint64_t pa = PTE2PA(*pte);
+    printf("va: %p\tpa: %p\n", i, pa);
+  }
+  
 }
 
 void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){

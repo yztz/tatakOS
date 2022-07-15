@@ -345,14 +345,22 @@ freewalk(pagetable_t pagetable)
       panic("freewalk: leaf");
     }
   }
+  /* memset 放在kfree前没事 */
+    // memset(pagetable, 0, PGSIZE);
   kfree((void*)pagetable);
+  // printf("pagetable: %p\n", pagetable);
+  // printf("kstack: %p,  sp: %p\n", myproc()->kstack, r_sp());
+  // if((uint64)pagetable == 0x80265000)
+  //   memset(pagetable, 0, PGSIZE);
+  // memcpy(pagetable, (void*)myproc()->kstack, PGSIZE);
+  // memcpy(pagetable, pagetable, PGSIZE);
 }
 
 void switchuvm(mm_struct_t *mm) {
   if(mm == NULL)
-    panic("switchuvm: no process");
-  if(mm->kstack == 0)
-    panic("switchuvm: no kstack");
+    panic("switchuvm: no mm");
+  // if(mm->kstack == 0)
+    // panic("switchuvm: no kstack");
   if(mm->pagetable == 0)
     panic("switchuvm: no pgdir");
 
