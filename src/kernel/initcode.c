@@ -30,7 +30,7 @@ char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = {"brk"};
+char* prog_name[] = {"munmap"};
 // char* prog_name[] = {"bigwrite"};
 
 void run(char *testcases[], int cnt);

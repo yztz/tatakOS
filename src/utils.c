@@ -168,7 +168,7 @@ print_pa(pagetable_t pagetable, uint64_t start, uint64_t end){
   for (int i = start; i < end; i+=PGSIZE)
   {
     pte_t *pte;
-    pte = walk(pagetable, i, 0);
+    pte = walk(pagetable, i, 1);
     uint64_t pa = PTE2PA(*pte);
     printf("va: %p\tpa: %p\n", i, pa);
   }

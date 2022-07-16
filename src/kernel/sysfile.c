@@ -538,14 +538,17 @@ sys_mmap(void)
 }
 
 uint64_t
-sys_munmap(unsigned long addr, size_t len)
+sys_munmap(void)
 {
 	int ret;
 	struct mm_struct *mm = myproc()->mm;
+    uint64_t addr, len;
+    if(argaddr(0, &addr) < 0 || argaddr(1, &len) < 0)
+        ER();
 
-    acquire(&mm->mm_lock);
+    // acquire(&mm->mm_lock);
 	ret = do_munmap(mm, addr, len);
-    release(&mm->mm_lock);
+    // release(&mm->mm_lock);
 	return ret;
 }
 

@@ -385,13 +385,14 @@ static vm_area_struct_t *remove_vma(vm_area_struct_t *vma){
 	return next;
 }
 
-static void remove_vma_list(struct mm_struct *mm, struct vm_area_struct *vma)
+static void remove_vma_list(struct vm_area_struct *vma)
 {
 	while(vma){
 		vma = remove_vma(vma);
-		mm->map_count--;
+		/* 这里不用减去map_count，因为vma链表已经从mm的链表中取下来了 */
+		// mm->map_count--;
 	}
-	validate_mm(mm);
+	// validate_mm(mm);
 }
 
 void
@@ -794,6 +795,7 @@ detach_vmas_to_be_unmapped(mm_struct_t *mm, vm_area_struct_t *vma,
 	tail_vma->vm_next = NULL;
 	/* kill the cache */
 	mm->mmap_cache = NULL;
+	validate_mm(mm);
 }	
 
 /*
@@ -860,7 +862,7 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){
 	detach_vmas_to_be_unmapped(mm, vma, prev, end);
 	unmap_region(mm, vma, prev, start, end);
 
-	remove_vma_list(mm, vma);
+	remove_vma_list(vma);
 
 	return 0;
 }
