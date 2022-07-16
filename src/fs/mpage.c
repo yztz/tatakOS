@@ -192,12 +192,22 @@ int mpage_writepages(address_space_t *mapping){
     
     bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
     // printf("bio get\n");
-    print_bio_vec(bio);
+    // print_bio_vec(bio);
     // printf("submit...\n");
     submit_bio(bio);
     // printf("submit end...\n");
     cur_page = next_page;
   }
+
+  /* 这里别忘了释放pghead相关的结构体！ */
+  pages_be_found_t *pg = pg_head->head;
+  while(pg){
+    pages_be_found_t *tmp = pg->next;
+    kfree((void*)pg);
+    pg = tmp;
+  }
+  kfree(pg_head);
+
   return 0;
 
 }
