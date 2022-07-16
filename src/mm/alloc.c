@@ -76,7 +76,7 @@ void kfree(void *addr) {
     if((uint64)addr & ~PGMASK) { // piece
         slob_free(addr);
     } else {
-        // memset(addr, 0, PGSIZE);
+        memset(addr, 0, PGSIZE);
         buddy_free(addr);
         /* 为了安全，清零 */
         // memset(addr, 0, PGSIZE);

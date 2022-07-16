@@ -144,8 +144,8 @@ extern void print_buddy();
 
 void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 {
-  // printf("%s::%x level %d\n", tab[c_h - 1], node, c_h); 
-  for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT) - 1; i++)
+  /* 下面的i小于表达式右边不用-1，这里之前少释放了最后一个页 */
+  for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++)
   {
     if (node->slots[i] != NULL)
     {
@@ -158,17 +158,11 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
         kfree(pa);
         // printf("pa: %p\n", pa);
         // print_buddy(); 
-        // #ifdef TODO
-        // todo("is the page mapping, not kfree, else ,free the page(wrong, mmap has dup the file");
-        // #endif
-        // break;
       }
       else
       {
         /* 递归释放下一级节点的内容 */
         walk_free_rdt((struct radix_tree_node *)node->slots[i], height, c_h + 1);
-        void *addr = node->slots[i];
-        kfree(addr);
       }
     }
   }
@@ -191,14 +185,14 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
+
+  printf_radix_tree(root);
+
   void *addr;
   if (root->height > 0)
   {
     // printf("root node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
-    /* free rnode */
-    // addr = root->rnode;
-    // kfree(addr);
   }
   /* freee i_mapping */
   addr = entry->i_mapping;

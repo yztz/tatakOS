@@ -177,7 +177,7 @@ int mpage_writepages(address_space_t *mapping){
     #ifdef TODO
     todo("modify the allocated page address, make the later allocated one bigger than the former one");
     #endif
-    printf("start merge\n");
+    // printf("start merge\n");
     while(next_page){
       if((next_page->pg_id == tmp->pg_id+1) && (next_page->pa == tmp->pa + PGSIZE)){
         nr_continuous_pages++;
@@ -187,15 +187,15 @@ int mpage_writepages(address_space_t *mapping){
       else
         break;
     }
-    printf("merge end\n");
+    // printf("merge end\n");
     // printf(rd("cur_page->pa: %p\t cur_page->pg_id: %d\t nr continuous pages: %d\n"), cur_page->pa, cur_page->pg_id, nr_continuous_pages);
     
     bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
-    printf("bio get\n");
+    // printf("bio get\n");
     print_bio_vec(bio);
-    printf("submit...\n");
+    // printf("submit...\n");
     submit_bio(bio);
-    printf("submit end...\n");
+    // printf("submit end...\n");
     cur_page = next_page;
   }
   return 0;

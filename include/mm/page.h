@@ -127,6 +127,7 @@ void clear_page_dirty(uint64_t pa);
 int page_is_dirty(uint64_t pa);
 
 void unlock_put_page(uint64_t pa);
+void print_not_freed_pages();
 
 /* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
 /* Out of convenient and compatibility, we define the default behavior for the func below */

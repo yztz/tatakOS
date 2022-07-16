@@ -204,3 +204,20 @@ void unlock_put_page(uint64_t pa){
   unlock_page(pa);
   put_page(pa);
 }
+
+/**
+ * @brief 打印出从kernel end的位置开始，非空闲的页(buddy管理的页），用来检测内存泄漏。
+ * 
+ */
+extern char end[];
+void print_not_freed_pages(){
+  int pgnum;
+  uint64_t p;
+
+  printf(rd("pages be refered:\n"));
+  for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
+    pgnum = PAGE2NUM(p);
+    if(pages[pgnum].refcnt > 0)
+      printf("pgnum: %d\taddr: %p\n", pgnum, p);
+  }
+}
