@@ -17,6 +17,9 @@ struct spinlock {
 
 typedef struct spinlock spinlock_t;
 
+#define spin_lock(lock) acquire(lock)
+#define spin_unlock(lock) release(lock)
+
 void            acquire(struct spinlock*);
 int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);

@@ -291,10 +291,14 @@ static inline void list_move(struct list_head *list, struct list_head *head)
 	     !list_entry_is_head(pos, head, member); 			\
 	     pos = list_prev_entry(pos, member))
 
-
-
-
-
+/**
+ * list_empty - tests whether a list is empty
+ * @head: the list to test.
+ */
+static inline int list_empty(const struct list_head *head)
+{
+	return head->next == head;
+}
 
 // // hash list
 // #define HLIST_HEAD_INIT {.first = NULL}

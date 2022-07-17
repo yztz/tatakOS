@@ -46,6 +46,8 @@
     "riscv.h": "c",
     "atomic": "c",
     "*.tcc": "c",
-    "fstream": "c"
+    "fstream": "c",
+    "typeinfo": "c",
+    "spinlock.h": "c"
   }
 }

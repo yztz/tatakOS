@@ -11,3 +11,4 @@ obj-y += page.o
 obj-y += rmap.o
 obj-y += slob.o
 obj-y += vm.o
+obj-y += pdflush.o

@@ -130,8 +130,8 @@ alloc_init_mm(struct proc *p){
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
 // If there are no free procs, or a memory allocation fails, return 0.
-static struct proc*
-allocproc(void)
+struct proc*
+allocproc(int is_kthread)
 {
   struct proc *p;
 
@@ -151,13 +151,18 @@ found:
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
 
+  /* 如果时kthread不用trapframe，省下一个页 */
+  #ifdef TODO
+  todo("");
+  #endif
   // 申请Trapframe
-  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
-    // freeproc(p);
-    // release(&p->lock);
-    // return 0;
-    ER();
-  }
+  if(!is_kthread)
+    if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+      // freeproc(p);
+      // release(&p->lock);
+      // return 0;
+      ER();
+    }
   // 申请内核栈
   if((p->kstack = (uint64_t)kalloc()) == 0){
     // freeproc(p);
@@ -313,7 +318,7 @@ userinit(void)
 {
   struct proc *p;
 
-  p = allocproc();
+  p = allocproc(0);
   initproc = p;
 
   p->mm = kzalloc(sizeof(mm_struct_t));
@@ -330,7 +335,7 @@ userinit(void)
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = USER_START;      // user program counter
 
-  /* 栈是否过小，要不奥为其创建一个vma？ */
+  /* 栈是否过小，要不要为其创建一个vma？ */
   p->trapframe->sp = PGSIZE;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
@@ -457,6 +462,11 @@ mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk){
   return mm;
 }
 
+/**
+ * @brief Set up new context to start executing at forkret, 
+ * which returns to user space.
+ * 
+ */
 static void init_new_context(proc_t *tsk){
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -520,7 +530,7 @@ do_clone(uint64_t stack)
   struct proc *p = myproc();
 
   // Allocate process.
-  if((np = allocproc()) == 0){
+  if((np = allocproc(0)) == 0){
     return -1;
   }
 
@@ -982,4 +992,12 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+/************new added functions in page frame reclaiming****************/
+void
+wake_up_process(proc_t *tsk){
+  if(tsk->state != SLEEPING)
+    ER();
+  tsk->state = RUNNABLE;
 }

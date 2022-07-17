@@ -9,6 +9,7 @@ obj-y += sys.o
 obj-y += pagefault.o
 
 obj-y += asm/
+obj-y += kthread.o
 
 
 # initcode

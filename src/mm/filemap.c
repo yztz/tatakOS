@@ -186,7 +186,7 @@ void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
 
-  printf_radix_tree(root);
+  // printf_radix_tree(root);
 
   void *addr;
   if (root->height > 0)

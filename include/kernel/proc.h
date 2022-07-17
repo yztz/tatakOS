@@ -149,4 +149,6 @@ void            yield(void);
 void            procdump(void);
 void exit_mm(struct proc *tsk);
 mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk);
+void wake_up_process(proc_t *tsk);
+struct proc* allocproc(int);
 #endif

@@ -15,6 +15,8 @@ volatile static int started = 0;
 __attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
 
 
+extern int pdflush_init(void);
+
 void
 main()
 {
@@ -52,8 +54,11 @@ main()
     binit();         // buffer cache
     fileinit();      // file table 
     fs_init();
-    
+
     userinit();      // first user process
+
+    pdflush_init();
+
     __sync_synchronize();
     started = 1;
   } else {
