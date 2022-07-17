@@ -27,5 +27,6 @@ void            release(struct spinlock*);
 void            push_off(void);
 void            pop_off(void);
 
+#define DEFINE_SPINLOCK(x, name) spinlock_t x = INIT_SPINLOCK(name)
 
 #endif

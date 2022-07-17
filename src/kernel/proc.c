@@ -902,6 +902,13 @@ wakeup(void *chan)
 
   for(p = proc; p < &proc[NPROC]; p++) {
     if(p != myproc()){
+
+      #ifdef TODO
+      todo("delete");
+      #endif
+      if(p->pid == 2)
+        continue;
+
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;

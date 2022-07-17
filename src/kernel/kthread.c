@@ -55,7 +55,7 @@ proc_t *kthread_create(int (*threadfn)(void *data),
 
   safestrcpy(kthread->name, namefmt, sizeof(kthread->name));
 
-  kthread->state = SLEEPING;
+  kthread->state = RUNNABLE;
   release(&kthread->lock);
   return NULL;
 }

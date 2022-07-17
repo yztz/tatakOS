@@ -24,8 +24,11 @@
 #include "list.h"
 #include "kthread.h"
 
-spinlock_t pdflush_lock;
-list_head_t pdflush_list;
+/* 原来注释掉的定义没初始化 */
+// spinlock_t pdflush_lock;
+// list_head_t pdflush_list;
+DEFINE_SPINLOCK(pdflush_lock, "pdflush lock");
+LIST_HEAD(pdflush_list);
 
 #define PDFLUSH_THREADS_CNTS 2
 /*
@@ -93,6 +96,9 @@ static int __pdflush(pdflush_work_t *my_work){
  */
 static int pdflush(void *dummy)
 {
+  /* 重要！同forkret */
+  // Still holding p->lock from scheduler.
+  release(&myproc()->lock);
   /* 注释里说my_work被设置为了一个局部变量，my_work对于每个pdflush thread是私有的，
   确实没有设置为全局变量的必要 */
 	struct pdflush_work my_work;
