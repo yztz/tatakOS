@@ -372,6 +372,7 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
 }
 
 
+/* 被writeback_single_entry函数所取代了 */
 /**
  * @brief 把内存中的文件映像写回磁盘。对于fat32来说，包括写fat表（给文件分配适当的簇），写文件的页，改写
  * 父目录中的文件元数据。

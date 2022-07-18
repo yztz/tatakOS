@@ -13,6 +13,7 @@
 #include "debug.h"
 #include "mm/mm.h"
 #include "fs/mpage.h"
+#include "writeback.h"
 
 fat32_t *fat;
 
@@ -99,7 +100,9 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
       release(&fat->cache_lock);
       return entry;
     }
-    if(!empty && entry->ref == 0)    // Remember empty slot.
+
+    /* 这里新加了一条判断，因为回收的entry，只有当其写回磁盘了，才会释放i_mapping */
+    if(!empty && entry->ref == 0 && entry->i_mapping == NULL)    // Remember empty slot.
       empty = entry;
   }
 
@@ -183,6 +186,8 @@ static void unlink(entry_t *entry) {
 
 
 
+extern void background_writeout(uint64_t min_pages);
+extern int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0);
 
 // 递归地解引用
 // under lock
@@ -206,22 +211,38 @@ static void __eput(entry_t *entry) {
       acquire(&entry->fat->cache_lock);
     }
 
-    /* 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免 */
-    #ifdef TODO
-    todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
-    #endif
+    /* 可以把entry和immaping解除，entry回收利用，imapping写回后释放，或者动态分配
+    一个新的entry，用来保留信息，原entry回收 */
 
-    /* 如果为普通文件，则写回。（为目录则不写回） */
+    // /* 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免 */
+    // #ifdef TODO
+    // todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
+    // #endif
+
+    // /* 如果为普通文件，则写回。（为目录则不写回） */
     if(entry->raw.attr == FAT_ATTR_FILE){
+        // release(&entry->fat->cache_lock);
+        // writeback_file_to_disk(entry); 
+        // acquire(&entry->fat->cache_lock);
+        // /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
+        // free_mapping(entry);
+
+        /* 简单粗糙的做法，唤醒内核写回线程 */
+        // wakeup_bdflush(1);
+        // background_writeout(1);
+
         release(&entry->fat->cache_lock);
-        // printf("start writeback\n");
-        writeback_file_to_disk(entry); 
-        // printf("writeback end\n");
+          /* 只单写一个entry，不要写其他entry */
+        if(entry->dirty)
+          writeback_single_entry_idx(entry - pool);
+          /* (entry - pool)/sizeof(entry_t)是错的！*/
+          // pdflush_operation(writeback_single_entry_idx, (entry - pool));
         acquire(&entry->fat->cache_lock);
-        // printf("start freemapping\n");
-        /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
-        free_mapping(entry);
-        // printf("freemapping end\n");
+
+        /* dirty的entry在writeback_single_entry里面调用free_mapping */
+        if(!entry->dirty)
+          free_mapping(entry);
+
     }
 
     __eput(entry->parent);
@@ -427,7 +448,7 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
   /* enlarge file to make sure the file size >= off + n(or more accurately the file's all sectors' capacity) */
   /* 下面这个语句在qemu中非常限制性能，需要借助fat表的磁盘优化 */
   #ifdef TODO
-  todo("enlarge file: optimize point 2:modify the enlarge file, it restrict the performance!");
+  todo("CONSIDER THE CASE THAT THE FILE IS SMALLER!");
   #endif
   // if(entry->clus_end == 0){
   //   if((entry->clus_end = get_clus_end(entry->fat, entry->clus_start)) == 0)
@@ -447,10 +468,12 @@ int writee(entry_t *entry, int user, uint64_t buff, int off, int n) {
 
   int newsize = off + ret;
   // /* 更改文件在父目录中的元数据 */
-  if(ret > 0 && newsize > entry->raw.size){
+  if(ret > 0 && newsize != entry->raw.size){
     /* update the file's size in mem */
     entry->size_in_mem = newsize;
     entry->dirty = 1;
+
+    list_add(&entry->e_list, &fat->fat_dirty);
   //   entry->raw.size = newsize;
   //   debug("updata size");
   //   /* entry->clus_offset 有待商榷，这里需要的是目录在文件中的偏移，而不是簇 */

@@ -813,6 +813,7 @@ sched(void)
     panic("sched interruptible");
 
   intena = mycpu()->intena;
+
   swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
 }
@@ -853,8 +854,6 @@ forkret(void)
     printf("ok\n");
     // LOOP();
     // fsinit(ROOTDEV);
-
-
   }
 
   usertrapret();

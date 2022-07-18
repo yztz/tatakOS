@@ -38,7 +38,7 @@ LIST_HEAD(pdflush_list);
 struct pdflush_work {
 	proc_t *who;	/* The thread */
 	void (*fn)(unsigned long);	/* A callback function */
-	unsigned long arg0;		/* An argument to the callback */
+	uint64_t arg0;		/* An argument to the callback */
 	struct list_head list;		/* On pdflush_list, when idle */
 	unsigned long when_i_went_to_sleep;
 };
@@ -111,7 +111,7 @@ static int pdflush(void *dummy)
  * Returns zero if it indeed managed to find a worker thread, and passed your
  * payload to it.
  */
-int pdflush_operation(void (*fn)(unsigned long), unsigned long arg0)
+int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0)
 {
 	// unsigned long flags;
 	int ret = 0;
@@ -122,6 +122,8 @@ int pdflush_operation(void (*fn)(unsigned long), unsigned long arg0)
 	spin_lock(&pdflush_lock);
 	if (list_empty(&pdflush_list)) {
 		spin_unlock(&pdflush_lock);
+		/* 没有空闲的pdflush */
+		ER();
 		ret = -1;
 	} else {
 		struct pdflush_work *pdf;

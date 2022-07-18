@@ -9,6 +9,7 @@
 #include "fs/stat.h"
 #include "param.h"
 #include "radix-tree.h"
+#include "list.h"
 
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
@@ -39,6 +40,9 @@ struct fat_entry {
     uint32_t    size_in_mem; /* 内存中保留的当前文件的大小，在文件写回时，如果和磁盘上的不一致，则更新磁盘 */
 
     int dirty; /* 脏位 */
+
+    /* 链表，串进超级块的dirty链表或者io链表中 */
+    list_head_t e_list;
 };
 
 typedef struct fat_entry entry_t;

@@ -160,6 +160,8 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 
     *ppfat = fat;
 
+    /* don't forget to initialize the list */
+    INIT_LIST_HEAD(&fat->fat_dirty);
     return FR_OK;
 }
 
@@ -1199,18 +1201,25 @@ int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_
 
     alloc_num = size/bpc - *clus_cnt;
     
-    // if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
-    //     panic("fat enlarge file 2");
-    // fat_append_cluster(fat, *clus_end, new_clus);
+    #ifdef TODO
+    todo("make the fat_alloc_cluster func positive sequence ");
+    #endif
+
+    /* 连续逆序分配 */
+    if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
+        panic("fat enlarge file 2");
+    fat_append_cluster(fat, *clus_end, new_clus);
 
     // for(;;);
-    for(int i = 0; i < alloc_num; i++){
-        if(fat_alloc_cluster(fat, &new_clus, 1) == FR_ERR){
-            panic("fat alloc append culsters");
-        }
-        fat_append_cluster(fat, *clus_end, new_clus);
-        *clus_end = new_clus;
-    }
+
+    /* 一个一个正序分配 */
+    // for(int i = 0; i < alloc_num; i++){
+    //     if(fat_alloc_cluster(fat, &new_clus, 1) == FR_ERR){
+    //         panic("fat alloc append culsters");
+    //     }
+    //     fat_append_cluster(fat, *clus_end, new_clus);
+    //     *clus_end = new_clus;
+    // }
 
     /* update clus_end and clus_cnt */
     if(alloc_num == 1)
