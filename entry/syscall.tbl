@@ -21,6 +21,7 @@
 17     getcwd    sys_getcwd
 23     dup       sys_dup    
 24     dup3      sys_dup3 
+25     fcntl     sys_fcntl
 29     ioctl     sys_ioctl
 34     mkdirat   sys_mkdirat
 35     unlinkat  sys_unlinkat
@@ -40,8 +41,9 @@
 80     fstat     sys_fstat  
 ##############MM################
 214     sbrk      sys_sbrk  
-#215     munmap      sys_munmap
-#222     mmap      sys_mmap
+215     munmap    sys_munmap
+222     mmap      sys_mmap
+226     mprotect  sys_mprotect
 ##############Sys###############
 96      set_tid_address sys_set_tid_address
 113     clock_gettime   sys_clock_gettime

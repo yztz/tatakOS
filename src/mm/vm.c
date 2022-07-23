@@ -51,12 +51,12 @@ kvminit(void)
   //   vmprint(kernel_pagetable);
   // for(;;);
   // map kernel text executable and read-only.
-  kvmmap(KERN_BASE, KERN_BASE, (uint64)etext-KERN_BASE, PTE_R | PTE_X, PGSPEC_NORMAL);
+  kvmmap(KERN_BASE, KERN_BASE, (uint64)etext-KERN_BASE, PROT_READ | PROT_EXEC, PGSPEC_NORMAL);
   // map kernel data and the physical RAM we'll make use of.
   uint64_t aligned_data = PGROUNDUP_SPEC(etext, PGSPEC_LARGE);
   // map free mem
-  kvmmap((uint64)etext, (uint64)etext, aligned_data-(uint64)etext, PTE_R | PTE_W, PGSPEC_NORMAL);
-  kvmmap(aligned_data, aligned_data, MEM_END-aligned_data, PTE_R | PTE_W, PGSPEC_LARGE);
+  kvmmap((uint64)etext, (uint64)etext, aligned_data-(uint64)etext, PROT_READ | PROT_WRITE, PGSPEC_NORMAL);
+  kvmmap(aligned_data, aligned_data, MEM_END-aligned_data, PROT_READ | PROT_WRITE, PGSPEC_LARGE);
 
   debug("init success!");
 }
@@ -73,31 +73,6 @@ kvminithart()
 }
 
 
-
-// Look up a virtual address, return the physical address,
-// or 0 if not mapped.
-// Can only be used to look up user pages.
-uint64
-_walkaddr(pagetable_t pagetable, uint64 va, int pg_spec)
-{
-  pte_t *pte;
-  uint64 pa;
-
-  if(va >= MAXVA)
-    return 0;
-
-  pte = _walk(pagetable, va, 0, pg_spec);
-
-  if(pte == 0)
-    return 0;
-  if((*pte & PTE_V) == 0)
-    return 0;
-  if((*pte & PTE_U) == 0)
-    return 0;
-  pa = PTE2PA(*pte);
-  return pa;
-}
-
 // add a mapping to the kernel page table.
 // only used when booting.
 // does not flush TLB or enable paging.
@@ -108,7 +83,7 @@ kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
     panic("kvmmap: pgsize");
   if(nxt_mapid == MAX_MAP)
     panic("no map space");
-  if(_mappages(kernel_pagetable, va, sz, pa, perm, spec) != 0)
+  if(_mappages(kernel_pagetable, va, sz, pa, riscv_map_prot(perm), spec) != 0)
     panic("kvmmap");
   
   kmap[nxt_mapid++] = (kmap_t) {.va=va,.pa=pa,.size=sz,.pg_spec=spec,.perm=perm};
@@ -121,7 +96,7 @@ int setupkvm(pagetable_t pagetable) {
   for (int i = 0; i < nxt_mapid; i++) {
     kmap_t map = kmap[i];
     // print_map(map);
-    if(_mappages(pagetable, map.va, map.size, map.pa, map.perm, map.pg_spec) == -1) {
+    if(_mappages(pagetable, map.va, map.size, map.pa, riscv_map_prot(map.perm), map.pg_spec) == -1) {
       // 卸载之前成功映射的页面
       for(int j = 0; j < i; j++) {
         map = kmap[j];
@@ -143,68 +118,6 @@ void erasekvm(pagetable_t pagetable) {
 }
 
 
-// Load the user initcode into address 0 of pagetable,
-// for the very first process.
-// sz must be less than a page.
-// void
-// uvminit(pagetable_t pagetable, uchar *src, uint sz)
-// {
-//   char *mem;
-
-//   if(sz >= PGSIZE)
-//     panic("inituvm: more than a page");
-//   mem = kalloc();
-//   memset(mem, 0, PGSIZE);
-//   mappages(pagetable, 0, PGSIZE, (uint64)mem, PTE_W|PTE_R|PTE_X|PTE_U);
-//   memmove(mem, src, sz);
-// }
-
-// Allocate PTEs and physical memory to grow process from oldsz to
-// newsz, which need not be page aligned.  Returns new size or 0 on error.
-// uint64
-// uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
-// {
-//   char *mem;
-//   uint64 a;
-
-//   if(newsz < oldsz)
-//     return oldsz;
-
-//   oldsz = PGROUNDUP(oldsz);
-//   for(a = oldsz; a < newsz; a += PGSIZE){
-//     mem = kalloc();
-//     if(mem == 0){
-//       uvmdealloc(pagetable, a, oldsz);
-//       return 0;
-//     }
-//     memset(mem, 0, PGSIZE);
-//     if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
-//       kfree(mem);
-//       uvmdealloc(pagetable, a, oldsz);
-//       return 0;
-//     }
-//   }
-//   return newsz;
-// }
-
-// Deallocate user pages to bring the process size from oldsz to
-// newsz.  oldsz and newsz need not be page-aligned, nor does newsz
-// need to be less than oldsz.  oldsz can be larger than the actual
-// process size.  Returns the new process size.
-// uint64
-// uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
-// {
-//   if(newsz >= oldsz)
-//     return oldsz;
-
-//   if(PGROUNDUP(newsz) < PGROUNDUP(oldsz)){
-//     int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
-//     uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1);
-//   }
-
-//   return newsz;
-// }
-
 
 // Given a parent process's page table, copy
 // its memory into a child's page table.
@@ -214,36 +127,28 @@ void erasekvm(pagetable_t pagetable) {
 // frees any allocated pages on failure.'
 // #include "kernel/proc.h"
 // int
-int uvmcopy(pagetable_t old, pagetable_t new, uint64 addr, uint64_t len)
+int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma)
 {
   pte_t *pte;
   uint64 pa, i;
-  uint flags;
+  uint prot;
 
-  for(i = addr; i < PGROUNDUP(addr + len); i += PGSIZE) {
+  for(i = vma->addr; i < PGROUNDUP(vma->addr + vma->len); i += PGSIZE) {
     if((pte = walk(old, i, 0)) == 0)
       continue;
     if((*pte & PTE_V) == 0)
       continue;
     pa = PTE2PA(*pte);
 
-    #ifdef COW
     *pte |= PTE_COW;  // mark cow
     *pte &= ~PTE_W; // read only
     /* IMPORTANT!
       We have changed origin pte, so we need to flash the TLB to make it effective */
     sfence_vma_addr(i);
     ref_page(pa);
-    #else
-    char *mem;
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    pa = (uint64_t)mem;
-    #endif
-
-    flags = PTE_FLAGS(*pte);
-    if(mappages(new, i, PGSIZE, pa, flags) != 0){
+    
+    prot = PTE_FLAGS(*pte);
+    if(mappages(new, i, PGSIZE, pa, prot) != 0){
       /* Free pa here is ok for COW, because we have added refcnt for it */
       kfree((void *)pa);
       goto err;
@@ -257,18 +162,6 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 addr, uint64_t len)
   return -1;
 }
 
-// mark a PTE invalid for user access.
-// used by exec for the user stack guard page.
-// void
-// uvmclear(pagetable_t pagetable, uint64 va)
-// {
-//   pte_t *pte;
-  
-//   pte = walk(pagetable, va, 0);
-//   if(pte == 0)
-//     panic("uvmclear");
-//   *pte &= ~PTE_U;
-// }
 
 // Recursively free page-table pages.
 // All leaf mappings must already have been removed.
@@ -289,39 +182,5 @@ void freewalk(pagetable_t pagetable) {
   kfree((void*)pagetable);
 }
 
-static char* indents[] = {
-  ".. .. ..",
-  ".. ..",
-  "..",
-};
-
-
-void
-_vmprint(pagetable_t pagetable, int level, int ignore_level) {
-  if(level == ignore_level) return;
-  char *indent = indents[level];
-  for(int i = 0; i < 512; i++){
-    pte_t pte = pagetable[i];
-    pagetable_t pa = (pagetable_t)PTE2PA(pte);
-    if(pte & PTE_V){  // 存在
-      if((pte & (PTE_R|PTE_W|PTE_X)) > 0) // 打印叶节点
-        printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA(pte));
-      else {// 打印下级页表地址 
-        printf("%s %-3d: pte %p pa %p\n", indent, i, pte, pa);
-        _vmprint(pa, level - 1, ignore_level);
-      }
-    }
-  }
-}
-void 
-vmprint(pagetable_t pagetable) {
-  printf("page table %p\n", pagetable);
-  _vmprint(pagetable, 2, -1);
-}
-
-void
-print_map(kmap_t map) {
-  printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
-}
 
 

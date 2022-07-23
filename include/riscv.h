@@ -2,14 +2,6 @@
 #define _H_RISCV_
 
 #include "types.h"
-// which hart (core) is this?
-static inline uint64
-r_mhartid()
-{
-  uint64 x;
-  asm volatile("csrr %0, mhartid" : "=r" (x) );
-  return x;
-}
 
 #define INTERRUPT 0x8000000000000000UL
 #define EXCEPTION 0x0000000000000000UL
@@ -28,6 +20,10 @@ r_mhartid()
 #define IS_INTR(scause) ((scause) & INTERRUPT)
 
 char *riscv_cause2str(uint64 scause);
+
+static inline uint32_t riscv_map_prot(uint32_t linux_prot) {
+    return linux_prot << 1;
+}
 
 static inline uint64
 r_mstatus()

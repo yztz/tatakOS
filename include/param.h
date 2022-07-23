@@ -16,7 +16,7 @@
 #define MAX_FD       128
 
 #define BSIZE 512
-#define NENTRY 40
+#define NENTRY 10
 #define MAX_FILE_NAME 64
 
 #define USTACKSIZE (4096 * 10)
@@ -26,8 +26,6 @@
 /////////////MM//////////////
 #define MAX_ORDER 10
 
-////////////COW//////////////
-#define COW
 
 
 ////////////DEBUG////////////

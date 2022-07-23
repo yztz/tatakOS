@@ -7,6 +7,7 @@
 #define O_EXCL		00000200
 #define O_CREATE    00000100
 #define O_TRUNC     00001000
+#define O_LARGEFILE 00100000
 #define O_DIRECTORY 00200000
 
 #define SEEK_SET	0	/* seek relative to beginning of file */
@@ -15,6 +16,14 @@
 #define SEEK_DATA	3	/* seek to the next data */
 #define SEEK_HOLE	4	/* seek to the next hole */
 #define SEEK_MAX	SEEK_HOLE
+
+#define F_DUPFD  0
+#define F_GETFD  1
+#define F_SETFD  2
+#define F_GETFL  3
+#define F_SETFL  4
+
+#define FD_CLOEXEC	1
 
 // mmap
 // #define PROT_NONE       0x0

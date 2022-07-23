@@ -41,66 +41,22 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
   return 0;
 }
 
-/**
- * @brief read file into memory when page fault hapened
- * 
- * @return int 
- */
-// int mmap_fetch(){
-//     struct proc *p = myproc();
-//     uint64 va = r_stval(), pa;
-
-//     struct vma *v = 0;
-//     int i, j;
-
-//     for(i = 0; i < VMA_NUM; i++){
-//       v = &(p->vma[i]);
-//       if(v->addr <= va && va < v->addr + v->len)
-//         break;
-//     }
-
-//     if(i == VMA_NUM) {
-//       return -1; // cannot find
-//     }
-
-//     for (j = 0; j * PGSIZE < v->len; j++) {
-//         if (v->addr + j * PGSIZE <= va && va < v->addr + (j + 1) * PGSIZE) {
-//             break;
-//             pa = (uint64)kalloc();
-
-//             memset((void*)pa, 0, PGSIZE);
-//             if (mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa,
-//                          PTE_R | PTE_W | PTE_X | PTE_U) == -1) {
-//                 panic("map page failed!");
-//             }
-
-//             if (reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j * PGSIZE,
-//                       min(PGSIZE, v->end - PGROUNDDOWN(va))) == -1) {
-//                 panic("read file failed!");
-//             }
-
-//         } else {
-//             p->killed = 1;
-//             panic("va not find in vma!! lazy allocation is not implemented!");
-//         }
-//     }
-
-//     pa = (uint64)kalloc();
-//     memset((void*)pa, 0, PGSIZE);
-//     if (mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, pa,
-//                  PTE_R | PTE_W | PTE_X | PTE_U) == -1) {
-//         panic("map page failed!");
-//     }
-
-//     // if(reade(v->map_file->ep, 1, PGROUNDDOWN(va), j*PGSIZE, PGSIZE) == -1){
-//     if (reade(v->map_file->ep, 1, PGROUNDDOWN(va), v->off + j * PGSIZE,
-//               PGSIZE) == -1) {
-//         // printf("%d\n", r);
-//         panic("read file failed!");
-//     }
-
-//     return 0;
-// }
+static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
+    // TODO: check file range
+    uint64_t len = PGSIZE;
+    off_t off = vma->offset;
+    struct file *fp = vma->map_file;
+    if(va == vma->addr) {
+        uint64_t delta = vma->raddr - vma->addr;
+        pa = pa + delta;
+        len = len - delta;
+    } else {
+        off += va - vma->raddr;
+    }
+    elock(fp->ep);
+    reade(fp->ep, 0, pa, off, len);
+    eunlock(fp->ep);
+}
 
 typedef enum {
     PF_LOAD,
@@ -133,9 +89,8 @@ static pagefault_t get_pagefault(uint64 scause) {
  */
 int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
     if(fault == PF_STORE) { // store page fault
-        if(vma->prot & MAP_PROT_WRITE) {
+        if(vma->prot & PROT_WRITE) {
             pte_t *pte = walk(p->mm->pagetable, rva, 1);
-            // pte_print(pte);
             // lazy
             if((*pte & PTE_V) == 0) {
                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
@@ -144,9 +99,14 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
                     debug("map fault");
                     return -1;
                 }
-                *pte = PA2PTE(newpage) | vma->prot | PTE_V;
+                // load file content
+                if(vma->map_file) {
+                    file_copy(rva, newpage, vma);
+                }
+
+                *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
                 sfence_vma_addr(rva);
-                // debug("map pa %#lx to va %#lx", newpage, rva);
+                
                 return 0;
             }
             // cow
@@ -158,7 +118,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
                     return 0;
                 }
             }
-            // debug("kernel_fail: epc %#lx va %#lx", read_csr(sepc), read_csr(stval));
+
             panic("here?");
         } else {
             debug("no write prot");
@@ -167,7 +127,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
     }
     
     if(fault == PF_LOAD) { 
-        if(vma->prot & MAP_PROT_READ) {
+        if(vma->prot & PROT_READ) {
             pte_t *pte = walk(p->mm->pagetable, rva, 1);
             // lazy
             if((*pte & PTE_V) == 0) {
@@ -175,7 +135,11 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
                 if(newpage == 0) {
                     return -1;
                 }
-                *pte = PA2PTE(newpage) | vma->prot | PTE_V;
+                // load file content
+                if(vma->map_file) {
+                    file_copy(rva, newpage, vma);
+                }
+                *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
                 sfence_vma_addr(rva);
                 return 0;
             }
@@ -240,7 +204,7 @@ int handle_pagefault(uint64_t scause) {
             goto user_fail;
         }
 
-        if((vma->prot & MAP_PROT_USER) == 0) {
+        if((vma->prot & PROT_USER) == 0) {
             info("vma perm");
             goto user_fail;
         }
@@ -258,6 +222,7 @@ int handle_pagefault(uint64_t scause) {
     panic("pagefault handle fault");
     user_fail:
     info("user_fail: epc %#lx va %#lx", read_csr(sepc), read_csr(stval));
+    mmap_print(p->mm);
     p->killed = 1;
     return 0;
 

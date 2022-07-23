@@ -61,10 +61,6 @@ usertrap(void)
     panic("utrap: interrupts enabled");
   }
 
-  // if(!IS_INTR(scause)) {
-  //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
-  //   LOOP();
-  // }
   // send interrupts and exceptions to kerneltrap(),
   // since we're now in the kernel.
   // w_stvec((uint64)kernelvec);
@@ -89,12 +85,8 @@ usertrap(void)
     syscall();
   } else if(devintr(scause) == 0) {
     // ok
-    // printf("udev %s epc is %#lx\n", riscv_cause2str(scause), r_sepc());
-    // printf("sip is %#lx pc is %#lx\n", r_sip(), read_csr(sepc));
   } else if(handle_pagefault(scause) == 0) {
     // ok
-    // pte_t *pte = walk(p->mm->pagetable, r_stval(), 0);
-    // debug_if(p->pid == 2,"pagefault handled va is %#lx pa is %#lx", r_stval(), PTE2PA(*pte));
   } else {
     info("sepc is %lx scause is "rd("%s")" stval is %lx", r_sepc(), riscv_cause2str(scause), r_stval());
     p->killed = 1;

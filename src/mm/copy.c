@@ -20,14 +20,14 @@ int copy_to_user(uint64 dstva, void *src, uint64 len) {
     return -1;
   }
   // 2. 是否是用户段
-  if((vma->prot & MAP_PROT_USER) == 0) {
+  if((vma->prot & PROT_USER) == 0) {
     return -1;
   }
   // 3. 直接拷贝 
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
   #endif
-  // memmove((void *)dstva, src, len);
+
   char *s = (char *)src;
   char *d = (char *)dstva;
   if(s < d && s + len > d){
@@ -59,8 +59,6 @@ int copy_from_user(void *to, uint64 from, size_t n) {
   if(!p)
     panic("copy_from_user: no process ctx");
 
-  // if(!check_range(from, n, p->sz, p->cur_mmap_sz))
-  //   return -1;
   // todo: more checks, such as: guard pages, **mmap**...
   if(vma_exist(p->mm, (uint64)from, n) == NULL) {
     debug("not exist");

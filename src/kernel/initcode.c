@@ -12,34 +12,50 @@ int read_test_name();
 int fd = -1;
 char proc_name[40];
 char line[MAX_LINE];
-char *argv[] = {"./runtest.exe", "-w", "entry-static.exe", proc_name, 0};
+// char *argv[] = {"./runtest.exe", "-w", "entry-static.exe", proc_name, 0};
+char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, 0};
 int foffset = 0;
 
 
-int main() {
-    fd = openat(AT_FDCWD, "run-static.sh", O_RDONLY);
-    assert(fd > 0, "bad fd1");
-    // run tests
-    int i = 0;
-    while(read_test_name() != -1) {
-        i++;
-        // filters //
-        // if(i != 5) continue;
-        if(strncmp(proc_name, "pthread", 7) == 0) continue;
+void open(char *casename, char *entryname) {
+  if(fd > 0) close(fd);
+  fd = -1;
+  foffset = 0;
+  fd = openat(AT_FDCWD, casename, O_RDONLY);
+  assert(fd > 0, "bad fd");
+  argv[2] = entryname;
+}
 
-        printf("start to test[%d] %s\n", i, proc_name);
-        int npid = fork();
-        assert(npid >= 0, "bad fork");
-        if (npid == 0) { // child
-            exec(argv[0], argv);
-            printf("exec fail\n");
-            for(;;);
-        } else { // parent
-            int status;
-            wait(&status);
-            printf("child exit with %d\n", status);
-        }
+void run() {
+  // run tests
+  int i = 0;
+  while(read_test_name() != -1) {
+    i++;
+    // filters //
+    // if(i != 7) continue;
+    if(strncmp(proc_name, "pthread", 7) == 0) continue;
+
+    printf("start to test[%d] %s\n", i, proc_name);
+    int npid = fork();
+    assert(npid >= 0, "bad fork");
+    if (npid == 0) { // child
+        exec(argv[0], argv);
+        printf("exec fail\n");
+        for(;;);
+    } else { // parent
+        int status;
+        wait(&status);
+        printf("child exit with %d\n", status);
     }
+  }
+}
+
+__attribute__((section(".startup")))
+int main() {
+    open("run-static.sh", "entry-static.exe");
+    run();
+    open("run-dynamic.sh", "entry-dynamic.exe");
+    run();
     printf("test end!\n");
     for(;;);
     return 0;
@@ -89,7 +105,7 @@ int read_test_name() {
 
 // char *other_testcase[] = {"gettimeofday", "times", "uname"};
 // //  单项测试
-// char* prog_name[] = { "ls" };
+// char* prog_name[] = { "mymmap" };
 
 // void run(char *testcases[], int cnt);
 // #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))

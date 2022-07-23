@@ -70,6 +70,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct file **ext_ofile;
   int nfd;
+  uint fd_flags; 
+
   struct fat_entry *cwd;           // Current directory
   // struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
@@ -106,7 +108,7 @@ void            set_file(proc_t *p, int fd, struct file *f);
 int             fdrealloc(proc_t *p, int nfd);
 int             fdalloc(proc_t *p, struct file* f);
 tf_t           *proc_get_tf(proc_t *p);
-
+void            proc_close_files(proc_t *p);
 
 
 #endif

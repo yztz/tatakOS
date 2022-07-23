@@ -76,7 +76,7 @@ _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int
-_mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, int spec)
+_mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec)
 {
   uint64 start, a, last;
   pte_t *pte;
@@ -91,7 +91,7 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm, in
       goto bad;
     if(*pte & PTE_V)
       panic("mappages: remap");
-    *pte = PA2PTE_SPEC(pa, spec) | perm | PTE_V;
+    *pte = PA2PTE_SPEC(pa, spec) | prot | PTE_V;
     if(a == last)
       break;
     a += PGSIZE_SPEC(spec);
@@ -136,7 +136,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
 }
 
 void pte_print(pte_t *pte) {
-  uint64 va = ((*pte >> 10) & ((1L << 44) - 1)) << 12;
+  uint64 pa = PTE2PA(*pte);
   char rwxuvc[7];
   rwxuvc[0] = *pte & PTE_R ? 'r' : '-';
   rwxuvc[1] = *pte & PTE_W ? 'w' : '-';
@@ -146,5 +146,5 @@ void pte_print(pte_t *pte) {
   rwxuvc[5] = *pte & PTE_COW ? 'c' : '-';
   rwxuvc[6] = '\0';
   
-  printf("pte: pa %#lx %s\n", va, rwxuvc);
+  printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
 }

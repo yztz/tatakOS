@@ -118,6 +118,7 @@ found:
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
   p->mm = (mm_t *)kzalloc(sizeof(mm_t));
+  p->fd_flags = 0;
 
   if((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
     debug("kstack alloc failure");
@@ -215,25 +216,25 @@ userinit(void)
 
   switchuvm(p->mm);
 
-  if(do_mmap_alloc(p->mm, NULL, 0, PGSIZE, MAP_ANONYMOUS, MAP_PROT_WRITE|MAP_PROT_READ|MAP_PROT_EXEC|MAP_PROT_USER) == -1) {
+  if(do_mmap_alloc(p->mm, PGSIZE, PGSIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
     panic("mmap1 failure");
   }
 
-  if(mmap_map_stack_heap(p->mm, USTACKSIZE, UHEAPSIZE) == -1) {
-    panic("mmap1 failure");
+  if(mmap_map_stack_heap(p->mm, 2 * PGSIZE, USTACKSIZE, UHEAPSIZE) == -1) {
+    panic("mmap2 failure");
   }
 
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
   #endif
-  memmove(0, initcode, sizeof(initcode));
+  memmove((void *)PGSIZE, initcode, sizeof(initcode));
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
   #endif
 
   // prepare for the very first "return" from kernel to user.
-  proc_get_tf(p)->epc = 0;      // user program counter
-  proc_get_tf(p)->sp = PGSIZE;  // user stack pointer
+  proc_get_tf(p)->epc = PGSIZE;      // user program counter
+  proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
 
@@ -338,6 +339,15 @@ reparent(struct proc *p)
   }
 }
 
+void proc_close_files(proc_t *p) {
+  for(int fd = 0; fd < p->nfd; fd++){
+    struct file *f;
+    if((f = get_file(p, fd)) != NULL){
+      fileclose(f);
+    }
+  }
+}
+void buddy_print_free();
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait().
@@ -348,16 +358,13 @@ exit(int status)
   if(p == initproc) {
     panic("init exiting");
   }
+  // mmap_print(p->mm);
+  // buddy_print_free();
   // if(status == -1) {
   //   panic("exception quit");
   // }
   // Close all open files.
-  for(int fd = 0; fd < p->nfd; fd++){
-    struct file *f;
-    if((f = get_file(p, fd)) != NULL){
-      fileclose(f);
-    }
-  }
+  proc_close_files(p);
 
   eput(p->cwd);
   p->cwd = 0;

@@ -104,8 +104,8 @@ void    pte_print(pte_t *pte);
 
 /* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
 /* Out of convenient and compatibility, we define the default behavior for the func below */
-#define mappages(pagetable, va, sz, pa, perm) \
-    _mappages(pagetable, va, sz, pa, perm, PGSPEC_NORMAL)
+#define mappages(pagetable, va, sz, pa, prot) \
+    _mappages(pagetable, va, sz, pa, prot, PGSPEC_NORMAL)
 
 #define uvmunmap(pagetable, va, npages, do_free) \
     _uvmunmap(pagetable, va, npages, do_free, PGSPEC_NORMAL)

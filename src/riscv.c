@@ -1,4 +1,5 @@
 #include "riscv.h"
+#include "mm/mmap.h"
 
 static char descs[2][16][32]   = {
     {
@@ -28,3 +29,5 @@ char *riscv_cause2str(uint64 scause) {
     int intr = (scause & INTERRUPT) > 0 ? 1 : 0;
     return descs[intr][scause % 16];
 }
+
+

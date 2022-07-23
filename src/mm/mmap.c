@@ -1,5 +1,6 @@
 #include "mm/mmap.h"
 #include "fs/fs.h"
+#include "fs/file.h"
 #include "str.h"
 #include "mm/vm.h"
 
@@ -62,94 +63,149 @@ void vma_insert(mm_t *mm, vma_t *vma) {
     list_add(&vma->head, pre_head);
 }
 
-int __vmaS_merge(mm_t *mm, vma_t *start, vma_t *end) {
-    if(start == NULL || end == NULL) return 0;
-    vma_t *tmp = start;
-    // 合并检查
-    while(tmp != end) {
-        vma_t *next = list_next_entry(tmp, head);
-        if(!check_prot(tmp->prot, next->prot)) return -1;
-        if(!check_flags(tmp->flags, next->flags)) return -1;
-        tmp = next;
+
+/* 包含查找 vma[...addr...addr+len...] */
+vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len) {
+    // if(!check_range(addr, len, USERSPACE_END)) return NULL;
+    vma_t *ans = __vma_find_strict(mm, addr);
+    if(ans && addr -  ans->addr <= ans->len - len) {
+        return ans;
     }
-    // 执行合并
-    while(1) {
-        vma_t *next = list_next_entry(tmp, head);
-        start->len = next->addr + next->len - start->addr;
-        vma_remove(mm, next);
-        if(next == end) {
-            vma_free(&next);
-            break;
-        }
-        vma_free(&next);
-    }
-    return 0;
+
+    return NULL;
 }
-
-
-int __do_mmap(mm_t *mm, struct file *fp, int file_offset, uint64_t addr, uint64_t len, int flags, int prot) {
+/* 相交查找 addr vma[...addr+len */
+vma_t *vma_inter(mm_t *mm, uint64_t addr, uint64_t len) {
     uint64_t end = addr + len;
-    // 寻找到第一个结束地址大于addr的vma（可以不包含）
     vma_t *vma = __vma_find(mm, addr);
-    // 寻找到第一个结束地址大于end的vma
-    vma_t *vma_end = __vma_find(mm, end);\
-    if(vma_end && vma_end != vma && end < vma_end->addr) {
-        vma_end = vma_previous(mm, vma_end);
+
+    if(vma && vma->addr < end) { // 当存在相交vma
+        return vma;
+    } else {
+        return NULL;
     }
-    // 经过上述处理完，找到的vma布局如下所示：
-    // (addr) vma0] [vma1] [vma2 (end)
-    // 处理边界问题
-    if(vma) { // 当存在相交vma
-        debug("merge..");
-        if(check_flags(vma->flags, flags) == 0 || check_prot(vma->prot, prot) == 0) return -1;
-        if(__vmaS_merge(mm, vma, vma_end) == -1) return -1;
-        if(vma->addr > addr) {
-            vma->addr = PGROUNDDOWN(addr);
-        }
-        if(vma->addr + vma->len < end) {
-            vma->len = end - vma->addr;
-        }
-    } else { // 不存在相交vma
-        vma = vma_new();
-        vma->addr = PGROUNDDOWN(addr);
-        vma->len = end - vma->addr;
-        vma->flags = flags;
-        vma->map_file = fp;
-        vma->prot = prot;
-        vma->offset = file_offset;
-        vma_insert(mm, vma);
-    }
-    return 0;
 }
 
-// int do_file_mmap(mm_t *mm, struct file *fp, int offset, uint64_t addr, uint64_t len, int flags, int prot) {
-//     if(fp == NULL) return -1;
-//     if(__do_mmap(mm, fp, offset, addr, len, flags, prot) == -1) return -1;
+// int __vmaS_merge(mm_t *mm, vma_t *start, vma_t *end) {
+//     if(start == NULL || end == NULL) return 0;
+//     vma_t *tmp = start;
+//     // 合并检查
+//     while(tmp != end) {
+//         vma_t *next = list_next_entry(tmp, head);
+//         if(!check_prot(tmp->prot, next->prot)) return -1;
+//         if(!check_flags(tmp->flags, next->flags)) return -1;
+//         tmp = next;
+//     }
+//     // 执行合并
+//     while(1) {
+//         vma_t *next = list_next_entry(tmp, head);
+//         start->len = next->addr + next->len - start->addr;
+//         vma_remove(mm, next);
+//         if(next == end) {
+//             vma_free(&next);
+//             break;
+//         }
+//         vma_free(&next);
+//     }
+//     return 0;
 // }
 
-uint64_t do_mmap(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot) {
-    flags |= (fp ? 0 : MAP_ANONYMOUS);
-    if(__do_mmap(mm, NULL, 0, addr, len, flags, prot) == -1)
+
+void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t len, int flags, int prot) {
+    uint64_t end = addr + len;
+    vma_t *vma;
+
+    if(fp)
+        filedup(fp);
+    // 不存在相交vma
+    vma = vma_new();
+    vma->raddr = addr;
+    vma->addr = PGROUNDDOWN(addr);
+    vma->len = end - vma->addr;
+    vma->flags = flags;
+    vma->map_file = fp;
+    vma->prot = prot;
+    vma->offset = foff;
+    vma_insert(mm, vma);
+
+//   merge:
+//     // 经过上述处理完，找到的vma布局如下所示：
+//     // (addr) vma0] [vma1] [vma2 (end)
+//     debug("merge..");
+//     if(check_flags(vma->flags, flags) == 0 || check_prot(vma->prot, prot) == 0) return -1;
+//     if(__vmaS_merge(mm, vma, vma_end) == -1) return -1;
+//     if(vma->addr > addr) {
+//         vma->addr = PGROUNDDOWN(addr);
+//     }
+//     if(vma->addr + vma->len < end) {
+//         vma->len = end - vma->addr;
+//     }
+//     return 0;
+}
+
+
+static uint64_t find_free_maparea(mm_t *mm, uint64_t len) {
+    uint64_t va = MMAP_BASE;
+    vma_t *vma = __vma_find(mm, va);
+    // TODO: 不是很严谨
+    while(vma && vma->addr < va + len) {
+        va = PGROUNDUP(vma->addr + vma->len) + PGSIZE;
+        vma = __vma_find(mm, va);
+    }
+
+    return va;
+}
+
+
+uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot) {
+    vma_t *vma;
+    
+    flags = fp ? (flags & (~MAP_ANONYMOUS)) : (flags | MAP_ANONYMOUS);
+
+    if(addr == 0) {
+        addr = find_free_maparea(mm, len);
+    }
+
+    uint64_t addr_align = PGROUNDDOWN(addr);
+
+    vma = vma_inter(mm, addr_align, len);
+
+    if(flags & MAP_FIXED) {
+        if(addr != addr_align) return -1;
+        if(vma) {
+            if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
+                debug("fixed map must be mapped in existed map");
+                return -1;
+            }
+            vma->len = addr - vma->addr;
+        }
+    } else if(vma != NULL) {
         return -1;
+    }
+
+    __do_mmap(mm, fp, off, addr, len, flags, prot);
     
     return addr;
 }
 
 void do_unmap(mm_t *mm, uint64_t addr, int do_free) {
-    vma_t *vma = __vma_find(mm, addr);
+    vma_t *vma = __vma_find_strict(mm, addr);
     if(vma) {
         // TODO: file map
         uvmunmap(mm->pagetable, vma->addr, ROUND_COUNT(vma->len), do_free);
         vma_remove(mm, vma);
+        if(vma->map_file) {
+            fileclose(vma->map_file);
+        }
         vma_free(&vma);
     }
 }
 
-uint64_t do_mmap_alloc(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, int flags, int prot) {
+uint64_t do_mmap_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot) {
     char *mem;
     uint64_t a;
 
-    if(do_mmap(mm, fp, addr, len, flags, prot) == -1) {
+    if(do_mmap(mm, NULL, 0, addr, len, flags, prot) == -1) {
         return 0;
     }
 
@@ -158,7 +214,7 @@ uint64_t do_mmap_alloc(mm_t *mm, struct file *fp, uint64_t addr, uint64_t len, i
         if(mem == 0){
             goto bad;
         }
-        if(mappages(mm->pagetable, a, PGSIZE, (uint64)mem, prot) != 0){
+        if(mappages(mm->pagetable, a, PGSIZE, (uint64)mem, riscv_map_prot(prot)) != 0){
             kfree(mem);
             goto bad;
         }
@@ -180,10 +236,12 @@ static void unmap_vmas(mm_t *mm) {
     list_for_each_entry_safe(vma, next, &mm->vma_head, head) {
         uvmunmap(mm->pagetable, vma->addr, ROUND_COUNT(vma->len), 1);   
         vma_remove(mm, vma);
+        if(vma->map_file) {
+            fileclose(vma->map_file);
+        }
         vma_free(&vma);
     }
 }
-
 
 
 
@@ -211,8 +269,7 @@ void mmap_free(mm_t **pmm) {
     unmap_vmas(mm);
     erasekvm(mm->pagetable);
     freewalk(mm->pagetable);
-    kfree(mm);
-    *pmm = NULL;
+    kfree_safe(pmm);
 }
 
 static vma_t *vma_dup(vma_t *vma) {
@@ -233,12 +290,16 @@ int mmap_dup(mm_t *newm, mm_t *oldm) {
             unmap_vmas(newm);
             return -1;
         }
-        if(uvmcopy(oldm->pagetable, newm->pagetable, vma->addr, vma->len) == -1) {
+        if(uvmcopy(oldm->pagetable, newm->pagetable, vma) == -1) {
             vma_free(&dup);
             unmap_vmas(newm);
             return -1;
         }
         vma_insert(newm, dup);
+
+        if(vma->map_file) {
+            filedup(vma->map_file);
+        }
 
         if(oldm->ustack == vma)
             newm->ustack = dup;
@@ -252,20 +313,18 @@ int mmap_dup(mm_t *newm, mm_t *oldm) {
 }
 
 // called after load
-int mmap_map_stack_heap(mm_t *mm, uint64_t stacksize, uint64_t heapsize) {
-    vma_t *brk = list_last_entry(&mm->vma_head, vma_t, head);
-
-    uint64_t brk_addr = PGROUNDUP(brk->addr + brk->len);
-    if(do_mmap(mm, NULL, brk_addr, heapsize, 0, MAP_PROT_READ|MAP_PROT_WRITE|MAP_PROT_EXEC|MAP_PROT_USER) == -1) {
+int mmap_map_stack_heap(mm_t *mm, uint64_t brk_addr, uint64_t stacksize, uint64_t heapsize) {
+    brk_addr = PGROUNDUP(brk_addr);
+    if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
         return -1;
     }
-    if(do_mmap(mm, NULL, USERSPACE_END - stacksize, stacksize, MAP_STACK, MAP_PROT_READ|MAP_PROT_WRITE|MAP_PROT_USER) == -1) {
+    if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_USER) == -1) {
         do_unmap(mm, brk_addr, 0);
         return -1;
     }
 
-    mm->ustack = list_last_entry(&mm->vma_head, vma_t, head);
-    mm->uheap = list_prev_entry(mm->ustack, head);
+    mm->ustack = __vma_find(mm, USERSPACE_END - stacksize);
+    mm->uheap = __vma_find(mm, brk_addr);
 
     return 0;
 }
@@ -281,8 +340,12 @@ int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
             PGROUNDUP(mm->uheap->addr + newsize), 
             ROUND_COUNT(cursize) - ROUND_COUNT(newsize), 1);
     } else {
-        if(__vma_find_strict(mm, mm->uheap->addr + newsize)) {
-            debug("uheap out of range");
+        vma_t *vma;
+        if((vma = __vma_find_strict(mm, mm->uheap->addr + newsize))) {
+            debug("uheap out of range newbreak is %#lx but encounter the vma: ", newbreak);
+            #ifdef DEBUG
+            vma_print(vma);
+            #endif
             return -1;
         }
     }
@@ -313,15 +376,6 @@ int mmap_ext_stack(mm_t *mm, uint64_t newsize) {
 
 
 
-vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len) {
-    // if(!check_range(addr, len, USERSPACE_END)) return NULL;
-    vma_t *ans = __vma_find_strict(mm, addr);
-    if(ans && addr -  ans->addr <= ans->len - len) {
-        return ans;
-    }
-
-    return NULL;
-}
 
 
 void mmap_print(mm_t *mm) {
@@ -349,6 +403,47 @@ void switchkvm() {
 }
 
 
+
+
+
+static void _vmprint(pagetable_t pagetable, int level, int ignore_level) {
+    static char* indents[] = {
+        ".. .. ..",
+        ".. ..",
+        "..",
+    };
+    
+    if(level == ignore_level) return;
+    char *indent = indents[level];
+    for(int i = 0; i < 512; i++){
+        pte_t pte = pagetable[i];
+        if(pte & PTE_V){  // 存在
+            if((pte & (PTE_R|PTE_W|PTE_X)) > 0) { // 打印叶节点
+                // printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA(pte));
+                printf("%s %-3d[LEAF]: ", indent, i);
+                pte_print(&pte);
+            } else {// 打印下级页表地址 
+                printf("%s %-3d: ", indent, i);
+                pte_print(&pte);
+                _vmprint((pagetable_t) PTE2PA(pte), level - 1, ignore_level);
+            }
+        }
+    }
+}
+
+
+void vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  _vmprint(pagetable, 2, -1);
+}
+
+void print_map(kmap_t map) {
+  printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
+}
+
+uint64_t sys_mprotect(void) {
+    return 0;
+}
 
 
 

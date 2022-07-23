@@ -122,5 +122,6 @@
             "backgroundColor": "green",
             "color": "white"
         }
-    ]
+    ],
+    "C_Cpp.dimInactiveRegions": false
 }   

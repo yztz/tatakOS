@@ -40,15 +40,66 @@
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
 
+static inline uint32_t elf_map_prot(uint32_t prot) {
+  // uint32 ans = 0;
+  // if(prot & PF_R) ans |= PROT_READ;
+  // if(prot & PF_W) ans |= PROT_WRITE;
+  // if(prot & PF_X) ans |= PROT_EXEC;
+  // return (ans | PROT_USER);
+  return PROT_READ | PROT_WRITE | PROT_EXEC | PROT_USER;
+}
+
 static int loadseg(mm_t *mm, uint64 va, entry_t *ip, uint offset, uint sz) {
-  // debug("load %lx", va);
   if(reade(ip, 1, va, offset, sz) != sz)
       return -1;
-  // debug("load done");
   return 0;
 }
 
 #define UPOS(ustack, ustackbase) (USERSPACE_END - PGSIZE + (ustack) - (ustackbase))
+
+
+static uint64_t loadinterp(mm_t *mm) {
+  entry_t *ep;
+  struct elfhdr elf;
+  int i, off;
+  struct proghdr ph;
+
+  // debug("start load");
+  if((ep = namee(NULL, "libc.so")) == 0){
+    debug("libc.so acquire failure");
+    return -1;
+  }
+  elock(ep);
+
+  if(reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
+    goto bad;
+  if(elf.magic != ELF_MAGIC)
+    goto bad;
+
+  for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)) {
+    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
+      goto bad;
+    }
+
+    if(ph.type != PT_LOAD)
+      continue;
+    if(ph.memsz < ph.filesz)
+      goto bad;
+    if(do_mmap(mm, NULL, 0, ph.vaddr + INTERP_BASE, ph.memsz, 0, elf_map_prot(ph.flags)) == -1)
+      goto bad;
+    if(loadseg(mm, ph.vaddr + INTERP_BASE, ep, ph.off, ph.filesz) < 0)
+      goto bad;
+  }
+  eunlock(ep);
+  // mmap_print(mm);
+  // debug("load done");
+  return elf.entry + INTERP_BASE;
+
+ bad:
+  eunlock(ep);
+  return 0;
+
+}
 
 int exec(char *path, char **argv, char **envp) {
   char *s, *last;
@@ -60,6 +111,23 @@ int exec(char *path, char **argv, char **envp) {
   struct proc *p = myproc();
   mm_t *newmm;
   mm_t *oldmm = p->mm;
+
+  uint64_t aux[AUX_CNT][2];
+  memset(aux, 0, sizeof(aux));
+  int auxcnt = 0;
+
+#define putaux(key, val) {\
+  aux[auxcnt][0] = (key);\
+  aux[auxcnt][1] = (val);\
+  auxcnt++;\
+  aux[auxcnt][0] = AT_NULL;}
+
+  putaux(AT_PAGESZ, PGSIZE);
+  putaux(AT_UID, 0);
+  putaux(AT_EUID, 0);
+  putaux(AT_GID, 0);
+  putaux(AT_EGID, 0);
+  putaux(AT_SECURE, 0);
 
   /* alloc */
   if((newmm = kzalloc(sizeof(mm_t))) == NULL) {
@@ -75,16 +143,16 @@ int exec(char *path, char **argv, char **envp) {
 
   ustack = ustackbase + PGSIZE;
 
-  if((ep = namee(NULL, path)) == 0){
-    debug("entry %s acquire failure", path);
+  /* load */
+  if(mmap_init(newmm) == -1) {
+    debug("newmm init fail");
     kfree(newmm);
     kfree((void *)ustackbase);
     return -1;
   }
 
-  /* load */
-  if(mmap_init(newmm) == -1) {
-    debug("newmm init fail");
+  if((ep = namee(NULL, path)) == 0){
+    debug("entry %s acquire failure", path);
     kfree(newmm);
     kfree((void *)ustackbase);
     return -1;
@@ -100,33 +168,47 @@ int exec(char *path, char **argv, char **envp) {
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
-  uint64 phdr;
+  uint64_t elfentry = elf.entry;
+  uint64_t brk;
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)) {
     if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
       goto bad;
     }
-    if(ph.type != ELF_PROG_LOAD)
+    if(ph.type == PT_PHDR) {
+      putaux(AT_PHDR, ph.vaddr);
+      putaux(AT_PHENT, elf.phentsize);
+      putaux(AT_PHNUM, elf.phnum);
+      continue;
+    }
+
+    if(ph.type == PT_INTERP) {
+      // debug("elfentry is %#lx", elfentry);
+      putaux(AT_ENTRY, elfentry);
+      putaux(AT_BASE, INTERP_BASE);
+      if((elfentry = loadinterp(newmm)) == 0) goto bad;
+    }
+
+    if(ph.type != PT_LOAD)
       continue;
     if(ph.memsz < ph.filesz)
       goto bad;
-    if(do_mmap(newmm, NULL, ph.vaddr, ph.memsz, 0, MAP_PROT_READ|MAP_PROT_WRITE|MAP_PROT_EXEC|MAP_PROT_USER) == -1)
+    if(do_mmap(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1)
       goto bad;
     if(loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
-    // 当发现从0开始的程序段时，elf文件头也被包含在其中加载
-    // 因此，可以计算出程序段头的地址为程序的虚拟地址+程序段头地址偏移量
-    if(ph.off == 0) 
-      phdr = ph.vaddr + elf.phoff;
+
+    brk = ph.vaddr + ph.memsz;
   }
-  debug("%s: loadseg done", path);
+  debug("%s: loadseg done entry is %#lx", path, elfentry);
+  // mmap_print(newmm);
   eunlockput(ep);
   ep = NULL;
 
   p = myproc();
 
   //////////////STACK & HEAP////////////////
-  if(mmap_map_stack_heap(newmm, oldmm->ustack->len, oldmm->uheap->len) == -1)
+  if(mmap_map_stack_heap(newmm, brk, oldmm->ustack->len, oldmm->uheap->len) == -1)
     goto bad;
   
   uint64 envpc;
@@ -165,34 +247,23 @@ int exec(char *path, char **argv, char **envp) {
     goto bad;
   memcpy((void *)ustack, random, 16);
 
-  uint64 auxs[][2] = {
-    {AT_PAGESZ, PGSIZE},
-    {AT_PHDR, phdr},
-		{AT_PHENT, elf.phentsize},
-		{AT_PHNUM, elf.phnum},
-    {AT_UID, 0},
-		{AT_EUID, 0},
-		{AT_GID, 0},
-		{AT_EGID, 0},
-		{AT_SECURE, 0},
-		{AT_RANDOM, ustack},
-    {AT_NULL, 0},
-  };
+  putaux(AT_RANDOM, UPOS(ustack, ustackbase));
 
   envps[envpc] = 0;
   envpc += 1;
   argcv[0] = argc;
   argvs[argc] = 0;
   argc += 2;
+  auxcnt += 1;
 
-  ustack -= sizeof(uint64) * (envpc + argc + sizeof(auxs));
+  ustack -= sizeof(uint64) * (envpc + argc + auxcnt * 16);
   ustack -= ustack % 16;
   if(ustack < ustackbase)
     goto bad;
   ustack += sizeof(uint64) * (envpc + argc);
 
   // 复制辅助变量
-  memcpy((void *)ustack, auxs, sizeof(uint64) * sizeof(auxs));
+  memcpy((void *)ustack, aux, auxcnt * 16);
 
   // 复制环境变量字符串地址
   ustack -= sizeof(uint64) * envpc;
@@ -205,7 +276,7 @@ int exec(char *path, char **argv, char **envp) {
   // 初始化栈地址
   proc_get_tf(p)->sp = UPOS(ustack, ustackbase);
 
-  if(mappages(newmm->pagetable, USERSPACE_END - PGSIZE, PGSIZE, ustackbase, newmm->ustack->prot) == -1) {
+  if(mappages(newmm->pagetable, USERSPACE_END - PGSIZE, PGSIZE, ustackbase, riscv_map_prot(newmm->ustack->prot)) == -1) {
     goto bad;
   }
 
@@ -215,7 +286,7 @@ int exec(char *path, char **argv, char **envp) {
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
   // debug("pid %d proc %s entry is %lx", p->pid, p->name, elf.entry);
-  proc_get_tf(p)->epc = elf.entry;  // initial program counter = main
+  proc_get_tf(p)->epc = elfentry;  // initial program counter = main
   mmap_free(&oldmm);
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 

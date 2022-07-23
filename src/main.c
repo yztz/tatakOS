@@ -26,7 +26,7 @@ void
 main()
 {
   if(cpuid() == 0){
-    // clear_bss();
+    clear_bss();
     printf("\nOS TATAKAI!\n\n");
     platform_early_init();
     /* PRCO && CPU */

@@ -3,7 +3,7 @@ ENTRY( main )
 
 SECTIONS
 { 
-  . = 0;
+  . = 4096;
   .text : {
     *(.startup)
     *(.text)

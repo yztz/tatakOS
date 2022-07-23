@@ -24,7 +24,7 @@ pagetable_t uvmcreate(void);
 void        uvminit(pagetable_t, uchar *, uint);
 uint64      uvmalloc(pagetable_t, uint64, uint64);
 uint64      uvmdealloc(pagetable_t, uint64, uint64);
-int         uvmcopy(pagetable_t old, pagetable_t new, uint64 addr, uint64_t len);
+int         uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma);
 void        uvmfree(pagetable_t, uint64);
 void        uvmclear(pagetable_t, uint64);
 void        freewalk(pagetable_t pagetable);

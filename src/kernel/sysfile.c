@@ -304,7 +304,8 @@ uint64 sys_openat(void) {
         }
     } else {
         if ((ep = namee(from, path)) == 0) {
-            debug("not found");
+            debug("file not found, cwd is %s", path, p->cwd->name);
+            debug("path %s omode %o", path, omode);
             return -1;
         }
 
@@ -362,6 +363,26 @@ uint64 sys_mkdirat(void) {
     return 0;
 }
 
+uint64 sys_fcntl(void) {
+    int fd, cmd;
+    uint64_t arg;
+
+    if(argint(0, &fd) < 0 || argint(1, &cmd) < 0 || argaddr(2, &arg) < 0) {
+        return -1;
+    }
+
+    proc_t *p = myproc();
+
+    // debug("fd is %d cmd is %d arg is %ld", fd, cmd, arg);
+    if(cmd == F_SETFD) {
+        p->fd_flags |= arg;
+        return 0;
+    }
+
+    return 1;
+
+}
+
 // OK:
 uint64 sys_chdir(void) {
     char path[MAXPATH];
@@ -389,6 +410,8 @@ uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];
     int i;
     uint64 uargv, uarg;
+    proc_t *p = myproc();
+
     if (argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0) {
         return -1;
     }
@@ -411,12 +434,16 @@ uint64 sys_exec(void) {
         if (fetchstr(uarg, argv[i], PGSIZE) < 0)
             goto bad;
     }
-    char *envp[1] = {NULL};
+    char *envp[2] = {"LD_LIBRARY_PATH=/", NULL};
 
     int ret = exec(path, argv, envp);
 
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
+
+    if(p->fd_flags & FD_CLOEXEC) {
+        proc_close_files(p);
+    }
 
     return ret;
 
@@ -492,106 +519,42 @@ uint64 sys_lseek(void) {
 }
 
 uint64 sys_mmap(void) {
-    uint64 addr, length, offset;
+    uint64 addr, len;
+    off_t offset;
     int prot, flags;
-    struct file *fp;
+    int fd;
+    struct file *fp = NULL;
     struct proc* p = myproc();
 
-    if (argaddr(0, &addr) < 0 || argaddr(1, &length) < 0 ||
-        argint(2, &prot) < 0 || argint(3, &flags) < 0 || argfd(4, NULL, &fp) < 0 ||
-        argaddr(5, &offset) < 0)
+    if (argaddr(0, &addr) < 0 || argaddr(1, &len) < 0 ||
+        argint(2, &prot) < 0 || argint(3, &flags) < 0 || argint(4, &fd) < 0 ||
+        argaddr(5, (uint64_t *)&offset) < 0)
         return -1;
 
-    // if (fp && (fp->writable == 0) && (prot & PROT_WRITE) &&
-    //     (flags & MAP_SHARED))
-    //     return -1;
-    debug("prot is %b", prot);
-    panic("stopped");
-    return do_mmap(p->mm, fp, offset, addr, length, flags);
+    fp = get_file(p, fd);
+
+    // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
+    if(flags & MAP_SHARED) {
+        panic("ns");
+    }
+
+    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) 
+        return -1;
+    // mmap_print(p->mm);
+    // if(fp)
+    //     filedup(fp);
+    
+    return addr;
 }
 
-// /**
-//  * @brief 一个最简单的版本的munmap，因为v->addr都是页对齐的，所以
-//  * 要求va是页对齐的，并且len为PGSIZE的整数倍，或者等于区域的总长度
-//  * 否则需要考虑区域的分割等问题。
-//  *
-//  * @return uint64
-//  */
-// uint64 sys_munmap(void) {
-//     uint64 va, len;
-//     if (argaddr(0, &va) < 0 || argaddr(1, &len) < 0)
-//         return -1;
+uint64 sys_munmap(void) {
+    uint64_t addr, len;
+    proc_t *p = myproc();
 
-//     struct proc* p = myproc();
-//     struct vma* v = 0;
-//     int i;
-//     pte_t* pte;
+    if(argaddr(0, &addr) < 0 || argaddr(1, &len) < 0) {
+        return -1;
+    }
 
-
-    
-
-//     if (len % PGSIZE != 0 && len != v->len)
-//         panic("munmap: length is not a multiple of PGSIZE or vma length!");
-
-//     va = PGROUNDUP(va);
-//     // if a virtual address has been mapped to physic address,
-//     // unmap it, otherwise do noting.
-//     if (va <= PGROUNDDOWN(va + len))
-//         for (int a = va; a <= PGROUNDDOWN(va + len); a += PGSIZE) {
-//             // printf(rd("a: %p\n"), a);
-//             if ((pte = walk(p->pagetable, a, 0)) == 0)
-//                 continue;
-//             if ((*pte & PTE_V) == 0)
-//                 continue;
-
-//             // write back to disk
-//             if (v->flags & MAP_SHARED) {
-//                 writee(v->map_file->ep, 1, a, v->off + (a - v->addr),
-//                        min(PGSIZE, (v->end - a)));
-//             }
-//             uvmunmap(p->pagetable, a, 1, 1);
-//         }
-
-//     va = PGROUNDUP(va);
-//     // if a virtual address has been mapped to physic address,
-//     // unmap it, otherwise do noting.
-//     if (va < PGROUNDDOWN(va + len))
-//         for (int a = va; a < PGROUNDDOWN(va + len); a += PGSIZE) {
-//             if ((pte = walk(p->pagetable, a, 0)) == 0)
-//                 continue;
-//             if ((*pte & PTE_V) == 0)
-//                 continue;
-
-//             // write back to disk
-//             if (v->flags & MAP_SHARED) {
-//                 filewrite(v->map_file, va, PGSIZE);
-//             }
-//             uvmunmap(p->pagetable, a, 1, 1);
-//         }
-
-//     // free the entire vma
-//     if (va == v->addr && len == v->len) {
-//         v->state = VMA_UNUSED;
-//         fileclose(v->map_file);
-//     }
-
-//     // for a simple version of mmap, we assume it's unmap from the head
-//     // of a vma, namely va == v->addr
-//     // if we unmap in the middle of a vma, the vma is split into two
-//     v->addr += len;
-//     v->len -= len;
-
-//     // free the entire vma
-//     if (va == v->addr && len == v->len) {
-//         // v->state = VMA_UNUSED;
-//         // fileclose(v->map_file);
-//     }
-
-//     // for a simple version of mmap, we assume it's unmap from the head
-//     // of a vma, namely va == v->addr
-//     // if we unmap in the middle of a vma, the vma is split into two
-//     v->addr += len;
-//     v->len -= len;
-
-//     return 0;
-// }
+    do_unmap(p->mm, addr, 1);
+    return 0;
+}

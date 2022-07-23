@@ -88,9 +88,11 @@ int read_dents(entry_t *entry, off_t *offset, char *buf, int n) {
 
 static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, const char *name) {
   entry_t *entry, *empty = NULL;
-
+  
   acquire(&fat->cache_lock);
   for(entry = &pool[0]; entry < &pool[NENTRY]; entry++){
+    if(entry->parent == entry) 
+      panic("what?");
     if(entry->ref > 0 && entry->parent == parent && 
         entry->clus_offset == clus_offset){
       entry->ref++;
@@ -103,6 +105,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
 
   if(empty == 0)
     panic("iget: no entries");
+  
   
   entry = empty;
   entry->ref = 1;
@@ -265,8 +268,8 @@ entry_t *create(entry_t *from, char *path, short type) {
   fat_alloc_entry(fat, dp->clus_start, name, 
           type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item, &offset);
 
-  eunlockput(dp);
   ep = eget(dp, offset, &item, name);
+  eunlockput(dp);
   elock(ep);
   return ep;
 }
@@ -359,7 +362,7 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   return ret;
 }
 
-
+// caller holds lock
 int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   if(off >= E_FILESIZE(entry)) 
     return 0;
