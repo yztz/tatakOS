@@ -1,10 +1,11 @@
 #include "qemu.h"
 #include "driver/plic.h"
+#include "riscv.h"
 
 extern void virtio_disk_init(void);
 
 void platform_early_init() {
-    
+    set_csr(sstatus, SSTATUS_FS);
 }
 
 void platform_plic_init() {

@@ -1,5 +1,6 @@
 obj-y += console.o
 obj-y += nulldev.o
+obj-y += zerodev.o
 obj-y += exec.o
 obj-y += proc.o
 obj-y += syscall.o

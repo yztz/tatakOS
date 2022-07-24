@@ -122,7 +122,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
 
 }
 
-
+extern uint64 ticks;
 // caller holds lock
 void estat(entry_t *entry, struct kstat *stat) {
   dir_item_t *item = &entry->raw;
@@ -131,7 +131,7 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_uid = 0;
   stat->st_dev = entry->fat->dev;
   stat->st_rdev = entry->fat->dev;
-  stat->st_mode = item->attr;
+  stat->st_mode = E_ISDIR(entry) ? S_IFDIR : S_IFREG;
   stat->st_blksize = entry->fat->bytes_per_sec;
   stat->st_blocks = 0;
   stat->st_size = item->size;
@@ -142,6 +142,11 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_ctime_sec = 0;
   stat->st_ctime_nsec = 0;
   stat->st_nlink = entry->nlink;
+
+  if(item->adate.year_from_1980 == 65) {
+    stat->st_atime_sec = 1LL << 32;
+    stat->st_mtime_sec = 1LL << 32;
+  }
 }
 
 entry_t *edup(entry_t *entry) {

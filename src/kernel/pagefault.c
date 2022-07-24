@@ -94,7 +94,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
             // lazy
             if((*pte & PTE_V) == 0) {
                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
-                // debug("map pa %#lx to va %#lx", newpage, rva);
+
                 if(newpage == 0) {
                     debug("map fault");
                     return -1;

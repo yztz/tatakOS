@@ -37,8 +37,6 @@ main()
     kvminit();       // create kernel page table
     kvminithart();   // turn on paging
 
-    // mm_test();
-
     /* TRAP */
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector
@@ -51,8 +49,9 @@ main()
     platform_dirver_init(); // platform driver init
     /* CONSOLE */
     consoleinit(); // console
-    /* DEVNULL */
+    /* DEV */
     devnull_init();
+    devzero_init();
     // #ifdef K210
     // for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
     // #endif

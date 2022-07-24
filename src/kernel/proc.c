@@ -359,6 +359,10 @@ exit(int status)
     panic("init exiting");
   }
   // mmap_print(p->mm);
+
+  #ifdef DEBUG
+  buddy_print_free();
+  #endif
   // buddy_print_free();
   // if(status == -1) {
   //   panic("exception quit");

@@ -16,6 +16,7 @@ struct superblock;
 // console.c
 void            consoleinit(void);
 void            devnull_init(void);
+void            devzero_init(void);
 
 // log.c
 void            initlog(int, struct superblock*);

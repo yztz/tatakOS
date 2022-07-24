@@ -20,6 +20,8 @@ obj-y += utils.o
 obj-y += main.o
 obj-y += riscv.o
 obj-y += profile.o
+obj-y += device.o
+obj-y += misc.o
 
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))

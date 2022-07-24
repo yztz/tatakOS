@@ -4,7 +4,6 @@
 
 void printf(const char *fmt, ...);
 int strncmp(const char *p, const char *q, uint n);
-int read_test_name();
 #define MAX_LINE 70
 
 #define assert(cond, fmt, ...) if(!(cond)) {printf(fmt"\n", ##__VA_ARGS__);for(;;);}
@@ -12,50 +11,18 @@ int read_test_name();
 int fd = -1;
 char proc_name[40];
 char line[MAX_LINE];
-// char *argv[] = {"./runtest.exe", "-w", "entry-static.exe", proc_name, 0};
 char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, 0};
 int foffset = 0;
 
+#define COND (i == 107)
 
-void open(char *casename, char *entryname) {
-  if(fd > 0) close(fd);
-  fd = -1;
-  foffset = 0;
-  fd = openat(AT_FDCWD, casename, O_RDONLY);
-  assert(fd > 0, "bad fd");
-  argv[2] = entryname;
-}
-
-void run() {
-  // run tests
-  int i = 0;
-  while(read_test_name() != -1) {
-    i++;
-    // filters //
-    // if(i != 7) continue;
-    if(strncmp(proc_name, "pthread", 7) == 0) continue;
-
-    printf("start to test[%d] %s\n", i, proc_name);
-    int npid = fork();
-    assert(npid >= 0, "bad fork");
-    if (npid == 0) { // child
-        exec(argv[0], argv);
-        printf("exec fail\n");
-        for(;;);
-    } else { // parent
-        int status;
-        wait(&status);
-        printf("child exit with %d\n", status);
-    }
-  }
-}
+void run(char *casename, char *entryname);
 
 __attribute__((section(".startup")))
 int main() {
-    open("run-static.sh", "entry-static.exe");
-    run();
-    open("run-dynamic.sh", "entry-dynamic.exe");
-    run();
+    // run("run-static.sh", "entry-static.exe");
+    // run("run-dynamic.sh", "entry-static.exe");
+    run("run-dynamic.sh", "entry-dynamic.exe");
     printf("test end!\n");
     for(;;);
     return 0;
@@ -84,6 +51,37 @@ int read_test_name() {
     foffset+=loffset;
     return 0;
 }
+
+void run(char *casename, char *entryname) {
+  if(fd > 0) close(fd);
+  fd = -1;
+  foffset = 0;
+  fd = openat(AT_FDCWD, casename, O_RDONLY);
+  assert(fd > 0, "bad fd");
+  argv[2] = entryname;
+
+  int i = 0;
+  while(read_test_name() != -1) {
+    i++;
+    // filters //
+    if(!COND) continue;
+    if(strncmp(proc_name, "pthread", 7) == 0) continue;
+
+    printf("start to test[%d] %s\n", i, proc_name);
+    int npid = fork();
+    assert(npid >= 0, "bad fork");
+    if (npid == 0) { // child
+        exec(argv[0], argv);
+        printf("exec fail\n");
+        for(;;);
+    } else { // parent
+        int status;
+        wait(&status);
+        printf("child exit with %d\n", status);
+    }
+  }
+}
+
 
 //////////////////////////////////////////////////
 // #include "usys.h"

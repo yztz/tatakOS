@@ -133,11 +133,47 @@ uint64 sys_clock_gettime(void) {
   uint64_t addr;
   timespec_t time;
 
+  time.tv_sec = 0;
+  time.tv_usec = 0;
+
   if(argaddr(1, &addr) < 0) 
     return -1;
 
-  if(copyout(addr, (char *)&time, sizeof(time)) == -1) {
+  if(copy_to_user(addr, &time, sizeof(time)) == -1) {
     return -1;
   } 
   return 0;
+}
+
+#define MSDOS_SUPER_MAGIC 0x4d44
+#define TOTAL_BLOCKS (32L * 1024 * 1024 * 1024 / 512)
+
+struct statfs gstat = {
+  .f_type = MSDOS_SUPER_MAGIC,
+  .f_bsize = 512,
+  .f_blocks = TOTAL_BLOCKS,
+  .f_bfree = TOTAL_BLOCKS / 2,
+  .f_bavail = TOTAL_BLOCKS / 2,
+  .f_files = 10,
+  .f_fsid = {{2}},
+  .f_namelen = MAX_FILE_NAME,
+  .f_frsize = 512,
+  .f_flags = 0,
+};
+
+
+uint64 sys_statfs64(void) {
+  char buf[MAXPATH];
+  uint64_t ustat;
+
+  if(argstr(0, buf, MAXPATH) < 0 || argaddr(1, &ustat) < 0) {
+    return -1;
+  }
+
+  if(copy_to_user(ustat, &gstat, sizeof(gstat)) < 0) {
+    return -1;
+  }
+
+  return 0;
+
 }

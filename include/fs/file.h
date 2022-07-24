@@ -31,7 +31,7 @@ void            fileclose(struct file*);
 struct file     *filedup(struct file*);
 void            fileinit(void);
 int             fileread(struct file*, uint64, int n);
-int             filestat(struct file*, uint64 addr);
+int             filestat(struct file *f, struct kstat *stat);
 int             filewrite(struct file *f, uint64 addr, int n);
 
 

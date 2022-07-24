@@ -141,6 +141,53 @@ uint64 sys_readv(void) {
 
 }
 
+uint64 sys_pread(void) {
+    struct file *f;
+    uint64 buf;
+    size_t count;
+    off_t offset;
+    int cnt;
+
+    if(argfd(0, NULL, &f) < 0 || argaddr(1, &buf) < 0 || 
+      argaddr(2, &count) < 0 || argaddr(3, (uint64 *)&offset) < 0)
+        return -1;
+
+    elock(f->ep);
+    cnt =  reade(f->ep, 1, buf, offset, count);
+    eunlock(f->ep);
+
+    return cnt;
+}
+
+static struct file* getdevfile(char *path) {
+    if(strncmp(path, "/dev/null", 9) == 0) {
+        struct file *fnull = filealloc();
+        if(fnull == NULL) {
+            debug("alloc fail");
+            return NULL;
+        }
+        fnull->type = T_DEVICE;
+        fnull->dev = &devs[DEVNULL];
+        fnull->readable = 1;
+        fnull->writable = 1;
+        return fnull;
+    } 
+
+    if(strncmp(path, "/dev/zero", 9) == 0) {
+        struct file *fzero = filealloc();
+        if(fzero == NULL) {
+            debug("alloc fail");
+            return NULL;
+        }
+        fzero->type = T_DEVICE;
+        fzero->dev = &devs[DEVZERO];
+        fzero->readable = 1;
+        fzero->writable = 1;
+        return fzero;
+    } 
+    return NULL;
+}
+
 // OK:
 uint64 sys_close(void) {
     int fd;
@@ -157,18 +204,53 @@ uint64 sys_close(void) {
 uint64 sys_fstat(void) {
     struct file* f;
     struct kstat stat;
-    entry_t* entry;
     uint64_t addr;
 
     if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0)
         return -1;
 
-    entry = f->ep;
-    elock(entry);
-    estat(entry, &stat);
-    eunlock(entry);
+    filestat(f, &stat);
 
-    return copyout(addr, (char*)&stat, sizeof(stat));
+    return copy_to_user(addr, &stat, sizeof(stat));
+}
+
+uint64 sys_fstatat(void) {
+    int dirfd, flags;
+    char path[MAXPATH];
+    uint64_t ustat;
+    entry_t *from, *ep;
+    struct file *pf;
+    struct kstat stat;
+    proc_t *p = myproc();
+    
+
+    if(argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0 ||
+         argaddr(2, &ustat) < 0 || argint(3, &flags) < 0)
+        return -1;
+
+    // sepcial for device...
+    if((pf = getdevfile(path)) != NULL) {
+        filestat(pf, &stat);
+        return copy_to_user(ustat, &stat, sizeof(stat));
+    }
+    
+    if (dirfd == AT_FDCWD) {
+        from = p->cwd;
+    } else if ((pf = get_file(p, dirfd)) != NULL) {
+        from = pf->ep;
+    } else {
+        return -1;
+    }
+
+    if((ep = namee(from, path)) == NULL) {
+        return -1;
+    }
+
+    elock(ep);
+    estat(ep, &stat);
+    eunlockput(ep);
+
+    return copy_to_user(ustat, &stat, sizeof(stat));
 }
 
 uint64 sys_getcwd(void) {
@@ -247,22 +329,7 @@ uint64 sys_getdents64(void) {
     kfree(buf);
     return ret;
 }
-static struct file* getdevfile(char *path) {
-    if(strncmp(path, "/dev/null", 9) == 0) {
-        struct file *fnull = filealloc();
-        if(fnull == NULL) {
-            debug("alloc fail");
-            return NULL;
-        }
-        fnull->type = T_DEVICE;
-        fnull->dev = &devs[DEVNULL];
-        fnull->readable = 1;
-        fnull->writable = 1;
-        return fnull;
-    } 
 
-    return NULL;
-}
 
 // todo: trunc
 uint64 sys_openat(void) {
@@ -556,5 +623,26 @@ uint64 sys_munmap(void) {
     }
 
     do_unmap(p->mm, addr, 1);
+    return 0;
+}
+
+#include "kernel/time.h"
+
+uint64 sys_utimensat(void) {
+    timespec_t ts[2];
+    uint64 addr;
+    int fd;
+
+    if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
+        return -1;
+
+    if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
+        return -1;
+    }
+    
+    if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
+        get_file(myproc(), fd)->ep->raw.adate.year_from_1980 = 65;
+    }
+
     return 0;
 }

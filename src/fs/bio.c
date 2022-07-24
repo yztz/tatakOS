@@ -31,7 +31,7 @@ extern void virtio_disk_rw(struct buf *, int);
 #endif
 
 
-static void (disk_io)(struct buf *b, int write) {
+void (disk_io)(struct buf *b, int write) {
   #ifdef K210
   if(write) {
     sd_write_sector_dma(b->data, b->blockno, 1);

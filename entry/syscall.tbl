@@ -38,18 +38,25 @@
 64     write     sys_write
 65     readv     sys_readv
 66     writev    sys_writev
+67     pread     sys_pread
+79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
+88     utimensat sys_utimensat
 ##############MM################
 214     sbrk      sys_sbrk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
 226     mprotect  sys_mprotect
 ##############Sys###############
+43      statfs64  sys_statfs64
 96      set_tid_address sys_set_tid_address
 113     clock_gettime   sys_clock_gettime
 153     times           sys_times
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday
+#############MISC###############
+175     geteuid     sys_geteuid
+177     getegid     sys_getegid
 #############TEST###############
 89     timetag      sys_timetag
 90     bio_cache    sys_bio_cache

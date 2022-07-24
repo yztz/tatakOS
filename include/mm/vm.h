@@ -33,6 +33,7 @@ uint64      _walkaddr(pagetable_t pagetable, uint64 va, int pg_spec);
 void        __copyout(mm_t *mm, uint64_t dstva, char *src, uint64 len, int walk);
 int         copyout(uint64 dstva, char *src, uint64 len);
 /** @deprecated use copy_from_user instead */
+int         memset_user(uint64 dstva, int val, uint64 len) _section(.copy_set_user);
 int         copyin(void *dst, uint64 srcva, uint64 len);
 int         copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
 int         copy_from_user(void *to, uint64 from, size_t n) _section(.copy_from_user);

@@ -9,6 +9,35 @@
 #include "debug.h"
 
 
+int memset_user(uint64 dstva, int val, uint64 len) {
+  vma_t *vma;
+  proc_t *p = myproc();
+  if(!p)
+    panic("copyout: no process ctx");
+  
+  // 1. 首先确定目标段是否存在
+  if((vma = vma_exist(p->mm, (uint64)dstva, len)) == NULL) {
+    return -1;
+  }
+  // 2. 是否是用户段
+  if((vma->prot & PROT_USER) == 0) {
+    return -1;
+  }
+  // 3. 复制
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  enable_sum();
+  #endif
+  char *dst = (char *)dstva;
+  while(len > 0) {
+    *dst++ = val;
+    len--;
+  }
+  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+  disable_sum();
+  #endif
+  return 0;
+}
+
 int copy_to_user(uint64 dstva, void *src, uint64 len) {
   vma_t *vma;
   proc_t *p = myproc();
