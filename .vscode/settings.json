@@ -113,7 +113,8 @@
         "trapframe.h": "c",
         "entry.h": "c",
         "errno.h": "c",
-        "test.h": "c"
+        "test.h": "c",
+        "initcode_bin.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

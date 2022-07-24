@@ -63,7 +63,6 @@ usertrap(void)
 
   // send interrupts and exceptions to kerneltrap(),
   // since we're now in the kernel.
-  // w_stvec((uint64)kernelvec);
   write_csr(stvec, (uint64)kernelvec);
 
   struct proc *p = myproc();
@@ -81,7 +80,7 @@ usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
-    // debug_if(p->pid == 2, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
+    // debug_if(p->pid == 0, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
     syscall();
   } else if(devintr(scause) == 0) {
     // ok

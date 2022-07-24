@@ -1,149 +1,150 @@
-#include "usys.h"
-#include "stdarg.h"
-#include "fs/fcntl.h"
+// #include "usys.h"
+// #include "stdarg.h"
+// #include "fs/fcntl.h"
 
-void printf(const char *fmt, ...);
-int strncmp(const char *p, const char *q, uint n);
-#define MAX_LINE 70
+// void printf(const char *fmt, ...);
+// int strncmp(const char *p, const char *q, uint n);
+// #define MAX_LINE 70
 
-#define assert(cond, fmt, ...) if(!(cond)) {printf(fmt"\n", ##__VA_ARGS__);for(;;);}
+// #define assert(cond, fmt, ...) if(!(cond)) {printf(fmt"\n", ##__VA_ARGS__);for(;;);}
 
-int fd = -1;
-char proc_name[40];
-char line[MAX_LINE];
-char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, 0};
-int foffset = 0;
+// int fd = -1;
+// char proc_name[40];
+// char line[MAX_LINE];
+// char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, NULL};
+// int foffset = 0;
 
-#define COND (i == 107)
+// #define COND (1)
 
-void run(char *casename, char *entryname);
+// void run(char *casename, char *entryname);
 
-__attribute__((section(".startup")))
-int main() {
-    // run("run-static.sh", "entry-static.exe");
-    // run("run-dynamic.sh", "entry-static.exe");
-    run("run-dynamic.sh", "entry-dynamic.exe");
-    printf("test end!\n");
-    for(;;);
-    return 0;
-}
+// __attribute__((section(".startup")))
+// int main() {
+//     run("run-static.sh", "entry-static.exe");
+//     // run("run-dynamic.sh", "entry-static.exe");
+//     run("run-dynamic.sh", "entry-dynamic.exe");
+//     printf("test end!\n");
+//     for(;;);
+//     return 0;
+// }
 
-int read_test_name() {
-    off_t loffset = 0;
-    int i;
-    assert(fd > 0, "bad fd2");
-    lseek(fd, foffset, SEEK_SET);
-    int cnt = read(fd, line, MAX_LINE);
-    if(cnt <= 0) 
-      return -1;
-    // skip space
-    for (i = 0; i < 3; i++)
-    {
-        for (; line[loffset] != ' '; loffset++)
-            ;
-        loffset++;
-    }
+// int read_test_name() {
+//     off_t loffset = 0;
+//     int i;
+//     assert(fd > 0, "bad fd2");
+//     lseek(fd, foffset, SEEK_SET);
+//     int cnt = read(fd, line, MAX_LINE);
+//     if(cnt <= 0) 
+//       return -1;
+//     // skip space
+//     for (i = 0; i < 3; i++)
+//     {
+//         for (; line[loffset] != ' '; loffset++)
+//             ;
+//         loffset++;
+//     }
     
-    for (i = 0; line[loffset] != '\n'; i++, loffset++)
-        proc_name[i] = line[loffset];
-    *(proc_name + i) = '\0';
-    loffset++;
-    foffset+=loffset;
-    return 0;
-}
+//     for (i = 0; line[loffset] != '\n'; i++, loffset++)
+//         proc_name[i] = line[loffset];
+//     *(proc_name + i) = '\0';
+//     loffset++;
+//     foffset+=loffset;
+//     return 0;
+// }
 
-void run(char *casename, char *entryname) {
-  if(fd > 0) close(fd);
-  fd = -1;
-  foffset = 0;
-  fd = openat(AT_FDCWD, casename, O_RDONLY);
-  assert(fd > 0, "bad fd");
-  argv[2] = entryname;
+// void run(char *casename, char *entryname) {
+//   if(fd > 0) close(fd);
+//   fd = -1;
+//   foffset = 0;
+//   fd = openat(AT_FDCWD, casename, O_RDONLY);
+//   assert(fd > 0, "bad fd");
+//   argv[2] = entryname;
 
-  int i = 0;
-  while(read_test_name() != -1) {
-    i++;
-    // filters //
-    if(!COND) continue;
-    if(strncmp(proc_name, "pthread", 7) == 0) continue;
+//   int i = 0;
+//   while(read_test_name() != -1) {
+//     i++;
+//     // filters //
+//     if(!COND) continue;
+//     if(strncmp(proc_name, "pthread", 7) == 0) continue;
+//     if(strncmp(proc_name, "sem_init", 8) == 0) continue;
 
-    printf("start to test[%d] %s\n", i, proc_name);
-    int npid = fork();
-    assert(npid >= 0, "bad fork");
-    if (npid == 0) { // child
-        exec(argv[0], argv);
-        printf("exec fail\n");
-        for(;;);
-    } else { // parent
-        int status;
-        wait(&status);
-        printf("child exit with %d\n", status);
-    }
-  }
-}
+//     printf("start to test[%d] %s\n", i, proc_name);
+//     int npid = fork();
+//     assert(npid >= 0, "bad fork");
+//     if (npid == 0) { // child
+//         exec(argv[0], argv);
+//         printf("exec fail\n");
+//         for(;;);
+//     } else { // parent
+//         int status;
+//         wait(&status);
+//         printf("child exit with %d\n", status);
+//     }
+//   }
+// }
 
 
 //////////////////////////////////////////////////
-// #include "usys.h"
-// #include "stdarg.h"
+#include "usys.h"
+#include "stdarg.h"
 
-// void printf(const char *fmt, ...);
-// void read_test();
+void printf(const char *fmt, ...);
+void read_test();
 
-// // FS
-// char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-//                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-//                       "mount", "umount", "test_echo"};
-// //
-// char *proc_testcase[] = { "getppid", "getpid",
-//                        "clone", "wait", "waitpid",
-//                       "yield", "fork",  "execve", "exit", "sleep"};
+// FS
+char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
+                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+                      "mount", "umount", "test_echo"};
+//
+char *proc_testcase[] = { "getppid", "getpid",
+                       "clone", "wait", "waitpid",
+                      "yield", "fork",  "execve", "exit", "sleep"};
 
-// char *mm_testcase[] = {"brk", "mmap", "munmap"};
+char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
-// char *other_testcase[] = {"gettimeofday", "times", "uname"};
-// //  单项测试
-// char* prog_name[] = { "mymmap" };
+char *other_testcase[] = {"gettimeofday", "times", "uname"};
+//  单项测试
+char* prog_name[] = { "ls" };
 
-// void run(char *testcases[], int cnt);
-// #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
-// __attribute__((section(".startup"))) 
-// void main() {
-//     memuse();
-//     // run(fs_testcase);
-//     // run(proc_testcase);
-//     // run(mm_testcase);
-//     // run(other_testcase);
-//     run(prog_name);
-//     memuse();
-//   for(;;);
-// }
-// #undef run
+void run(char *testcases[], int cnt);
+#define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
+__attribute__((section(".startup"))) 
+void main() {
+    memuse();
+    // run(fs_testcase);
+    // run(proc_testcase);
+    // run(mm_testcase);
+    // run(other_testcase);
+    run(prog_name);
+    memuse();
+  for(;;);
+}
+#undef run
 
-// void run(char *testcases[], int cnt) {
-//   // char *argv[3];
-//   // argv[1] = "this is only test args";
-//   // argv[2] = 0;
-//   char *argv[2];
-//   argv[1] = 0;
-//   for (int t = 0; t < cnt; t++) {
-//       printf("ready to run %s\n", testcases[t]);
-//       int npid = fork();
-//       if(npid < 0) {
-//           printf("fork failed");
-//           for(;;);
-//       }
-//       if (npid == 0) { //子进程
-//           argv[0] = testcases[t];
-//           int ret = exec(argv[0], argv);
-//           printf("exec fail with %d\n", ret);
-//       } else {          // 父进程
-//           int status;
-//           wait(&status);
-//           printf("child exit with %d\n", status);
-//       }
-//   }
-// }
+void run(char *testcases[], int cnt) {
+  // char *argv[3];
+  // argv[1] = "this is only test args";
+  // argv[2] = 0;
+  char *argv[2];
+  argv[1] = 0;
+  for (int t = 0; t < cnt; t++) {
+      printf("ready to run %s\n", testcases[t]);
+      int npid = fork();
+      if(npid < 0) {
+          printf("fork failed");
+          for(;;);
+      }
+      if (npid == 0) { //子进程
+          argv[0] = testcases[t];
+          int ret = exec(argv[0], argv);
+          printf("exec fail with %d\n", ret);
+      } else {          // 父进程
+          int status;
+          wait(&status);
+          printf("child exit with %d\n", status);
+      }
+  }
+}
 
 ///////////utils/////////////
 

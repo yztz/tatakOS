@@ -46,6 +46,7 @@ void buddy_init() {
     total++;
   }
   used = INIT_ATOMIC;
+  buddy_print_free();
 }
 
 static inline void insert(int order, buddy_t *b) {

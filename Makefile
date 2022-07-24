@@ -64,7 +64,7 @@ export LDFLAGS CFLAGS
 
 #============================QEMU==================================#
 QEMU = qemu-system-riscv64
-QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 130M -smp $(CPUS) -nographic
+QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 24M -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
@@ -155,7 +155,7 @@ $(fs.img): user $(MNT_DIR)
 
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
-#	@make -C $U
+	@make -C $U
 	@cp $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 

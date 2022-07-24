@@ -14,12 +14,13 @@
 #include "fs/fs.h"
 
 volatile static int started = 0;
-__attribute__ ((aligned (16))) char stack0[4096 * NUM_CORES];
+_section(".kstack0") char stack0[4096 * NUM_CORES];
 
 static inline void clear_bss() {
   extern char bss_start, bss_end;
-  memset(&bss_start, 0, (uint64_t)&bss_end - (uint64_t)&bss_start);
-  printf("\n.bss %#lx-%#lx cleared\n", &bss_start, &bss_end);
+  uint64_t len = (uint64_t)&bss_end - (uint64_t)&bss_start;
+  memset(&bss_start, 0, len);
+  printf("\n.bss %#lx-%#lx (%#lx) cleared\n", &bss_start, &bss_end, len);
 }
 
 void
@@ -61,11 +62,9 @@ main()
     fs_init();
 
     userinit();      // first user process
-    // printf("user init success\n");
 
     for (int i = 1; i < NUM_CORES; i ++) {
 			unsigned long mask = 1 << i;
-			// struct sbiret res = sbi_send_ipi(mask, 0);
 			sbi_send_ipi(mask, 0);
 		}
 
