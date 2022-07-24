@@ -114,6 +114,7 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
+  p->killed = 0;
   p->state = USED;
   p->nfd = NOFILE;
   p->ext_ofile = NULL;

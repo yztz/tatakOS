@@ -74,7 +74,7 @@ struct proc {
 
   struct fat_entry *cwd;           // Current directory
   // struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
+  char name[20];               // Process name (debugging)
   uint64 ktrap_fp;
 
   uint64 cur_mmap_sz;

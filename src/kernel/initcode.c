@@ -11,16 +11,16 @@ int strncmp(const char *p, const char *q, uint n);
 int fd = -1;
 char proc_name[40];
 char line[MAX_LINE];
-char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, 0};
+char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, NULL};
 int foffset = 0;
 
-#define COND (i == 107)
+#define COND (1)
 
 void run(char *casename, char *entryname);
 
 __attribute__((section(".startup")))
 int main() {
-    // run("run-static.sh", "entry-static.exe");
+    run("run-static.sh", "entry-static.exe");
     // run("run-dynamic.sh", "entry-static.exe");
     run("run-dynamic.sh", "entry-dynamic.exe");
     printf("test end!\n");
@@ -66,6 +66,7 @@ void run(char *casename, char *entryname) {
     // filters //
     if(!COND) continue;
     if(strncmp(proc_name, "pthread", 7) == 0) continue;
+    if(strncmp(proc_name, "sem_init", 8) == 0) continue;
 
     printf("start to test[%d] %s\n", i, proc_name);
     int npid = fork();

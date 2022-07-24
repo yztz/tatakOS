@@ -12,7 +12,7 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-#define _section(name) __attribute__((noinline, section(#name)))
+#define _section(name) __attribute__((section(#name)))
 #define _always_inline __attribute__((always_inline)) inline
 
 static inline void set_bit(volatile uint32_t *bits, uint32_t mask, uint32_t value)
