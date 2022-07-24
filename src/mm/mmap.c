@@ -872,7 +872,7 @@ uint64_t do_munmap(mm_struct_t *mm, uint64_t start, uint64_t len){
  *  anonymous maps.  eventually we may be able to do some
  *  brk-specific accounting here.
  * 
- * 使用了lazy
+ * 	这里使用了lazy的内存分配方式。
  */
 unsigned long do_brk(unsigned long addr, unsigned long len)
 {

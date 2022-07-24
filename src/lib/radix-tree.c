@@ -212,6 +212,9 @@ radix_tree_node_alloc(){
 	return ret;
 }
 
+static inline radix_tree_node_free(struct radix_tree_node *node){
+	kfree((void *)node);
+}
 
 static inline void tag_set(radix_tree_node_t *node, uint32_t tag_type, int offset){
 	__set_bit(offset, node->tags[tag_type]);
@@ -380,4 +383,118 @@ radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_
 	// root->rnode->tags[0][0] = 3;
 	lookup_tag(root->rnode, tag, pg_head, root->height, 0);
 	return pg_head;
+}
+
+/**
+ *	radix_tree_shrink    -    shrink height of a radix tree to minimal
+ *	@root		radix tree root
+ *  节点串成向左下方的直线。
+ */
+static inline void radix_tree_shrink(struct radix_tree_root *root)
+{
+	/* try to shrink tree height */
+	while (root->height > 0) {
+		struct radix_tree_node *to_free = root->rnode;
+		void *newptr;
+
+		/*
+		 * The candidate node has more than one child, or its child
+		 * is not at the leftmost slot, we cannot shrink.
+		 */
+		if (to_free->count != 1)
+			break;
+		if (!to_free->slots[0])
+			break;
+
+		newptr = to_free->slots[0];
+		root->rnode = newptr;
+		root->height--;
+		radix_tree_node_free(to_free);
+	}
+}
+
+/**
+ *	radix_tree_delete    -    delete an item from a radix tree
+ *	@root:		radix tree root
+ *	@index:		index key
+ *
+ *	Remove the item at @index from the radix tree rooted at @root.
+ *
+ *	Returns the address of the deleted item, or NULL if it was not present.
+ *  删除节点，并适当缩小树。
+ */
+void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+{
+	struct radix_tree_path path[RADIX_TREE_MAX_PATH + 1], *pathp = path;
+	struct radix_tree_node *slot = NULL;
+	struct radix_tree_node *to_free;
+	unsigned int height, shift;
+	int tag;
+	int offset;
+
+	height = root->height;
+	if(index > radix_tree_maxindex(height))
+		goto out;
+	
+	slot = root->rnode;
+	if(height == 0){
+		root->rnode = NULL;
+		goto out;
+	}
+
+	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
+	pathp->node = NULL;
+
+	do{
+		if(slot == NULL)
+			goto out;
+
+		pathp++;
+		offset = (index >> shift) & RADIX_TREE_MAP_MASK;
+		pathp->offset = offset;
+		pathp->node = slot;
+		slot = slot->slots[offset];
+		shift -= RADIX_TREE_MAP_SHIFT;
+		height--;
+	}while(height > 0);
+
+	if(slot == NULL)
+		goto out;
+	
+	/*
+	 * Clear all tags associated with the just-deleted item
+	 */
+	for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
+		if (tag_get(pathp->node, tag, pathp->offset))
+			radix_tree_tag_clear(root, index, tag);
+	}
+
+	to_free == NULL;
+	/* Now free the nodes we do not need anymore */
+	while(pathp->node){
+		pathp->node->slots[pathp->offset] = NULL;
+		pathp->node->count--;
+		/*
+		 * Queue the node for deferred freeing after the
+		 * last reference to it disappears (set NULL, above).
+		 */
+		if (to_free)
+			radix_tree_node_free(to_free);
+		if(pathp->node->count) {
+			if(pathp->node == root->rnode)
+				radix_tree_shrink(root);
+			goto out;
+		}
+
+		to_free = pathp->node;
+		pathp--;
+	}
+
+	root->height = 0;
+	root->rnode = NULL;
+	if (to_free)
+		radix_tree_node_free(to_free);
+
+out:
+	return slot;
 }

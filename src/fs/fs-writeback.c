@@ -44,6 +44,10 @@ void writeback_single_entry(entry_t *entry){
   printf(ylw("end write pages!\n"));
 
   printf(ylw("begin free mapping!\n"));
+  /* 这里不对，写回不意味着要回收 */
+  #ifdef TODO
+  todo("");
+  #endif
   free_mapping(entry);
   printf(ylw("end free mapping!\n"));
 

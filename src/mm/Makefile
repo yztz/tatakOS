@@ -12,3 +12,5 @@ obj-y += rmap.o
 obj-y += slob.o
 obj-y += vm.o
 obj-y += pdflush.o
+obj-y += swap.o
+# obj-y += vmscan.o

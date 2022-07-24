@@ -53,6 +53,12 @@
     "limits": "c",
     "algorithm": "c",
     "string_view": "c",
-    "initializer_list": "c"
+    "initializer_list": "c",
+    "list.h": "c",
+    "bitops.h": "c",
+    "pagevec.h": "c",
+    "swap.h": "c",
+    "page-flags.h": "c",
+    "memlayout.h": "c"
   }
 }

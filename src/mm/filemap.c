@@ -13,9 +13,36 @@
 
 #include "fs/mpage.h"
 /**
- * @brief 定义了关于file map相关的函数，函数声明在mm.h
+ * @brief 定义了关于file map相关的函数，函数声明在fs.h
  *
  */
+
+/*
+ * Remove a page from the page cache and free it. Caller has to make
+ * sure the page is locked and that nobody else uses it - or that usage
+ * is safe.  The caller must hold a write_lock on the mapping's tree_lock.
+ */
+void __remove_from_page_cache(page_t *page)
+{
+	struct address_space *mapping = page->mapping;
+
+	radix_tree_delete(&mapping->page_tree, page->index);
+	page->mapping = NULL;
+	mapping->nrpages--;
+	// pagecache_acct(-1);
+}
+
+void remove_from_page_cache(page_t *page)
+{
+	struct address_space *mapping = page->mapping;
+
+	if (unlikely(!PageLocked(page)))
+    ER();
+	spin_lock(&mapping->tree_lock);
+	__remove_from_page_cache(page);
+	spin_unlock(&mapping->tree_lock);
+}
+
 
 
 uint64 find_page(struct address_space *mapping, unsigned long offset){
@@ -87,6 +114,7 @@ int filemap_nopage(uint64 address)
   /* 页缓存命中，把address和pa映射 */
   if (pa)
   {
+    mark_page_accessed(&pages[PAGE2NUM(pa)]);
     pagetable_t pagetable = myproc()->mm->pagetable;
     if (mappages(pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
       panic("filemap no page 2");
@@ -101,6 +129,8 @@ int filemap_nopage(uint64 address)
   // printf(bl("pa: %p\n"), pa);
   if (mappages(myproc()->mm->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
     panic("filemap no page 3");
+
+  mark_page_accessed(&pages[PAGE2NUM(pa)]);
 
   //如果文件的最后一个页的内容不满一页，reade返回值大于0。
   entry_t *entry = area->vm_file->ep;
@@ -272,6 +302,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       add_to_page_cache(pa, mapping, index);
     }
 
+    mark_page_accessed(&pages[PAGE2NUM(pa)]);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min(rest, PGSIZE - pgoff);
 
@@ -313,7 +344,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     pa = find_get_page(mapping, pg_id);
     if(!pa){
       pa = (uint64_t)kalloc();
-      get_page(pa);
+      ref_page(pa);
       /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
       #ifdef TODO
       todo("readpage: optimize point 1: use prepare_write, if the write is all page, no need to read!");
@@ -324,6 +355,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       add_to_page_cache(pa, mapping, pg_id);
     }
 
+    mark_page_accessed(&pages[PAGE2NUM(pa)]);
     /* 函数位置有待商榷 */
     lock_page(pa);
 

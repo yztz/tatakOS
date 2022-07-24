@@ -101,5 +101,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n);
 pages_be_found_head_t * find_pages_tag(address_space_t *mapping, uint32_t tag);
 void writeback_file_to_disk(entry_t *entry);
+void __remove_from_page_cache(page_t *page);
+void remove_from_page_cache(page_t *page);
+void *radix_tree_delete(struct radix_tree_root *root, unsigned long index);
 
 #endif

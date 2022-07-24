@@ -12,6 +12,8 @@
 #include "debug.h"
 
 #include "atomic/sleeplock.h"
+#include "utils.h"
+#include "page-flags.h"
 
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
@@ -148,12 +150,40 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
 
 
 
-pgref_t get_page(uint64_t pa){
-  return ref_page(pa);
+/**
+ * @brief 增加1个引用，返回增加后的
+ * 
+ */
+pgref_t get_page(page_t *page){
+  pgref_t ret;
+  acquire(&reflock);
+  ret = ++page->refcnt;
+  release(&reflock);
+  return ret;
 }
 
-pgref_t put_page(uint64_t pa ){
-  return deref_page(pa);
+/**
+ * @brief 引用减1，返回值
+ * 
+ */
+pgref_t put_page(page_t *page){
+  pgref_t ret;
+
+  if(page->refcnt > 1){
+    acquire(&reflock);
+    ret = --page->refcnt;
+    release(&reflock);
+    return ret;
+  }
+  else if(page->refcnt == 1){
+    /* kfree 里面调用buddyfree，会调用deref_page */
+    kfree(NUM2PAGE(page - pages));
+    return 0;
+  }
+  else{
+    /* refcnnt为0的应该在buddy中 */
+    ER();
+  }
 }
 
 
@@ -175,34 +205,41 @@ void lock_page(uint64_t pa){
   // acquiresleep((sleeplock_t *)page->sleeplock);
 }
 
-void unlock_page(uint64_t pa){
-  // page_t *page = &pages[PAGE2NUM(pa)];
-  
-  // releasesleep((sleeplock_t *)page->sleeplock);
+void unlock_page(page_t *page){
+  if (!TestClearPageLocked(page))
+    ER();
+	// wake_up_page(page, PG_locked);
 }
 
+/**
+ * @brief 之前flag位是带移位的，原PG_diry = 1 << 现PG_diry 
+ * 
+ */
 void set_page_dirty(uint64_t pa){
   page_t *page = &pages[PAGE2NUM(pa)];
 
-  page->flags |= PG_dirty;
+  // page->flags |= PG_dirty;
+  SetPageDirty(page);
 }
 
 
 void clear_page_dirty(uint64_t pa){
   page_t *page = &pages[PAGE2NUM(pa)];
 
-  page->flags &= ~PG_dirty;
+  // page->flags &= ~PG_dirty;
+  ClearPageDirty(page);
 }
 
 int page_is_dirty(uint64_t pa){
   page_t *page = &pages[PAGE2NUM(pa)];
 
-  return page->flags & PG_dirty;
+  // return page->flags & PG_dirty;
+  return PageDirty(page);
 }
 
 void unlock_put_page(uint64_t pa){
   unlock_page(pa);
-  put_page(pa);
+  deref_page(pa);
 }
 
 /**

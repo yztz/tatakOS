@@ -9,6 +9,7 @@
 
 #define __MODULE_NAME__ ALLOC
 #include "debug.h"
+#include "pagevec.h"
 
 #define JUNK 1
 
@@ -85,3 +86,13 @@ void kfree(void *addr) {
 }
 
 
+
+/* new added functions for page frame reclaiming */
+void __pagevec_free(pagevec_t *pvec){
+    int i = pagevec_count(pvec);
+
+    /* buddy/kfree的接口可以考虑换一下，参数可选择页指针 */
+    while(--i >= 0){
+        kfree(NUM2PAGE(pvec->pages[i] - pages));
+    }
+}

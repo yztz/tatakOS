@@ -95,6 +95,9 @@ static int do_anonymous_page(struct mm_struct *mm, unsigned long address, unsign
         pa = (uint64)kalloc();
         if (mappages(mm->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
             ER();
+        
+        /* 先不考虑swap，只在lru链表中加入page cache页和mmap页 */
+        // mark_page_accessed(&pages[PAGE2NUM(pa)]);
 
         release(&mm->mm_lock);
     }
@@ -147,19 +150,28 @@ static inline int handle_pte_fault(struct mm_struct *mm,
     /* 如果pte不存在(无效)  x86是present，risc-v是valid */
     if (!pte_valid(entry)) {
         /* entry的值为0 */
-		if (pte_none(entry)) {
-            /* 这段vma有对应的文件，说明这段内存区间映射的是文件 */
-			if (vma->vm_file) {
-					return do_linear_fault(address);
-			}
-			return do_anonymous_page(mm, address, write);
-		}
-        /* Linux非线性文件映射，我们没有实现 */
-		// if (pte_file(entry))
-		// 	return do_nonlinear_fault(mm, vma, address,
-		// 			pte, pmd, write, entry);
-		return do_swap_page(mm, vma, address,
-					pte, write, entry);
+		// if (pte_none(entry)) {
+        //     /* 这段vma有对应的文件，说明这段内存区间映射的是文件 */
+		// 	if (vma->vm_file) {
+		// 			return do_linear_fault(address);
+		// 	}
+		// 	return do_anonymous_page(mm, address, write);
+		// }
+        // /* Linux非线性文件映射，我们没有实现 */
+		// // if (pte_file(entry))
+		// // 	return do_nonlinear_fault(mm, vma, address,
+		// // 			pte, pmd, write, entry);
+		// return do_swap_page(mm, vma, address,
+		// 			pte, write, entry);
+
+        /* 在reverse mapping中的page_referenced clear valid bit */
+        if(vma->vm_file)
+            return do_linear_fault(address);
+        else{
+            if(pte_none(entry))
+                return do_anonymous_page(mm, address, write);
+            return do_swap_page(mm, vma, address, pte, write, entry);
+        }
 	}
 
     /* pte valid (copy on write) */

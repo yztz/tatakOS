@@ -169,7 +169,7 @@ void buddy_free(void *pa) {
     panic("buddy_free: out of range");
   }
 
-  if(deref_page((uint64_t)pa) > 0) 
+  if(deref_page((uint64_t)pa) > 0)
     return;
 
   page = &pages[pgnum];

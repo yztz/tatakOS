@@ -36,6 +36,7 @@ void init_new_context_kthread(proc_t *tsk, uint64_t threadfn){
   tsk->context.ra = (uint64_t)threadfn;
   tsk->context.sp = tsk->kstack + PGSIZE;
 }
+
 /**
  * @brief 创建内核线程，参考userinit
  * 

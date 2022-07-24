@@ -10,6 +10,11 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #ifndef _H_PAGE_
 #define _H_PAGE_
 
+#include "bitops.h"
+#include "list.h"
+#include "atomic/spinlock.h"
+#include "page-flags.h"
+
 /* use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 /* Equal with page level */
@@ -65,10 +70,15 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 // use typedef to make type flexible.
 typedef uint8_t pgref_t;
-
 // 8MB/PAGESIZE = 2K * 2B
 typedef struct _page_t {
-    pgref_t refcnt;
+    pgref_t refcnt;        
+    pgref_t _mapcount; /* Count of ptes mapped in mms,
+					    * to show when page is mapped
+					    * & limit reverse map searches.
+                        * 这个值表示的是mm中的映射，是否只包含用户空间，不包括
+                        * 内核映射？
+					    */
     struct {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
@@ -79,19 +89,28 @@ typedef struct _page_t {
     };
     // uint8_t resv[2]; // reserved for special use
 
-    uint8_t flags;
-    /* 初始化为null */
-    // void *sleeplock;
-    /* 当此页被插入page cache时， 指向其address_space；
-        当此页属于一个anonymous区域时，指向anon_vma */
-    // address_space_t *mapping;
+    int flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
+    list_head_t lru; /* 串联页，active/inactive list */
+
+    union {
+		struct pte_chain *chain;/* Reverse pte mapping pointer.
+					 * protected by PG_chainlock */
+		pte_addr_t direct;
+	} pte;
+
+    address_space_t *mapping;
+    uint64_t index;
+//     struct {
+//         int order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
+//         int alloc : 2; // for BUDDY, acutally we use only one bit
+// #define ALLOC_BUDDY     0
+// #define ALLOC_FREELIST  1
+// #define ALLOC_SLOB      2
+//         int type  : 2; // page type ()
+
+//         int flags : 24;
+//     };
 } page_t;
-
-#define PG_locked (1L << 0)
-#define PG_dirty (1L << 1)
-#define PG_uptodata (1L << 2)
-
-
 
 /* 页的数量 */
 #define PAGE_NUMS ((MEM_END - KERN_BASE)/PGSIZE)
@@ -114,13 +133,11 @@ int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int pe
 pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 
-
-pgref_t get_page(uint64_t pa);
-pgref_t put_page(uint64_t pa );
+pgref_t get_page(page_t *page);
+pgref_t put_page(page_t *page);
 
 void lock_page(uint64_t pa);
 void unlock_page(uint64_t pa);
-
 
 void set_page_dirty(uint64_t pa);
 void clear_page_dirty(uint64_t pa);
@@ -145,8 +162,88 @@ void print_not_freed_pages();
 
 #define PAGE_SHIFT PGSHIFT
 
+/* page fault 使用的位 */
 #define pte_none(pte)           (!pte)
 #define pte_valid(pte)          (pte & PTE_V) 
 #define pte_write(pte)          (pte & PTE_W)
 
+
+/* page frame reclaiming 页回收算法需要的数据结构 */
+
+/*
+ * Return true if this page is mapped into pagetables.
+ */
+static inline int page_mapped(page_t *page)
+{
+    return page->pte.direct != 0;
+	// return page->_mapcount;
+}
+
+/* mmzone.h */
+struct zone{
+
+    /* Fields commonly accessed by the page reclaim scanner */
+    spinlock_t lru_lock;
+    list_head_t active_list;        /* 活跃页链表 */
+    list_head_t inactive_list;      /* 非活跃页链表 */
+    uint64_t nr_active;             /* 活跃页数量 */
+    uint64_t nr_inactive;           /* 非活跃页数量 */
+    uint64_t pages_scanned;
+};
+
+typedef struct zone zone_t;
+
+extern zone_t memory_zone;
+/* mm_inline.h */
+static inline void
+add_page_to_active_list(struct zone *zone, page_t *page)
+{
+	list_add(&page->lru, &zone->active_list);
+	zone->nr_active++;
+}
+
+static inline void
+add_page_to_inactive_list(struct zone *zone, page_t *page)
+{
+	list_add(&page->lru, &zone->inactive_list);
+	zone->nr_inactive++;
+}
+
+static inline void
+del_page_from_active_list(struct zone *zone, page_t *page)
+{
+	list_del(&page->lru);
+	zone->nr_active--;
+}
+
+static inline void
+del_page_from_inactive_list(struct zone *zone, page_t *page)
+{
+	list_del(&page->lru);
+	zone->nr_inactive--;
+}
+
+static inline void
+del_page_from_lru(struct zone *zone, page_t *page)
+{
+	list_del(&page->lru);
+	if (PageActive(page)) {
+		ClearPageActive(page);
+		zone->nr_active--;
+	} else {
+		zone->nr_inactive--;
+	}
+}
+
+/* swap.c */
+void mark_page_accessed(page_t *page);
+
+
+#define PTE_VALID (0) // valid
+#define PTE_READ (1)
+#define PTE_WRITE (2)
+#define PTE_EXECUTE (3)
+#define PTE_USER (4) 
+
+static inline  int ptep_test_and_clear_valid(pte_t *ptep)	{ return test_and_clear_bit(PTE_VALID, ptep)}; 
 #endif

@@ -236,13 +236,12 @@ static void __eput(entry_t *entry) {
         if(entry->dirty)
           writeback_single_entry_idx(entry - pool);
           /* (entry - pool)/sizeof(entry_t)是错的！*/
-          // pdflush_operation(writeback_single_entry_idx, (entry - pool));
+          pdflush_operation(writeback_single_entry_idx, (entry - pool));
         acquire(&entry->fat->cache_lock);
 
         /* dirty的entry在writeback_single_entry里面调用free_mapping */
         if(!entry->dirty)
           free_mapping(entry);
-
     }
 
     __eput(entry->parent);
