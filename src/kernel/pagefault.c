@@ -41,6 +41,9 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
   return 0;
 }
 
+// address-非对齐 offset
+// 【 |  】【   】【   】【    】
+
 static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
     // TODO: check file range
     uint64_t len = PGSIZE;

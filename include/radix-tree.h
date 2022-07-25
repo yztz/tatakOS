@@ -8,10 +8,10 @@
 #include "fs/fat.h"
 #include "fs/stat.h"
 #include "param.h"
-#include "utils.h"
+// #include "utils.h" //循环引用了
 
 /*** radix-tree API starts here ***/
-#define BITS_PER_LONG 64
+
 #define RADIX_TREE_MAX_TAGS 2
 /*
  * Radix tree node definition.
@@ -35,11 +35,12 @@ typedef struct radix_tree_root
 /**
  * @brief 为了节省空间，我们尽量不在页描述符page_t结构体中加入更多字段来表示page所对应的的物理地址，
  * 在linux 2.6中，如果有缓存，叶子节点的slot指向页描述符；我们直接在叶子节点的slot保存缓存的物理地址。
+ * 
  */
 typedef struct radix_tree_node {
 	unsigned int	count;
 	void		*slots[RADIX_TREE_MAP_SIZE];
-    uint64 tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
+  uint64 tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
 } radix_tree_node_t;
 
 
@@ -72,13 +73,17 @@ typedef struct pages_be_found_head {
 
 void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
 int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item);
+static int radix_tree_extend(struct radix_tree_root *root, unsigned long index);
 uint64 radix_tree_maxindex(uint height);
-
+static struct radix_tree_node * radix_tree_node_alloc();
 void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 pages_be_found_head_t * radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head);
 
 
+
+/* functions defined in write-pageback.c */
+void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 
 
 #endif

@@ -14,33 +14,55 @@
 //     so do not keep them longer than necessary.
 
 
-#include "types.h"
-#include "param.h"
+#include "common.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "riscv.h"
 #include "defs.h"
 #include "fs/fs.h"
 #include "fs/blk_device.h"
+#include "bio.h"
+#include "utils.h"
+#include "driver/disk.h"
 
-#ifdef K210
-extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-#else 
-extern void virtio_disk_rw(struct buf *, int);
-#endif
+// #ifdef K210
+// extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
+// extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
+// #else 
+// extern void virtio_disk_rw(struct buf *, int);
+// #endif
 
 
-void (disk_io)(struct buf *b, int write) {
-  #ifdef K210
-  if(write) {
-    sd_write_sector_dma(b->data, b->blockno, 1);
-  } else {
-    sd_read_sector_dma(b->data, b->blockno, 1);
-  }
-  #else
-  virtio_disk_rw(b, write);
-  #endif
+// void (disk_io)(struct buf *b, int write) {
+//   #ifdef K210
+//   if(write) {
+//     sd_write_sector_dma(b->data, b->blockno, 1);
+//   } else {
+//     sd_read_sector_dma(b->data, b->blockno, 1);
+//   }
+//   #else
+//   virtio_disk_rw(b, write);
+//   #endif
+// }
+
+
+
+
+static bio_t *buf_to_bio(struct buf *b, int rw){
+  bio_t *bio = kzalloc(sizeof(bio_t));
+  bio_vec_t *bio_vec = kzalloc(sizeof(bio_vec_t));
+
+  bio_vec->bv_buff = (void *)b->data;
+  bio_vec->bv_count = 1;
+  bio_vec->bv_start_num = b->blockno;
+  bio_vec->bv_next = NULL;
+
+  bio->bi_dev = b->dev;
+  bio->bi_io_vec = bio_vec;
+  bio->bi_rw = rw;
+  bio->bi_next = NULL;
+
+  return bio;
 }
 
 struct {

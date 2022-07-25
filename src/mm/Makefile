@@ -6,6 +6,7 @@ obj-y += page.o
 obj-y += buddy.o
 obj-y += alloc.o
 obj-y += mmap.o
+obj-y += filemap.o
 obj-y += trapframe.o
 obj-y += slob.o
 obj-y += vma.o

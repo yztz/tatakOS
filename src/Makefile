@@ -11,6 +11,7 @@ obj-y+=kernel/
 obj-y+=mm/
 obj-y+=platform/
 obj-y+=atomic/
+obj-y+=lib/
 obj-y+=tests/
 
 obj-y += printf.o

@@ -7,6 +7,9 @@
 #define USERSPACE_END (0x80000000) // 2GB
 #define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
 
+#define PAGECACHE_TAG_DIRTY 0
+#define PAGECACHE_TAG_WRITEBACK 1
+
 /* 用于描述特定一段内存区域（段） */
 struct vma{
   uint64 addr;

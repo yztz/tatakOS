@@ -1,3 +1,13 @@
+// #include "types.h"
+// #include "atomic/sleeplock.h"
+// #include "atomic/atomic.h"
+// #include "fs/fat.h"
+// #include "fs/stat.h"
+// #include "param.h"
+// #include "radix-tree.h"
+// #include "mm/alloc.h"
+
+// #include "debug.h"
 #include "atomic/sleeplock.h"
 #include "atomic/spinlock.h"
 #include "defs.h"
@@ -7,14 +17,26 @@
 #include "fs/stat.h"
 #include "kernel/proc.h"
 #include "mm/vm.h"
+#include "param.h"
+#include "riscv.h"
 #include "types.h"
+#include "debug.h"
 #include "utils.h"
-#include "radix_tree.h"
+#include "mm/mm.h"
+#include "radix-tree.h"
+#include "debug.h"
+#include "bitops.h"
 
-
-static struct radix_tree_node * radix_tree_node_alloc();
-static int radix_tree_extend(struct radix_tree_root *root, unsigned long index);
+#include "fs/mpage.h"
 //基数树(radix tree, rdt)相关
+
+// struct radix_tree_node {
+//   uint8 height;
+//   uint8 count;
+//   void *slots[RADIX_TREE_MAP_SIZE];
+//   uint64 tags[RADIX_TREE_MAX_TAGS];
+// };
+
 
 
 /** 根据rdt的高度返回其最大的id值。注意height为0，最大id不为0，
@@ -25,10 +47,13 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index);
  * 如果height为0选择返回一个负值，还要考虑有符号数和无符号数比较时的转化，所以我们选择特殊处理height=0
  * 的情况。
  */
-uint64 radix_tree_maxindex(uint height) {
+uint64
+radix_tree_maxindex(uint height){
 	if(height == 0)
 		return 0;
-    return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
+		// panic("rdt maxindex: height is 0!");
+		// return -1;
+  return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
 }
 
 /**
@@ -38,7 +63,8 @@ uint64 radix_tree_maxindex(uint height) {
  *
  *	Lookup them item at the position @index in the radix tree @root.
  */
-void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index) {
+void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
+{
 	unsigned int height, shift;
 	struct radix_tree_node **slot;
 
@@ -129,7 +155,7 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
  */
 static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
 	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
-		for(int j = 0; j < RADIX_TREE_TAG_LONGS; i++){
+		for(int j = 0; j < RADIX_TREE_TAG_LONGS; j++){
 			if(child->tags[i][j] > 0){
 				parent->tags[i][0] = 1;
 				break;

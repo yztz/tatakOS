@@ -1,4 +1,6 @@
 #include "fs/fs.h"
+#include "fs/mpage.h"
+#include "writeback.h"
 #include "printf.h"
 #include "common.h"
 #include "kernel/proc.h"
@@ -188,6 +190,38 @@ static void __eput(entry_t *entry) {
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
     }
+
+    /* 可以把entry和immaping解除，entry回收利用，imapping写回后释放，或者动态分配
+    一个新的entry，用来保留信息，原entry回收 */
+
+    // /* 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免 */
+    // #ifdef TODO
+    // todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
+    // #endif
+
+    // /* 如果为普通文件，则写回。（为目录则不写回） */
+    if(entry->raw.attr == FAT_ATTR_FILE){
+        // /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
+        // free_mapping(entry);
+
+        /* 简单粗糙的做法，唤醒内核写回线程 */
+        // wakeup_bdflush(1);
+        // background_writeout(1);
+
+        release(&entry->fat->cache_lock);
+          /* 只单写一个entry，不要写其他entry */
+        if(entry->dirty) {
+          // writeback_single_entry_idx(entry - pool);
+          /* (entry - pool)/sizeof(entry_t)是错的！*/
+          pdflush_operation(writeback_single_entry_idx, (entry - pool));
+        }
+        acquire(&entry->fat->cache_lock);
+
+        /* dirty的entry在writeback_single_entry里面调用free_mapping */
+        if(!entry->dirty)
+          free_mapping(entry);
+    }
+
     __eput(entry->parent);
   }
 }
@@ -357,37 +391,48 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 
 // caller holds lock
 int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
-  int ret = fat_write(entry->fat, entry->clus_start, user, buff, off, n);
+  /* maybe overflow */
+  if(off < 0 || n < 0)
+    panic("writee");
+
+  uint64_t ret = 0;
+
+  ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
+
   int newsize = off + ret;
-  if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
-    entry->raw.size = newsize;
-    debug("update size");
-    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+  // /* 更改文件在父目录中的元数据 */
+  if(ret > 0){
+    entry->dirty = 1;
+    /* update the file's size in mem */
+    if(newsize > entry->raw.size) {
+      entry->size_in_mem = newsize;
+    }
   }
   return ret;
 }
 
-int f1 = 0, f2 = 0;
-char filebuf1[1 * 1024 * 1024];
-char filebuf2[1 * 1024 * 1024];
+// int f1 = 0, f2 = 0;
+// char filebuf1[1 * 1024 * 1024];
+// char filebuf2[1 * 1024 * 1024];
 
 // caller holds lock
 int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   int ret;
-  if(off >= E_FILESIZE(entry)) 
-    return 0;
-  if(strncmp(entry->name, "entry-static.exe", 16) == 0) {
-    if(!f1) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf1, 0, E_FILESIZE(entry));
-    either_copyout(user, buff, filebuf1 + off, min(n, E_FILESIZE(entry) - off));
-    f1 = 1;
-    return min(n, E_FILESIZE(entry) - off);
-  } else if(strncmp(entry->name, "entry-dynamic.exe", 17) == 0) {
-    if(!f2) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf2, 0, E_FILESIZE(entry));
-    either_copyout(user, buff, filebuf2 + off, min(n, E_FILESIZE(entry) - off));
-    f2 = 1;
-    return min(n, E_FILESIZE(entry) - off);
-  }
-  ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
+  // if(off >= E_FILESIZE(entry)) 
+  //   return 0;
+  // if(strncmp(entry->name, "entry-static.exe", 16) == 0) {
+  //   if(!f1) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf1, 0, E_FILESIZE(entry));
+  //   either_copyout(user, buff, filebuf1 + off, min(n, E_FILESIZE(entry) - off));
+  //   f1 = 1;
+  //   return min(n, E_FILESIZE(entry) - off);
+  // } else if(strncmp(entry->name, "entry-dynamic.exe", 17) == 0) {
+  //   if(!f2) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf2, 0, E_FILESIZE(entry));
+  //   either_copyout(user, buff, filebuf2 + off, min(n, E_FILESIZE(entry) - off));
+  //   f2 = 1;
+  //   return min(n, E_FILESIZE(entry) - off);
+  // }
+  // ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
+  int ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
   return ret;
 }
 

@@ -135,6 +135,8 @@ typedef struct _fat32_t {
 	uint32_t root_cluster;		/* 根目录扇区号 */
 
 	spinlock_t cache_lock;		/* 保护缓存 */
+
+	list_head_t fat_dirty;   	/* 所有dirty的entry的链表 */
 } fat32_t;
 
 typedef enum _FAT_RESULT_t{
