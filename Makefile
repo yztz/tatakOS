@@ -155,7 +155,7 @@ $(fs.img): user $(MNT_DIR)
 
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
-	@make -C $U
+#	@make -C $U
 	@cp $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 

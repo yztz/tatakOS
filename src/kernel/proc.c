@@ -361,9 +361,9 @@ exit(int status)
   }
   // mmap_print(p->mm);
 
-  #ifdef DEBUG
-  buddy_print_free();
-  #endif
+  // #ifdef DEBUG
+  // buddy_print_free();
+  // #endif
   // buddy_print_free();
   // if(status == -1) {
   //   panic("exception quit");

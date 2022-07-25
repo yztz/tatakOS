@@ -874,7 +874,7 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *
             lp->next = id - 1;
             lp->checksum = slot->alias_checksum;
             char *buf = lp->longname + lp->next * FAT_LFN_LENGTH;
-            lp->p = buf + extractname(slot, buf); //  使p指向文件名末尾
+            lp->p = buf + extractname(slot, buf) + 1; //  使p指向文件名末尾
         } else { // 不是最后一段
             if(lp->next != FAT_LFN_ID(slot->id) || lp->checksum != slot->alias_checksum) { // 不匹配
                 lp->p = lp->longname;

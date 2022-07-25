@@ -200,7 +200,7 @@ int exec(char *path, char **argv, char **envp) {
 
     brk = ph.vaddr + ph.memsz;
   }
-  debug("%s: loadseg done entry is %#lx", path, elfentry);
+  // debug("%s: loadseg done entry is %#lx", path, elfentry);
   // mmap_print(newmm);
   eunlockput(ep);
   ep = NULL;

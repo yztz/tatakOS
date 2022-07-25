@@ -48,7 +48,7 @@ endif
 binary:
 	@mkdir -p $(U_OBJ_DIR)
 	@cd $(U_OBJ_DIR) && cmake $(cmake_build_args) $(shell pwd) && make
-	@mkdir -p $(U_OBJ_DIR)/riscv64/mnt && touch $(U_OBJ_DIR)/riscv64/mnt/test_mount
+#	@mkdir -p $(U_OBJ_DIR)/riscv64/mnt && touch $(U_OBJ_DIR)/riscv64/mnt/test_mount
 	@$(CP) -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
 
 # @ln -s build/riscv64/ .
