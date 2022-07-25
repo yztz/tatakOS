@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "atomic/spinlock.h"
+#include "list.h"
 
 
 #define FAT_SFN_LENGTH (8 + 3) // 短文件名长度
@@ -136,7 +137,9 @@ typedef struct _fat32_t {
 
 	spinlock_t cache_lock;		/* 保护缓存 */
 
+	/* added for entry write back to disk */
 	list_head_t fat_dirty;   	/* 所有dirty的entry的链表 */
+	// list_head_t fat_io;				/* 所有进行io的entry的链表 */
 } fat32_t;
 
 typedef enum _FAT_RESULT_t{
@@ -158,11 +161,16 @@ FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
 FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
-
+FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
+FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
+FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 
-FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
-FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
-FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item);
+
+struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n);
+// int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n);
+uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus);
+uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus);
+int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem);
 #endif

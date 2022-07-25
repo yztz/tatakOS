@@ -34,17 +34,10 @@ struct cpu {
   int intena;                 // Were interrupts enabled before push_off()?
 };
 
-
-
 extern struct cpu cpus[NUM_CORES];
 
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
-
-
-#define PROC_KSTACK(proc) ((proc)->memlayout.kstack->addr)
-#define PROC_TRAPFRAME(proc) ((struct trapframe *)((proc)->memlayout.trapframe->addr))
-#define PROC_VMA_HEAD(proc) ((proc)->memlayout.vma_head)
 
 struct fat_entry;
 // Per-process state
@@ -77,18 +70,16 @@ struct proc {
   char name[20];               // Process name (debugging)
   uint64 ktrap_fp;
 
-  uint64 cur_mmap_sz;
 };
 
 typedef struct proc proc_t;
-
 
 void            exit(int);
 int             do_clone(uint64_t stack);
 uint64          growproc(uint64_t n);
 void            proc_mapstacks();
-pagetable_t     proc_pagetable(struct proc *);
-void            proc_freepagetable(pagetable_t, uint64);
+// pagetable_t     proc_pagetable(mm_struct_t *, proc_t*);
+// void            proc_freepagetable(pagetable_t);
 int             kill(int);
 struct cpu*     mycpu(void);
 struct cpu*     getmycpu(void);
@@ -110,5 +101,6 @@ int             fdalloc(proc_t *p, struct file* f);
 tf_t           *proc_get_tf(proc_t *p);
 void            proc_close_files(proc_t *p);
 
-
+void            wake_up_process(proc_t *tsk);
+struct proc    *allocproc(int);
 #endif

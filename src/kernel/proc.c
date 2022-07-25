@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "defs.h"
 #include "mm/vm.h"
+#include "mm/mm.h"
 
 
 #include "fs/fcntl.h"
@@ -30,6 +31,12 @@ extern void forkret(void);
 static void freeproc(struct proc *p);
 
 
+extern uint64_t sys_memuse(void);
+void
+freewalk(pagetable_t pagetable);
+
+// mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk);
+// static void init_new_context(proc_t *tsk);
 // helps ensure that wakeups of wait()ing
 // parents are not lost. helps obey the
 // memory model when using p->parent.
@@ -93,12 +100,31 @@ allocpid() {
   return pid;
 }
 
+// void
+// alloc_init_mm(struct proc *p){
+//   p->mm = kzalloc(sizeof(struct mm_struct));
+//   p->mm->mmap = NULL;
+//   p->mm->mm_rb.rb_node = NULL;
+//   p->mm->mmap_cache = NULL;
+//   p->mm->map_count = 0;
+//   initlock(&p->mm->mm_lock, "mm_lock");
+//   p->mm->free_area_cache = TASK_UNMAPPED_BASE;
+//   // p->mm->free_area_cache = 0;
+// }
+
+
+// 0 initcode
+// 1 pd1
+// 2 pd2
+// 3 runtest.exe
+// 4 entry-static
+
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
 // If there are no free procs, or a memory allocation fails, return 0.
-static struct proc*
-allocproc(void)
+struct proc*
+allocproc(int is_kthread)
 {
   struct proc *p;
 
@@ -113,28 +139,31 @@ allocproc(void)
   return 0;
 
 found:
+  // printf("kill is %d and kill addr is %#lx\n", p->killed, &p->killed);
   p->pid = allocpid();
   p->killed = 0;
   p->state = USED;
   p->nfd = NOFILE;
   p->ext_ofile = NULL;
-  p->mm = (mm_t *)kzalloc(sizeof(mm_t));
   p->fd_flags = 0;
 
   if((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
     debug("kstack alloc failure");
     goto bad;
   }
+  if(!is_kthread) {
+    p->mm = (mm_t *)kzalloc(sizeof(mm_t));
+    if((p->trapframe = kalloc()) == 0) {
+      debug("trapframe alloc failure");
+      goto bad;
+    }
 
-  if((p->trapframe = kalloc()) == 0) {
-    debug("trapframe alloc failure");
-    goto bad;
+    if(mmap_init(p->mm) == -1){
+      debug("mmap_init failure");
+      goto bad;
+    }
   }
-
-  if(mmap_init(p->mm) == -1){
-    debug("mmap_init failure");
-    goto bad;
-  }
+  
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -142,7 +171,6 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + KSTACK_SZ;
 
-  // p->cur_mmap_sz = MMAP_BASE;
   return p;
 
 
@@ -151,7 +179,6 @@ bad:
   release(&p->lock);
   return NULL;
 }
-
 
 // free a proc structure and the data hanging from it,
 // including user pages.
@@ -209,7 +236,7 @@ void
 userinit(void)
 {
   struct proc *p;
-  p = allocproc();
+  p = allocproc(0);
   initproc = p;
 
   if(sizeof(initcode) >= PGSIZE)
@@ -264,14 +291,21 @@ uint64 growproc(uint64_t newbreak) {
 int
 do_clone(uint64_t stack)
 {
+  // sys_memuse();
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
 
   // Allocate process.
-  if((np = allocproc()) == 0){
+  if((np = allocproc(0)) == 0){
     return -1;
   }
+
+  // sys_memuse();
+  // copy_mm(0, np);
+  // sys_memuse();
+
+  // init_new_context(np);
 
   // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
   if(mmap_dup(np->mm, p->mm) == -1){
@@ -373,6 +407,10 @@ exit(int status)
 
   eput(p->cwd);
   p->cwd = 0;
+
+  /* free the mm field of the process 
+  释放页表和结构体，在waitpid中释放*/
+  // exit_mm(p);
 
   acquire(&wait_lock);
 
@@ -514,6 +552,7 @@ sched(void)
     panic("sched interruptible");
 
   intena = mycpu()->intena;
+
   swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
 }
@@ -557,8 +596,6 @@ forkret(void)
       eunlockput(tmp);
     // LOOP();
     // fsinit(ROOTDEV);
-
-
   }
 
   usertrapret();
@@ -606,6 +643,13 @@ wakeup(void *chan)
 
   for(p = proc; p < &proc[NPROC]; p++) {
     if(p != myproc()){
+
+      #ifdef TODO
+      todo("delete");
+      #endif
+      if(p->pid == 2)
+        continue;
+
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;
@@ -773,4 +817,10 @@ int fdalloc(proc_t *p, struct file* f) {
         }
     }
     panic("unreached");
+}
+
+void wake_up_process(proc_t *tsk) {
+  if(tsk->state != SLEEPING)
+    ER();
+  tsk->state = RUNNABLE;
 }

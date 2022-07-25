@@ -24,29 +24,7 @@
 #include "bio.h"
 #include "utils.h"
 #include "driver/disk.h"
-
-// #ifdef K210
-// extern uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-// extern uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, uint32_t count);
-// #else 
-// extern void virtio_disk_rw(struct buf *, int);
-// #endif
-
-
-// void (disk_io)(struct buf *b, int write) {
-//   #ifdef K210
-//   if(write) {
-//     sd_write_sector_dma(b->data, b->blockno, 1);
-//   } else {
-//     sd_read_sector_dma(b->data, b->blockno, 1);
-//   }
-//   #else
-//   virtio_disk_rw(b, write);
-//   #endif
-// }
-
-
-
+#include "mm/alloc.h"
 
 static bio_t *buf_to_bio(struct buf *b, int rw){
   bio_t *bio = kzalloc(sizeof(bio_t));
@@ -160,7 +138,10 @@ struct buf*
   b = bget(dev, blockno);
 
   if(!b->valid) {
-    disk_io(b, 0);
+    // disk_io(b, 0);
+    bio_t *bio = buf_to_bio(b, READ);
+    submit_bio(bio);
+
     b->valid = 1;
     b->dirty = 0;
   }
@@ -186,7 +167,11 @@ void
     panic("brelse");
   
   if(b->dirty == 1) {
-      disk_io(b, 1);
+      // disk_io(b, 1);
+    
+      bio_t *bio = buf_to_bio(b, WRITE);
+      submit_bio(bio);
+    
       b->dirty = 0;
   }
 
@@ -222,3 +207,94 @@ bunpin(struct buf *b) {
 }
 
 
+
+/*************************new add func**************************/
+void free_bio(bio_t *bio) {
+  bio_vec_t **cur_bio_vec = &bio->bi_io_vec;
+  while(*cur_bio_vec){
+    bio_vec_t *t = *cur_bio_vec;
+    *cur_bio_vec = t->bv_next;
+    kfree(t);
+  } 
+  kfree(bio);
+}
+
+// request_queue_t rq = {.rq_head = NULL, .rq_tail = NULL, .rq_lock = {0, 0, 0, 0}};
+
+void submit_bio(bio_t *bio) {
+  /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
+  // acquire(&rq.rq_lock);
+  // // bio->bi_next = rq.rq_head;
+  // // rq.rq_head = bio;  
+  // if(rq.rq_tail == NULL){
+  //   rq.rq_head = bio;
+  //   rq.rq_tail = bio;
+  // }
+  // else {
+  //   rq.rq_tail->bi_next = bio;
+  //   rq.rq_tail = bio;
+  // }
+  // wakeup((void*) &rq);
+  // sleep((void *)bio, &rq.rq_lock);
+  // release(&rq.rq_lock);
+  // make_request();
+  bio_vec_t *cur_bio_vec;
+  cur_bio_vec = bio->bi_io_vec;
+  while(cur_bio_vec){
+    // for(int i = 0; i < cur_bio_vec->bv_count; i++){
+    //   struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
+    //   if (bio->bi_rw == READ){
+    //     memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
+    //   }
+    //   else if (bio->bi_rw == WRITE) {
+    //     memmove((void*)b->data, (void*)cur_bio_vec->bv_buff, BSIZE);
+    //     bwrite(b);
+    //   }
+    //   else
+    //     panic("submit bio");
+    //   brelse(b);
+    //   cur_bio_vec->bv_buff += BSIZE;
+    // } 
+    disk_io(cur_bio_vec, bio->bi_rw);
+    cur_bio_vec = cur_bio_vec->bv_next;
+  }
+  free_bio(bio);
+}
+
+
+// void make_request(){
+//   struct bio *cur_bio;
+//   struct bio_vec *cur_bio_vec;
+
+//   cur_bio = rq.rq_head;
+//   while(cur_bio){
+//     // print_bio_vec(cur_bio);
+//     cur_bio_vec = cur_bio->bi_io_vec;
+//     /* 对于一次I/O请求的每个段 */
+//     while(cur_bio_vec){
+//       for(int i = 0; i < cur_bio_vec->bv_count; i++){
+//         /* qemu */
+//         /* 根据bio读读写位，判断是读还是写 */
+//         // printf(rd("s: %d\n"), cur_bio_vec->bv_start_num+i);
+//         struct buf *b = bread(cur_bio->bi_dev, cur_bio_vec->bv_start_num+i);
+//         memmove(cur_bio_vec->bv_buff, (void *)b->data, BSIZE); 
+//         brelse(b);
+//         // printf(bl("buff: %p\n"), cur_bio_vec->bv_buff);
+//         cur_bio_vec->bv_buff += BSIZE;
+//       }
+//       cur_bio_vec = cur_bio_vec->bv_next;
+//     }
+  
+//   cur_bio = cur_bio->bi_next;
+//   }
+
+//   rq.rq_head = NULL; 
+//   todo("free the IO request queue!");
+// }
+
+// void make_request(){
+//   while(1){
+//     acquire(&rq.rq_lock);
+
+//   }
+// }

@@ -23,9 +23,11 @@
 #define UHEAPSIZE 4096
 
 
+/* Maximum number of active map areas.. This is a random (large) number, 
+   即一个进程的地址空间拥有的vma_area_struct的最大数量*/
+#define DEFAULT_MAX_MAP_COUNT 4096	
 /////////////MM//////////////
 #define MAX_ORDER 10
-
 
 
 ////////////DEBUG////////////

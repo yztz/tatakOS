@@ -1,7 +1,8 @@
 #ifndef H_BIO
 #define H_BIO
 
-#include "types.h"
+#include "common.h"
+#include "atomic/spinlock.h"
 
 #define READ 0
 #define WRITE 1

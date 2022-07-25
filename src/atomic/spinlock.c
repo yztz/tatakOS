@@ -29,6 +29,7 @@ acquire(struct spinlock *lk)
   //   a5 = 1
   //   s1 = &lk->locked
   //   amoswap.w.aq a5, a5, (s1)
+  // printf("lock state: %d\n", lk->locked);
   while(__sync_lock_test_and_set(&lk->locked, 1) != 0)
     ;
 

@@ -40,6 +40,7 @@ int         copy_from_user(void *to, uint64 from, size_t n) _section(.copy_from_
 int         copy_to_user(uint64 dstva, void *src, uint64 len) _section(.copy_to_user);
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
+int         __cow_copy(uint64_t va, pte_t *pte);
 
 void        vmprint(pagetable_t pagetable);
 void        print_map(struct _kmap_t map);

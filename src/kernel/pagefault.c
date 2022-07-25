@@ -6,8 +6,10 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "defs.h"
+#include "mm/mm.h"
 
 #define __MODULE_NAME__ PAGEFAULT
+
 #include "debug.h"
 
 extern char cp_start;
@@ -41,8 +43,6 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
   return 0;
 }
 
-// address-非对齐 offset
-// 【 |  】【   】【   】【    】
 
 static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
     // TODO: check file range
@@ -221,12 +221,30 @@ int handle_pagefault(uint64_t scause) {
     return 0;
 
     kernel_fail:
-    info("kernel_fail: epc %#lx va %#lx", read_csr(sepc), read_csr(stval));
+    info("kernel_fail pid %d: epc %#lx va %#lx", p->pid, read_csr(sepc), read_csr(stval));
     panic("pagefault handle fault");
     user_fail:
-    info("user_fail: epc %#lx va %#lx", read_csr(sepc), read_csr(stval));
+    info("user_fail pid %d: epc %#lx va %#lx", p->pid, read_csr(sepc), read_csr(stval));
     mmap_print(p->mm);
     p->killed = 1;
+    // vmprint(p->pagetable);
+    // ER();
+    return 0;
+}
+
+int is_pagefault(uint64_t scause){
+    #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+    if(scause == EXCP_STORE_PAGE_FAULT || scause == EXCP_LOAD_PAGE_FAULT)
+    #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9 
+    /* 1.9 的pagefault触发的错误号是否有遗漏？ */
+    if(scause == EXCP_STORE_FAULT)
+    #else
+    ER();
+    #endif
+    {
+        return 1;
+    }
+
     return 0;
 
 }

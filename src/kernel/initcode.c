@@ -14,7 +14,7 @@ char line[MAX_LINE];
 char *argv[] = {"./runtest.exe", "-w", NULL, proc_name, NULL};
 int foffset = 0;
 
-#define COND (1)
+#define COND (i < 20)
 
 void run(char *casename, char *entryname);
 
@@ -22,7 +22,7 @@ __attribute__((section(".startup")))
 int main() {
     run("run-static.sh", "entry-static.exe");
     // run("run-dynamic.sh", "entry-static.exe");
-    run("run-dynamic.sh", "entry-dynamic.exe");
+    // run("run-dynamic.sh", "entry-dynamic.exe");
     printf("test end!\n");
     for(;;);
     return 0;
@@ -104,7 +104,7 @@ void run(char *casename, char *entryname) {
 
 // char *other_testcase[] = {"gettimeofday", "times", "uname"};
 // //  单项测试
-// char* prog_name[] = { "mymmap" };
+// char* prog_name[] = { "ls" };
 
 // void run(char *testcases[], int cnt);
 // #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))

@@ -11,6 +11,10 @@
 #define __MODULE_NAME__ PAGE
 #include "debug.h"
 
+#include "atomic/sleeplock.h"
+#include "utils.h"
+#include "page-flags.h"
+
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
 
@@ -20,6 +24,8 @@ void page_init(void) {
     pages[i].refcnt = 1;
     pages[i].order = 0;
     pages[i].alloc = 1;
+    // pages[i].sleeplock = NULL;
+    pages[i].flags = 0;
   }
 }
 
@@ -87,6 +93,8 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, in
   start = a = PGROUNDDOWN_SPEC(va, spec);
   last = PGROUNDDOWN_SPEC(va + size - 1, spec);
   for(;;){
+    if(a == 0xf4000)
+      for(;;);
     if((pte = _walk(pagetable, a, 1, spec)) == 0)
       goto bad;
     if(*pte & PTE_V)
@@ -119,6 +127,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
+    // printf(ylw("a: %p\n"), a);
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
       continue;
     }
@@ -147,4 +156,113 @@ void pte_print(pte_t *pte) {
   rwxuvc[6] = '\0';
   
   printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
+}
+
+
+/**
+ * @brief 增加1个引用，返回增加后的
+ * 
+ */
+pgref_t get_page(page_t *page){
+  pgref_t ret;
+  acquire(&reflock);
+  ret = ++page->refcnt;
+  release(&reflock);
+  return ret;
+}
+
+/**
+ * @brief 引用减1，返回值
+ * 
+ */
+pgref_t put_page(page_t *page){
+  pgref_t ret;
+
+  if(page->refcnt > 1){
+    acquire(&reflock);
+    ret = --page->refcnt;
+    release(&reflock);
+    return ret;
+  }
+  else if(page->refcnt == 1){
+    /* kfree 里面调用buddyfree，会调用deref_page */
+    kfree(NUM2PAGE(page - pages));
+    return 0;
+  } else{
+    /* refcnnt为0的应该在buddy中 */
+    ER();
+  }
+}
+
+
+
+/* lock a page, if it's lock is null, allocate for it */
+void lock_page(uint64_t pa){
+  // page_t *page = &pages[PAGE2NUM(pa)];
+
+  // if(page->sleeplock == NULL){
+  //   page->sleeplock = kzalloc(sizeof(sleeplock_t));
+  //   if(page->sleeplock == NULL)
+  //     panic("lock alloc failed");
+  //   initsleeplock((sleeplock_t *)page->sleeplock, NULL);
+  //   #ifdef TODO
+  //   todo("free sleeplock!");
+  //   #endif
+  // }
+
+  // acquiresleep((sleeplock_t *)page->sleeplock);
+}
+
+// void unlock_page(page_t *page){
+//   if (!TestClearPageLocked(page))
+//     ER();
+// 	// wake_up_page(page, PG_locked);
+// }
+
+/**
+ * @brief 之前flag位是带移位的，原PG_diry = 1 << 现PG_diry 
+ * 
+ */
+void set_page_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  // page->flags |= PG_dirty;
+  SetPageDirty(page);
+}
+
+
+void clear_page_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  // page->flags &= ~PG_dirty;
+  ClearPageDirty(page);
+}
+
+int page_is_dirty(uint64_t pa){
+  page_t *page = &pages[PAGE2NUM(pa)];
+
+  // return page->flags & PG_dirty;
+  return PageDirty(page);
+}
+
+void unlock_put_page(uint64_t pa){
+  // unlock_page(pa);
+  deref_page(pa);
+}
+
+/**
+ * @brief 打印出从kernel end的位置开始，非空闲的页(buddy管理的页），用来检测内存泄漏。
+ * 
+ */
+extern char end[];
+void print_not_freed_pages() {
+  int pgnum;
+  uint64_t p;
+
+  printf(rd("pages be refered:\n"));
+  for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
+    pgnum = PAGE2NUM(p);
+    if(pages[pgnum].refcnt > 0)
+      printf("pgnum: %d\taddr: %p\n", pgnum, p);
+  }
 }

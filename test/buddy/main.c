@@ -7,6 +7,10 @@
 #include "../../include/types.h"
 #undef remove
 
+#define grn(str) 	"\e[32;1m"str"\e[0m"
+#define ylw(str) 	"\e[33;1m"str"\e[0m"
+#define rd(str) 	"\e[31;1m"str"\e[0m"
+#define bl(str) 	"\e[34;1m"str"\e[0m"
 // #include "atomic/spinlock.h"
 // #include "common.h"
 // #include "page.h"
@@ -45,6 +49,7 @@ typedef struct _page_t {
 } page_t;
 
 int get_order(unsigned int x) {
+    /* 注意，返回的时候要加l(-1) */
     static const unsigned char log_2[256] = {
         0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
         5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
@@ -101,6 +106,7 @@ void buddy_free(void* va);
 // }
 void buddy_init() {
     int knum = PAGE2NUM(PGROUNDUP(end));
+    // printf("kmum: %d\n", knum);
 
     for (int i = 0; i < MAX_ORDER; i++) {
         BUDDY_INIT_HEAD(lists[i].head);
@@ -169,13 +175,15 @@ void *buddy_alloc(size_t size) {
   if(!size)
     panic("buddy_alloc: size");
   
+  /* 要分配几页 */
   pgnums = ROUND_COUNT(size);
   oorder = order = IS_POW2(pgnums) ? get_order(pgnums) : get_order(pgnums) + 1;
+  // printf(bl("order: %d\n"), order);
 
   if(order >= MAX_ORDER) 
     return NULL;
 
-  printf("select order: %d\n", order);
+  printf(bl("select order: %d\n"), order);
   // acquire lock
   // avoid last not empty list's block being allocated
   acquire(&lists[order].lock);
@@ -184,7 +192,7 @@ void *buddy_alloc(size_t size) {
     order++;
     acquire(&lists[order].lock);
   }
-  printf("select order: %d\n", order);
+  printf(grn("select order: %d\n"), order);
 
   // no rooms
   if(order == MAX_ORDER) {
@@ -275,7 +283,8 @@ void buddy_free(void *va) {
 int main() {
     KERNBASE = (uint64_t) malloc(2 * MEM_SIZE);
     KERNBASE = PGROUNDUP(KERNBASE);
-    end = (char *)(KERNBASE + 0x1234);
+    // end = (char *)(KERNBASE + 0x1234);
+    end = (char *)(KERNBASE + 0x0);
     buddy_init();
     while(1) {
       char c;

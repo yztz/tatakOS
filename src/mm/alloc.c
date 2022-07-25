@@ -5,9 +5,11 @@
 #include "mm/buddy.h"
 #include "mm/slob.h"
 #include "param.h"
+#include "utils.h"
 
 #define __MODULE_NAME__ ALLOC
 #include "debug.h"
+#include "pagevec.h"
 
 #define JUNK 1
 
@@ -34,10 +36,16 @@ void kinit(void) {
 void *kmalloc(size_t size) {
     void *ret = NULL;
     if(size < PGSIZE) { // Smaller, we use slob
+        // printf("alloc from slob\n");
+        // if(size == 1)
+        //     panic("one byte?");
         ret = slob_alloc(size);
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
     }
+    // if((uint64_t)ret == 0x8025d000)
+        // for(;;);
+    // printf(ylw("pa: %p\n"), ret);
     return ret;
 }
 
@@ -81,3 +89,13 @@ void _kfree_safe(void **paddr) {
     }
 }
 
+
+/* new added functions for page frame reclaiming */
+// void __pagevec_free(pagevec_t *pvec){
+//     int i = pagevec_count(pvec);
+
+//     /* buddy/kfree的接口可以考虑换一下，参数可选择页指针 */
+//     while(--i >= 0){
+//         kfree(NUM2PAGE(pvec->pages[i] - pages));
+//     }
+// }

@@ -13,6 +13,7 @@
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
+#include "mm/mm.h"
 
 uint64
 sys_exit(void)
@@ -126,6 +127,8 @@ uint64
 sys_sbrk(void)
 {
   int n;
+  // uint64_t newbrk, oldbrk, brk;
+  // mm_struct_t *mm = myproc()->mm;
 
   if(argint(0, &n) < 0)
     return -1;

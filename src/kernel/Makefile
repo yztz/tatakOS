@@ -9,6 +9,7 @@ obj-y += sysproc.o
 obj-y += trap.o
 obj-y += sys.o
 obj-y += pagefault.o
+obj-y += kthread.o
 
 obj-y += asm/
 

@@ -2,21 +2,25 @@
 #define _H_FS_
 
 #include "common.h"
+#include "mm/page.h"
 #include "atomic/sleeplock.h"
-#include "atomic/atomic.h"
+#include "atomic/spinlock.h"
 #include "atomic/atomic.h"
 #include "radix-tree.h"
-#include "hlist.h"
 #include "fs/fat.h"
 #include "fs/stat.h"
 #include "bio.h"
+#include "radix-tree.h"
+#include "list.h"
 
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
 #define E_FILESIZE(entry) ((entry)->raw.size)
 
+struct fat_entry;
+
 typedef struct address_space {
-	entry_t *host;		/* owner: inode, block_device */
+	struct fat_entry *host;		/* owner: inode, block_device */
 	struct radix_tree_root	page_tree;	/* radix tree of all pages */
 	spinlock_t		tree_lock;	/* and spinlock protecting it */
 	// unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
@@ -50,7 +54,7 @@ struct fat_entry {
     uint32_t    clus_start; /* 数据起始簇号 */
     
     struct fat_entry* parent; /* 父目录 */
-    uint32_t    clus_offset; /* 簇内字节偏移量 */
+    uint32_t    clus_offset; /* 簇内字节偏移量(在父目录中的偏移量) */
 
     sleeplock_t  lock;       /* io */
 
@@ -95,5 +99,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n);
 pages_be_found_head_t * find_pages_tag(address_space_t *mapping, uint32_t tag);
 void writeback_file_to_disk(entry_t *entry);
+void __remove_from_page_cache(page_t *page);
+void remove_from_page_cache(page_t *page);
+void *radix_tree_delete(struct radix_tree_root *root, unsigned long index);
 
 #endif

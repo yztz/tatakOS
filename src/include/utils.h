@@ -3,6 +3,9 @@
 
 #include "printf.h"
 #include "sbi.h"
+#include "bio.h"
+
+// #include "debug.h"
 
 #define LOOP() {while(1) continue;}
 #define DIVIDER() {printf("\n---------------------------------\n");}
@@ -60,7 +63,23 @@ void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
 void print_block(uint8_t *b) ;
 
+void TD(char *info, char *s, const char *s1, int d);
+// void print_all_vma(mm_struct_t *mm);
+// void printf_radix_tree(struct radix_tree_root *root);
+void print_bio_vec(struct bio *);
+void print_page_contents(char* pa);
+void __attribute__((noreturn)) error(char *info, char *s, const char *s1, int d);
+
+#define todo(str)  TD(str, __FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)
 
 
+#define grn(str) 	"\e[32;1m"str"\e[0m"
+#define ylw(str) 	"\e[33;1m"str"\e[0m"
+#define rd(str) 	"\e[31;1m"str"\e[0m"
+#define bl(str) 	"\e[34;1m"str"\e[0m"
+
+
+#define ROUNDUP(size, align_size) (((uint64_t)size + align_size-1) & ~(align_size - 1))
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #endif

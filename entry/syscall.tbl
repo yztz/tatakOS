@@ -58,7 +58,7 @@
 175     geteuid     sys_geteuid
 177     getegid     sys_getegid
 #############TEST###############
-89     timetag      sys_timetag
-90     bio_cache    sys_bio_cache
-99     profile      sys_profile
-100    memuse       sys_memuse
+89     timetag        sys_timetag
+90     bio_cache      sys_bio_cache
+99     profile        sys_profile
+100    memuse         sys_memuse

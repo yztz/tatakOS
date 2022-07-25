@@ -18,6 +18,13 @@ initsleeplock(struct sleeplock *lk, char *name)
   lk->pid = 0;
 }
 
+/**
+ * @brief 睡眠锁被某个进程第一次获得，lk->locked不为1，所以这个进程不会
+ * 睡眠，设置为为1后继续执行。其他进程想要再获得睡眠锁时，因为lk->locked
+ * 已经为1了，所以会睡眠。
+ * 
+ * @param lk 
+ */
 void
 acquiresleep(struct sleeplock *lk)
 {

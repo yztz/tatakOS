@@ -9,6 +9,7 @@
 #include "common.h"
 #include "mm/vm.h"
 #include "fs/fs.h"
+#include "mm/mm.h"
 
 // ref: https://github.com/torvalds/linux/blob/v3.19/include/uapi/linux/auxvec.h
 #define AT_NULL   0	/* end of vector */
@@ -39,6 +40,8 @@
 // #define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
+#include "fs/fcntl.h"
+#include "kernel/proc.h"
 
 static inline uint32_t elf_map_prot(uint32_t prot) {
   // uint32 ans = 0;
@@ -161,6 +164,7 @@ int exec(char *path, char **argv, char **envp) {
   proc_switchmm(p, newmm);
 
   elock(ep);
+  // sys_memuse();
 
   // Check ELF header
   if(reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))

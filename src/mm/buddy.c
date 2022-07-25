@@ -34,6 +34,30 @@ buddy_list_t lists[MAX_ORDER];
 static atomic_t used;
 static uint total;
 
+/**
+ * @brief this func and the next one is for debug
+ * 
+ * @param order 
+ */
+void print_order(int order) {
+  printf(grn("[order %d head: %p] "), order, &lists[order].head);
+  for(buddy_t *cur = lists[order].head.next; cur != &lists[order].head; cur = cur->next) {
+      printf(bl("-> %p"), cur);
+  }
+}
+
+
+void print_buddy() {
+  for(int i = 0; i < MAX_ORDER; i++) {
+    print_order(i);
+    printf("\n");
+  }
+  print_not_freed_pages(); 
+}
+
+
+
+
 void buddy_init() {
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);
@@ -41,6 +65,7 @@ void buddy_init() {
   }
   total = 0;
   /* 从kernel end处一直释放到MEM_END */
+  printf(rd("end is %p\n"), end);
   for(uint64_t p = (uint64_t)end; p < MEM_END; p += PGSIZE) {
     buddy_free((void *)p);
     total++;
@@ -70,6 +95,9 @@ static inline int empty(int order) {
 
 
 void *buddy_alloc(size_t size) {
+  // print_buddy();
+  // printf("\n");
+
   int pgnums;
   int order, oorder;
   buddy_t *b;
@@ -144,7 +172,7 @@ void buddy_free(void *pa) {
     panic("buddy_free: out of range");
   }
 
-  if(deref_page((uint64_t)pa) > 0) 
+  if(deref_page((uint64_t)pa) > 0)
     return;
 
   page = &pages[pgnum];

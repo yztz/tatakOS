@@ -23,6 +23,8 @@ static inline void clear_bss() {
   printf("\n.bss %#lx-%#lx (%#lx) cleared\n", &bss_start, &bss_end, len);
 }
 
+extern int pdflush_init(void);
+
 void
 main()
 {
@@ -63,10 +65,12 @@ main()
 
     userinit();      // first user process
 
+    pdflush_init();
+
     for (int i = 1; i < NUM_CORES; i ++) {
 			unsigned long mask = 1 << i;
 			sbi_send_ipi(mask, 0);
-		}
+    }
 
     __sync_synchronize();
     started = 1;

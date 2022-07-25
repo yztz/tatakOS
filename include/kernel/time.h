@@ -12,6 +12,6 @@ typedef struct timespec timespec_t;
 
 #define SEC2TICK(sec) ((sec) * 10)
 #define TICK2TIMESPEC(tick) \
-	(timespec_t){.tv_sec=(tick)/10, .tv_usec=(tick%10)*100000}
+	(timespec_t){.tv_sec=(tick)/10, .tv_usec=(tick%10)*100}
 
 #endif

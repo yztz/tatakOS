@@ -13,6 +13,9 @@
 // #define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
+#include "mm/mm.h"
+#include "fs/mpage.h"
+#include "writeback.h"
 
 fat32_t *fat;
 
@@ -101,7 +104,9 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
       release(&fat->cache_lock);
       return entry;
     }
-    if(!empty && entry->ref == 0)    // Remember empty slot.
+
+    /* 这里新加了一条判断，因为回收的entry，只有当其写回磁盘了，才会释放i_mapping */
+    if(!empty && entry->ref == 0 && entry->i_mapping == NULL)    // Remember empty slot.
       empty = entry;
   }
 
@@ -119,6 +124,21 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   entry->parent = parent;
   strncpy(entry->name, name, MAX_FILE_NAME);
   parent->ref++;
+  
+  /* 只有当entry的类型为FILE时，才需要i_mapping，否则为DIR时不需要 */
+  if(item->attr == FAT_ATTR_FILE){
+    entry->i_mapping  = kzalloc(sizeof(struct address_space));
+    entry->i_mapping->host = entry;
+  }
+  else{
+    entry->i_mapping = NULL;
+  }
+
+  entry->clus_end = 0;// initialize 
+  entry->clus_cnt = 0;
+  entry->size_in_mem = entry->raw.size;
+
+  entry->dirty = 0;
   release(&fat->cache_lock);
   return entry;
 
@@ -136,7 +156,10 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_mode = E_ISDIR(entry) ? S_IFDIR : S_IFREG;
   stat->st_blksize = entry->fat->bytes_per_sec;
   stat->st_blocks = 0;
-  stat->st_size = item->size;
+  // stat->st_size = item->size;//文件在磁盘上的大小
+  /* 这里遇到了问题，如果在文件还没有写回磁盘时就获取其大小，获得的数据可能时错误的，所以这里返回其
+  在内存中的大小 */
+  stat->st_size = entry->size_in_mem;//文件在内存上的大小，不一定同步更新到磁盘上了
   stat->st_atime_nsec = 0;
   stat->st_atime_sec = 0;
   stat->st_mtime_sec = 0;
@@ -152,6 +175,8 @@ void estat(entry_t *entry, struct kstat *stat) {
 }
 
 entry_t *edup(entry_t *entry) {
+    // printf("lock state: %d\n", entry->fat->cache_lock.locked);
+  // printf("%d\n", entry->clus_start);
   acquire(&entry->fat->cache_lock);
   entry->ref++;
   release(&entry->fat->cache_lock);
@@ -168,6 +193,11 @@ static void unlink(entry_t *entry) {
     debug("try to rm an entry that doesn't exist");
   }
 }
+
+
+
+extern void background_writeout(uint64_t min_pages);
+extern int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0);
 
 // 递归地解引用
 // under lock
@@ -211,9 +241,9 @@ static void __eput(entry_t *entry) {
         release(&entry->fat->cache_lock);
           /* 只单写一个entry，不要写其他entry */
         if(entry->dirty) {
-          // writeback_single_entry_idx(entry - pool);
+          writeback_single_entry_idx(entry - pool);
           /* (entry - pool)/sizeof(entry_t)是错的！*/
-          pdflush_operation(writeback_single_entry_idx, (entry - pool));
+          // pdflush_operation(writeback_single_entry_idx, (entry - pool));
         }
         acquire(&entry->fat->cache_lock);
 
@@ -291,7 +321,7 @@ entry_t *create(entry_t *from, char *path, short type) {
   elock(dp);
 
   // 目录项是否已经存在？
-  if((ep = dirlookup(dp, name)) != 0){ // 存在
+  if((ep = dirlookup(dp, name)) != 0) { // 存在
     debug("entry %s exist", name);
     eunlockput(dp);
     elock(ep);
@@ -356,6 +386,8 @@ void etrunc(entry_t *entry) {
 static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 {
   entry_t*ep, *next;
+  // printf("lock state: %d\n", fat->cache_lock.locked);
+  // printf("fat clus %d\n", fat->fat_tbl_num);
   if(*path == '/') 
     ep = edup(fat->root); // use global fat now
   else if(parent) {
@@ -389,7 +421,16 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   return ep;
 }
 
-// caller holds lock
+/**
+ * @brief int 类型最大表示的整数为1<<31-1,折合2G-1个字节。不知是否会有溢出的危险。
+ * 
+ * @param entry 
+ * @param user 
+ * @param buff 
+ * @param off 
+ * @param n 
+ * @return int 
+ */
 int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   /* maybe overflow */
   if(off < 0 || n < 0)
@@ -409,6 +450,7 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
     }
   }
   return ret;
+
 }
 
 // int f1 = 0, f2 = 0;
@@ -432,11 +474,9 @@ int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   //   return min(n, E_FILESIZE(entry) - off);
   // }
   // ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
-  int ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
+  ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
   return ret;
 }
-
-
 
 entry_t *namee(entry_t *from, char *path){
   char name[MAX_FILE_NAME];

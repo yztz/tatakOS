@@ -80,14 +80,15 @@ usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
-    // debug_if(p->pid == 0, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
+    // debug_if(p->pid == 3, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
     syscall();
   } else if(devintr(scause) == 0) {
     // ok
   } else if(handle_pagefault(scause) == 0) {
+    // do_page_fault(scause);
     // ok
   } else {
-    info("sepc is %lx scause is "rd("%s")" stval is %lx", r_sepc(), riscv_cause2str(scause), r_stval());
+    info("pid is %d sepc is %lx scause is "rd("%s")" stval is %lx", p->pid, r_sepc(), riscv_cause2str(scause), r_stval());
     p->killed = 1;
   }
 

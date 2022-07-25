@@ -369,7 +369,7 @@ spinlock_t sdlock;
 
 static void sd_error(char *CMD) {
 	char buf[255];
-	sprintf(buf, "%s ERROR\n", CMD);
+	sprintf(buf, "error: %s\n", CMD);
 	panic(buf);
 }
 
@@ -451,7 +451,7 @@ uint8_t sd_init(void)
 	return sd_get_cardinfo(&cardinfo);
 }
 
-uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
+uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
 {
 	uint8_t frame[2];
 	acquire(&sdlock);
@@ -462,17 +462,18 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 	if (sd_get_response() != 0x00) {
 		sd_end_cmd();
 		panic("read fail");
-		return 0xFF;
 	}
-	
-	if (sd_get_response() != SD_START_DATA_SINGLE_BLOCK_READ)
-		panic("read fail");
 
-	/*!< Read the SD block data : read NumByteToRead data */
-	sd_read_data_dma(data_buff);
-	/*!< Get CRC bytes (not really needed by us, but required by SD) */
-	sd_read_data(frame, 2);
-		
+	while (count) {
+		if (sd_get_response() != SD_START_DATA_SINGLE_BLOCK_READ)
+			break;
+		/*!< Read the SD block data : read NumByteToRead data */
+		sd_read_data_dma(data_buff);
+		/*!< Get CRC bytes (not really needed by us, but required by SD) */
+		sd_read_data(frame, 2);
+		data_buff += 512;
+		count--;
+	}
 	sd_end_cmd();
 
 	release(&sdlock);
@@ -481,10 +482,9 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector)
 }
 
 // #include "profile.h"
-uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
+uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
 {
 	uint8_t frame[2] = {0xFF};
-    frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
 
 	acquire(&sdlock);
 
@@ -492,25 +492,33 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
 		sd_end_cmd();
-		panic("write fail");
-		// return 0xFF;
+		sd_error("no response");
 	}
+	while (count--) {
+		/*!< Send the data token to signify the start of the data */
+		sd_write_data(frame, 2);
+		/*!< Write the block data to SD : write count data by block */
+		sd_write_data_dma(data_buff);
+		/*!< Put CRC bytes (not really needed by us, but required by SD) */
+		sd_write_data(frame, 2);
+		data_buff += 512;
+		/*!< Read data response */
+		if (sd_get_dataresponse() != 0x00) {
+			sd_end_cmd();
+			sd_error("no data response");
+		}
+	}
+	uint8_t stop = 0xfd;
+	sd_write_data(&stop, 1);
+	if(sd_get_response() == 0xff) {
+		sd_error("stop error");
+	}
+	uint8_t response = 0;
+	/*!< Wait null data */
+	while (response == 0)
+		sd_read_data(&response, 1);
 
-	/*!< Send the data token to signify the start of the data */
-	sd_write_data(frame, 2);
-	/*!< Write the block data to SD : write count data by block */
-	sd_write_data_dma(data_buff);
-	/*!< Put CRC bytes (not really needed by us, but required by SD) */
-	sd_write_data(frame, 2);
 	
-	/*!< Read data response */
-	if (sd_get_dataresponse() != 0x00) {
-		sd_end_cmd();
-		panic("write fail");
-		// return 0xFF;
-	}
-
-	sd_end_cmd();
 	sd_end_cmd();
 
 	release(&sdlock);
@@ -518,3 +526,93 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector)
 	return 0;
 }
 
+// uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
+// {
+// 	uint8_t frame[2] = {0xFF};
+//     frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
+//     uint32_t i = 0;
+// 	intr_off();
+// 	while (count--) {
+//         sd_send_cmd(SD_CMD24, sector + i, 0);
+//         /*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
+//         if (sd_get_response() != 0x00) {
+//             sd_end_cmd();
+//             return 0xFF;
+//         }
+
+// 		/*!< Send the data token to signify the start of the data */
+// 		sd_write_data(frame, 2);
+// 		/*!< Write the block data to SD : write count data by block */
+// 		sd_write_data_dma(data_buff);
+// 		/*!< Put CRC bytes (not really needed by us, but required by SD) */
+// 		sd_write_data(frame, 2);
+// 		data_buff += 512;
+// 		/*!< Read data response */
+// 		if (sd_get_dataresponse() != 0x00) {
+// 			sd_end_cmd();
+// 			return 0xFF;
+// 		}
+// 		i++;
+// 	}
+// 	sd_end_cmd();
+// 	sd_end_cmd();
+// 	intr_on();
+// 	/*!< Returns the reponse */
+// 	return 0;
+// }
+
+//     frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
+//     uint32_t i = 0;
+// 	while (count--) {
+//         sd_send_cmd(SD_CMD24, sector + i, 0);
+//         /*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
+//         if (sd_get_response() != 0x00) {
+//             sd_end_cmd();
+//             return 0xFF;
+//         }
+
+// 		/*!< Send the data token to signify the start of the data */
+// 		sd_write_data(frame, 2);
+// 		/*!< Write the block data to SD : write count data by block */
+// 		sd_write_data_dma(data_buff);
+// 		/*!< Put CRC bytes (not really needed by us, but required by SD) */
+// 		sd_write_data(frame, 2);
+// 		data_buff += 512;
+// 		/*!< Read data response */
+// 		if (sd_get_dataresponse() != 0x00) {
+// 			sd_end_cmd();
+// 			return 0xFF;
+// 		}
+// 		i++;
+// 	}
+
+
+// 	if (count == 1) {
+// 		frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
+// 		sd_send_cmd(SD_CMD24, sector, 0);
+// 	} else {
+// 		frame[1] = SD_START_DATA_MULTIPLE_BLOCK_WRITE;
+// 		sd_send_cmd(SD_ACMD23, count, 0);
+// 		sd_get_response();
+// 		sd_end_cmd();
+// 		sd_send_cmd(SD_CMD25, sector, 0);
+// 	}
+// 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
+// 	if (sd_get_response() != 0x00) {
+// 		sd_end_cmd();
+// 		return 0xFF;
+// 	}
+// 	while (count--) {
+// 		/*!< Send the data token to signify the start of the data */
+// 		sd_write_data(frame, 2);
+// 		/*!< Write the block data to SD : write count data by block */
+// 		sd_write_data(data_buff, 512);
+// 		/*!< Put CRC bytes (not really needed by us, but required by SD) */
+// 		sd_write_data(frame, 2);
+// 		data_buff += 512;
+// 		/*!< Read data response */
+// 		if (sd_get_dataresponse() != 0x00) {
+// 			sd_end_cmd();
+// 			return 0xFF;
+// 		}
+// 	}

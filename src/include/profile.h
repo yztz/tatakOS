@@ -50,3 +50,5 @@
 #endif
 #include "generated/profile_gen.h"
 #endif
+
+extern uint64_t sys_profile(void);

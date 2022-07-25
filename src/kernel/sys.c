@@ -88,6 +88,7 @@ uint64_t sys_prlimit64(void) {
 
 uint64_t sys_memuse(void) {
   buddy_print_free();
+  // print_buddy();
   return 0;
 }
 

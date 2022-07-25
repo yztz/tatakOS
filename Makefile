@@ -15,6 +15,8 @@ gdb_port := 1234
 # architecture
 arch := riscv64
 
+display_todo_info ?= off
+
 #==========================DIR INFO================================#
 ROOT 	:= $(shell pwd)
 SCRIPT	:= $(ROOT)/script
@@ -29,6 +31,7 @@ P := $(ROOT)/src/platform
 
 #==========================TOOLCHAINS==============================#
 TOOLPREFIX := riscv64-unknown-elf-
+# TOOLPREFIX := /opt/kendryte-toolchain/bin/riscv64-unknown-elf-
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
@@ -55,6 +58,10 @@ endif
 # debug
 ifeq ("${debug}", "on")
   CFLAGS += -DDEBUG
+endif
+
+ifeq ("${display_todo_info}", "on")
+	CFLAGS += -DTODO
 endif
 
 include $(SCRIPT)/cflags.mk
@@ -150,12 +157,13 @@ $(fs.img): user $(MNT_DIR)
 	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
 	@sudo umount $(MNT_DIR)
 
+
 # $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
 # 	gcc -Werror -Wall -Iinclude -o $@ $<
 
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
-#	@make -C $U
+	@make -C $U
 	@cp $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 

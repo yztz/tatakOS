@@ -74,3 +74,38 @@
         }
     ]
 }
+
+
+        // {
+        //     "name": "kernel(gdb)",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/kernel",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${fileDirname}",
+        //     "environment": [],
+        //     "externalConsole": false,
+        //     "MIMode": "gdb",
+        //     // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
+        //     "miDebuggerPath": "/home/yztz/musl-cross-make/riscv64-unknown-elf-gdb",
+        //     "miDebuggerServerAddress": "localhost:26000",
+        //     "setupCommands": [
+        //         {
+        //             "description": "riscv",
+        //             "text": "set architecture riscv:rv64",
+        //             "ignoreFailures": true
+        //         },
+        //         {
+        //             "description": "为 gdb 启用整齐打印",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         },
+        //         // {
+        //         //     "description":  "将反汇编风格设置为 Intel",
+        //         //     "text": "-gdb-set disassembly-flavor intel",
+        //         //     "ignoreFailures": true
+        //         // }
+        //     ],
+            
+        // }, 

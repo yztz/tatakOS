@@ -21,6 +21,8 @@
 // #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
+#include "utils.h"
+#include "mm/mm.h"
 
 static int argfd(int n, int* pfd, struct file** pf) {
     int fd;

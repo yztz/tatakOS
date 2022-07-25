@@ -16,6 +16,7 @@ set(BIN_DIR bin)
 
 # Toolchain
 set(PREFIX ${ARCH}-unknown-elf-)
+# set(PREFIX /opt/kendryte-toolchain/bin/${ARCH}-unknown-elf-)
 # riscv64-unknown-elf-
 
 if (${ARCH} STREQUAL riscv32)
@@ -47,7 +48,16 @@ target_include_directories(ulib PRIVATE ${ARCH_DIR})
 # Execuatble
 set(ENTRY "0x1000")
 #aux_source_directory(src SRCS)
-aux_source_directory(src/oscomp SRCS)
+
+# 只编译要测试的文件
+# aux_source_directory(src/oscomp SRCS)
+# set(SRCS src/oscomp/openat.c)
+#set(SRCS src/oscomp/bigwrite.c)
+set(SRCS src/oscomp/ls.c)
+# set(SRCS src/oscomp/waitpid.c)
+# set(SRCS src/oscomp/brk.c)
+# set(SRCS src/oscomp/munmap.c)
+
 set(EXECUTABLE_OUTPUT_PATH ${ARCH})
 foreach(PATH ${SRCS})
     get_filename_component(NAME ${PATH} NAME_WE)

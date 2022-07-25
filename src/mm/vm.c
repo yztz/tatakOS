@@ -118,7 +118,6 @@ void erasekvm(pagetable_t pagetable) {
 }
 
 
-
 // Given a parent process's page table, copy
 // its memory into a child's page table.
 // Copies both the page table and the
@@ -179,8 +178,15 @@ void freewalk(pagetable_t pagetable) {
       panic("freewalk: leaf");
     }
   }
+  /* memset 放在kfree前没事 */
+    // memset(pagetable, 0, PGSIZE);
   kfree((void*)pagetable);
+  // printf("pagetable: %p\n", pagetable);
+  // printf("kstack: %p,  sp: %p\n", myproc()->kstack, r_sp());
+  // if((uint64)pagetable == 0x80265000)
+  //   memset(pagetable, 0, PGSIZE);
+  // memcpy(pagetable, (void*)myproc()->kstack, PGSIZE);
+  // memcpy(pagetable, pagetable, PGSIZE);
 }
-
 
 

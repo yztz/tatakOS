@@ -445,5 +445,3 @@ uint64_t sys_mprotect(void) {
     return 0;
 }
 
-
-

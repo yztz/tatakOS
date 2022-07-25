@@ -34,6 +34,15 @@
 // #define MAP_SHARED      (1UL << 0)
 // #define MAP_PRIVATE     (1UL << 1)
 
+/* These are linux-specific */
+// #define MAP_GROWSDOWN	0x01000		/* stack-like segment */
+// #define MAP_DENYWRITE	0x02000		/* ETXTBSY */
+/* 这个标识符被我用来从0地址开始映射可执行文件，否则地址为0被视为自动分配空间 */
+// #define MAP_EXECUTABLE	0x04000		/* mark it as an executable */
+// #define MAP_LOCKED	0x08000		/* lock the mapping */
+
+
+// #define MAP_FAILED ((void *) -1)
 #define AT_FDCWD -100
 
 #endif
