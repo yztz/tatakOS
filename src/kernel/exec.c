@@ -105,6 +105,7 @@ static uint64_t loadinterp(mm_t *mm) {
 }
 
 int exec(char *path, char **argv, char **envp) {
+  // print_argv(argv);
   char *s, *last;
   int i, off;
   uint64 ustack, ustackbase;

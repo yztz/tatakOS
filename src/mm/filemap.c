@@ -252,7 +252,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
   rest = n;
   cur_off = off;
   /* the file size */
-  file_size = E_FILESIZE(mapping->host);
+  // file_size = E_FILESIZE(mapping->host);
+  file_size = mapping->host->size_in_mem;
   /* the last page index of a file */
   end_index = file_size >> PGSHIFT;
 
@@ -269,13 +270,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     if (index == end_index)
     {
       /**
-       * if (pgoff >= (file_size & ~PGMASK))
-       * 这里是大于等于，不是大于，文件大小为file_size的字节号为0 ~ file_size-1,
-       *  试想两种情况：
-       * 1.文件大小file size为4096， pgoff为4095.以上不正确。
-       * 2.大小为4095，pgoff为4094.以上正确。
+       * 当偏移到了最后一页，偏移大于等于此条件，说明读到了文件末尾。
        */
-      // if (pgoff > ((file_size-1) & ~PGMASK))
       if (pgoff >= (file_size & ~PGMASK))
         break;
     }

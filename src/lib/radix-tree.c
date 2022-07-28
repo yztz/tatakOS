@@ -388,7 +388,7 @@ radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_
 /**
  *	radix_tree_shrink    -    shrink height of a radix tree to minimal
  *	@root		radix tree root
- *  节点串成向左下方的直线。
+ *  可用更少的节点表示rdt，删去多余的节点。
  */
 static inline void radix_tree_shrink(struct radix_tree_root *root)
 {

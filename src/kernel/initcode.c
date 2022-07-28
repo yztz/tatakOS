@@ -68,6 +68,8 @@ void run(char *casename, char *entryname) {
     if(strncmp(proc_name, "pthread", 7) == 0) continue;
     if(strncmp(proc_name, "sem_init", 8) == 0) continue;
 
+    if(strncmp(proc_name, "fdopen", 8) != 0) continue;
+
     printf("start to test[%d] %s\n", i, proc_name);
     int npid = fork();
     assert(npid >= 0, "bad fork");

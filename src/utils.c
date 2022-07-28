@@ -127,35 +127,34 @@ print_pa(pagetable_t pagetable, uint64_t start, uint64_t end){
   
 }
 
-// void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
-//   printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
-//   for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++){
-//     if(node->slots[i] != NULL){
-//       for(int j = 0; j < c_h; j++){
-//         printf(".. ");
-//       }
-//       /* the leaf node */
-//       if(c_h == height){
-//         printf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
-//       }
-//       else{
-//         printf("%-3d  ", i);
-//         // printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
-//         _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
-//       }
-//     }
-//   }
-// }
+void _printf_radix_tree(struct radix_tree_node *node, uint8 height, uint8 c_h){
+  printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
+  for(int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++){
+    if(node->slots[i] != NULL){
+      for(int j = 0; j < c_h; j++){
+        printf(".. ");
+      }
+      /* the leaf node */
+      if(c_h == height){
+        printf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
+      }
+      else{
+        printf("%-3d  ", i);
+        // printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
+        _printf_radix_tree((struct radix_tree_node *)node->slots[i], height, c_h+1);
+      }
+    }
+  }
+}
 
-// void
-// printf_radix_tree(struct radix_tree_root *root){
-//   printf(rd("root:  "));
-//   // printf(bl("count: %-3d, dirty tags: %5p"), root->rnode->count, root->rnode->tags[0][0]);
-//   printf("\n");
-//   _printf_radix_tree(root->rnode, root->height, 1); 
-//   printf("\n");
-// }
-
+void
+printf_radix_tree(struct radix_tree_root *root){
+  printf(rd("root:  "));
+  // printf(bl("count: %-3d, dirty tags: %5p"), root->rnode->count, root->rnode->tags[0][0]);
+  printf("\n");
+  _printf_radix_tree(root->rnode, root->height, 1); 
+  printf("\n");
+}
 
 /* 打印空闲的物理页数,统计剩余的物理内存 */
 void
@@ -184,4 +183,16 @@ void print_page_contents(char *pa){
     pa++;
   }
   printf("\n");
+}
+
+/**
+ * @brief 在exec.c中的exec中使用，打印参数。
+ * 
+ */
+void print_argv(char **argv){
+  int i = 0;
+  while(argv[i] != NULL){
+    printf(ylw("argv[%d]: %s\n"), i, argv[i]);
+    i++;
+  }
 }
