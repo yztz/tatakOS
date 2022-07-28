@@ -219,6 +219,7 @@ static void __eput(entry_t *entry) {
       
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
+      goto no_writeback;
     }
 
     /* 可以把entry和immaping解除，entry回收利用，imapping写回后释放，或者动态分配
@@ -251,7 +252,7 @@ static void __eput(entry_t *entry) {
         if(!entry->dirty)
           free_mapping(entry);
     }
-
+no_writeback:
     __eput(entry->parent);
   }
 }
