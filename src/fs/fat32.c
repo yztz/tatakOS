@@ -1122,6 +1122,8 @@ uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus){
 
    while(cur_clus != FAT_CLUS_END){
         next_clus = fat_next_cluster(fat, cur_clus);
+        if(next_clus == 0)
+            ERROR("next_clus = 0, the entry's cluster may be reclaimed.");
         if(next_clus == FAT_CLUS_END)
             return cur_clus;
         cur_clus = next_clus;

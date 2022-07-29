@@ -111,7 +111,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   }
 
   if(empty == 0)
-    panic("iget: no entries");
+    panic("eget: no entries");
   
   
   entry = empty;
@@ -475,7 +475,10 @@ int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   //   return min(n, E_FILESIZE(entry) - off);
   // }
   // ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
+  if(off >= entry->size_in_mem)
+    return 0;
   ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
+  // printf(rd("ret: %d\toff: %d\tn: %d\n"), ret, off, n);
   return ret;
 }
 

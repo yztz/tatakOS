@@ -301,6 +301,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     // mark_page_accessed(&pages[PAGE2NUM(pa)]);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min(rest, PGSIZE - pgoff);
+    /* 文件最后一页 */
+    len = min(len, file_size - pgoff);
 
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
