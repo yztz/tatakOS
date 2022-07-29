@@ -141,6 +141,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
       kfree((void*)pa);
     }
     *pte = 0;
+    sfence_vma_addr(a);
   }
 }
 

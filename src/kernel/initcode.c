@@ -20,10 +20,13 @@ void run(char *casename, char *entryname);
 
 __attribute__((section(".startup")))
 int main() {
+    printf("test begin!\n");
+    memuse();
     run("run-static.sh", "entry-static.exe");
     // run("run-dynamic.sh", "entry-static.exe");
     // run("run-dynamic.sh", "entry-dynamic.exe");
     printf("test end!\n");
+    memuse();
     for(;;);
     return 0;
 }
@@ -68,7 +71,8 @@ void run(char *casename, char *entryname) {
     if(strncmp(proc_name, "pthread", 7) == 0) continue;
     if(strncmp(proc_name, "sem_init", 8) == 0) continue;
 
-    if(strncmp(proc_name, "fwscanf", 8) != 0) continue;
+    // if(strncmp(proc_name, "fdopen", 8) != 0) continue;
+    // if(strncmp(proc_name, "fscanf", 8) != 0) continue;
 
     printf("start to test[%d] %s\n", i, proc_name);
     int npid = fork();
@@ -83,6 +87,8 @@ void run(char *casename, char *entryname) {
         printf("child exit with %d\n", status);
     }
   }
+  /* close run-xxx.sh */
+  close(fd);
 }
 
 

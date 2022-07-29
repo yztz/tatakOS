@@ -219,6 +219,8 @@ static void __eput(entry_t *entry) {
       
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
+      /* 忘加了，造成内存泄漏 */
+      free_mapping(entry);
       goto no_writeback;
     }
 

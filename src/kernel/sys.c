@@ -85,10 +85,10 @@ uint64_t sys_prlimit64(void) {
   return 0;
 }
 
-
+void print_buddy();
 uint64_t sys_memuse(void) {
   buddy_print_free();
-  // print_buddy();
+  print_buddy();
   return 0;
 }
 
