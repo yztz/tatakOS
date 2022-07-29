@@ -279,7 +279,7 @@ entry_t *create(entry_t *from, char *path, short type) {
   return ep;
 }
 
-static char *skipelem(char *path, char *name) {
+char *skipelem(char *path, char *name) {
   char *s;
   int len;
   // 跳过路径起始的'/'

@@ -23,6 +23,13 @@ obj-y += profile.o
 obj-y += device.o
 obj-y += misc.o
 
+
+
+
+
+obj-y += futex.o
+obj-y += fdtable.o
+
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))
 

@@ -22,13 +22,29 @@
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 
+
+static entry_t *getep(proc_t *p, int dirfd) {
+    struct file *fp;
+    entry_t *ep = NULL;
+
+    if (dirfd == AT_FDCWD) {
+        ep = p->cwd;
+    } else if ((fp = fdtbl_getfile(p->fdtable, dirfd)) == NULL) {
+        return NULL;
+    } else {
+        ep = fp->ep;
+    }
+
+    return ep;
+}
+
 static int argfd(int n, int* pfd, struct file** pf) {
     int fd;
     struct file* f;
 
     if (argint(n, &fd) < 0)
         return -1;
-    if ((f = get_file(myproc(), fd)) == NULL)
+    if ((f = fdtbl_getfile(myproc()->fdtable, fd)) == NULL)
         return -1;
     if (pfd)
         *pfd = fd;
@@ -40,12 +56,12 @@ static int argfd(int n, int* pfd, struct file** pf) {
 
 uint64 sys_dup(void) {
     struct file* f;
-    proc_t *p = myproc();
+    fdtable_t *tbl = myproc()->fdtable;
     int fd;
 
     if (argfd(0, 0, &f) < 0)
         return -1;
-    if ((fd = fdalloc(p, f)) < 0)
+    if ((fd = fdtbl_fdalloc(tbl, f)) < 0)
         return -1;
     filedup(f);
     return fd;
@@ -53,19 +69,17 @@ uint64 sys_dup(void) {
 
 uint64 sys_dup3(void) {
     struct file* f, *oldf;
+    fdtable_t *tbl = myproc()->fdtable;
     int new;
-    struct proc* p = myproc();
 
     if (argfd(0, 0, &f) < 0 || argint(1, &new) < 0)
         return -1;
 
-    if(new >= p->nfd && fdrealloc(p, new + 1) < 0) 
-        return -1;
-
-    if((oldf = get_file(p, new)) != NULL) {
+    if((oldf = fdtbl_getfile(tbl, new)) != NULL) {
         fileclose(oldf);
     }
-    set_file(p, new, f);
+
+    fdtbl_setfile(tbl, new, f);
     filedup(f);
     return new;
 
@@ -111,6 +125,7 @@ uint64 sys_writev(void) {
     for(int i = 0; i < iovcnt; i++) {
         if(copyin(&iov, addr + i * sizeof(struct iovec), sizeof(struct iovec)) < 0)
             return -1;
+        // debug("iov base is %#lx len is %#lx", iov.iov_base, iov.iov_len);
         int res = filewrite(f, (uint64)iov.iov_base, iov.iov_len);
         len += res;
     }
@@ -196,7 +211,7 @@ uint64 sys_close(void) {
 
     if (argfd(0, &fd, &f) < 0)
         return -1;
-    set_file(p, fd, NULL);
+    fdtbl_setfile(p->fdtable, fd, NULL);
     fileclose(f);
     return 0;
 }
@@ -234,13 +249,7 @@ uint64 sys_fstatat(void) {
         return copy_to_user(ustat, &stat, sizeof(stat));
     }
     
-    if (dirfd == AT_FDCWD) {
-        from = p->cwd;
-    } else if ((pf = get_file(p, dirfd)) != NULL) {
-        from = pf->ep;
-    } else {
-        return -1;
-    }
+    from = getep(p, dirfd);
 
     if((ep = namee(from, path)) == NULL) {
         return -1;
@@ -287,18 +296,13 @@ uint64 sys_unlinkat(void) {
     entry_t *entry, *from;
     int dirfd;
     char path[MAXPATH];
+    proc_t *p = myproc();
 
     // todo: flag ignored
     if (argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0)
         return -1;
 
-    if (dirfd == AT_FDCWD) {
-        from = myproc()->cwd;
-    } else if (dirfd < 0 || dirfd >= NOFILE || myproc()->ofile[dirfd] == NULL) {
-        return -1;
-    } else {
-        from = myproc()->ofile[dirfd]->ep;
-    }
+    from = getep(p, dirfd);
 
     if ((entry = namee(from, path)) == NULL)
         return -1;
@@ -330,26 +334,41 @@ uint64 sys_getdents64(void) {
     return ret;
 }
 
-
+extern char *skipelem(char *path, char *name);
 // todo: trunc
 uint64 sys_openat(void) {
     // owner mode is ignored
     char path[MAXPATH];
     int dirfd, fd, omode;
-    struct file *pf, *f;
+    struct file *f;
     entry_t* ep;
     entry_t* from;
     int n;
     proc_t *p = myproc();
+    fdtable_t *tbl = p->fdtable;
 
     if (argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 ||
         argint(2, &omode) < 0)
         return -1;
 
+    // int len = strlen(path);
+    // add 'lib' prefix
+    // if(path[len - 2] == 's' && path[len - 1] == 'o') {
+    //     char name[MAX_FILE_NAME];
+    //     char *mypath = path;
+    //     while((mypath = skipelem(mypath, name)));
+    //     if(strncmp(name, "lib", 3) != 0) {
+    //         memmove(path, "lib", 3);
+    //         memmove(path + 3, name, strlen(name) + 1);
+    //     } else {
+    //         memmove(path, name, strlen(name) + 1);
+    //     }
+    // }
+
     // sepcial for device...
     f = getdevfile(path);
     if(f != NULL) {
-        if((fd = fdalloc(p, f)) == -1) {
+        if((fd = fdtbl_fdalloc(tbl, f)) == -1) {
             fileclose(f);
             return -EMFILE;
         }
@@ -357,21 +376,17 @@ uint64 sys_openat(void) {
     }
 
     // debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
-    if (dirfd == AT_FDCWD) {
-        from = p->cwd;
-    } else if ((pf = get_file(p, dirfd)) != NULL) {
-        from = pf->ep;
-    } else {
-        return -1;
-    }
+    from = getep(p, dirfd);
         
     if (omode & O_CREATE) {  // 创建标志
         if ((ep = create(from, path, T_FILE)) == 0) {
+            debug("create failure");
+            debug("path %s omode %o", path, omode);
             return -1;
         }
     } else {
         if ((ep = namee(from, path)) == 0) {
-            debug("file not found, cwd is %s", path, p->cwd->name);
+            debug("file not found, cwd is %s", p->cwd->name);
             debug("path %s omode %o", path, omode);
             return -1;
         }
@@ -383,7 +398,7 @@ uint64 sys_openat(void) {
         }
     }
 
-    if ((f = filealloc()) == 0 || (fd = fdalloc(p, f)) < 0) {
+    if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f)) < 0) {
         if (f)
             fileclose(f);
         eunlockput(ep);
@@ -408,19 +423,14 @@ uint64 sys_mkdirat(void) {
     // ignore mode
     char path[MAXPATH];
     int dirfd;
+    proc_t *p = myproc();
     entry_t *ep, *from;
 
     if (argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0) {
         return -1;
     }
 
-    if (dirfd == AT_FDCWD) {
-        from = myproc()->cwd;
-    } else if (dirfd < 0 || dirfd >= NOFILE || myproc()->ofile[dirfd] == NULL) {
-        return -1;
-    } else {
-        from = myproc()->ofile[dirfd]->ep;
-    }
+    from = getep(p, dirfd);
 
     if ((ep = create(from, path, T_DIR)) == NULL)
         return -1;
@@ -442,7 +452,7 @@ uint64 sys_fcntl(void) {
 
     // debug("fd is %d cmd is %d arg is %ld", fd, cmd, arg);
     if(cmd == F_SETFD) {
-        p->fd_flags |= arg;
+        fdtbl_setflags(p->fdtable, arg);
         return 0;
     }
 
@@ -455,7 +465,7 @@ uint64 sys_chdir(void) {
     char path[MAXPATH];
     entry_t* ep;
     struct proc* p = myproc();
-    debug("enter");
+    // debug("enter");
     if (argstr(0, path, MAXPATH) < 0 || (ep = namee(NULL, path)) == 0) {
         return -1;
     }
@@ -467,12 +477,12 @@ uint64 sys_chdir(void) {
     eunlock(ep);
     eput(p->cwd);
     p->cwd = ep;
-    debug("quit") return 0;
+    // debug("quit");
+    return 0;
 }
 
 extern int exec(char *path, char **argv, char **envp);
 
-int debug_flag = 0;
 uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];
     int i;
@@ -508,8 +518,9 @@ uint64 sys_exec(void) {
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
 
-    if(p->fd_flags & FD_CLOEXEC) {
-        proc_close_files(p);
+    if(fdtbl_getflags(p->fdtable) & FD_CLOEXEC) {
+        debug("close all");
+        fdtbl_closeall(p->fdtable);
     }
 
     return ret;
@@ -525,7 +536,7 @@ uint64 sys_pipe2(void) {
     uint64 fdarray;  // user pointer to array of two integers
     struct file *rf, *wf;
     int fd0, fd1;
-    struct proc* p = myproc();
+    fdtable_t *tbl = myproc()->fdtable;
 
     if (argaddr(0, &fdarray) < 0)
         return -1;
@@ -533,17 +544,17 @@ uint64 sys_pipe2(void) {
         return -1;
 
     fd0 = -1;
-    if ((fd0 = fdalloc(p, rf)) < 0 || (fd1 = fdalloc(p, wf)) < 0) {
+    if ((fd0 = fdtbl_fdalloc(tbl, rf)) < 0 || (fd1 = fdtbl_fdalloc(tbl, wf)) < 0) {
         if (fd0 >= 0)
-            set_file(p, fd0, NULL);
+            fdtbl_setfile(tbl, fd0, NULL);
         fileclose(rf);
         fileclose(wf);
         return -1;
     }
     if (copyout(fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
         copyout(fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) < 0) {
-        p->ofile[fd0] = 0;
-        p->ofile[fd1] = 0;
+        fdtbl_setfile(tbl, fd0, NULL);
+        fdtbl_setfile(tbl, fd1, NULL);
         fileclose(rf);
         fileclose(wf);
         return -1;
@@ -598,18 +609,16 @@ uint64 sys_mmap(void) {
         argaddr(5, (uint64_t *)&offset) < 0)
         return -1;
 
-    fp = get_file(p, fd);
+    fp = fdtbl_getfile(p->fdtable, fd);
 
-    // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
+    // debug("MMAP addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
     if(flags & MAP_SHARED) {
         panic("ns");
     }
 
-    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) 
+    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) 
         return -1;
-    // mmap_print(p->mm);
-    // if(fp)
-    //     filedup(fp);
+
     
     return addr;
 }
@@ -621,7 +630,8 @@ uint64 sys_munmap(void) {
     if(argaddr(0, &addr) < 0 || argaddr(1, &len) < 0) {
         return -1;
     }
-
+    // debug("UNMAP addr is %#lx len is %#lx", addr, len);
+    // mmap_print(p->mm);
     do_unmap(p->mm, addr, 1);
     return 0;
 }
@@ -631,6 +641,7 @@ uint64 sys_munmap(void) {
 uint64 sys_utimensat(void) {
     timespec_t ts[2];
     uint64 addr;
+    proc_t *p = myproc();
     int fd;
 
     if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
@@ -641,7 +652,7 @@ uint64 sys_utimensat(void) {
     }
     
     if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
-        get_file(myproc(), fd)->ep->raw.adate.year_from_1980 = 65;
+        fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
     }
 
     return 0;

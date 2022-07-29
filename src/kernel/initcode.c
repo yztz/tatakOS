@@ -21,11 +21,14 @@ void run(char *casename, char *entryname);
 __attribute__((section(".startup")))
 int main() {
     memuse();
-    run("run-static.sh", "entry-static.exe");
-    memuse();
-    // run("run-dynamic.sh", "entry-static.exe");
+    
+    // run("run-static.sh", "entry-test");
     // run("run-dynamic.sh", "entry-dynamic.exe");
-    printf("test end!\n");
+
+    run("run-static.sh", "entry-static.exe");
+    run("run-dynamic.sh", "entry-dynamic.exe");
+    memuse(); 
+    printf("ALL TEST DONE!\n");
     for(;;);
     return 0;
 }
@@ -39,10 +42,8 @@ int read_test_name() {
     if(cnt <= 0) 
       return -1;
     // skip space
-    for (i = 0; i < 3; i++)
-    {
-        for (; line[loffset] != ' '; loffset++)
-            ;
+    for (i = 0; i < 3; i++) {
+        for (; line[loffset] != ' '; loffset++);
         loffset++;
     }
     
@@ -67,8 +68,12 @@ void run(char *casename, char *entryname) {
     i++;
     // filters //
     if(!COND) continue;
-    if(strncmp(proc_name, "pthread", 7) == 0) continue;
-    if(strncmp(proc_name, "sem_init", 8) == 0) continue;
+    if(strncmp(proc_name, "pthread_cancel_points", 21) == 0) continue;
+    if(strncmp(proc_name, "pthread_cond_smasher", 20) == 0) continue;
+    // if(strncmp(proc_name, "sem_init", 8) == 0) continue;
+    // if(strncmp(proc_name, "tls_init", 8) == 0) continue;
+    // if(strncmp(proc_name, "tls_get_new_dtv", 15) == 0) continue;
+    // if(strncmp(proc_name, "tls_local_exec", 14) == 0) continue;
 
     printf("\nReady To Run Test-%d %s\n", i, proc_name);
     int npid = fork();

@@ -89,7 +89,9 @@ static uint64_t loadinterp(mm_t *mm) {
       goto bad;
     if(loadseg(mm, ph.vaddr + INTERP_BASE, ep, ph.off, ph.filesz) < 0)
       goto bad;
+    // debug("load interp va %#lx filesz %#lx memsz %#lx", ph.vaddr, ph.filesz, ph.memsz);
   }
+
   eunlock(ep);
   // mmap_print(mm);
   // debug("load done");
@@ -130,7 +132,7 @@ int exec(char *path, char **argv, char **envp) {
   putaux(AT_SECURE, 0);
 
   /* alloc */
-  if((newmm = kzalloc(sizeof(mm_t))) == NULL) {
+  if((newmm = mmap_new()) == NULL) {
     debug("newmm alloc failure");
     return -1;
   }
@@ -144,12 +146,6 @@ int exec(char *path, char **argv, char **envp) {
   ustack = ustackbase + PGSIZE;
 
   /* load */
-  if(mmap_init(newmm) == -1) {
-    debug("newmm init fail");
-    kfree(newmm);
-    kfree((void *)ustackbase);
-    return -1;
-  }
 
   if((ep = namee(NULL, path)) == 0){
     debug("entry %s acquire failure", path);

@@ -106,7 +106,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
 
                 *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
                 sfence_vma_addr(rva);
-                
+                // sfence_vma();
                 return 0;
             }
             // cow
@@ -196,7 +196,11 @@ int handle_pagefault(uint64_t scause) {
         }
     } else {
         // debug("u");
-            
+        // if(rva == 0xF00022000) {
+        //     tf_print(p->trapframe);
+        //     debug("MAP HERE pc is %#lx pid %d va %#lx", epc, p->pid, r_stval());
+        // }
+        
         vma = __vma_find_strict(p->mm, rva);
 
         if(vma == NULL) {

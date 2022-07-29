@@ -10,7 +10,7 @@
 #include "kernel/time.h"
 #include "mm/vm.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
 
@@ -39,7 +39,7 @@ sys_getppid(void)
 uint64
 sys_fork(void)
 {
-  return do_clone(0);
+  return do_clone(myproc(), 0, 0, 0, 0, 0);
 }
 
 uint64
@@ -52,22 +52,11 @@ sys_set_tid_address(void)
   return tid;
 }
 
-uint64
-sys_rt_sigprocmask(void)
-{
-  return 0;
-}
-
-uint64
-sys_rt_sigtimedwait(void)
-{
-  return 0;
-}
 
 uint64
 sys_gettid(void)
 {
-  return sys_getpid();
+  return myproc()->pid;
 }
 
 
@@ -77,22 +66,23 @@ sys_exit_group(void)
   return sys_exit();
 }
 
-uint64
-sys_rt_sigaction(void)
-{
-  return 0;
-}
+
 
 uint64
 sys_clone(void)
 {
-  int flag; // ignored
-  uint64_t stack;
+  uint64 stack;
+  int flags;
+  uint64_t ptid;
+  uint64_t tls;
+  uint64_t ctid;
+
   // debug("clone: enter");
-  if(argint(0, &flag) < 0 || argaddr(1, &stack) < 0)
-    return -1;
-  debug("clone: stack is %x", stack);
-  return do_clone(stack);
+  if(argint(0, &flags) < 0 || argaddr(1, &stack) < 0 || 
+    argaddr(2, &ptid) < 0 || argaddr(3, &tls) < 0 || argaddr(4, &ctid) < 0)
+      return -1;
+  debug("clone: flags is %x ctid is %#lx", flags, ctid);
+  return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 
 uint64

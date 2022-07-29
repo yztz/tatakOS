@@ -3,6 +3,7 @@
 #include "list.h"
 #include "common.h"
 #include "mm/page.h"
+#include "atomic/spinlock.h"
 
 #define USERSPACE_END (0x80000000) // 2GB
 #define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
@@ -56,6 +57,8 @@ typedef struct vma vma_t;
 /* 描述进程的内存段 */
 struct mmlayout
 {
+    int ref;
+    spinlock_t mm_lock;
     vma_t *ustack; /* 用户栈 */
     vma_t *uheap;  /* 用户堆 */
 
@@ -72,19 +75,25 @@ vma_t *vma_new();
 void vma_print(vma_t *vma);
 void vma_free(vma_t **vma);
 
-int mmap_init(mm_t *mm);
+// int mmap_init(mm_t *mm);
+mm_t *mmap_new();
 void mmap_free(mm_t **pmm);
 uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot);
 uint64_t do_mmap_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot);
 void do_unmap(mm_t *mm, uint64_t addr, int do_free);
 vma_t *vma_find(mm_t *mm, uint64 addr);
 vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
-int mmap_dup(mm_t *newm, mm_t *oldm);
+
 int mmap_ext_heap(mm_t *mm, uint64_t newsize);
 int mmap_ext_stack(mm_t *mm, uint64_t newsize);
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
 int mmap_map_stack_heap(mm_t *mm, uint64_t brk_addr, uint64_t stacksize, uint64_t heapsize);
+
+mm_t *mmap_clone(mm_t *mm);
 void mmap_print(mm_t *mm);
+
+void mmap_ref(mm_t *self);
+void mmap_deref(mm_t *self);
 
 void switchuvm(mm_t *mm);
 void switchkvm();

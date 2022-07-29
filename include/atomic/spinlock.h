@@ -17,6 +17,7 @@ struct spinlock {
 
 typedef struct spinlock spinlock_t;
 
+int             try_acquire(struct spinlock *lk);
 void            acquire(struct spinlock*);
 int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);

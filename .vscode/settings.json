@@ -114,7 +114,13 @@
         "entry.h": "c",
         "errno.h": "c",
         "test.h": "c",
-        "initcode_bin.h": "c"
+        "initcode_bin.h": "c",
+        "fdtable.h": "c",
+        "signal.h": "c",
+        "futex.h": "c",
+        "thread_group.h": "c",
+        "reent.h": "c",
+        "cdefs.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

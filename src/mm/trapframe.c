@@ -3,7 +3,24 @@
 #include "mm/alloc.h"
 
 tf_t *tf_new() {
-    return (tf_t*)kzalloc(PGSIZE);
+    tf_t *tf = (tf_t*)kzalloc(PGSIZE);
+    if(tf == NULL)
+        return NULL;
+    tf->sigtf = NULL;
+    return tf;
+}
+
+void tf_backup(tf_t *self) {
+    tf_t *backup = (tf_t *)((uint64_t)self + sizeof(tf_t));
+    *backup = *self;
+    self->sigtf = backup;
+}
+
+void tf_restore(tf_t *self) {
+    if(self->sigtf == NULL)
+        panic("whereis tf?");
+    *self = *self->sigtf;
+    self->sigtf = NULL;
 }
 
 void tf_free(tf_t **pptf) {

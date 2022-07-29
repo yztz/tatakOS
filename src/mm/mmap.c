@@ -121,7 +121,8 @@ void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t le
     vma = vma_new();
     vma->raddr = addr;
     vma->addr = PGROUNDDOWN(addr);
-    vma->len = end - vma->addr;
+    // vma->len = end - vma->addr;
+    vma->len = PGROUNDUP(end - vma->addr);
     vma->flags = flags;
     vma->map_file = fp;
     vma->prot = prot;
@@ -168,6 +169,8 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
 
     uint64_t addr_align = PGROUNDDOWN(addr);
 
+    acquire(&mm->mm_lock);
+
     vma = vma_inter(mm, addr_align, len);
 
     if(flags & MAP_FIXED) {
@@ -185,13 +188,16 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
 
     __do_mmap(mm, fp, off, addr, len, flags, prot);
     
+    release(&mm->mm_lock);
+
     return addr;
 }
 
 void do_unmap(mm_t *mm, uint64_t addr, int do_free) {
     vma_t *vma = __vma_find_strict(mm, addr);
+
+    acquire(&mm->mm_lock);
     if(vma) {
-        // TODO: file map
         uvmunmap(mm->pagetable, vma->addr, ROUND_COUNT(vma->len), do_free);
         vma_remove(mm, vma);
         if(vma->map_file) {
@@ -199,6 +205,7 @@ void do_unmap(mm_t *mm, uint64_t addr, int do_free) {
         }
         vma_free(&vma);
     }
+    release(&mm->mm_lock);
 }
 
 uint64_t do_mmap_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot) {
@@ -245,7 +252,8 @@ static void unmap_vmas(mm_t *mm) {
 
 
 
-int mmap_init(mm_t *mm) {
+static inline int mmap_init(mm_t *mm) {
+    initlock(&mm->mm_lock, "mmlock");
     mm->pagetable = kzalloc(PGSIZE);
     INIT_LIST_HEAD(&mm->vma_head);
     if(mm->pagetable == NULL) {
@@ -261,15 +269,35 @@ int mmap_init(mm_t *mm) {
     return 0;
 }
 
-void mmap_free(mm_t **pmm) {
-    mm_t *mm = *pmm;
+mm_t *mmap_new() {
+    mm_t *mm = (mm_t *)kzalloc(sizeof(mm_t));
     if(mm == NULL) 
-        panic("nullpointer");
+        return NULL;
+    if(mmap_init(mm) == -1) {
+        kfree(mm);
+        return NULL;
+    }
+    return mm;
+}
 
-    unmap_vmas(mm);
-    erasekvm(mm->pagetable);
-    freewalk(mm->pagetable);
-    kfree_safe(pmm);
+void mmap_free(mm_t **pself) {
+    if(pself == NULL || *pself == NULL) 
+        return;
+    mm_t *self = *pself;
+
+    if(self->ref == 0)
+        panic("ref");
+
+    mmap_deref(self);
+    if(self->ref > 0)
+        return;
+
+    // debug("FREED!!!");
+
+    unmap_vmas(self);
+    erasekvm(self->pagetable);
+    freewalk(self->pagetable);
+    kfree_safe(pself);
 }
 
 static vma_t *vma_dup(vma_t *vma) {
@@ -281,36 +309,49 @@ static vma_t *vma_dup(vma_t *vma) {
     return dup;
 }
 
-int mmap_dup(mm_t *newm, mm_t *oldm) {
+static int mmap_dup(mm_t *mm, mm_t *newmm) {
     vma_t *vma;
-    //TODO: file
-    list_for_each_entry(vma, &oldm->vma_head, head) {
+    list_for_each_entry(vma, &mm->vma_head, head) {
         vma_t *dup = vma_dup(vma);
         if(dup == NULL) {
-            unmap_vmas(newm);
+            unmap_vmas(newmm);
             return -1;
         }
-        if(uvmcopy(oldm->pagetable, newm->pagetable, vma) == -1) {
+        if(uvmcopy(mm->pagetable, newmm->pagetable, vma) == -1) {
             vma_free(&dup);
-            unmap_vmas(newm);
+            unmap_vmas(newmm);
             return -1;
         }
-        vma_insert(newm, dup);
+        vma_insert(newmm, dup);
 
         if(vma->map_file) {
             filedup(vma->map_file);
         }
 
-        if(oldm->ustack == vma)
-            newm->ustack = dup;
-        if(oldm->uheap == vma)
-            newm->uheap = dup;
+        if(mm->ustack == vma)
+            newmm->ustack = dup;
+        if(mm->uheap == vma)
+            newmm->uheap = dup;
     }
-    // memcpy((void *)newm->kstack, (void *)oldm->kstack, KSTACK_SZ);
-    // memcpy((void *)newm->trapframe, (void *)oldm->trapframe, PGSIZE);
 
     return 0;
 }
+
+mm_t *mmap_clone(mm_t *mm) {
+    mm_t *newmm = mmap_new();
+    if(newmm == NULL) 
+        return NULL;
+
+    acquire(&mm->mm_lock);
+    if(mmap_dup(mm, newmm) == -1) {
+        mmap_free(&newmm);
+        return NULL;
+    }
+    release(&mm->mm_lock);
+
+    return newmm;
+}
+
 
 // called after load
 int mmap_map_stack_heap(mm_t *mm, uint64_t brk_addr, uint64_t stacksize, uint64_t heapsize) {
@@ -375,6 +416,17 @@ int mmap_ext_stack(mm_t *mm, uint64_t newsize) {
 }
 
 
+void mmap_ref(mm_t *self) {
+    acquire(&self->mm_lock);
+    self->ref++;
+    release(&self->mm_lock);
+}
+
+void mmap_deref(mm_t *self) {
+    acquire(&self->mm_lock);
+    self->ref--;
+    release(&self->mm_lock);
+}
 
 
 

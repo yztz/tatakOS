@@ -1,11 +1,11 @@
 #include "kernel/sys.h"
 #include "kernel/time.h"
 #include "defs.h"
-#include "profile.h"
 #include "mm/buddy.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "sys/resource.h"
+#include "profile.h"
 
 #define __MODULE_NAME__ SYS
 #include "debug.h"
@@ -131,17 +131,19 @@ uint64_t sys_gettimeofday(void) {
 uint64 sys_clock_gettime(void) {
   // int clockid;
   uint64_t addr;
-  timespec_t time;
+  timespec_t time = TICK2TIMESPEC(ticks);
 
   time.tv_sec = 0;
-  time.tv_usec = 0;
-
+  time.tv_nsec = 0;
+  // time_print(&time);
   if(argaddr(1, &addr) < 0) 
     return -1;
 
-  if(copy_to_user(addr, &time, sizeof(time)) == -1) {
+  if(copy_to_user(addr, &time, sizeof(time)) < 0) {
+    debug("copy fail");
     return -1;
   } 
+  
   return 0;
 }
 
@@ -176,4 +178,8 @@ uint64 sys_statfs64(void) {
 
   return 0;
 
+}
+
+uint64_t sys_membarrier(void) {
+  return 0;
 }

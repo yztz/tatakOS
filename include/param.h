@@ -13,7 +13,7 @@
 #define MAXPATH      128   // maximum file path name
 #define MAX_MAP      15    // maximum io map
 
-#define MAX_FD       128
+#define MAX_FD       16
 
 #define BSIZE 512
 #define NENTRY 10

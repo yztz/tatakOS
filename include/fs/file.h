@@ -19,6 +19,8 @@ struct file {
   off_t off;
 };
 
+typedef struct file file_t;
+
 #define major(dev)  ((dev) >> 16 & 0xFFFF)
 #define minor(dev)  ((dev) & 0xFFFF)
 #define	mkdev(m,n)  ((uint)((m)<<16| (n)))
@@ -33,6 +35,6 @@ void            fileinit(void);
 int             fileread(struct file*, uint64, int n);
 int             filestat(struct file *f, struct kstat *stat);
 int             filewrite(struct file *f, uint64 addr, int n);
-
+void            file_print(file_t *self);
 
 #endif

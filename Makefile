@@ -81,8 +81,8 @@ ifeq ("$(platform)", "k210") # k210
 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
 	sudo chmod 777 $(serial-port)
-	$(TOOL)/kflash.py -p $(serial-port) -b 1500000 -B dan $(BUILD_ROOT)/k210.bin
-	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
+	$(TOOL)/kflash.py -p $(serial-port) -b 1500000 -B dan -t $(BUILD_ROOT)/k210.bin
+#	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
 else ifeq ("$(platform)", "qemu") # qemu
 	$(QEMU) $(QEMUOPTS) $(EXTRA_QEMUOPTS)
 else # others

@@ -23,9 +23,9 @@ static inline void clear_bss() {
   printf("\n.bss %#lx-%#lx (%#lx) cleared\n", &bss_start, &bss_end, len);
 }
 
-void
-main()
-{
+extern void scavenger_routine();
+
+void main() {
   if(cpuid() == 0){
     clear_bss();
     printf("\nOS TATAKAI!\n\n");
@@ -62,6 +62,8 @@ main()
     fs_init();
 
     userinit();      // first user process
+
+    kthread_create("scavenger", scavenger_routine);
 
     for (int i = 1; i < NUM_CORES; i ++) {
 			unsigned long mask = 1 << i;

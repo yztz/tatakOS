@@ -5,11 +5,16 @@
 14     uptime    sys_uptime 
 93     exit      sys_exit  
 94     exit_group sys_exit_group
+98     futex     sys_futex
+99     set_robust_list  sys_set_robust_list
+100    get_robust_list  sys_get_robust_list
 101    nanosleep sys_nanosleep
 124    yield     sys_sched_yield
+130    tkill     sys_tkill
 134    rt_sigaction     sys_rt_sigaction
 135    rt_sigprocmask   sys_rt_sigprocmask
 137    rt_sigtimedwait  sys_rt_sigtimedwait
+139    rt_sigreturn  sys_rt_sigreturn
 172    getpid    sys_getpid 
 173    getppid   sys_getppid
 178    gettid    sys_gettid
@@ -54,11 +59,11 @@
 153     times           sys_times
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday
+283     membarrier      sys_membarrier
 #############MISC###############
 175     geteuid     sys_geteuid
 177     getegid     sys_getegid
 #############TEST###############
 89     timetag      sys_timetag
 90     bio_cache    sys_bio_cache
-99     profile      sys_profile
-100    memuse       sys_memuse
+233    memuse       sys_memuse

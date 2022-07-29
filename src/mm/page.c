@@ -122,7 +122,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
       continue;
     }
-    if((*pte & PTE_V) == 0){
+    if((*pte & PTE_V) == 0) {
       continue;
     }
     if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
@@ -132,6 +132,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
       kfree((void*)pa);
     }
     *pte = 0;
+    sfence_vma_addr(a);
   }
 }
 
