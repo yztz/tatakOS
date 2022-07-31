@@ -168,7 +168,7 @@ int exec(char *path, char **argv, char **envp) {
   uint64_t brk;
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)) {
-    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
+    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) {
       goto bad;
     }
     if(ph.type == PT_PHDR) {

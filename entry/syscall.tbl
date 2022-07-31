@@ -47,7 +47,17 @@
 79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
 88     utimensat sys_utimensat
-##############MM################
+###############SOCK#############
+198    socket    sys_socket
+200    bind      sys_bind
+201    listen    sys_listen
+202    accept    sys_accept
+203    connect   sys_connect
+204    getsockname  sys_getsockname
+206    sendto       sys_sendto
+207    recvfrom     sys_recvfrom
+208    setsockopt   sys_setsockopt
+###############MM###############
 214     sbrk      sys_sbrk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap

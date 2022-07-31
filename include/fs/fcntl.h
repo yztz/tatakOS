@@ -10,6 +10,8 @@
 #define O_LARGEFILE 00100000
 #define O_DIRECTORY 00200000
 
+#define O_NONBLOCK 04000
+
 #define SEEK_SET	0	/* seek relative to beginning of file */
 #define SEEK_CUR	1	/* seek relative to current file position */
 #define SEEK_END	2	/* seek relative to end of file */

@@ -1248,3 +1248,179 @@ child exit with 256
 
 Ready To Run Test-83 printf_fmt_n
 ========== START entry-dynamic.exe printf_fmt_n ==========
+Pass!
+========== END entry-dynamic.exe printf_fmt_n ==========
+child exit with 256
+
+Ready To Run Test-84 pthread_robust_detach
+========== START entry-dynamic.exe pthread_robust_detach ==========
+Pass!
+========== END entry-dynamic.exe pthread_robust_detach ==========
+child exit with 256
+
+Ready To Run Test-85 pthread_cond_smasher
+========== START entry-dynamic.exe pthread_cond_smasher ==========
+Pass!
+========== END entry-dynamic.exe pthread_cond_smasher ==========
+child exit with 256
+
+Ready To Run Test-86 pthread_condattr_setclock
+========== START entry-dynamic.exe pthread_condattr_setclock ==========
+Pass!
+========== END entry-dynamic.exe pthread_condattr_setclock ==========
+child exit with 256
+
+Ready To Run Test-87 pthread_exit_cancel
+========== START entry-dynamic.exe pthread_exit_cancel ==========
+Pass!
+========== END entry-dynamic.exe pthread_exit_cancel ==========
+child exit with 256
+
+Ready To Run Test-88 pthread_once_deadlock
+========== START entry-dynamic.exe pthread_once_deadlock ==========
+Pass!
+========== END entry-dynamic.exe pthread_once_deadlock ==========
+child exit with 256
+
+Ready To Run Test-89 pthread_rwlock_ebusy
+========== START entry-dynamic.exe pthread_rwlock_ebusy ==========
+Pass!
+========== END entry-dynamic.exe pthread_rwlock_ebusy ==========
+child exit with 256
+
+Ready To Run Test-90 putenv_doublefree
+========== START entry-dynamic.exe putenv_doublefree ==========
+Pass!
+========== END entry-dynamic.exe putenv_doublefree ==========
+child exit with 256
+
+Ready To Run Test-91 regex_backref_0
+========== START entry-dynamic.exe regex_backref_0 ==========
+Pass!
+========== END entry-dynamic.exe regex_backref_0 ==========
+child exit with 256
+
+Ready To Run Test-92 regex_bracket_icase
+========== START entry-dynamic.exe regex_bracket_icase ==========
+Pass!
+========== END entry-dynamic.exe regex_bracket_icase ==========
+child exit with 256
+
+Ready To Run Test-93 regex_ere_backref
+========== START entry-dynamic.exe regex_ere_backref ==========
+Pass!
+========== END entry-dynamic.exe regex_ere_backref ==========
+child exit with 256
+
+Ready To Run Test-94 regex_escaped_high_byte
+========== START entry-dynamic.exe regex_escaped_high_byte ==========
+Pass!
+========== END entry-dynamic.exe regex_escaped_high_byte ==========
+child exit with 256
+
+Ready To Run Test-95 regex_negated_range
+========== START entry-dynamic.exe regex_negated_range ==========
+Pass!
+========== END entry-dynamic.exe regex_negated_range ==========
+child exit with 256
+
+Ready To Run Test-96 regexec_nosub
+========== START entry-dynamic.exe regexec_nosub ==========
+Pass!
+========== END entry-dynamic.exe regexec_nosub ==========
+child exit with 256
+
+Ready To Run Test-97 rewind_clear_error
+========== START entry-dynamic.exe rewind_clear_error ==========
+Pass!
+========== END entry-dynamic.exe rewind_clear_error ==========
+child exit with 256
+
+Ready To Run Test-98 rlimit_open_files
+========== START entry-dynamic.exe rlimit_open_files ==========
+Pass!
+========== END entry-dynamic.exe rlimit_open_files ==========
+child exit with 256
+
+Ready To Run Test-99 scanf_bytes_consumed
+========== START entry-dynamic.exe scanf_bytes_consumed ==========
+Pass!
+========== END entry-dynamic.exe scanf_bytes_consumed ==========
+child exit with 256
+
+Ready To Run Test-100 scanf_match_literal_eof
+========== START entry-dynamic.exe scanf_match_literal_eof ==========
+Pass!
+========== END entry-dynamic.exe scanf_match_literal_eof ==========
+child exit with 256
+
+Ready To Run Test-101 scanf_nullbyte_char
+========== START entry-dynamic.exe scanf_nullbyte_char ==========
+Pass!
+========== END entry-dynamic.exe scanf_nullbyte_char ==========
+child exit with 256
+
+Ready To Run Test-102 setvbuf_unget
+========== START entry-dynamic.exe setvbuf_unget ==========
+Pass!
+========== END entry-dynamic.exe setvbuf_unget ==========
+child exit with 256
+
+Ready To Run Test-103 sigprocmask_internal
+========== START entry-dynamic.exe sigprocmask_internal ==========
+Pass!
+========== END entry-dynamic.exe sigprocmask_internal ==========
+child exit with 256
+
+Ready To Run Test-104 sscanf_eof
+========== START entry-dynamic.exe sscanf_eof ==========
+Pass!
+========== END entry-dynamic.exe sscanf_eof ==========
+child exit with 256
+
+Ready To Run Test-105 statvfs
+========== START entry-dynamic.exe statvfs ==========
+Pass!
+========== END entry-dynamic.exe statvfs ==========
+child exit with 256
+
+Ready To Run Test-106 strverscmp
+========== START entry-dynamic.exe strverscmp ==========
+Pass!
+========== END entry-dynamic.exe strverscmp ==========
+child exit with 256
+
+Ready To Run Test-107 syscall_sign_extend
+========== START entry-dynamic.exe syscall_sign_extend ==========
+Pass!
+========== END entry-dynamic.exe syscall_sign_extend ==========
+child exit with 256
+
+Ready To Run Test-108 tls_get_new_dtv
+========== START entry-dynamic.exe tls_get_new_dtv ==========
+Pass!
+========== END entry-dynamic.exe tls_get_new_dtv ==========
+child exit with 256
+
+Ready To Run Test-109 uselocale_0
+========== START entry-dynamic.exe uselocale_0 ==========
+Pass!
+========== END entry-dynamic.exe uselocale_0 ==========
+child exit with 256
+
+Ready To Run Test-110 wcsncpy_read_overflow
+========== START entry-dynamic.exe wcsncpy_read_overflow ==========
+Pass!
+========== END entry-dynamic.exe wcsncpy_read_overflow ==========
+child exit with 256
+
+Ready To Run Test-111 wcsstr_false_negative
+========== START entry-dynamic.exe wcsstr_false_negative ==========
+Pass!
+========== END entry-dynamic.exe wcsstr_false_negative ==========
+child exit with 256
+page usage: 0% ( 21 used | 2768 total )
+
+[32;1mALL TEST DONE![0m
+QEMU: Terminated
+

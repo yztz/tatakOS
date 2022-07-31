@@ -470,9 +470,14 @@ uint64 sys_fcntl(void) {
     if(cmd == F_SETFD) {
         fdtbl_setflags(p->fdtable, arg);
         return 0;
+    } else if(cmd == O_NONBLOCK) {
+        return 0;
     }
 
-    return 1;
+
+
+
+    return -1;
 
 }
 
@@ -627,7 +632,7 @@ uint64 sys_mmap(void) {
 
     fp = fdtbl_getfile(p->fdtable, fd);
 
-    // debug("MMAP addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
+    debug("MMAP addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
     if(flags & MAP_SHARED) {
         panic("ns");
     }

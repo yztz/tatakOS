@@ -1,7 +1,7 @@
 
 .section .text.entry
 .global _entry
-#a1=dtb  a0=hartid
+# a1=dtb  a0=hartid
 _entry: 
 	# set up a stack for C.
         # stack0 is declared in start.c,

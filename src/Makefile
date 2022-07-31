@@ -9,6 +9,7 @@ obj-y+=driver/
 obj-y+=fs/
 obj-y+=kernel/
 obj-y+=mm/
+obj-y+=net/
 obj-y+=platform/
 obj-y+=atomic/
 obj-y+=tests/
