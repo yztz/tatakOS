@@ -8,6 +8,7 @@ obj-y += page.o
 obj-y += page-writeback.o
 obj-y += pdflush.o
 obj-y += slob.o
+obj-y += swap.o
 obj-y += trapframe.o
 obj-y += vm.o
 obj-y += vma.o

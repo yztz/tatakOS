@@ -12,6 +12,7 @@
 // #include "mm/mm.h"
 
 #include "fs/mpage.h"
+#include "swap.h"
 /**
  * @brief 定义了关于file map相关的函数，函数声明在fs.h
  *
@@ -43,8 +44,6 @@ void remove_from_page_cache(page_t *page)
 	spin_unlock(&mapping->tree_lock);
 }
 
-
-
 uint64 find_page(struct address_space *mapping, unsigned long offset){
   uint64 pa = 0;
 
@@ -64,8 +63,8 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
   pa = find_page(mapping, offset);
   // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
-  // if (pa)
-    // get_page(pa);
+  if (pa)
+    ref_page(pa);
   return pa;
 }
 
@@ -185,7 +184,8 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
         void *pa = (node->slots[i]);
         // /* 是释放一整个物理页吗？ */
         // printf(bl("walk free pa: %p\n"), pa);
-        kfree(pa);
+        // kfree(pa);
+        put_page(PATOPAGE(pa));
         // printf("pa: %p\n", pa);
         // print_buddy(); 
       }
@@ -284,6 +284,8 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       // if(user == 1)
         // for(;;);
       pa = (uint64)kalloc();
+
+      ref_page(pa);
       // printf(ylw("pa: %p\n"), pa);
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
@@ -295,10 +297,13 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       // for(;;);
       // printf(ylw("pa: %p\n"), pa);
 
+      /* 添加到page cache */
       add_to_page_cache(pa, mapping, index);
+      /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
+      lru_cache_add(&pages[PAGE2NUM(pa)]);
     }
 
-    // mark_page_accessed(&pages[PAGE2NUM(pa)]);
+    mark_page_accessed(&pages[PAGE2NUM(pa)]);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min(rest, PGSIZE - pgoff);
     /* 文件最后一页 */
@@ -307,10 +312,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
 
-
-    #ifdef TODO
-    todo("put page?");
-    #endif
+    deref_page(pa);
 
     cur_off += len;
     buff += len;
@@ -351,9 +353,10 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       if(!(pg_off == 0 && rest >= PGSIZE))
         readpage(mapping->host, pa, pg_id);
       add_to_page_cache(pa, mapping, pg_id);
+      lru_cache_add(&pages[PAGE2NUM(pa)]);
     }
 
-    // mark_page_accessed(&pages[PAGE2NUM(pa)]);
+    mark_page_accessed(&pages[PAGE2NUM(pa)]);
     /* 函数位置有待商榷 */
     lock_page(pa);
 

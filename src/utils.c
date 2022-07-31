@@ -196,3 +196,46 @@ void print_argv(char **argv){
     i++;
   }
 }
+
+/**
+ * 打印页信息
+ */
+void print_page_info(page_t *page){
+  printf("refcnt: %d\tpgnum: %d\taddr: 0x%x\tflags: 0x%x\tpg_pointer: 0x%x\n", 
+  page->refcnt, page-pages, NUM2PAGE(page-pages), page->flags, page);
+}
+
+/**
+ * @brief 打印出从kernel end的位置开始，非空闲的页(buddy管理的页），用来检测内存泄漏。
+ * 
+ */
+extern char end[];
+void print_not_freed_pages() {
+  // int pgnum;
+  // uint64_t p;
+
+  printf(rd("pages not be freed:\n"));
+  // for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
+    // pgnum = PAGE2NUM(p);
+    // if(pages[pgnum].refcnt > 0)
+      // printf("pgnum: %d\taddr: %p\n", pgnum, p);
+  // }
+  for(int i = 0; i < PAGE_NUMS; i++){
+    if(pages[i].refcnt)
+      print_page_info(&pages[i]);
+  }
+}
+
+void print_zone_list(list_head_t *head){
+  page_t *page;
+  list_for_each_entry(page, head, lru){
+    print_page_info(page);
+  }
+}
+
+void print_zone_list_info(zone_t *zone){
+  printf(grn("nr_inactive: %d\n"), zone->nr_inactive);
+  print_zone_list(&zone->inactive_list);
+  printf(grn("nr_active %d\n"), zone->nr_active);
+  print_zone_list(&zone->active_list);
+}

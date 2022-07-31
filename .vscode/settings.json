@@ -1,7 +1,7 @@
 {
     "files.associations": {
-        "Makefile.*": "makefile",
         "*.xdc": "tcl",
+        "Makefile.*": "makefile",
         "sbi.h": "c",
         "riscv.h": "c",
         "types.h": "c",
@@ -115,7 +115,12 @@
         "errno.h": "c",
         "test.h": "c",
         "initcode_bin.h": "c",
-        "mpage.h": "c"
+        "mpage.h": "c",
+        "pagevec.h": "c",
+        "atomic": "c",
+        "bit": "c",
+        "system_error": "c",
+        "freelist.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "todohighlight.keywords": [

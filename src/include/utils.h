@@ -55,6 +55,7 @@ static inline uint32_t get_gpio_bit(volatile uint32_t *bits, size_t offset)
 
 struct dir_item;
 struct proc;
+struct zone;
 
 void backtrace(struct proc *p);
 void print_sbiret(sbiret_t ret);
@@ -70,6 +71,7 @@ void print_bio_vec(struct bio *);
 void print_page_contents(char* pa);
 void __attribute__((noreturn)) error(char *info, char *s, const char *s1, int d);
 void print_argv(char **argv);
+void print_zone_list_info(struct zone *zone);
 
 #define todo(str)  TD(str, __FILE__, __func__, __LINE__)
 #define get_order(x) luaO_log2(x)

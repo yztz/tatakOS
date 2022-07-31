@@ -11,5 +11,6 @@ void *kzalloc(size_t size);
 void *kmalloc(size_t size);
 
 #define kfree_safe(pp) _kfree_safe((void **)(pp))
+void free_one_page(page_t *page);
 
 #endif

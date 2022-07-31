@@ -9,7 +9,8 @@
 #define PG_dirty	 	 4
 #define PG_lru			 5
 #define PG_active		 6
-#define PG_slab			 7	/* slab debug (Suparna wants this)用作slob */
+#define PG_slab			 7	/* slab debug (Suparna wants this) 用作slob */
+
 #define PG_writeback		13	/* Page is under writeback */
 #define PG_chainlock		15	/* lock bit for ->pte_chain */
 #define PG_direct		16	/* ->pte_chain points directly at pte */

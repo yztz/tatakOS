@@ -32,7 +32,6 @@ void kinit(void) {
     // freelist_freerange(freelist_start, freelist_end);
 }
 
-
 void *kmalloc(size_t size) {
     void *ret = NULL;
     if(size < PGSIZE) { // Smaller, we use slob
@@ -87,6 +86,10 @@ void _kfree_safe(void **paddr) {
         kfree(*paddr);
         *paddr = NULL;
     }
+}
+
+void free_one_page(page_t *page){
+    buddy_free_one_page(page);
 }
 
 

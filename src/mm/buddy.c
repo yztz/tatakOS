@@ -161,6 +161,10 @@ void *buddy_alloc(size_t size) {
   return (void *) b;
 }
 
+extern zone_t memory_zone;
+/**
+ * 释放一个页
+ */
 void buddy_free(void *pa) {
   int pgnum, ppgnum;
   page_t *page, *ppage;
@@ -176,6 +180,87 @@ void buddy_free(void *pa) {
     return;
 
   page = &pages[pgnum];
+
+  /* 不应该放在这里 */
+  // if(!list_is_head(&page->lru, &page->lru))
+    // del_page_from_lru(&memory_zone, page);
+  /* 回收page时清除其状态 */
+  reset_page(page);
+
+  if(page->alloc == 0) {
+    print_page(pgnum);
+    panic("buddy_free: page not allocated");
+  }
+  b = (buddy_t *) pa;
+  // release
+  page->alloc = 0;
+  atomic_add(&used, -(1 << page->order));
+
+  // insert back
+  acquire(&lists[page->order].lock);
+  insert(page->order, b);
+
+  ppgnum = PARTNER_NO(pgnum, page->order);
+  ppage = &pages[ppgnum];
+  // 尝试合并
+  while(page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
+    int order;
+    // remove from list
+    remove((buddy_t *)NUM2PAGE(pgnum));
+    remove((buddy_t *)NUM2PAGE(ppgnum));
+    order = page->order;
+    page->order = INVAIL_ORDER;
+    ppage->order = INVAIL_ORDER;
+    release(&lists[order].lock);
+    
+    acquire(&lists[order + 1].lock);
+    pgnum = MERGE_NO(pgnum, order);
+    page = &pages[pgnum];
+    page->order = order + 1;
+    b = (buddy_t *) NUM2PAGE(pgnum);
+
+    insert(page->order, b);
+
+    ppgnum = PARTNER_NO(pgnum, page->order);
+    ppage = &pages[ppgnum];
+  }
+  release(&lists[page->order].lock);
+}
+
+struct _page_t;
+/**
+ * 当page->refcnt为0时调用，释放一个页，buddy_free的改版
+ */
+void buddy_free_one_page(struct _page_t *page){
+  int pgnum, ppgnum;
+  page_t *ppage;
+  buddy_t *b;
+  uint64_t pa;
+
+  // pgnum = PAGE2NUM(pa);
+  pgnum = page - pages; 
+  pa = (uint64_t)NUM2PAGE(pgnum);
+
+  if(pgnum >= PAGE_NUMS) {
+    panic("buddy_free: out of range");
+  }
+
+  /**
+   * page->refcnt为0才会调用free函数free掉页
+   */
+  if(page->refcnt != 0)
+    ER();
+
+  // if(deref_page((uint64_t)pa) > 0)
+    // return;
+
+  // page = &pages[pgnum];
+
+  /* 不应该放在这里 */
+  // if(!list_is_head(&page->lru, &page->lru))
+    // del_page_from_lru(&memory_zone, page);
+  /* 回收page时清除其状态 */
+  reset_page(page);
 
   if(page->alloc == 0) {
     print_page(pgnum);

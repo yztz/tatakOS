@@ -14,9 +14,18 @@
 #include "atomic/sleeplock.h"
 #include "utils.h"
 #include "page-flags.h"
+#include "list.h"
 
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
+
+void reset_page(page_t *page){
+  page->flags = 0;
+  INIT_LIST_HEAD(&page->lru);
+  page->pte.direct = 0;
+  page->mapping = 0;
+  page->index = 0;
+}
 
 void page_init(void) {
   initlock(&reflock, "reflock");
@@ -24,8 +33,12 @@ void page_init(void) {
     pages[i].refcnt = 1;
     pages[i].order = 0;
     pages[i].alloc = 1;
-    // pages[i].sleeplock = NULL;
-    pages[i].flags = 0;
+    reset_page(&pages[i]);
+    // pages[i].flags = 0;
+    // INIT_LIST_HEAD(&pages[i].lru);
+    // pages[i].pte.direct = 0;
+    // pages[i].mapping = 0;
+    // pages[i].index = 0;
   }
 }
 
@@ -173,29 +186,28 @@ pgref_t get_page(page_t *page){
 }
 
 /**
- * @brief 引用减1，返回值
+ * @brief refcnt减1，返回最终的refcnt，如果refcnt为0，从
  * 
  */
 pgref_t put_page(page_t *page){
   pgref_t ret;
 
-  if(page->refcnt > 1){
-    acquire(&reflock);
-    ret = --page->refcnt;
-    release(&reflock);
-    return ret;
-  }
-  else if(page->refcnt == 1){
-    /* kfree 里面调用buddyfree，会调用deref_page */
-    kfree(NUM2PAGE(page - pages));
-    return 0;
-  } else{
-    /* refcnnt为0的应该在buddy中 */
+  if(page->refcnt <= 0)
     ER();
+  acquire(&reflock);
+  ret = --page->refcnt;
+  release(&reflock);
+  if(ret == 0){
+    zone_t *zone = &memory_zone;
+    spin_lock(&zone->lru_lock);
+    if(TestClearPageLRU(page))
+      del_page_from_lru(zone, page);
+    spin_unlock(&zone->lru_lock);
+    free_one_page(page);
   }
+  return ret; 
+
 }
-
-
 
 /* lock a page, if it's lock is null, allocate for it */
 void lock_page(uint64_t pa){
@@ -249,21 +261,4 @@ int page_is_dirty(uint64_t pa){
 void unlock_put_page(uint64_t pa){
   // unlock_page(pa);
   deref_page(pa);
-}
-
-/**
- * @brief 打印出从kernel end的位置开始，非空闲的页(buddy管理的页），用来检测内存泄漏。
- * 
- */
-extern char end[];
-void print_not_freed_pages() {
-  int pgnum;
-  uint64_t p;
-
-  printf(rd("pages be refered:\n"));
-  for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
-    pgnum = PAGE2NUM(p);
-    if(pages[pgnum].refcnt > 0)
-      printf("pgnum: %d\taddr: %p\n", pgnum, p);
-  }
 }

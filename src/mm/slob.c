@@ -33,6 +33,7 @@ static inline void *__alloc_one_page() {
 
 static inline void __free_one_page(void *addr) {
 	debug("page freed");
+	/* 这里改位put_page，其检测到page refcnt为0自动释放 */
 	buddy_free(addr);
 }
 
