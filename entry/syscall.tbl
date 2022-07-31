@@ -66,4 +66,5 @@
 #############TEST###############
 89     timetag      sys_timetag
 90     bio_cache    sys_bio_cache
+232    philosophy   sys_philosophy
 233    memuse       sys_memuse

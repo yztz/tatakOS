@@ -123,6 +123,7 @@ found:
   p->sig_pending = 0;
   p->sig_mask = 0;
   p->signaling = 0;
+  p->set_tid_addr = 0;
   p->clear_tid_addr = 0;
   p->state = USED;
   INIT_LIST_HEAD(&p->head);
@@ -326,7 +327,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   }
 
   if((flags & CLONE_THREAD)) {
-    debug("new thread statk is %#lx", stack);
+    // debug("new thread statk is %#lx", stack);
     newtg = p->tg;
     tg_join(newtg, np);
   } else {
@@ -343,6 +344,10 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
   if((flags & CLONE_CHILD_CLEARTID)) {
     np->clear_tid_addr = ctid;
+  }
+
+  if((flags & CLONE_CHILD_SETTID)) {
+    panic("not support now");
   }
 
   if((flags & CLONE_PARENT_SETTID)) {
@@ -419,13 +424,15 @@ void exit(int status) {
   proc_t *p = myproc();
   // tg_t *thrdgrp = p->tg;
   // proc_t *mp = tg_main_thrd(thrdgrp);
+  int thrdcnt = tg_quit(p->tg);
 
   if(p == initproc) {
     panic("init exiting");
   }
 
   debug("PID %d EXIT", p->pid);
-  if(IS_MAIN_THREAD(p)) {
+
+  if(thrdcnt == 0) {
     fdtbl_closeall(p->fdtable);
   }
 
@@ -438,7 +445,9 @@ void exit(int status) {
   reparent(p);
 
   // Parent might be sleeping in wait().
-  wakeup(p->parent);
+  if(thrdcnt == 0) {
+    wakeup(p->parent);
+  }
   
   acquire(&p->lock);
 
@@ -562,6 +571,7 @@ void proc_setsig(proc_t *p, signal_t *newsig) {
 }
 
 void proc_settg(proc_t *p, tg_t *tg) {
+  tg_ref(tg);
   p->tg = tg;
 }
 
@@ -631,9 +641,7 @@ forkret(void)
     first = 0;
 
     extern fat32_t *fat;
-    debug("ready to mount\n");
     fat_mount(ROOTDEV, &fat);
-    debug("mount done\n");
     p->cwd = namee(NULL, "/");
     // init dir...
     entry_t *tmp = create(fat->root, "/tmp", T_DIR);
@@ -779,7 +787,6 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    printf("%d %s %s", p->pid, state, p->name);
-    printf("\n");
+    printf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
   }
 }

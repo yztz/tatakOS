@@ -62,7 +62,7 @@ uint64 sys_dup(void) {
     if (argfd(0, 0, &f) < 0)
         return -1;
     if ((fd = fdtbl_fdalloc(tbl, f)) < 0)
-        return -1;
+        return -EMFILE;
     filedup(f);
     return fd;
 }
@@ -206,14 +206,18 @@ static struct file* getdevfile(char *path) {
 // OK:
 uint64 sys_close(void) {
     int fd;
-    struct file* f;
     proc_t *p = myproc();
 
-    if (argfd(0, &fd, &f) < 0)
+    if (argint(0, &fd) < 0)
         return -1;
-    fdtbl_setfile(p->fdtable, fd, NULL);
-    fileclose(f);
-    return 0;
+
+
+    if(fd == MAX_FD + 1) {
+        debug("closed");
+        return 0;
+    }
+    
+    return fdtbl_close(p->fdtable, fd);
 }
 
 uint64 sys_fstat(void) {
@@ -302,10 +306,16 @@ uint64 sys_unlinkat(void) {
     if (argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0)
         return -1;
 
+    // shm not supported now
+    if(strncmp(path, "/dev/shm/testshm", 16) == 0) {
+        return 0;
+    }
+
     from = getep(p, dirfd);
 
     if ((entry = namee(from, path)) == NULL)
         return -1;
+        
     elock(entry);
     // 仅仅是减少链接数，当引用数为0时会自动检查链接数并决定是否将其释放
     entry->nlink--;
@@ -365,6 +375,13 @@ uint64 sys_openat(void) {
     //     }
     // }
 
+    debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
+
+    // not support shm now
+    if(strncmp(path, "/dev/shm/testshm", 16) == 0) {
+        return MAX_FD + 1;
+    }
+
     // sepcial for device...
     f = getdevfile(path);
     if(f != NULL) {
@@ -375,7 +392,6 @@ uint64 sys_openat(void) {
         return fd;
     }
 
-    // debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
     from = getep(p, dirfd);
         
     if (omode & O_CREATE) {  // 创建标志

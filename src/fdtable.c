@@ -1,4 +1,3 @@
-/* Warning! No Lock Save Currently */
 #include "fdtable.h"
 #include "mm/alloc.h"
 
@@ -6,8 +5,11 @@
 #include "debug.h"
 
 
+/* 我们需要在fdtable中添加相关文件操作的接口吗？（打开/关闭） */
+
+// lock hold
 static int fdrealloc(fdtable_t *self, int nfd) {
-    if(nfd > MAX_FD || nfd < NOFILE) 
+    if(nfd > self->maxfd || nfd < NOFILE) 
         return -1;
     if(nfd == NOFILE)
       return 0;
@@ -47,59 +49,96 @@ fdtable_t *fdtbl_new() {
         return NULL;
     initlock(&self->fdlock, "fdlock");
     self->nfd = NOFILE;
+    self->maxfd = MAX_FD;
     return self;
 }
 
-file_t *fdtbl_getfile(fdtable_t *self, int fd) {
+static file_t **__fdtbl_getfile(fdtable_t *self, int fd) {
     if(fd < 0 || fd >= self->nfd)
         return NULL;
     // debug("nfd is %d fd is %d ext_ofile is %#x", p->nfd, fd, p->ext_ofile);
     if(fd < NOFILE) 
-        return self->ofile[fd];
+        return &self->ofile[fd];
     else 
-        return self->ext_ofile[fd - NOFILE];
+        return &self->ext_ofile[fd - NOFILE];
+}
+
+file_t *fdtbl_getfile(fdtable_t *self, int fd) {
+    file_t *f;
+
+    acquire(&self->fdlock);
+    file_t **pf = __fdtbl_getfile(self, fd);
+    f = pf ? *pf : NULL;
+    release(&self->fdlock);
+
+    return f;
 }
 
 int fdtbl_setfile(fdtable_t *self, int fd, file_t *file) {
     if(fd < 0)
         return -1;
-    if(fd >= self->nfd && fdrealloc(self, self->nfd + 10) < 0) {
+    acquire(&self->fdlock);
+    if(fd >= self->nfd && fdrealloc(self, min(self->nfd + 10, self->maxfd)) < 0) {
+        release(&self->fdlock);
         return -1;
     }
     if(fd < NOFILE)
         self->ofile[fd] = file;
     else 
         self->ext_ofile[fd - NOFILE] = file;
+    release(&self->fdlock);
+    return 0;
+}
+
+int fdtbl_setmaxfd(fdtable_t *self, int max) {
+    acquire(&self->fdlock);
+    if(max < self->nfd) {
+        release(&self->fdlock);
+        return -1;
+    }
+    self->maxfd = max;
+    release(&self->fdlock);
     return 0;
 }
 
 
 int fdtbl_fdalloc(fdtable_t *self, file_t* file) {
     int fd;
-
+    acquire(&self->fdlock);
     for (fd = 0; fd < NOFILE; fd++) {
         if (self->ofile[fd] == 0) {
             self->ofile[fd] = file;
-            return fd;
+            goto found;
         }
     }
+
     for (fd = 0; fd < self->nfd - NOFILE; fd++) {
         if (self->ext_ofile[fd] == 0) {
             self->ext_ofile[fd] = file;
-            return fd + NOFILE;
+            fd += NOFILE;
+            goto found;
         }
     }
     
-    if(self->nfd == MAX_FD || fdrealloc(self, self->nfd + 10) < 0)
-        return -1;
+    if(self->nfd == self->maxfd || fdrealloc(self, min(self->nfd + 10, self->maxfd)) < 0) {
+        goto error;
+    }
 
     for (; fd < self->nfd - NOFILE; fd++) {
         if (self->ext_ofile[fd] == 0) {
             self->ext_ofile[fd] = file;
-            return fd + NOFILE;
+            fd += NOFILE;
+            goto found;
         }
     }
     panic("unreached");
+
+  found:
+    release(&self->fdlock);
+    return fd;
+  error:
+    release(&self->fdlock);
+    return -1;
 }
 
 void fdtbl_print(fdtable_t *self) {
@@ -110,15 +149,38 @@ void fdtbl_print(fdtable_t *self) {
     printf("all: %d\n", self->nfd);
 }
 
+// lock hold
+static int __fdtbl_close(fdtable_t *self, int fd) {
+    file_t **f = __fdtbl_getfile(self, fd);
+    if(f && *f) {
+        file_t *pf = *f;
+        *f = NULL;
+        
+        release(&self->fdlock);
+        fileclose(pf);
+        acquire(&self->fdlock);
+
+        return 0;
+    }
+    return -1;
+}
 
 void fdtbl_closeall(fdtable_t *self) {
-    // 处于性能考虑，并没有将对应的指针为置NULL！
-    for(int fd = 0; fd < self->nfd; fd++){
-        file_t *f;
-        if((f = fdtbl_getfile(self, fd)) != NULL){
-            fileclose(f);
-        }
-    }
+    acquire(&self->fdlock);
+
+    for(int fd = 0; fd < self->nfd; fd++)
+        __fdtbl_close(self, fd);
+
+    release(&self->fdlock);
+}
+
+
+int fdtbl_close(fdtable_t *self, int fd) {
+    int ans;
+    acquire(&self->fdlock);
+    ans = __fdtbl_close(self, fd);
+    release(&self->fdlock);
+    return ans;
 }
 
 void fdtbl_free(fdtable_t **pself) {
@@ -165,7 +227,9 @@ fdtable_t *fdtbl_clone(fdtable_t *self) {
 }       
 
 void fdtbl_setflags(fdtable_t *self, int flags) {
+    acquire(&self->fdlock);
     self->fdflags |= flags;
+    release(&self->fdlock);
 }
 
 int fdtbl_getflags(fdtable_t *self) {

@@ -24,11 +24,12 @@ static inline void clear_bss() {
 }
 
 extern void scavenger_routine();
+extern char *logo;
 
 void main() {
   if(cpuid() == 0){
     clear_bss();
-    printf("\nOS TATAKAI!\n\n");
+    printf("\n%s\n", logo);
     platform_early_init();
     /* PRCO && CPU */
     procinit();      // process table

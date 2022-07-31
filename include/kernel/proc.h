@@ -115,6 +115,7 @@ struct proc {
 
   list_head_t head; // for thread group
 
+  uint64_t set_tid_addr;
   uint64_t clear_tid_addr;
 
   struct fat_entry *cwd;           // Current directory

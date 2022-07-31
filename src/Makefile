@@ -22,6 +22,7 @@ obj-y += riscv.o
 obj-y += profile.o
 obj-y += device.o
 obj-y += misc.o
+obj-y += logo.o
 
 
 

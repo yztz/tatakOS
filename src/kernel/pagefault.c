@@ -96,7 +96,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
 
                 if(newpage == 0) {
-                    debug("map fault");
+                    debug("no mem");
                     return -1;
                 }
                 // load file content

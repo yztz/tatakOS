@@ -28,7 +28,9 @@ int main() {
     run("run-static.sh", "entry-static.exe");
     run("run-dynamic.sh", "entry-dynamic.exe");
     memuse(); 
-    printf("ALL TEST DONE!\n");
+    // philosophy();
+    printf("\n\e[32;1mALL TEST DONE!\e[0m\n");
+
     for(;;);
     return 0;
 }
@@ -68,8 +70,8 @@ void run(char *casename, char *entryname) {
     i++;
     // filters //
     if(!COND) continue;
-    if(strncmp(proc_name, "pthread_cancel_points", 21) == 0) continue;
-    if(strncmp(proc_name, "pthread_cond_smasher", 20) == 0) continue;
+    // if(strncmp(proc_name, "pthread_cancel_points", 21) == 0) continue;
+    // if(strncmp(proc_name, "pthread_cond_smasher", 20) == 0) continue;
     // if(strncmp(proc_name, "sem_init", 8) == 0) continue;
     // if(strncmp(proc_name, "tls_init", 8) == 0) continue;
     // if(strncmp(proc_name, "tls_get_new_dtv", 15) == 0) continue;

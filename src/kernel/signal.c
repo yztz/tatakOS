@@ -280,7 +280,7 @@ uint64_t sys_rt_sigaction(void) {
     if(copy_from_user(&act, act_addr, sizeof(sigaction_t)) < 0)
         return -1;
 
-    debug("register for pid %d signum is %d flags is %#lx", p->pid, signum, act.flags);
+    // debug("register for pid %d signum is %d flags is %#lx", p->pid, signum, act.flags);
 
     sig_setaction(p->signal, signum, &act, &oldact);
 

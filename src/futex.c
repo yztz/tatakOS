@@ -4,6 +4,7 @@
 #include "mm/vm.h"
 #include "defs.h"
 
+#define QUIET
 #define __MODULE_NAME__ FUTEX
 #include "debug.h"
 
@@ -37,17 +38,19 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
         if(p->futex_chan == 0) {
             res = 0;
             break;
+        } else if(time == NULL) {
+            panic("bad wake up");
         }
         // only time intr
         wake_time = TICK2TIMESPEC(ticks);
         // printf("current time:\n");
         // time_print(&wake_time);
         uint64_t ds = wake_time.tv_sec - cur_time.tv_sec;
-        uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
-        if(ds > time->tv_sec) {
+        // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
+        // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {
+        if(ds > 2) { // FIXME: 超时时间不准确可能导致错误的超时行为
+            debug("PID %d futex timeout", p->pid);
             break;
-        } else if(ds == time->tv_sec) {
-            if(dus > time->tv_nsec) break;
         }
     } while(1);
 
@@ -63,32 +66,39 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
 }
 
 int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim) {
+    proc_t *me = myproc();
     struct proc *p;
     int i = 0;
+    debug("PID %d start wake %#lx", me->pid, chan);
     for(p = proc; p < &proc[NPROC] && i < n; p++) {
-        if(p != myproc()) {
+        if(p != me) {
             acquire(&p->lock);
-            if(p->state == SLEEPING && p->futex_chan == chan) {
+            // if(p->state == SLEEPING && p->futex_chan == chan) {
+            if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
                 p->futex_chan = 0;
                 p->state = RUNNABLE;
                 i++;
+                debug("PID %d woken", p->pid);
             }
             release(&p->lock);
         }
     }
+    debug("PID %d wake end", me->pid);
     if(requeue) {
+        debug("PID %d start requeue", me->pid);
         int num = 0;
-        for(; p < &proc[NPROC] && num < requeue_lim; p++) {
+        for(p = proc; p < &proc[NPROC] && num < requeue_lim; p++) {
             if(p != myproc()) {
                 acquire(&p->lock);
-                if(p->state == SLEEPING && p->futex_chan == chan) {
+                if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
                     p->futex_chan = newaddr;
                     num++;
+                    debug("PID %d requeued to %#lx", p->pid, newaddr);
                 }
                 release(&p->lock);
             }
         }
-        // debug("requeue %d", num);
+        debug("PID %d requeue end", me->pid);
     }
     
     return i;
@@ -119,10 +129,6 @@ uint64_t sys_futex(void) {
     }
 
     // debug("pid %d op %d val %u", p->pid, op, val);
-
-    
-    
-
     if((op & 0xf) == FUTEX_WAIT) {
         uint64_t res;
         // debug("cntval is %d val is %d", cntval, val);
@@ -139,7 +145,9 @@ uint64_t sys_futex(void) {
             return -1;
         }
         if(cntval == val) {
+            debug("PID %d sleep on %#lx timeout: %#lx", p->pid, addr, tm_addr);
             res = futex_sleep((void *)addr, &p->tg->lock, tm_addr ? &tm : NULL);
+            // res = futex_sleep((void *)addr, &p->tg->lock, NULL);
         }
         release(&p->tg->lock);
         // debug("res is %ld", -res);

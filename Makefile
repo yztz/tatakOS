@@ -5,7 +5,7 @@ MAKEFLAGS += --no-print-directory
 # CPU NUMS(qemu)
 CPUS ?= 4
 # platform [qemu|k210]
-platform ?= k210
+platform ?= qemu
 # debug [on|off]
 debug ?= off
 # serial-port
@@ -64,16 +64,19 @@ export LDFLAGS CFLAGS
 
 #============================QEMU==================================#
 QEMU = qemu-system-riscv64
-QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 24M -smp $(CPUS) -nographic
+QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 17M -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
+# all: kernel
+# 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
+# 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
+# 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
+# 	mv $(BUILD_ROOT)/k210.bin os.bin
 all: kernel
-	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
-	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
-	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
-	mv $(BUILD_ROOT)/k210.bin os.bin
+	cp $(BUILD_ROOT)/kernel kernel-qemu
+	cp bootloader/sbi-qemu sbi-qemu
 
 run: kernel
 ifeq ("$(platform)", "k210") # k210
@@ -126,6 +129,8 @@ clean:
 	-@rm -rf $(SCRIPT)/mkfs
 	-@rm -rf $(GEN_HEADER_DIR)
 	-@rm -rf os.bin
+	-@rm -rf sbi-qemu
+	-@rm -rf kernel-qemu
 	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 

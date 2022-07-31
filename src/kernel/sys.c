@@ -60,31 +60,49 @@ uint64_t sys_prlimit64(void) {
     return -1;
   }
 
-  if(res != RLIMIT_STACK) {
+  if(res == RLIMIT_STACK) {
+    if(oldrl) {
+      rl.rlim_cur = p->mm->ustack->len;
+      rl.rlim_max = 30 * PGSIZE;
+      if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
+        return -1;
+      }
+    }
+
+    if(newrl) {
+      if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
+        return -1;
+      if(mmap_ext_stack(p->mm, rl.rlim_cur) < 0) 
+        return -1;
+    }
+  } else if(res == RLIMIT_NOFILE) {
+    if(oldrl) {
+      rl.rlim_cur = p->fdtable->maxfd;
+      rl.rlim_max = p->fdtable->maxfd;
+      if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
+        return -1;
+      }
+    }
+
+    if(newrl) {
+      if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
+        return -1;
+      
+      return fdtbl_setmaxfd(p->fdtable, rl.rlim_cur);
+    }
+  } else {
     debug("ukres %d", res);
     return -1;
   }
     
-
-  if(oldrl) {
-    rl.rlim_cur = p->mm->ustack->len;
-    rl.rlim_max = 30 * PGSIZE;
-    if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
-      return -1;
-    }
-  }
-  
-
-  if(newrl) {
-    if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
-      return -1;
-    if(mmap_ext_stack(p->mm, rl.rlim_cur) < 0) 
-      return -1;
-  }
-  
   return 0;
 }
 
+extern char *philosophy;
+uint64_t sys_philosophy(void) {
+  printf("\n%s\n", philosophy);
+  return 0;
+}
 
 uint64_t sys_memuse(void) {
   buddy_print_free();

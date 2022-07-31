@@ -10,6 +10,7 @@ struct proc;
 
 typedef struct tg {
     int ref;
+    int thrdcnt;
     spinlock_t lock;
     int master_pid;
     list_head_t member;
@@ -17,10 +18,11 @@ typedef struct tg {
 
 tg_t *tg_new(struct proc *p) ;
 void tg_free(tg_t **pself);
-// void tg_ref(tg_t *self);
+void tg_ref(tg_t *self);
 // void tg_deref(tg_t *self);
 void tg_join(tg_t *self, struct proc *p);
 struct proc *tg_main_thrd(tg_t *self);
-
+int tg_thrd_cnt(tg_t *self);
+int tg_quit(tg_t *self);
 
 #endif

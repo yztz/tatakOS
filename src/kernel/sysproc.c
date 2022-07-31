@@ -45,11 +45,16 @@ sys_fork(void)
 uint64
 sys_set_tid_address(void)
 {
-  uint64 tid;
-  if(argaddr(0, &tid) < 0) {
+  proc_t *p = myproc();
+  uint64 tidaddr;
+
+  if(argaddr(0, &tidaddr) < 0) {
     return -1;
   }
-  return tid;
+
+  p->clear_tid_addr = tidaddr;
+
+  return p->pid;
 }
 
 
@@ -81,7 +86,7 @@ sys_clone(void)
   if(argint(0, &flags) < 0 || argaddr(1, &stack) < 0 || 
     argaddr(2, &ptid) < 0 || argaddr(3, &tls) < 0 || argaddr(4, &ctid) < 0)
       return -1;
-  debug("clone: flags is %x ctid is %#lx", flags, ctid);
+  debug("clone: flags %x", flags);
   return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 

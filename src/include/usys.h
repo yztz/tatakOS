@@ -28,5 +28,6 @@ int uptime(void);
 int ktest(void);
 uint64 timetag(void);
 int memuse(void);
+int philosophy(void);
 
 #endif

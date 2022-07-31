@@ -12,6 +12,7 @@ struct fdtable {
   file_t **ext_ofile;
   int fdflags;
   int nfd;
+  int maxfd;
 };
 
 typedef struct fdtable fdtable_t;
@@ -25,6 +26,8 @@ fdtable_t *fdtbl_clone(fdtable_t *self);
 void fdtbl_free(fdtable_t **pself);
 void fdtbl_setflags(fdtable_t *self, int flags);
 int fdtbl_getflags(fdtable_t *self);
+int fdtbl_setmaxfd(fdtable_t *self, int max);
+int fdtbl_close(fdtable_t *self, int fd);
 
 void fdtbl_ref(fdtable_t *self);
 void fdtbl_deref(fdtable_t *self);

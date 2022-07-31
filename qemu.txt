@@ -1,60 +1,6 @@
-GEN		syscall
 
-[37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/qemu/include  -DQEMU -DCPUS=1 -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
+[37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/qemu/include  -DQEMU -DCPUS=2 -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
 
-CC		plic.c
-CC		timer.c
-CC		bio.c
-CC		file.c
-CC		fs.c
-CC		fat32.c
-CC		pipe.c
-CC		entry.S
-CC		kernelvec.S
-CC		swtch.S
-CC		uservec.S
-CC		console.c
-CC		nulldev.c
-CC		zerodev.c
-CC		exec.c
-GEN		init_code
-CC		proc.c
-CC		scavenger.c
-CC		signal.c
-CC		syscall.c
-CC		sysfile.c
-CC		sysproc.c
-CC		sys.c
-CC		thread_group.c
-CC		trap.c
-CC		pagefault.c
-CC		vm.c
-CC		io.c
-CC		copy.c
-CC		page.c
-CC		buddy.c
-CC		alloc.c
-CC		mmap.c
-CC		trapframe.c
-CC		slob.c
-CC		vma.c
-CC		virtio_disk.c
-CC		qemu.c
-CC		sleeplock.c
-CC		spinlock.c
-CC		mmtest.c
-CC		printf.c
-CC		string.c
-CC		panic.c
-CC		utils.c
-CC		main.c
-CC		riscv.c
-CC		profile.c
-CC		device.c
-CC		misc.c
-CC		futex.c
-CC		fdtable.c
-LD		kernel
 
 [32;1mKERNEL BUILD SUCCESSFUL![0m
 
@@ -62,7 +8,7 @@ LD		kernel
 [32;1mUSER EXE BUILD SUCCESSFUL![0m
 
 mkfs.fat 4.2 (2021-01-31)
-qemu-system-riscv64 -machine virt -bios bootloader/sbi-qemu -kernel /home/yztz/tatakOS/build/kernel -m 24M -smp 1 -nographic -drive file=/home/yztz/tatakOS/build/fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 
+qemu-system-riscv64 -machine virt -bios bootloader/sbi-qemu -kernel /home/yztz/tatakOS/build/kernel -m 17M -smp 2 -nographic -drive file=/home/yztz/tatakOS/build/fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 
 [rustsbi] RustSBI version 0.2.1, adapting to RISC-V SBI v0.3
 .______       __    __      _______.___________.  _______..______   __
 |   _  \     |  |  |  |    /       |           | /       ||   _  \ |  |
@@ -72,7 +18,7 @@ qemu-system-riscv64 -machine virt -bios bootloader/sbi-qemu -kernel /home/yztz/t
 | _| `._____| \______/ |_______/       |__|  |_______/    |______/ |__|
 
 [rustsbi] Implementation: RustSBI-QEMU Version 0.1.0
-[rustsbi-dtb] Hart count: cluster0 with 1 cores
+[rustsbi-dtb] Hart count: cluster0 with 2 cores
 [rustsbi] misa: RV64ACDFIMSU
 [rustsbi] mideleg: ssoft, stimer, sext (0x222)
 [rustsbi] medeleg: ima, ia, bkpt, la, sa, uecall, ipage, lpage, spage (0xb1ab)
@@ -82,18 +28,17 @@ qemu-system-riscv64 -machine virt -bios bootloader/sbi-qemu -kernel /home/yztz/t
 [rustsbi] pmp3: 0x80000000 ..= 0x8fffffff (rwx)
 [rustsbi] enter supervisor 0x80200000
 
-.bss 0x8021f000-0x8042e000 (0x20f000) cleared
+.bss 0x80220000-0x80430000 (0x210000) cleared
 
-OS TATAKAI!
+ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄   ▄ ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ 
+█       █       █       █       █   █ █ █       █  █       █       █
+█▄     ▄█   ▄   █▄     ▄█   ▄   █   █▄█ █   ▄   █  █   ▄   █  ▄▄▄▄▄█
+  █   █ █  █▄█  █ █   █ █  █▄█  █      ▄█  █▄█  █  █  █ █  █ █▄▄▄▄▄ 
+  █   █ █       █ █   █ █       █     █▄█       █  █  █▄█  █▄▄▄▄▄  █
+  █   █ █   ▄   █ █   █ █   ▄   █    ▄  █   ▄   █  █       █▄▄▄▄▄█ █
+  █▄▄▄█ █▄▄█ █▄▄█ █▄▄▄█ █▄▄█ █▄▄█▄▄▄█ █▄█▄▄█ █▄▄█  █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█
 
-page usage: 0% ( 0 used | 978 total )
-start sector   is 32
-fat sectors    is 256
-sec per clus   is 8
-bytes per sec  is 512
-fat table num  is 2
-root cluster   is 2
-page usage: 2% ( 21 used | 978 total )
+page usage: 0% ( 21 used | 2768 total )
 
 Ready To Run Test-1 argv
 ========== START entry-static.exe argv ==========
@@ -185,6 +130,12 @@ Pass!
 ========== END entry-static.exe memstream ==========
 child exit with 256
 
+Ready To Run Test-16 pthread_cancel_points
+========== START entry-static.exe pthread_cancel_points ==========
+Pass!
+========== END entry-static.exe pthread_cancel_points ==========
+child exit with 256
+
 Ready To Run Test-17 pthread_cancel
 ========== START entry-static.exe pthread_cancel ==========
 Pass!
@@ -253,35 +204,35 @@ child exit with 256
 
 Ready To Run Test-28 socket
 ========== START entry-static.exe socket ==========
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
+pid 77 entry-static.exe: unknown sys call 198 sepc 31900
 src/functional/socket.c:20: (s=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 200 sepc 30ec0
+pid 77 entry-static.exe: unknown sys call 200 sepc 30ec0
 src/functional/socket.c:21: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 204 sepc 3104c
+pid 77 entry-static.exe: unknown sys call 204 sepc 3104c
 src/functional/socket.c:22: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 208 sepc 318b0
+pid 77 entry-static.exe: unknown sys call 208 sepc 318b0
 src/functional/socket.c:24: setsockopt(s, 1, 20, &(struct timeval){.tv_usec=1}, sizeof(struct timeval))==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
+pid 77 entry-static.exe: unknown sys call 198 sepc 31900
 src/functional/socket.c:27: (c=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 206 sepc 43aa0
+pid 77 entry-static.exe: unknown sys call 206 sepc 43aa0
 src/functional/socket.c:29: sendto(c, "x", 1, 0, (void *)&sa, sizeof sa)==1 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 207 sepc 43aa0
+pid 77 entry-static.exe: unknown sys call 207 sepc 43aa0
 src/functional/socket.c:30: recvfrom(s, buf, sizeof buf, 0, (void *)&sa, (socklen_t[]){sizeof sa})==1 failed: errno = Operation not permitted
 src/functional/socket.c:31: buf[0]=='x' failed: ' '
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
+pid 77 entry-static.exe: unknown sys call 198 sepc 31900
 src/functional/socket.c:38: (s=socket(2, 1|02000000, 6))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 200 sepc 30ec0
+pid 77 entry-static.exe: unknown sys call 200 sepc 30ec0
 src/functional/socket.c:40: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 204 sepc 3104c
+pid 77 entry-static.exe: unknown sys call 204 sepc 3104c
 src/functional/socket.c:41: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 201 sepc 31814
+pid 77 entry-static.exe: unknown sys call 201 sepc 31814
 src/functional/socket.c:44: listen(s, 1)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
+pid 77 entry-static.exe: unknown sys call 198 sepc 31900
 src/functional/socket.c:46: (c=socket(2, 1|04000, 6))>=0 failed: errno = Operation not permitted
 src/functional/socket.c:47: fcntl(c, F_GETFL)&O_NONBLOCK failed: SOCK_NONBLOCK did not work
-pid 66 entry-static.exe: unknown sys call 203 sepc 43aa0
+pid 77 entry-static.exe: unknown sys call 203 sepc 43aa0
 src/functional/socket.c:49: connect(c, (void *)&sa, sizeof sa)==0 || (*__errno_location())==115 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 202 sepc 43aa0
+pid 77 entry-static.exe: unknown sys call 202 sepc 43aa0
 src/functional/socket.c:51: (t=accept(s, (void *)&sa, &(socklen_t){sizeof sa}))>=0 failed: errno = Operation not permitted
 FAIL socket [status 1]
 ========== END entry-static.exe socket ==========
@@ -295,20 +246,7 @@ child exit with 256
 
 Ready To Run Test-30 sscanf_long
 ========== START entry-static.exe sscanf_long ==========
-[INFO][PAGEFAULT: handle_pagefault] pagefault handle fault
-[INFO][PAGEFAULT: handle_pagefault] user_fail: epc 0x1bcc8 va 0xf002f9000
-1. vma: 0x10000--0xa6000 len: 0x96000 rwxu 
-2. vma: 0xa6000--0xae000 len: 0x8000 rwxu 
-3. vma: 0xae000--0xaf000 len: 0x1000 rwxu 
-4. vma: 0x7ffe7000--0x80000000 len: 0x19000 rw-u 
-5. vma: 0xf00000000--0xf00801000 len: 0x801000 rwxu 
-trapframe {
-    sp: 7ffffb00
-    fp: f00000020
-    pc: 1bcc8
-    ra: 1bcb8
-}
-FAIL sscanf_long [unknown]
+Pass!
 ========== END entry-static.exe sscanf_long ==========
 child exit with 256
 
@@ -630,6 +568,12 @@ Pass!
 ========== END entry-static.exe pthread_cancel_sem_wait ==========
 child exit with 256
 
+Ready To Run Test-84 pthread_cond_smasher
+========== START entry-static.exe pthread_cond_smasher ==========
+Pass!
+========== END entry-static.exe pthread_cond_smasher ==========
+child exit with 256
+
 Ready To Run Test-85 pthread_condattr_setclock
 ========== START entry-static.exe pthread_condattr_setclock ==========
 Pass!
@@ -704,11 +648,7 @@ child exit with 256
 
 Ready To Run Test-97 rlimit_open_files
 ========== START entry-static.exe rlimit_open_files ==========
-src/regression/rlimit-open-files.c:19: setrlimit(7, 42) failed: Operation not permitted
-src/regression/rlimit-open-files.c:21: getrlimit(7) failed: Operation not permitted
-src/regression/rlimit-open-files.c:28: dup(1) failed with Operation not permitted, wanted EMFILE
-src/regression/rlimit-open-files.c:30: more fds are open than rlimit allows: fd=14, limit=42
-FAIL rlimit_open_files [status 1]
+Pass!
 ========== END entry-static.exe rlimit_open_files ==========
 child exit with 256
 
@@ -880,6 +820,12 @@ Pass!
 ========== END entry-dynamic.exe memstream ==========
 child exit with 256
 
+Ready To Run Test-17 pthread_cancel_points
+========== START entry-dynamic.exe pthread_cancel_points ==========
+Pass!
+========== END entry-dynamic.exe pthread_cancel_points ==========
+child exit with 256
+
 Ready To Run Test-18 pthread_cancel
 ========== START entry-dynamic.exe pthread_cancel ==========
 Pass!
@@ -954,35 +900,35 @@ child exit with 256
 
 Ready To Run Test-30 socket
 ========== START entry-dynamic.exe socket ==========
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
+pid 346 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
 src/functional/socket.c:20: (s=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
+pid 346 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
 src/functional/socket.c:21: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
+pid 346 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
 src/functional/socket.c:22: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 208 sepc 10000436b0
+pid 346 entry-dynamic.exe: unknown sys call 208 sepc 10000436b0
 src/functional/socket.c:24: setsockopt(s, 1, 20, &(struct timeval){.tv_usec=1}, sizeof(struct timeval))==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
+pid 346 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
 src/functional/socket.c:27: (c=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 206 sepc 100006093c
+pid 346 entry-dynamic.exe: unknown sys call 206 sepc 100006093c
 src/functional/socket.c:29: sendto(c, "x", 1, 0, (void *)&sa, sizeof sa)==1 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 207 sepc 100006093c
+pid 346 entry-dynamic.exe: unknown sys call 207 sepc 100006093c
 src/functional/socket.c:30: recvfrom(s, buf, sizeof buf, 0, (void *)&sa, (socklen_t[]){sizeof sa})==1 failed: errno = Operation not permitted
 src/functional/socket.c:31: buf[0]=='x' failed: '�'
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
+pid 346 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
 src/functional/socket.c:38: (s=socket(2, 1|02000000, 6))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
+pid 346 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
 src/functional/socket.c:40: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
+pid 346 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
 src/functional/socket.c:41: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 201 sepc 1000040a04
+pid 346 entry-dynamic.exe: unknown sys call 201 sepc 1000040a04
 src/functional/socket.c:44: listen(s, 1)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
+pid 346 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
 src/functional/socket.c:46: (c=socket(2, 1|04000, 6))>=0 failed: errno = Operation not permitted
 src/functional/socket.c:47: fcntl(c, F_GETFL)&O_NONBLOCK failed: SOCK_NONBLOCK did not work
-pid 312 entry-dynamic.exe: unknown sys call 203 sepc 100006093c
+pid 346 entry-dynamic.exe: unknown sys call 203 sepc 100006093c
 src/functional/socket.c:49: connect(c, (void *)&sa, sizeof sa)==0 || (*__errno_location())==115 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 202 sepc 100006093c
+pid 346 entry-dynamic.exe: unknown sys call 202 sepc 100006093c
 src/functional/socket.c:51: (t=accept(s, (void *)&sa, &(socklen_t){sizeof sa}))>=0 failed: errno = Operation not permitted
 FAIL socket [status 1]
 ========== END entry-dynamic.exe socket ==========
@@ -996,22 +942,7 @@ child exit with 256
 
 Ready To Run Test-32 sscanf_long
 ========== START entry-dynamic.exe sscanf_long ==========
-[INFO][PAGEFAULT: handle_pagefault] pagefault handle fault
-[INFO][PAGEFAULT: handle_pagefault] user_fail: epc 0x241f4 va 0xf00294000
-1. vma: 0x10000--0x59000 len: 0x49000 rwxu 
-2. vma: 0x5a000--0x63000 len: 0x9000 rwxu 
-3. vma: 0x63000--0x6b000 len: 0x8000 rwxu 
-4. vma: 0x7ffe7000--0x80000000 len: 0x19000 rw-u 
-5. vma: 0xf00000000--0xf00801000 len: 0x801000 rwxu 
-6. vma: 0x1000000000--0x10000a3000 len: 0xa3000 rwxu 
-7. vma: 0x10000a3000--0x10000a8000 len: 0x5000 rwxu 
-trapframe {
-    sp: 7ffff880
-    fp: f00000020
-    pc: 241f4
-    ra: 241e4
-}
-FAIL sscanf_long [unknown]
+Pass!
 ========== END entry-dynamic.exe sscanf_long ==========
 child exit with 256
 
@@ -1317,176 +1248,3 @@ child exit with 256
 
 Ready To Run Test-83 printf_fmt_n
 ========== START entry-dynamic.exe printf_fmt_n ==========
-Pass!
-========== END entry-dynamic.exe printf_fmt_n ==========
-child exit with 256
-
-Ready To Run Test-84 pthread_robust_detach
-========== START entry-dynamic.exe pthread_robust_detach ==========
-Pass!
-========== END entry-dynamic.exe pthread_robust_detach ==========
-child exit with 256
-
-Ready To Run Test-86 pthread_condattr_setclock
-========== START entry-dynamic.exe pthread_condattr_setclock ==========
-Pass!
-========== END entry-dynamic.exe pthread_condattr_setclock ==========
-child exit with 256
-
-Ready To Run Test-87 pthread_exit_cancel
-========== START entry-dynamic.exe pthread_exit_cancel ==========
-Pass!
-========== END entry-dynamic.exe pthread_exit_cancel ==========
-child exit with 256
-
-Ready To Run Test-88 pthread_once_deadlock
-========== START entry-dynamic.exe pthread_once_deadlock ==========
-Pass!
-========== END entry-dynamic.exe pthread_once_deadlock ==========
-child exit with 256
-
-Ready To Run Test-89 pthread_rwlock_ebusy
-========== START entry-dynamic.exe pthread_rwlock_ebusy ==========
-Pass!
-========== END entry-dynamic.exe pthread_rwlock_ebusy ==========
-child exit with 256
-
-Ready To Run Test-90 putenv_doublefree
-========== START entry-dynamic.exe putenv_doublefree ==========
-Pass!
-========== END entry-dynamic.exe putenv_doublefree ==========
-child exit with 256
-
-Ready To Run Test-91 regex_backref_0
-========== START entry-dynamic.exe regex_backref_0 ==========
-Pass!
-========== END entry-dynamic.exe regex_backref_0 ==========
-child exit with 256
-
-Ready To Run Test-92 regex_bracket_icase
-========== START entry-dynamic.exe regex_bracket_icase ==========
-Pass!
-========== END entry-dynamic.exe regex_bracket_icase ==========
-child exit with 256
-
-Ready To Run Test-93 regex_ere_backref
-========== START entry-dynamic.exe regex_ere_backref ==========
-Pass!
-========== END entry-dynamic.exe regex_ere_backref ==========
-child exit with 256
-
-Ready To Run Test-94 regex_escaped_high_byte
-========== START entry-dynamic.exe regex_escaped_high_byte ==========
-Pass!
-========== END entry-dynamic.exe regex_escaped_high_byte ==========
-child exit with 256
-
-Ready To Run Test-95 regex_negated_range
-========== START entry-dynamic.exe regex_negated_range ==========
-Pass!
-========== END entry-dynamic.exe regex_negated_range ==========
-child exit with 256
-
-Ready To Run Test-96 regexec_nosub
-========== START entry-dynamic.exe regexec_nosub ==========
-Pass!
-========== END entry-dynamic.exe regexec_nosub ==========
-child exit with 256
-
-Ready To Run Test-97 rewind_clear_error
-========== START entry-dynamic.exe rewind_clear_error ==========
-Pass!
-========== END entry-dynamic.exe rewind_clear_error ==========
-child exit with 256
-
-Ready To Run Test-98 rlimit_open_files
-========== START entry-dynamic.exe rlimit_open_files ==========
-src/regression/rlimit-open-files.c:19: setrlimit(7, 42) failed: Operation not permitted
-src/regression/rlimit-open-files.c:21: getrlimit(7) failed: Operation not permitted
-src/regression/rlimit-open-files.c:28: dup(1) failed with Operation not permitted, wanted EMFILE
-src/regression/rlimit-open-files.c:30: more fds are open than rlimit allows: fd=14, limit=42
-FAIL rlimit_open_files [status 1]
-========== END entry-dynamic.exe rlimit_open_files ==========
-child exit with 256
-
-Ready To Run Test-99 scanf_bytes_consumed
-========== START entry-dynamic.exe scanf_bytes_consumed ==========
-Pass!
-========== END entry-dynamic.exe scanf_bytes_consumed ==========
-child exit with 256
-
-Ready To Run Test-100 scanf_match_literal_eof
-========== START entry-dynamic.exe scanf_match_literal_eof ==========
-Pass!
-========== END entry-dynamic.exe scanf_match_literal_eof ==========
-child exit with 256
-
-Ready To Run Test-101 scanf_nullbyte_char
-========== START entry-dynamic.exe scanf_nullbyte_char ==========
-Pass!
-========== END entry-dynamic.exe scanf_nullbyte_char ==========
-child exit with 256
-
-Ready To Run Test-102 setvbuf_unget
-========== START entry-dynamic.exe setvbuf_unget ==========
-Pass!
-========== END entry-dynamic.exe setvbuf_unget ==========
-child exit with 256
-
-Ready To Run Test-103 sigprocmask_internal
-========== START entry-dynamic.exe sigprocmask_internal ==========
-Pass!
-========== END entry-dynamic.exe sigprocmask_internal ==========
-child exit with 256
-
-Ready To Run Test-104 sscanf_eof
-========== START entry-dynamic.exe sscanf_eof ==========
-Pass!
-========== END entry-dynamic.exe sscanf_eof ==========
-child exit with 256
-
-Ready To Run Test-105 statvfs
-========== START entry-dynamic.exe statvfs ==========
-Pass!
-========== END entry-dynamic.exe statvfs ==========
-child exit with 256
-
-Ready To Run Test-106 strverscmp
-========== START entry-dynamic.exe strverscmp ==========
-Pass!
-========== END entry-dynamic.exe strverscmp ==========
-child exit with 256
-
-Ready To Run Test-107 syscall_sign_extend
-========== START entry-dynamic.exe syscall_sign_extend ==========
-Pass!
-========== END entry-dynamic.exe syscall_sign_extend ==========
-child exit with 256
-
-Ready To Run Test-108 tls_get_new_dtv
-========== START entry-dynamic.exe tls_get_new_dtv ==========
-Pass!
-========== END entry-dynamic.exe tls_get_new_dtv ==========
-child exit with 256
-
-Ready To Run Test-109 uselocale_0
-========== START entry-dynamic.exe uselocale_0 ==========
-Pass!
-========== END entry-dynamic.exe uselocale_0 ==========
-child exit with 256
-
-Ready To Run Test-110 wcsncpy_read_overflow
-========== START entry-dynamic.exe wcsncpy_read_overflow ==========
-Pass!
-========== END entry-dynamic.exe wcsncpy_read_overflow ==========
-child exit with 256
-
-Ready To Run Test-111 wcsstr_false_negative
-========== START entry-dynamic.exe wcsstr_false_negative ==========
-Pass!
-========== END entry-dynamic.exe wcsstr_false_negative ==========
-child exit with 256
-page usage: 2% ( 21 used | 978 total )
-ALL TEST DONE!
-QEMU: Terminated
-

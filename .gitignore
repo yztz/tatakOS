@@ -3,5 +3,7 @@ build/
 fs.img
 mkfs
 os.bin
+sbi-qemu
+kernel-qemu
 include/generated
 src/include/generated
