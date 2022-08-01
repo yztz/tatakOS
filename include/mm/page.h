@@ -110,7 +110,7 @@ typedef struct _page_t {
 /* 地址--->页号 */
 #define PAGE2NUM(pa) (((uint64_t)(pa) - KERN_BASE) / PGSIZE)
 /* 页号--->地址 */
-#define NUM2PAGE(num) ((uint64 *)((num) * PGSIZE + KERN_BASE))
+#define NUM2PAGE(num) ((uint64_t)((num) * PGSIZE + KERN_BASE))
 /* 页指针--->地址 */
 #define PAGETOPA(page) NUM2PAGE(page-pages)
 /* 地址--->页指针 */

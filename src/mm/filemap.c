@@ -295,7 +295,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       entry_t *entry = mapping->host;
       /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
       // fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
-      readpage(entry, pa, index);
+      read_one_page(entry, pa, index);
 
       // print_page_contents((uint64 *)pa);
       // for(;;);
@@ -330,6 +330,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n){
   uint32_t pg_id, pg_off, rest, cur_off;
   uint64_t pa;
+  page_t *page;
   // entry_t *entry = mapping->host;
   int len;
 
@@ -351,16 +352,20 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       ref_page(pa);
       /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
       #ifdef TODO
-      todo("readpage: optimize point 1: use prepare_write, if the write is all page, no need to read!");
+      todo("read_one_page: optimize point 1: use prepare_write, if the write is all page, no need to read!");
       #endif
       /* 整个页都要重新写过的，就没必要从磁盘中读了 */
       if(!(pg_off == 0 && rest >= PGSIZE))
-        readpage(mapping->host, pa, pg_id);
+        read_one_page(mapping->host, pa, pg_id);
       add_to_page_cache(pa, mapping, pg_id);
-      lru_cache_add(&pages[PAGE2NUM(pa)]);
+      lru_cache_add(PATOPAGE(pa));
     }
 
-    mark_page_accessed(&pages[PAGE2NUM(pa)]);
+    page = PATOPAGE(pa);
+
+    mark_page_accessed(page);
+
+    SetPageDirect(page);
     /* 函数位置有待商榷 */
     lock_page(pa);
 
@@ -402,9 +407,14 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
   init_pg_head(pg_head);
   radix_tree_find_tags(&mapping->page_tree, tag, pg_head);
 
-  /* if no dirty page, pg_head and pg_tail is null */
+  /* if no taged page, pg_head and pg_tail is null */
   if(pg_head->head != NULL)
     pg_head->tail->next = NULL;
+  else{
+    /* 没有标签页，free pg_head */ 
+    kfree(pg_head);
+    pg_head = NULL;
+  }
   return pg_head;
 }
 
@@ -415,26 +425,27 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
  * 父目录中的文件元数据。
  * 
  */
-void writeback_file_to_disk(entry_t *entry){
-  /* 如果文件在内存中的大小和磁盘上的不一样（变大或变小）*/
-  // if(entry->size_in_mem != entry->raw.size){
-  if(entry->dirty){
+// void writeback_file_to_disk(entry_t *entry){
+//   /* 如果文件在内存中的大小和磁盘上的不一样（变大或变小）*/
+//   // if(entry->size_in_mem != entry->raw.size){
+//   if(entry->dirty){
 
-    /* bigger than disk */
-    if(entry->size_in_mem > entry->raw.size){
-      fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
-    }
-    /* smaller than disk */
-    else {
-      todo("consider delete part of file!");
-    }
+//     // /* bigger than disk */
+//     // if(entry->size_in_mem > entry->raw.size){
+//     //   fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
+//     // }
+//     // /* smaller than disk */
+//     // else {
+//     //   todo("consider delete part of file!");
+//     // }
 
-    entry->raw.size = entry->size_in_mem;
-    fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-    mpage_writepages(entry->i_mapping);
-  }
-    /* wirte back dirty pages to disk, 即使大小没变，但是内容可能也变了，所以要写回 */
-    // if(entry->dirty)
-      // mpage_writepages(entry->i_mapping);
+//     // entry->raw.size = entry->size_in_mem;
+//     // fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+//     sych_entry_size_in_disk(entry);
+//     mpage_writepages(entry->i_mapping);
+//   }
+//     /* wirte back dirty pages to disk, 即使大小没变，但是内容可能也变了，所以要写回 */
+//     // if(entry->dirty)
+//       // mpage_writepages(entry->i_mapping);
 
-}
+// }

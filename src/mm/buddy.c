@@ -112,6 +112,7 @@ void *buddy_alloc(size_t size) {
   if(order >= MAX_ORDER) 
     return NULL;
 
+retry:
   // 从当前order向上，直到寻找到有空闲空间的order
   acquire(&lists[order].lock);
   while(order + 1 < MAX_ORDER && empty(order)){
@@ -133,6 +134,11 @@ void *buddy_alloc(size_t size) {
     buddy_print_free();
     free_more_memory();
     buddy_print_free();
+    printf("\n");
+
+    /* 释放后重试 */
+    goto retry;
+
     ERROR("out of memory!!");
     return NULL;
   }

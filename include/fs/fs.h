@@ -87,6 +87,7 @@ entry_t *edup(entry_t *entry);
 char *getcwd(entry_t *entry, char *buf);
 int read_dents(entry_t *entry, off_t *offset, char *buf, int n);
 void estat(entry_t *entry, struct kstat *stat);
+void sych_entry_in_disk(entry_t *entry);
 
 #define ROOTINO  1   // root i-number
 

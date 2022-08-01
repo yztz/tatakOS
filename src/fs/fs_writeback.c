@@ -21,26 +21,12 @@ extern void buddy_print_free();
 void writeback_single_entry(entry_t *entry){
   /* wbc暂时无用 */
   // wbc = NULL;
-  address_space_t *mapping = entry->i_mapping;
-
-  printf(ylw("begin append clusters!\n"));
-  /* bigger than disk */
-  if(entry->size_in_mem >= entry->raw.size){
-    fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
-  }
-  /* smaller than disk */
-  else {
-    ERROR("consider delete part of file!");
-  }
-  printf(ylw("end append clusters!\n"));
-
-  printf(ylw("begin fat_update!\n"));
-  entry->raw.size = entry->size_in_mem;
-  fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-  printf(ylw("end fat_update!\n"));
+  if(!entry->dirty)
+    return;
 
   printf(ylw("begin write pages!\n"));
-  mpage_writepages(mapping);
+  sych_entry_in_disk(entry);
+  // mpage_writepages(mapping);
   printf(ylw("end write pages!\n"));
 
   printf(ylw("begin free mapping!\n"));

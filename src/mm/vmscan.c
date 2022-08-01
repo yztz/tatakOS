@@ -33,7 +33,6 @@ struct scan_control {
 	/* 在shrink_zone中设置 */
 	unsigned long nr_to_scan;
 
-	 
 	/* 
 	 * Incremented by the number of inactive pages that were scanned，
 	 * 在shrink_list中增加 
@@ -85,15 +84,18 @@ typedef struct scan_control scan_control_t;
 // 	return 0;
 // }
 
-extern bio_t *get_rw_pages_bio(entry_t *entry, uint64 buff, uint32 pg_id, int pg_cnt, int rw);
-
-/*
+extern int write_one_page(entry_t *entry, uint64_t buff, uint32_t index);
+extern void sych_entry_size_in_disk(entry_t *entry);
+/**
  * pageout is called by shrink_list() for each dirty page. Calls ->writepage().
+ * 如果还没有给文件append cluster，需要先append cluster。
  */
 static void pageout(page_t *page, struct address_space *mapping)
 {
-	bio_t *bio = get_rw_pages_bio(mapping->host, (uint64_t)PAGETOPA(page), page->index, 1, WRITE);
-	submit_bio(bio);	
+	entry_t *entry = mapping->host;
+
+	sych_entry_size_in_disk(entry);
+	write_one_page(entry, PAGETOPA(page), page->index);
 }
 
 /*
@@ -211,6 +213,7 @@ keep_locked:
 
 /**
  * @brief 从zone的inactive list上回收page，交给shrink list函数。
+ * 原型为linux 2.6.11shrink_cache函数
  * 
  */
 static void shrink_inactive_list(zone_t *zone, struct scan_control *sc){

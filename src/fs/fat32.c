@@ -1016,8 +1016,8 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, trav
  * 使用一个bio_vec结构体表示。
  * 以簇cluster为单位进行查找，因为一个簇内的扇区sector是连续的。
  * 
- * 给出一段文件在内存空间中连续的地址，长度为n，找到对应的sectors，尽量
- * 使其连续。
+ * 给出一段文件在内存空间中连续的地址，长度为n，找到对应的sectors，尽量使其连续。
+ * 要注意没有给disk上的entry alloc and append足够的cluster的情况！
  * @param fat 
  * @param cclus 
  * @param off 
@@ -1049,8 +1049,9 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     while(off >= BPC(fat)) {
         cclus = fat_next_cluster(fat, cclus);
         off -= BPC(fat);
+        /* 如果在把page写回disk之前，没有append足够的cluster，会出现这种情况 */
         if(cclus == FAT_CLUS_END) {
-            return 0;
+            ER();
         }
     }
 
@@ -1099,6 +1100,10 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
 
         // printf(rd("cclus: %d\tsect: %d\n"), cclus, sect);
         cclus = fat_next_cluster(fat, cclus);
+
+        /* 如果簇没了，但是还没有写完，error */
+        if(cclus == FAT_CLUS_END && sec_total_num > 0)
+            ER();
         sect = clus2datsec(fat, cclus);
     }
     // printf(ylw("==============\n"));
@@ -1107,10 +1112,6 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     return first_bio_vec;
 }
 
-
-int fat_writepages(address_space_t *mapping){
-    return mpage_writepages(mapping);
-}
 
 /**
  * @brief return the last cluster of a file

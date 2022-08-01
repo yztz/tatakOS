@@ -54,12 +54,15 @@ typedef struct radix_tree_path {
  * @brief 这是一个辅助结构体，用于函数radix_tree_lookup_tag，
  * 返回一颗rdt中所有具有tag的页的物理地址并其index，以链表的形式。
  * 
+ * 一次要读/写的页 
  */
 typedef struct pages_be_found {
   uint64_t pa;
   uint64_t pg_id;
   struct pages_be_found *next;
 }pages_be_found_t;
+
+typedef pages_be_found_t rw_page_t;
 
 /**
  * @brief 上述结构体的头，记录链表数量, 头结点和尾节点指针
@@ -70,6 +73,8 @@ typedef struct pages_be_found_head {
   pages_be_found_t *tail;
   uint64_t nr_pages;
 }pages_be_found_head_t;
+
+typedef pages_be_found_head_t rw_page_list_t; 
 
 void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
 int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item);

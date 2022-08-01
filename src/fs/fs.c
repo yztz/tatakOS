@@ -496,3 +496,53 @@ entry_t *nameeparent(entry_t *from, char *path, char *name){
   return namex(from, path, 1, name);
 }
 
+/**
+ * 根据entry在内存中的大小，更新其对应disk上的entry。
+ * 1. 内存大于磁盘：
+ *   1.1 给磁盘上的文件alloc并append clusters。
+ *   1.2 更新其在父目录中的数据。
+ * 2. 内存等于磁盘：
+ *   不做任何事
+ * 3. 内存小于磁盘
+ *   需要做什么？
+ *    
+ */
+void sych_entry_size_in_disk(entry_t *entry){
+  if(entry->size_in_mem == entry->raw.size)
+    return;
+
+  if(entry->size_in_mem > entry->raw.size){
+    fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
+  }
+  else if(entry->size_in_mem < entry->raw.size){
+    ER();
+  }
+
+  entry->raw.size = entry->size_in_mem;
+  fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+}
+
+/**
+ * 把entry在pagecache中的内容写回磁盘。
+ */
+void sych_entry_pages_in_disk(entry_t *entry){
+  address_space_t *mapping = entry->i_mapping;
+  rw_page_list_t *pg_list;
+
+  /* 找到entry所有的dirty page */
+  pg_list = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
+
+  if(pg_list == NULL)
+    return;
+  
+  /* 将dirty page写回磁盘 */
+  write_pages(entry, pg_list);
+}
+
+/**
+ * 同步(sychronize)内存和磁盘上的文件。
+ */
+void sych_entry_in_disk(entry_t *entry){
+  sych_entry_size_in_disk(entry);
+  sych_entry_pages_in_disk(entry);
+}
