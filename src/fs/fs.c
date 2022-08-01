@@ -198,7 +198,7 @@ static void unlink(entry_t *entry) {
 
 extern void background_writeout(uint64_t min_pages);
 extern int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0);
-
+extern void buddy_print_free();
 // 递归地解引用
 // under lock
 static void __eput(entry_t *entry) {
@@ -208,6 +208,9 @@ static void __eput(entry_t *entry) {
   // 引用为0时，说明没有子目录缓存存在了
   // 所以在删除的时候无需考虑子目录的并发访问问题
   if(entry->ref == 0) { 
+
+    buddy_print_free();
+
     if(entry == entry->fat->root) 
       panic("eput: root?");
 

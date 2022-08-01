@@ -51,7 +51,7 @@ void writeback_single_entry(entry_t *entry){
   free_mapping(entry);
   printf(ylw("end free mapping!\n"));
 
-  buddy_print_free();  
+  // buddy_print_free();  
 }
 
 extern entry_t pool[NENTRY];

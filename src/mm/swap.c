@@ -78,7 +78,7 @@ void lru_cache_add(page_t *page)
 	pagevec_t *pvec = &lru_add_pvecs;
 	get_page(page);
 	if (!pagevec_add(pvec, page))
-		__pagevec_lru_add(pvec);
+		pagevec_lru_add(pvec);
 }
 
 /**
@@ -90,45 +90,34 @@ void lru_cache_add_active(page_t *page)
 
 	get_page(page);
 	if (!pagevec_add(pvec, page))
-		__pagevec_lru_add_active(pvec);
+		pagevec_lru_add_active(pvec);
 }
 
 /**
  * @brief 所有传入的页引用数减1，如果为0从lru移除并free。
  * 
  */
-void release_pages(page_t **pages, int nr){
+void put_pages(page_t **pages, int nr){
   int i;
-  // zone_t *zone = &memory_zone;
 
   for(i = 0; i < nr; i++){
     page_t *page = pages[i];
 		put_page(page);
-    // /* 在我们的机制中，对于一个页直接调用kfree，它会调用buddy_free，buddy_free会减去引用数
-      // 然后根据引用数是否为0决定回收这个页。 */
-    // if(!put_page(page)) 
-      // continue;
-
-		/**
-		 * 如果在lru链表上，清楚lru位，并从链表上删除。
-		 */
-    // if(TestClearPageLRU(page)){
-    //   spin_lock(&zone->lru_lock);
-    //   del_page_from_lru(zone, page);
-    //   spin_unlock(&zone->lru_lock);
-    // }
-
   }
 }
 
 /*
  * Add the passed pages to the LRU, then drop the caller's refcount
  * on them.  Reinitialises the caller's pagevec.
+ * 把pagevec中的页添加到inactive list
  */
-void __pagevec_lru_add(struct pagevec *pvec)
+void pagevec_lru_add(struct pagevec *pvec)
 {
 	int i;
 	struct zone *zone = &memory_zone;
+
+	if(!pagevec_count(pvec))
+		return;
 
 	spin_lock(&zone->lru_lock);
 	for (i = 0; i < pagevec_count(pvec); i++) {
@@ -142,16 +131,21 @@ void __pagevec_lru_add(struct pagevec *pvec)
 	}
 	spin_unlock(&zone->lru_lock);
 
-  /* 需要释放页吗？(直接在循环里加个put_page)?减去放到pagevec时增加的引用 */
-		/* 减去lru_cache_add的get_page */
-	release_pages(pvec->pages, pvec->nr);
+	/* 减去lru_cache_add的get_page */
+	put_pages(pvec->pages, pvec->nr);
 	pagevec_reinit(pvec);
 }
 
-void __pagevec_lru_add_active(struct pagevec *pvec)
+/*
+ * pagevec添加到active list
+ */
+void pagevec_lru_add_active(struct pagevec *pvec)
 {
 	int i;
 	struct zone *zone = &memory_zone;
+
+	if(!pagevec_count(pvec))
+		return;
 
   spin_lock(&zone->lru_lock);
 	for (i = 0; i < pagevec_count(pvec); i++) {
@@ -162,11 +156,10 @@ void __pagevec_lru_add_active(struct pagevec *pvec)
 		if (TestSetPageActive(page))
       ER();
 		add_page_to_active_list(zone, page);
-		// put_page(page);
 	}
   spin_unlock(&zone->lru_lock);
 
-	release_pages(pvec->pages, pvec->nr);
+	put_pages(pvec->pages, pvec->nr);
 	pagevec_reinit(pvec);
 }
 
@@ -179,10 +172,10 @@ void lru_add_drain(void)
 	struct pagevec *pvec = &(lru_add_pvecs);
 
 	if (pagevec_count(pvec))
-		__pagevec_lru_add(pvec);
+		pagevec_lru_add(pvec);
 	pvec = &(lru_add_active_pvecs);
 	if (pagevec_count(pvec))
-		__pagevec_lru_add_active(pvec);
+		pagevec_lru_add_active(pvec);
 }
 
 /*
@@ -191,14 +184,16 @@ void lru_add_drain(void)
  * OK from a correctness point of view but is inefficient - those pages may be
  * cache-warm and we want to give them back to the page allocator ASAP.
  *
- * So __pagevec_release() will drain those queues here.  __pagevec_lru_add()
- * and __pagevec_lru_add_active() call release_pages() directly to avoid
+ * So __pagevec_release() will drain those queues here.  pagevec_lru_add()
+ * and pagevec_lru_add_active() call put_pages() directly to avoid
  * mutual recursion.
  * 要释放的页可能还在pagevec中，所以调用lru_add_drain
  */
-void __pagevec_release(struct pagevec *pvec)
+void pagevec_release(struct pagevec *pvec)
 {
+	if(!pagevec_count(pvec))
+		return;
 	lru_add_drain();
-	release_pages(pvec->pages, pagevec_count(pvec));
+	put_pages(pvec->pages, pagevec_count(pvec));
 	pagevec_reinit(pvec);
 }

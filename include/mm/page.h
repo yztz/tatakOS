@@ -133,6 +133,7 @@ void    pte_print(pte_t *pte);
 
 pgref_t get_page(page_t *page);
 pgref_t put_page(page_t *page);
+pgref_t page_refcnt(page_t *page);
 
 void lock_page(uint64_t pa);
 void unlock_page(uint64_t pa);
@@ -187,7 +188,7 @@ struct zone{
     list_head_t inactive_list;      /* 非活跃页链表 */
     uint64_t nr_active;             /* 活跃页数量 */
     uint64_t nr_inactive;           /* 非活跃页数量 */
-    uint64_t pages_scanned;
+    // uint64_t pages_scanned;
 };
 
 typedef struct zone zone_t;
@@ -245,4 +246,5 @@ void mark_page_accessed(page_t *page);
 #define PTE_USER (4) 
 
 // static inline  int ptep_test_and_clear_valid(pte_t *ptep)	{ return test_and_clear_bit(PTE_VALID, ptep);}
+#define DEF_PRIORITY 5
 #endif

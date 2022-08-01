@@ -36,11 +36,11 @@ typedef struct pagevec pagevec_t;
 
 extern pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 
-void __pagevec_release(struct pagevec *pvec);
+void pagevec_release(struct pagevec *pvec);
 void __pagevec_release_nonlru(struct pagevec *pvec);
 void __pagevec_free(struct pagevec *pvec);
-void __pagevec_lru_add(struct pagevec *pvec);
-void __pagevec_lru_add_active(struct pagevec *pvec);
+void pagevec_lru_add(struct pagevec *pvec);
+void pagevec_lru_add_active(struct pagevec *pvec);
 void pagevec_strip(struct pagevec *pvec);
 unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
 		pgoff_t start, unsigned nr_pages);
@@ -48,7 +48,7 @@ unsigned pagevec_lookup_tag(struct pagevec *pvec,
 		struct address_space *mapping, pgoff_t *index, int tag,
 		unsigned nr_pages);
 
-static inline void pagevec_init(struct pagevec *pvec, int cold)
+static inline void pagevec_init(struct pagevec *pvec)
 {
 	pvec->nr = 0;
 	// pvec->cold = cold;
@@ -78,11 +78,11 @@ static inline unsigned pagevec_add(struct pagevec *pvec, page_t *page)
 	return pagevec_space(pvec);
 }
 
-static inline void pagevec_release(struct pagevec *pvec)
-{
-	if (pagevec_count(pvec))
-		__pagevec_release(pvec);
-}
+// static inline void pagevec_release(struct pagevec *pvec)
+// {
+// 	if (pagevec_count(pvec))
+// 		__pagevec_release(pvec);
+// }
 
 static inline void pagevec_release_nonlru(struct pagevec *pvec)
 {
@@ -96,10 +96,10 @@ static inline void pagevec_free(struct pagevec *pvec)
 		__pagevec_free(pvec);
 }
 
-static inline void pagevec_lru_add(struct pagevec *pvec)
-{
-	if (pagevec_count(pvec))
-		__pagevec_lru_add(pvec);
-}
+// static inline void pagevec_lru_add(struct pagevec *pvec)
+// {
+// 	if (pagevec_count(pvec))
+// 		__pagevec_lru_add(pvec);
+// }
 
 #endif

@@ -26,7 +26,7 @@ struct page_state {
 	unsigned long nr_unstable;	/* NFS unstable pages */
 	unsigned long nr_page_table_pages;/* Pages used for pagetables */
 	unsigned long nr_mapped;	/* mapped into pagetables */
-	unsigned long nr_slab;		/* In slab 我们使用的是slob*/
+	unsigned long nr_slab;		/* In slab 我们使用的是slob */
 #define GET_PAGE_STATE_LAST nr_slab
 
 	/*

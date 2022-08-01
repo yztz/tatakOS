@@ -71,7 +71,7 @@ void buddy_init() {
     total++;
   }
   used = INIT_ATOMIC;
-  buddy_print_free();
+  // buddy_print_free();
 }
 
 static inline void insert(int order, buddy_t *b) {
@@ -94,6 +94,7 @@ static inline int empty(int order) {
 }
 
 
+extern void free_more_memory(void);
 void *buddy_alloc(size_t size) {
   // print_buddy();
   // printf("\n");
@@ -118,11 +119,24 @@ void *buddy_alloc(size_t size) {
     order++;
     acquire(&lists[order].lock);
   }
+
+  /**
+   * 没有页了，调用free_more_memory释放更多的内存，返回之后，goto重新分配。还不行则使用oom killer
+   */
   // no rooms
   if(empty(order)) {
     release(&lists[order].lock);
+
+    // ER();
+    /* 这里里要修改，否则有重复循环执行的可能 */
+    
+    buddy_print_free();
+    free_more_memory();
+    buddy_print_free();
+    ERROR("out of memory!!");
     return NULL;
   }
+
   // 当当前的order大于预订的order时，需要分裂
   while(order > oorder) {
     int pgnum, ppgnum;

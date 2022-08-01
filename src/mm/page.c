@@ -172,6 +172,13 @@ void pte_print(pte_t *pte) {
   printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
 }
 
+pgref_t page_refcnt(page_t *page){
+  pgref_t ret;
+  acquire(&reflock);
+  ret = page->refcnt;
+  release(&reflock);
+  return ret;
+}
 
 /**
  * @brief 增加1个引用，返回增加后的
@@ -191,6 +198,10 @@ pgref_t get_page(page_t *page){
  */
 pgref_t put_page(page_t *page){
   pgref_t ret;
+
+  #ifdef TODO
+  todo("use atomic to replace reflock may inprove performance");
+  #endif
 
   if(page->refcnt <= 0)
     ER();

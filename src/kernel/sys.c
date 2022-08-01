@@ -89,8 +89,8 @@ extern zone_t memory_zone;
 void print_buddy();
 uint64_t sys_memuse(void) {
   buddy_print_free();
-  print_buddy();
-  print_zone_list_info(&memory_zone);
+  // print_buddy();
+  // print_zone_list_info(&memory_zone);
   return 0;
 }
 

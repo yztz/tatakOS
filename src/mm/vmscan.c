@@ -29,27 +29,34 @@
 #include "writeback.h"
 
 struct scan_control {
-	/* Ask refill_inactive_zone, or shrink_cache to scan this many pages */
+	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */
+	/* 在shrink_zone中设置 */
 	unsigned long nr_to_scan;
 
-	/* Incremented by the number of inactive pages that were scanned */
+	 
+	/* 
+	 * Incremented by the number of inactive pages that were scanned，
+	 * 在shrink_list中增加 
+	 */
 	unsigned long nr_scanned;
 
 	/* Incremented by the number of pages reclaimed */
+	/* 在shrink_list中增加 */
 	unsigned long nr_reclaimed;
 
-	unsigned long nr_mapped;	/* From page_state */
+	// unsigned long nr_mapped;	/* From page_state */
 
-	/* How many pages shrink_cache() should reclaim */
+	/* How many pages shrink_inactive_list() should reclaim */
+	/* 在shrink_zone中set，在shrink_inactive_list中减少 */
 	int nr_to_reclaim;
 
-	// /* Ask shrink_caches, or shrink_zone to scan at this priority */
-	// unsigned int priority;
+	/* Ask shrink_caches, or shrink_zone to scan at this priority */
+	unsigned int priority;
 
 	// /* This context's GFP mask */
 	// unsigned int gfp_mask;
 
-	int may_writepage;
+	// int may_writepage;
 };
 
 typedef struct scan_control scan_control_t;
@@ -79,14 +86,16 @@ typedef struct scan_control scan_control_t;
 // }
 
 extern bio_t *get_rw_pages_bio(entry_t *entry, uint64 buff, uint32 pg_id, int pg_cnt, int rw);
+
 /*
  * pageout is called by shrink_list() for each dirty page. Calls ->writepage().
  */
 static void pageout(page_t *page, struct address_space *mapping)
 {
-	bio_t *bio = get_rw_pages_bio(mapping->host, NUM2PAGE(page - pages), page->index, 1, WRITE);
+	bio_t *bio = get_rw_pages_bio(mapping->host, (uint64_t)PAGETOPA(page), page->index, 1, WRITE);
 	submit_bio(bio);	
 }
+
 /*
  * shrink_list adds the number of reclaimed pages to sc->nr_reclaimed
  * free的页有位于page cache的页；
@@ -95,22 +104,23 @@ static void pageout(page_t *page, struct address_space *mapping)
  */
 static int shrink_list(struct list_head *page_list, struct scan_control *sc){
   LIST_HEAD(ret_pages);
-	struct pagevec freed_pvec;
-	int pgactivate = 0;
+	// struct pagevec freed_pvec;
+	// int pgactivate = 0;
 	int reclaimed = 0;
 
-  pagevec_init(&freed_pvec, 1);
+  // pagevec_init(&freed_pvec);
   while(!list_empty(page_list)){
     address_space_t *mapping;
     page_t *page;
-    int referenced;
+    // int referenced;
 
     page = lru_to_page(page_list);
     list_del(&page->lru);
 		mapping = page->mapping;
 
-    if(TestSetPageLocked(page))
-      goto keep;
+		/* 检测有没有被lock，如果无则lock，否则不释放 */
+    // if(TestSetPageLocked(page))
+      // goto keep;
 
     if(PageActive(page))
       ER();
@@ -121,11 +131,11 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		// if (page_mapped(page) || PageSwapCache(page))
 		// 	sc->nr_scanned++;
 
-		if (PageWriteback(page))
-			goto keep_locked;
+		// if (PageWriteback(page))
+			// goto keep_locked;
 
     // todo("add bit lock");
-    pte_chain_lock(page);
+    // pte_chain_lock(page);
     // referenced = page_referenced(page);
 		// /* In active use or really unfreeable?  Activate it. */
 		// if (referenced && page_mapping_inuse(page)){
@@ -138,10 +148,10 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		 * processes. Try to unmap it here.
 		 * 映射到用户页表的页（目前只考虑mmap），先解映射
 		 */
-		if (page_mapped(page)) {
-			try_to_unmap(page);
-		}
-		pte_chain_unlock(page);
+		// if (page_mapped(page)) {
+		// 	try_to_unmap(page);
+		// }
+		// pte_chain_unlock(page);
 
 		/* 写回dirty页 */
 		if(PageDirty(page)){
@@ -156,20 +166,29 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		spin_lock(&mapping->tree_lock);
 		__remove_from_page_cache(page);
 		spin_unlock(&mapping->tree_lock);
+
+		/* 对应shrink_inactive_list的get_page */
 		put_page(page);
 
-free_it:
-		unlock_page(page);
+// free_it:
+		// unlock_page(page);
 		reclaimed++;
+
+		/*
+		 * 回收页到buddy中，注意，现在的情形是页已经从lru list上取下了，
+		 * 所以put_page不需要把它从lru list中删除。
+		 */
+		if(PageLRU(page))
+			ER();
 		put_page(page);
 		continue;
 
-activate_locked:
-		SetPageActive(page);
-		pgactivate++;
+// activate_locked:
+		// SetPageActive(page);
+		// pgactivate++;
 keep_locked:
-		unlock_page(page);
-keep:
+		// unlock_page(page);
+// keep:
 		list_add(&page->lru, &ret_pages);
 		if(PageLRU(page))
 			ER();
@@ -184,7 +203,7 @@ keep:
 	/* 把ret_pages合并到page_list上面， 前者是局部变量，函数结束后会释放；以后者
 		作为新的链表头。 */
 	list_splice(&ret_pages, page_list);
-	mod_page_state(pgactivate, pgactivate);
+	// mod_page_state(pgactivate, pgactivate);
 	sc->nr_reclaimed += reclaimed;
 	return reclaimed;
 }
@@ -194,12 +213,12 @@ keep:
  * @brief 从zone的inactive list上回收page，交给shrink list函数。
  * 
  */
-static void shrink_cache(zone_t *zone, struct scan_control *sc){
+static void shrink_inactive_list(zone_t *zone, struct scan_control *sc){
   LIST_HEAD(page_list);
 	struct pagevec pvec;
 	int max_scan = sc->nr_to_scan;
 
-	pagevec_init(&pvec, 1);
+	pagevec_init(&pvec);
 
 	lru_add_drain();
 	spin_lock(&zone->lru_lock);
@@ -215,20 +234,20 @@ static void shrink_cache(zone_t *zone, struct scan_control *sc){
         ER();
       list_del(&page->lru);
       /* 说明ref前为0 */
-      if (ref_page(page) == 1) {
+      if (page_refcnt(page) == 0) {
 				/*
 				 * It is being freed elsewhere
 				 */
-				put_page(page);
 				SetPageLRU(page);
 				list_add(&page->lru, &zone->inactive_list);
 				continue;
 			}
+			get_page(page);
       list_add(&page->lru, &page_list);
       nr_taken++;
     }
     zone->nr_inactive -= nr_taken;
-    zone->pages_scanned += nr_scan;
+    // zone->pages_scanned += nr_scan;
     spin_unlock(&zone->lru_lock);
 
     if(nr_taken == 0)
@@ -256,7 +275,7 @@ static void shrink_cache(zone_t *zone, struct scan_control *sc){
 				add_page_to_inactive_list(zone, page);
       if (!pagevec_add(&pvec, page)) {
 				spin_unlock(&zone->lru_lock);
-				__pagevec_release(&pvec);
+				pagevec_release(&pvec);
 				spin_lock(&zone->lru_lock);
 			}    
     }
@@ -284,7 +303,7 @@ done:
  * But we had to alter page->flags anyway.
  */
 static void
-refill_inactive_zone(zone_t *zone, struct scan_control *sc){
+refill_inactive_list(zone_t *zone, struct scan_control *sc){
   int pgmoved;
 	int pgdeactivate = 0;
 	int pgscanned = 0;
@@ -295,9 +314,9 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
 	page_t *page;
 	struct pagevec pvec;
 	int reclaim_mapped = 0;
-	long mapped_ratio;
-	long distress;
-	long swap_tendency;
+	// long mapped_ratio;
+	// long distress;
+	// long swap_tendency;
 
   lru_add_drain();
   spin_lock(&zone->lru_lock);
@@ -307,12 +326,13 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
     if(!TestClearPageLRU(page))
       ER();
     list_del(&page->lru);
-    if(page->refcnt == 0){
+    if(page_refcnt(page) == 0){
       /*
-			 * It was already free!  release_pages() or put_page()
+			 * It was already free!  put_pages() or put_page()
 			 * are about to remove it from the LRU and free it. So
 			 * put the refcount back and put the page back on the
 			 * LRU
+			 * 对应put_page已经减去page->refcnt，但是还没有从list 上删除的case，虽然可能性较小。
 			 */
       SetPageLRU(page);
       list_add(&page->lru, &zone->active_list);
@@ -325,7 +345,7 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
     }
     pgscanned++;
   }
-  zone->pages_scanned += pgscanned;
+  // zone->pages_scanned += pgscanned;
   zone->nr_active -= pgmoved;
   spin_unlock(&zone->lru_lock);
 
@@ -345,7 +365,7 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
     list_add(&page->lru, &l_inactive);
   }
 
-  pagevec_init(&pvec, 1);
+  pagevec_init(&pvec);
   pgmoved = 0;
   spin_lock(&zone->lru_lock);
   /* 第三次遍历，把l_inactive移到全局inactive list */
@@ -365,7 +385,7 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
 			// if (buffer_heads_over_limit)
 				// pagevec_strip(&pvec);
 			/* 前面使用了get_page，所以这里应该使用release page进行释放 */
-			__pagevec_release(&pvec);
+			pagevec_release(&pvec);
 			spin_lock(&zone->lru_lock);
 		}
   }
@@ -386,7 +406,7 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
 			zone->nr_active += pgmoved;
 			pgmoved = 0;
 			spin_unlock(&zone->lru_lock);
-			__pagevec_release(&pvec);
+			pagevec_release(&pvec);
 			spin_lock(&zone->lru_lock);
 		}
 	}
@@ -405,51 +425,32 @@ refill_inactive_zone(zone_t *zone, struct scan_control *sc){
  */
 static void
 shrink_zone(struct zone *zone, struct scan_control *sc){
-	/* 从active list回收页到inactive list */
-	refill_inactive_zone(zone, sc);
-	/* 从inactive list回收页到buddy */
-	shrink_cache(zone, sc);
+	uint64_t nr_to_scan_active;
+	uint64_t nr_to_scan_inactive;
 
-  // unsigned long nr_active;
-	// unsigned long nr_inactive;
+	/* 两条链表遍历的页数，根据优先级调整 */
+	nr_to_scan_active = zone->nr_active >> sc->priority;
+	nr_to_scan_inactive = zone->nr_inactive >> sc->priority;
 
-	// /*
-	//  * Add one to `nr_to_scan' just to make sure that the kernel will
-	//  * slowly sift through the active list.
-	//  */
-	// zone->nr_scan_active += (zone->nr_active >> sc->priority) + 1;
-	// nr_active = zone->nr_scan_active;
-	// if (nr_active >= SWAP_CLUSTER_MAX)
-	// 	zone->nr_scan_active = 0;
-	// else
-	// 	nr_active = 0;
+	sc->nr_to_reclaim = SWAP_CLUSTER_MAX;
 
-	// zone->nr_scan_inactive += (zone->nr_inactive >> sc->priority) + 1;
-	// nr_inactive = zone->nr_scan_inactive;
-	// if (nr_inactive >= SWAP_CLUSTER_MAX)
-	// 	zone->nr_scan_inactive = 0;
-	// else
-	// 	nr_inactive = 0;
+	while(nr_to_scan_active || nr_to_scan_inactive){
+		if(nr_to_scan_active){
+			sc->nr_to_scan = min(nr_to_scan_active, SWAP_CLUSTER_MAX);
+			nr_to_scan_active -= sc->nr_to_scan;
+			/* 从active list回收页到inactive list */
+			refill_inactive_list(zone, sc);
+		}
 
-	// sc->nr_to_reclaim = SWAP_CLUSTER_MAX;
-
-	// while (nr_active || nr_inactive) {
-	// 	if (nr_active) {
-	// 		sc->nr_to_scan = min(nr_active,
-	// 				(unsigned long)SWAP_CLUSTER_MAX);
-	// 		nr_active -= sc->nr_to_scan;
-	// 		refill_inactive_zone(zone, sc);
-	// 	}
-
-	// 	if (nr_inactive) {
-	// 		sc->nr_to_scan = min(nr_inactive,
-	// 				(unsigned long)SWAP_CLUSTER_MAX);
-	// 		nr_inactive -= sc->nr_to_scan;
-	// 		shrink_cache(zone, sc);
-	// 		if (sc->nr_to_reclaim <= 0)
-	// 			break;
-	// 	}
-	// }
+		if(nr_to_scan_inactive){
+			sc->nr_to_scan = min(nr_to_scan_inactive, SWAP_CLUSTER_MAX);
+			nr_to_scan_inactive -= sc->nr_to_scan;
+			/* 从inactive list回收页到buddy */
+			shrink_inactive_list(zone, sc);
+			if(sc->nr_to_reclaim <= 0)
+				break;
+		}
+	}
 }
 
 /*
@@ -457,43 +458,51 @@ shrink_zone(struct zone *zone, struct scan_control *sc){
  *
  * If a full scan of the inactive list fails to free enough memory then we
  * are "out of memory" and something needs to be killed.
- * 扫描inactive list，如果多次扫描后仍然失败了，就out of memory
+ * 
+ * 扫描inactive list，如果一个full scan仍不能reclaim足够的页，就out of memory，kill一些process。
  */
 int try_to_free_pages(){
   zone_t *zone = &memory_zone;
-  // int priority;
+  int priority;
 	int ret = 0;
-	// int total_scanned = 0, total_reclaimed = 0;
+	int total_scanned = 0, total_reclaimed = 0;
 	// struct reclaim_state *reclaim_state = current->reclaim_state;
 	struct scan_control sc;
-	unsigned long lru_pages = 0;
-	int i;
+	// int i;
 
-  sc.may_writepage = 0;
-  lru_pages = zone->nr_active + zone->nr_inactive;
+  // sc.may_writepage = 0;
 
-  /* 接下来的步骤在linxu中是一个循环，priority递减 */
-  sc.nr_mapped = read_page_state(nr_mapped);
-	sc.nr_scanned = 0;
-	sc.nr_reclaimed = 0;
-	// sc.priority = priority;
-	// shrink_caches(zone, &sc);
-	shrink_zone(zone, &sc);
-  // shrink_slab(sc.nr_scanned, gfp_mask, lru_pages);
-  if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX) {
+	/* 循环回收，priority越小，回收等级越高 */
+	for(priority = DEF_PRIORITY; priority >= 0; priority--){
+ 		// sc.nr_mapped = read_page_state(nr_mapped);
+		/* 每次循环reset */
+		sc.nr_scanned = 0;
+		sc.nr_reclaimed = 0;
+		sc.priority = priority;
+
+		shrink_zone(zone, &sc);	
+
+		/* 记录总数 */
+		total_scanned += sc.nr_scanned;
+		total_reclaimed += sc.nr_reclaimed;
+
+		/* 回收数量满足，返回 */
+		if(total_reclaimed >= SWAP_CLUSTER_MAX) {
 			ret = 1;
 			goto out;
+		}
 	}
 	// total_scanned += sc.nr_scanned;
 	// total_reclaimed += sc.nr_reclaimed;
 
 out:
+	return ret;
 }
 
 /*
- * Kick pdflush then try to free up some ZONE_NORMAL memory.
+ * 唤醒写回线程。写回更多的页。
  */
-static void free_more_memory(void)
+void free_more_memory(void)
 {
   /* 启动bdflush写回 */
 	/* 是否会出现两个线程写回一个页的情况？ */

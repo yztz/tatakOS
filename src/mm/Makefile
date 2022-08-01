@@ -12,3 +12,4 @@ obj-y += swap.o
 obj-y += trapframe.o
 obj-y += vm.o
 obj-y += vma.o
+obj-y += vmscan.o
