@@ -92,7 +92,7 @@ typedef struct _page_t {
     };
     // uint8_t resv[2]; // reserved for special use
 
-    int flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
+    uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
     list_head_t lru; /* 串联页，active/inactive list */
 
     union {
@@ -136,7 +136,7 @@ pgref_t put_page(page_t *page);
 pgref_t page_refcnt(page_t *page);
 
 void lock_page(uint64_t pa);
-void unlock_page(uint64_t pa);
+void unlock_page(page_t *page);
 
 void set_page_dirty(uint64_t pa);
 void clear_page_dirty(uint64_t pa);

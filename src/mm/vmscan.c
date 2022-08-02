@@ -121,8 +121,8 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		mapping = page->mapping;
 
 		/* 检测有没有被lock，如果无则lock，否则不释放 */
-    // if(TestSetPageLocked(page))
-      // goto keep;
+    if(TestSetPageLocked(page))
+      goto keep;
 
     if(PageActive(page))
       ER();
@@ -157,6 +157,8 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 
 		/* 写回dirty页 */
 		if(PageDirty(page)){
+			/* 优化: 不要一页一页的写，很慢，如果页在文件上是连续的，可收集起来一起写。
+			补：free_more_memory前先写回，可能会释放一些页，或许解决了这个问题？ */
 			pageout(page, mapping);
 		}
 
@@ -165,15 +167,13 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 			goto keep_locked;
 
 		/* 从pagecache中移除 */
-		spin_lock(&mapping->tree_lock);
-		__remove_from_page_cache(page);
-		spin_unlock(&mapping->tree_lock);
+		remove_from_page_cache(page);
 
 		/* 对应shrink_inactive_list的get_page */
 		put_page(page);
 
 // free_it:
-		// unlock_page(page);
+		unlock_page(page);
 		reclaimed++;
 
 		/*
@@ -189,8 +189,8 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		// SetPageActive(page);
 		// pgactivate++;
 keep_locked:
-		// unlock_page(page);
-// keep:
+		unlock_page(page);
+keep:
 		list_add(&page->lru, &ret_pages);
 		if(PageLRU(page))
 			ER();
@@ -423,8 +423,7 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
 }
 
 /**
- * @brief 从inactive list上回收32个页
- * 
+ * 把页从active list上移到inactive list上，然后从inactive list上回收。
  */
 static void
 shrink_zone(struct zone *zone, struct scan_control *sc){

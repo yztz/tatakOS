@@ -14,15 +14,10 @@
 #include "fs/mpage.h"
 #include "swap.h"
 /**
- * @brief 定义了关于file map相关的函数，函数声明在fs.h
+ * 定义了关于file map相关的函数，函数声明在fs.h
  *
  */
 
-/*
- * Remove a page from the page cache and free it. Caller has to make
- * sure the page is locked and that nobody else uses it - or that usage
- * is safe.  The caller must hold a write_lock on the mapping's tree_lock.
- */
 void __remove_from_page_cache(page_t *page)
 {
 	struct address_space *mapping = page->mapping;
@@ -30,9 +25,15 @@ void __remove_from_page_cache(page_t *page)
 	radix_tree_delete(&mapping->page_tree, page->index);
 	page->mapping = NULL;
 	mapping->nrpages--;
+  /* pagecache页的总数-1*/
 	// pagecache_acct(-1);
 }
 
+/*
+ * Remove a page from the page cache and free it. Caller has to make
+ * sure the page is locked and that nobody else uses it - or that usage
+ * is safe.  The caller must hold a write_lock on the mapping's tree_lock.
+ */
 void remove_from_page_cache(page_t *page)
 {
 	struct address_space *mapping = page->mapping;

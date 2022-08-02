@@ -237,11 +237,11 @@ void lock_page(uint64_t pa){
   // acquiresleep((sleeplock_t *)page->sleeplock);
 }
 
-// void unlock_page(page_t *page){
-//   if (!TestClearPageLocked(page))
-//     ER();
-// 	// wake_up_page(page, PG_locked);
-// }
+void unlock_page(page_t *page){
+  if (!TestClearPageLocked(page))
+    ER();
+	// wake_up_page(page, PG_locked);
+}
 
 /**
  * @brief 之前flag位是带移位的，原PG_diry = 1 << 现PG_diry 
