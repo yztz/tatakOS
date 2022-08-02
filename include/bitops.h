@@ -114,6 +114,7 @@
 	__test_and_op_bit_ord(op, mod, nr, addr, .aqrl)
 #define __op_bit(op, mod, nr, addr)				\
 	__op_bit_ord(op, mod, nr, addr, )
+/* 最后一个参数为空 */
 
 /* Bitmask modifiers */
 #define __NOP(x)	(x)
