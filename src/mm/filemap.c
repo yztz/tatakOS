@@ -65,7 +65,15 @@ uint64 find_get_page(struct address_space *mapping, unsigned long offset)
   // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
   if (pa)
-    ref_page(pa);
+    get_page(PATOPAGE(pa));
+  return pa;
+}
+
+uint64 find_get_lock_page(struct address_space *mapping, unsigned long offset){
+  uint64_t pa = 0;
+  pa = find_get_page(mapping, offset);
+  if(pa)
+    lock_page(PATOPAGE(pa));
   return pa;
 }
 
@@ -290,7 +298,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
         // for(;;);
       pa = (uint64)kalloc();
 
-      ref_page(pa);
+      get_page(PATOPAGE(pa));
       // printf(ylw("pa: %p\n"), pa);
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
@@ -317,7 +325,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
 
-    deref_page(pa);
+    put_page(PATOPAGE(pa));
 
     cur_off += len;
     buff += len;
@@ -347,10 +355,10 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     pg_off = cur_off & ~PGMASK;
 
 
-    pa = find_get_page(mapping, pg_id);
+    pa = find_get_lock_page(mapping, pg_id);
     if(!pa){
       pa = (uint64_t)kalloc();
-      ref_page(pa);
+      get_lock_page(PATOPAGE(pa));
       /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
       #ifdef TODO
       todo("read_one_page: optimize point 1: use prepare_write, if the write is all page, no need to read!");
@@ -367,8 +375,6 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     mark_page_accessed(page);
 
     SetPageDirect(page);
-    /* 函数位置有待商榷 */
-    lock_page(pa);
 
     len = min(rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), 1, buff, len);
@@ -377,7 +383,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     // memmove((void* )(pa + pg_off), (void *)buff, len);
     // for(;;);
     // todo("set page dirty");
-    unlock_put_page(pa);
+    unlock_put_page(page);
 
     rest -= len;
     cur_off += len; 

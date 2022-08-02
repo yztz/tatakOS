@@ -135,14 +135,15 @@ pgref_t get_page(page_t *page);
 pgref_t put_page(page_t *page);
 pgref_t page_refcnt(page_t *page);
 
-void lock_page(uint64_t pa);
+void lock_page(page_t *page);
 void unlock_page(page_t *page);
 
 void set_page_dirty(uint64_t pa);
 void clear_page_dirty(uint64_t pa);
 int page_is_dirty(uint64_t pa);
 
-void unlock_put_page(uint64_t pa);
+void unlock_put_page(page_t *page);
+void get_lock_page(page_t *page);
 void print_not_freed_pages();
 void reset_page(page_t *page);
 

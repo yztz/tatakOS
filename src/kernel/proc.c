@@ -603,6 +603,11 @@ forkret(void)
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
+/**
+ * 可能有时候不需要再sleep前释放掉某个spinlock，如lock_page，
+ * 所以新增了:
+ * if(lk != NULL)
+ */
 void
 sleep(void *chan, struct spinlock *lk)
 {
@@ -614,10 +619,10 @@ sleep(void *chan, struct spinlock *lk)
   // guaranteed that we won't miss any wakeup
   // (wakeup locks p->lock),
   // so it's okay to release lk.
-
   if(lk != &p->lock){
     acquire(&p->lock);
-    release(lk);
+    if(lk != NULL)
+      release(lk);
   }
 
   // Go to sleep.
@@ -631,7 +636,8 @@ sleep(void *chan, struct spinlock *lk)
 
   // Reacquire original lock.
   release(&p->lock);
-  acquire(lk);
+  if(lk != NULL)
+    acquire(lk);
 }
 
 // Wake up all processes sleeping on chan.

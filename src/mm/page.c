@@ -19,6 +19,9 @@
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
 
+extern void wakeup(void *chan);
+extern void sleep(void *chan, struct spinlock *lk);
+
 void reset_page(page_t *page){
   page->flags = 0;
   INIT_LIST_HEAD(&page->lru);
@@ -220,27 +223,31 @@ pgref_t put_page(page_t *page){
 
 }
 
-/* lock a page, if it's lock is null, allocate for it */
-void lock_page(uint64_t pa){
-  // page_t *page = &pages[PAGE2NUM(pa)];
-
-  // if(page->sleeplock == NULL){
-  //   page->sleeplock = kzalloc(sizeof(sleeplock_t));
-  //   if(page->sleeplock == NULL)
-  //     panic("lock alloc failed");
-  //   initsleeplock((sleeplock_t *)page->sleeplock, NULL);
-  //   #ifdef TODO
-  //   todo("free sleeplock!");
-  //   #endif
-  // }
-
-  // acquiresleep((sleeplock_t *)page->sleeplock);
+/**
+ * 使用类睡眠锁实现的lock page。
+ */
+void lock_page(page_t *page){
+  while(unlikely(TestSetPageLocked(page))){
+    while(PageLocked(page))
+      sleep(page, NULL);
+  }
 }
+
 
 void unlock_page(page_t *page){
   if (!TestClearPageLocked(page))
     ER();
-	// wake_up_page(page, PG_locked);
+  wakeup(page);
+}
+
+void get_lock_page(page_t *page){
+  get_page(page);
+  lock_page(page);
+}
+
+void unlock_put_page(page_t *page){
+  unlock_page(page);
+  put_page(page);
 }
 
 /**
@@ -267,9 +274,4 @@ int page_is_dirty(uint64_t pa){
 
   // return page->flags & PG_dirty;
   return PageDirty(page);
-}
-
-void unlock_put_page(uint64_t pa){
-  // unlock_page(pa);
-  deref_page(pa);
 }

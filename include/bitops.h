@@ -252,15 +252,24 @@ static inline void __clear_bit_unlock(
 
 
 /**
+ * 非架构相关，但是还是放在这里了。
+ */
+static inline int
+test_bit(unsigned int nr, const volatile unsigned long *addr)
+{
+	return 1UL & (addr[BIT_WORD(nr)] >> (nr & (BITS_PER_LONG-1)));
+}
+
+/**
  * 补充函数。
  * test_bit可以不是atomic。
  * 如果addr是64位的指针，在test_bit转化为32位，会不会有问题？
  */
-static inline int
-test_bit (int nr, const volatile void *addr)
-{
-	return 1 & (((const volatile int *) addr)[nr >> 5] >> (nr & 31));
-}
+// static inline int
+// test_bit (int nr, const volatile void *addr)
+// {
+// 	return 1 & (((const volatile int *) addr)[nr >> 5] >> (nr & 31));
+// }
 
 
 // #undef __test_and_op_bit
