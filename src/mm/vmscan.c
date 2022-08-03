@@ -27,6 +27,7 @@
 #include "pagevec.h"
 #include "swap.h"
 #include "writeback.h"
+#include "fs/mpage.h"
 
 struct scan_control {
 	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */
@@ -84,7 +85,6 @@ typedef struct scan_control scan_control_t;
 // 	return 0;
 // }
 
-extern int write_one_page(entry_t *entry, uint64_t buff, uint32_t index);
 extern void sych_entry_size_in_disk(entry_t *entry);
 /**
  * pageout is called by shrink_list() for each dirty page. Calls ->writepage().

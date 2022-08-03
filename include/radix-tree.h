@@ -39,7 +39,8 @@ typedef struct radix_tree_root
  */
 typedef struct radix_tree_node {
 	unsigned int	count;
-	void		*slots[RADIX_TREE_MAP_SIZE];
+  /* 虽然是rdt node的指针，但是叶子指向具体的页地址 */
+	struct radix_tree_node	*slots[RADIX_TREE_MAP_SIZE];
   uint64 tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
 } radix_tree_node_t;
 

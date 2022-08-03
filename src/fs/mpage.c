@@ -20,8 +20,8 @@
  */
 
 /**
- * @brief 从entry中读取一个page到buff。
- * 得到bio结构体，记录了此次读操作涉及到的sector信息。
+ * @brief 从entry中读取或写回一个page到buff。
+ * 得到bio结构体，记录了此次读写操作涉及到的sector信息。
  * 
  * linux readpage。
  * 
@@ -30,26 +30,34 @@
  * @param index the index of page in the file
  * @return int 
  */
-int read_one_page(entry_t *entry, uint64 buff, uint32 index){ 
-
-  bio_t *bio = get_rw_pages_bio(entry, buff, index, 1, READ);
+int rw_one_page(entry_t *entry, uint64 buff, uint32 index, int rw){
+  bio_t *bio = get_rw_pages_bio(entry, buff, index, 1, rw);
   if(bio)
     submit_bio(bio);
   
   return 0;
 }
 
-/**
- * 把一个页写回disk。
- */
-int write_one_page(entry_t *entry, uint64_t buff, uint32_t index){
+// int read_one_page(entry_t *entry, uint64 buff, uint32 index){ 
+
+//   bio_t *bio = get_rw_pages_bio(entry, buff, index, 1, READ);
+//   if(bio)
+//     submit_bio(bio);
   
-  bio_t *bio = get_rw_pages_bio(entry, buff, index, 1, WRITE);
-  if(bio)
-    submit_bio(bio);
+//   return 0;
+// }
+
+// /**
+//  * 把一个页写回disk。
+//  */
+// int write_one_page(entry_t *entry, uint64_t buff, uint32_t index){
   
-  return 0;
-}
+//   bio_t *bio = get_rw_pages_bio(entry, buff, index, 1, WRITE);
+//   if(bio)
+//     submit_bio(bio);
+  
+//   return 0;
+// }
 /**
  * @brief give a list of bio_vec and a start address buff, assign to 
  * bio_vec buff with the value of "buff", and plus offset for it.
