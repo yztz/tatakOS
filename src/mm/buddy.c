@@ -106,15 +106,16 @@ void *buddy_alloc(size_t size) {
   if(!size)
     panic("buddy_alloc: size");
   
-retry:
+// retry:
   pgnums = ROUND_COUNT(size);
   // 获取最小的大于size的2^order
-  oorder = order = IS_POW2(pgnums) ? get_order(pgnums) : get_order(pgnums) + 1;
-  if(order >= MAX_ORDER) 
+  oorder = IS_POW2(pgnums) ? get_order(pgnums) : get_order(pgnums) + 1;
+  if(oorder >= MAX_ORDER) 
     return NULL;
 
   /* 不能从这里retry，因为order第一次尝试的时候已经增加过了（为9），所以需要重置order */
-// retry:
+retry:
+  order = oorder;
   // 从当前order向上，直到寻找到有空闲空间的order
   acquire(&lists[order].lock);
   while(order + 1 < MAX_ORDER && empty(order)){

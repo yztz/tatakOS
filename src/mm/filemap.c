@@ -385,7 +385,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 
     mark_page_accessed(page);
 
-    SetPageDirect(page);
+    // SetPageDirect(page);
 
     len = min(rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), 1, buff, len);

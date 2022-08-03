@@ -163,23 +163,23 @@ void free_rw_page_list(rw_page_list_t *pg_list){
 //  */
 // int mpage_writepages(address_space_t *mapping){
 //   entry_t *entry = mapping->host;
-//   pages_be_found_head_t *pg_head;
+//   pages_be_found_head_t *pg_list;
 //   pages_be_found_t *cur_page, *next_page;
 //   uint32_t nr_continuous_pages;
   
 
 //   // printf_radix_tree(&mapping->page_tree);
 
-//   pg_head = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
+//   pg_list = find_pages_tag(mapping, PAGECACHE_TAG_DIRTY);
   
-//   // print_pages_be_found(pg_head);
+//   // print_pages_be_found(pg_list);
 
 //   /* no page in mapping is dirty */
-//   if(pg_head == NULL)
+//   if(pg_list == NULL)
 //     return 0;
-//   // if(pg_head->head == NULL){
-//     /* free the pg_head !!!*/
-//     // kfree(pg_head);
+//   // if(pg_list->head == NULL){
+//     /* free the pg_list !!!*/
+//     // kfree(pg_list);
 //     // return 0;
 //   // }
 //   /** 
@@ -189,7 +189,7 @@ void free_rw_page_list(rw_page_list_t *pg_list){
 //    * 
 //    * 补充：合并的要求比较严格，不仅要求页的pg_id是连续的，还要要求页的pa是连续的才行，要求比较严格。
 //    */
-//   cur_page = pg_head->head;
+//   cur_page = pg_list->head;
 //   while(cur_page){
 //     nr_continuous_pages = 1;
 
@@ -222,14 +222,14 @@ void free_rw_page_list(rw_page_list_t *pg_list){
 //   }
 
 //   /* 这里别忘了释放pghead相关的结构体！ */
-//   free_rw_page_list(pg_head);
-//   // pages_be_found_t *pg = pg_head->head;
+//   free_rw_page_list(pg_list);
+//   // pages_be_found_t *pg = pg_list->head;
 //   // while(pg){
 //   //   pages_be_found_t *tmp = pg->next;
 //   //   kfree((void*)pg);
 //   //   pg = tmp;
 //   // }
-//   // kfree(pg_head);
+//   // kfree(pg_list);
 
 //   return 0;
 
@@ -239,7 +239,7 @@ void free_rw_page_list(rw_page_list_t *pg_list){
  * 将由pg_head串联起来的页写回磁盘。
  * linux: mpage_writepages
  */
-int write_pages(entry_t *entry, pages_be_found_head_t *pg_head){
+int write_pages(entry_t *entry, rw_page_list_t *pg_list){
   rw_page_t *cur_page, *next_page;
   uint32_t nr_continuous_pages;
 
@@ -250,7 +250,7 @@ int write_pages(entry_t *entry, pages_be_found_head_t *pg_head){
    * 
    * 补充：合并的要求比较严格，不仅要求页的pg_id是连续的，还要要求页的pa是连续的才行，要求比较严格。
    */
-  cur_page = pg_head->head;
+  cur_page = pg_list->head;
   while(cur_page){
     nr_continuous_pages = 1;
 
@@ -283,14 +283,14 @@ int write_pages(entry_t *entry, pages_be_found_head_t *pg_head){
   }
 
   /* 这里别忘了释放pghead相关的结构体！ */
-  free_rw_page_list(pg_head);
-  // pages_be_found_t *pg = pg_head->head;
+  free_rw_page_list(pg_list);
+  // pages_be_found_t *pg = pg_list->head;
   // while(pg){
   //   pages_be_found_t *tmp = pg->next;
   //   kfree((void*)pg);
   //   pg = tmp;
   // }
-  // kfree(pg_head);
+  // kfree(pg_list);
 
   return 0;
 }
