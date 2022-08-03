@@ -405,35 +405,31 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 }
 
 
-void init_pg_head(pages_be_found_head_t *pg_head){
-  pg_head->head = NULL;
-  pg_head->tail = NULL;
-  pg_head->nr_pages = 0;
+void init_pg_head(rw_page_list_t *pg_list){
+  pg_list->head = NULL;
+  pg_list->tail = NULL;
+  pg_list->nr_pages = 0;
 }
 
 /**
  * @brief find all pages in the mapping with tag
- * 
- * @param mapping 
- * @param tag 
- * @return pages_be_found_head_t* 
  */
-pages_be_found_head_t *
+rw_page_list_t *
 find_pages_tag(address_space_t *mapping, uint32_t tag){
-  pages_be_found_head_t *pg_head = kzalloc(sizeof(pages_be_found_head_t));
+  rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
   
-  init_pg_head(pg_head);
-  radix_tree_find_tags(&mapping->page_tree, tag, pg_head);
+  init_pg_head(pg_list);
+  radix_tree_find_tags(&mapping->page_tree, tag, pg_list);
 
-  /* if no taged page, pg_head and pg_tail is null */
-  if(pg_head->head != NULL)
-    pg_head->tail->next = NULL;
+  /* if no taged page, pg_list and pg_tail is null */
+  if(pg_list->head != NULL)
+    pg_list->tail->next = NULL;
   else{
-    /* 没有标签页，free pg_head */ 
-    kfree(pg_head);
-    pg_head = NULL;
+    /* 没有标签页，free pg_list */ 
+    kfree(pg_list);
+    pg_list = NULL;
   }
-  return pg_head;
+  return pg_list;
 }
 
 

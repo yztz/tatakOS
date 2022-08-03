@@ -240,9 +240,9 @@ void print_zone_list_info(zone_t *zone){
   print_zone_list(&zone->active_list);
 }
 
-struct pages_be_found_head;
-void print_pages_be_found(struct pages_be_found_head *pg_head){
-  pages_be_found_t *pg = pg_head->head;
+struct rw_page_list;
+void print_rw_page_list(struct rw_page_list *pg_list){
+  rw_page_t *pg = pg_list->head;
   while(pg){
     printf(bl("\npa:%p\tpg_id:%d\n"), pg->pa, pg->pg_id);
     // print_page_contents((char*)pg->pa);

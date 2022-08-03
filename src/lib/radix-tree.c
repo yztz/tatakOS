@@ -336,32 +336,34 @@ out:
  * @brief recursive lookup tagged page
  * 
  */
-void lookup_tag(radix_tree_node_t *node, uint32_t tag, pages_be_found_head_t *pg_head, int height, uint64_t pg_id_base){
+void lookup_tag(radix_tree_node_t *node, uint32_t tag, rw_page_list_t *pg_list, int height, uint64_t pg_id_base){
 	int i, shift;
 	shift = (height-1)*RADIX_TREE_MAP_SHIFT;
+	page_t *ppage;
 
 	for(i=0; i<RADIX_TREE_MAP_SIZE; i++){
 		if(tag_get(node, tag, i)){
 			if(height == 1){
-				pages_be_found_t *page = kzalloc(sizeof(pages_be_found_t));
+				rw_page_t *page = kzalloc(sizeof(rw_page_t));
 
-				page->pa = (uint64_t)node->slots[i];
+				ppage = (page_t *)node->slots[i];
+				page->pa = PAGETOPA(ppage);
 				page->pg_id = pg_id_base + i;
 
-				if(pg_head->head == NULL && pg_head->tail == NULL){
-					pg_head->head = page;
-					pg_head->tail = page;
+				if(pg_list->head == NULL && pg_list->tail == NULL){
+					pg_list->head = page;
+					pg_list->tail = page;
 				}
 				else{
-					pg_head->tail->next = page;
-					pg_head->tail = page;
+					pg_list->tail->next = page;
+					pg_list->tail = page;
 				}
 
-				pg_head->nr_pages++;
+				pg_list->nr_pages++;
 			}
 			else{
 
-				lookup_tag((radix_tree_node_t *)node->slots[i], tag, pg_head, height - 1, pg_id_base + i * (1<<shift));
+				lookup_tag((radix_tree_node_t *)node->slots[i], tag, pg_list, height - 1, pg_id_base + i * (1<<shift));
 			}
 		}
 	}
@@ -371,18 +373,13 @@ void lookup_tag(radix_tree_node_t *node, uint32_t tag, pages_be_found_head_t *pg
 
 /**
  * @brief find all pages with tag in the rdt
- * 
- * @param mapping 
- * @param tag 
- * @param pg_head 
- * @return pages_be_found_head_t* 
  */
-pages_be_found_head_t *
-radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head){
+rw_page_list_t *
+radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, rw_page_list_t *pg_list){
 	/* 打印出来是2，赋值为3试一试。*/
 	// root->rnode->tags[0][0] = 3;
-	lookup_tag(root->rnode, tag, pg_head, root->height, 0);
-	return pg_head;
+	lookup_tag(root->rnode, tag, pg_list, root->height, 0);
+	return pg_list;
 }
 
 /**

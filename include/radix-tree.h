@@ -57,25 +57,22 @@ typedef struct radix_tree_path {
  * 
  * 一次要读/写的页 
  */
-typedef struct pages_be_found {
+typedef struct rw_page {
   uint64_t pa;
   uint64_t pg_id;
-  struct pages_be_found *next;
-}pages_be_found_t;
+  struct rw_page *next;
+}rw_page_t;
 
-typedef pages_be_found_t rw_page_t;
 
 /**
  * @brief 上述结构体的头，记录链表数量, 头结点和尾节点指针
  * 
  */
-typedef struct pages_be_found_head {
-  pages_be_found_t *head;
-  pages_be_found_t *tail;
+typedef struct rw_page_list {
+  rw_page_t *head;
+  rw_page_t *tail;
   uint64_t nr_pages;
-}pages_be_found_head_t;
-
-typedef pages_be_found_head_t rw_page_list_t; 
+}rw_page_list_t;
 
 void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
 int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item);
@@ -84,7 +81,7 @@ uint64 radix_tree_maxindex(uint height);
 static struct radix_tree_node * radix_tree_node_alloc();
 void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
-pages_be_found_head_t * radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, pages_be_found_head_t *pg_head);
+rw_page_list_t * radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, rw_page_list_t *pg_head);
 
 
 
