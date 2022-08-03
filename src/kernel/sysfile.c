@@ -375,7 +375,7 @@ uint64 sys_openat(void) {
     //     }
     // }
 
-    debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
+    // debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
 
     // not support shm now
     if(strncmp(path, "/dev/shm/testshm", 16) == 0) {

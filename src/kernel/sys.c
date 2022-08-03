@@ -24,6 +24,13 @@ utsname_t sysname = {
   .version = "0.0.0.0.0.0.0.0.1"
 };
 
+uint64_t sys_geteuid(void) {
+    return 0;
+}
+
+uint64_t sys_getegid(void) {
+    return 0;
+}
 
 
 uint64 sys_timetag(void) {

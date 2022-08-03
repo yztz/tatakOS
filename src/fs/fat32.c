@@ -140,11 +140,9 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
-    // memset(buffer->data, 0, 256);
-    // bwrite(buffer);
-    // print_block(buffer->data);
+    
     brelse(buffer);
-    // for(;;);
+
     fat->root = get_root(fat);
 
     *ppfat = fat;
@@ -638,17 +636,6 @@ static void fillname(dir_slot_t *slot, char *buf, int len) {
         goto refill;
     }
 }
-
-
-// static void char2unicode(uint16_t *buf, uint8_t *ch, int len, int rlen) {
-//     int i;
-//     for(i = 0; i < len; i++)
-//         buf[i] = ch[i];
-//     while(i < rlen) {
-//         buf[i] = 0xffff;
-//         i++;
-//     }
-// }
 
 
 static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *p2) {

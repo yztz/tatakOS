@@ -23,10 +23,11 @@ int main() {
     memuse();
     
     // run("run-static.sh", "entry-test");
-    // run("run-dynamic.sh", "entry-dynamic.exe");
 
     run("run-static.sh", "entry-static.exe");
     run("run-dynamic.sh", "entry-dynamic.exe");
+
+    
     memuse(); 
     // philosophy();
     printf("\n\e[32;1mALL TEST DONE!\e[0m\n");
@@ -70,12 +71,6 @@ void run(char *casename, char *entryname) {
     i++;
     // filters //
     if(!COND) continue;
-    // if(strncmp(proc_name, "pthread_cancel_points", 21) == 0) continue;
-    // if(strncmp(proc_name, "pthread_cond_smasher", 20) == 0) continue;
-    // if(strncmp(proc_name, "sem_init", 8) == 0) continue;
-    // if(strncmp(proc_name, "tls_init", 8) == 0) continue;
-    // if(strncmp(proc_name, "tls_get_new_dtv", 15) == 0) continue;
-    // if(strncmp(proc_name, "tls_local_exec", 14) == 0) continue;
 
     printf("\nReady To Run Test-%d %s\n", i, proc_name);
     int npid = fork();

@@ -129,7 +129,7 @@ typedef struct proc proc_t;
 
 
 void            exit(int);
-int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid);
+int             do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid);
 uint64          growproc(uint64_t n);
 void            proc_mapstacks();
 int             kill(int);

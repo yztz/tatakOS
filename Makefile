@@ -64,7 +64,8 @@ export LDFLAGS CFLAGS
 
 #============================QEMU==================================#
 QEMU = qemu-system-riscv64
-QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 17M -smp $(CPUS) -nographic
+QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 128M -smp $(CPUS) -nographic
+# QEMUOPTS += -machine virt -bios sbi-qemu -kernel kernel-qemu -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 

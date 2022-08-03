@@ -361,7 +361,7 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   int newsize = off + ret;
   if(ret > 0 && newsize > entry->raw.size) { // 文件长度变化
     entry->raw.size = newsize;
-    debug("update size");
+    // debug("update size");
     fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
   }
   return ret;

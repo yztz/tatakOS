@@ -102,6 +102,22 @@ static uint64 (*syscalls[])(void) = {
 };
 #undef __SYS_CALL
 
+
+#ifdef DEBUG
+#define __SYS_CALL(NUM, NAME, FUNC) [NUM] #NAME,
+static char *__syscall_names[] = {
+  #include "generated/syscall_gen.h"
+};
+#undef __SYS_CALL
+char *syscall_name(int num) {
+  return __syscall_names[num];
+}
+#else
+char *syscall_name(int num) {
+  return "syscall name: debug required";
+}
+#endif
+
 void
 syscall(void)
 {

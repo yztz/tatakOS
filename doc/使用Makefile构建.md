@@ -14,48 +14,23 @@
 
 ```
 .
-├── bootloader # bootloader相关（SBI）
-│   ├── rustsbi-qemu
-│   └── rustsbi-k210
-├── build # 构建目录
-│   ├── objs # 对应与src目录结构
-|   |   └── ...
-│   └── user_prog # 用户程序
-├── doc # 文档
-├── include	# 公共头文件目录
-│   └── kernel
-├── script # 脚本文件
-└── src # 源文件
-    ├── kernel # 内核
-    │   ├── asm
-    │   ├── fs
-    │   ├── lib
-    │   ├── mm
-    │   └── platform # 平台相关
-    │       ├── k210
-    │       │   └── include
-    │       └── qemu
-    │           ├── driver
-    │           └── include
-    └── user # 用户程序
-        ├── cat
-        ├── echo
-        ├── forktest
-        ├── grep
-        ├── grind
-        ├── include # 用户头文件
-        ├── init
-        ├── kill
-        ├── lib # 用户库
-        ├── ln
-        ├── ls
-        ├── mkdir
-        ├── rm
-        ├── sh
-        ├── stressfs
-        ├── usertests
-        ├── wc
-        └── zombie
+├── bootloader  SBI相关
+├── build       编译输出
+├── changelog   项目变更日志
+├── doc         项目详细文档
+├── entry       系统调用表与性能分析表
+├── include     头文件目录
+├── Makefile    构建文件
+├── README
+├── run-gdb.sh  
+├── run-k210.sh
+├── run-qemu.sh
+├── script      编译用脚本
+├── src         源文件目录
+├── test        测试调试目录，包含测试日志
+├── tools       常用工具
+├── user        用户程序目录
+└── 操作系统内核设计赛文档.pdf
 ```
 
 用户程序与内核程序被分开存放，其实从宏观意义上来看，内核程序其实也可以被理解为是一种用户程序，它的构建方式与普通的用户程序构建大同小异，只多了些平台相关的内容，因此我们在构建内核与构建普通用户程序时的整体思维应该是一致的，这将在下文得到体现。
