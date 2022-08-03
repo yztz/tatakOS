@@ -40,8 +40,8 @@ extern int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0);
  * pages when write it back to disk
  * 
  */
-void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
-  set_page_dirty(pa);
+void set_pg_rdt_dirty(page_t *page, radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
+  SetPageDirty(page);
   radix_tree_tag_set(root, pg_id, tag_type);
 }
 

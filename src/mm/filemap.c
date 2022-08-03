@@ -45,36 +45,40 @@ void remove_from_page_cache(page_t *page)
 	spin_unlock(&mapping->tree_lock);
 }
 
-uint64 find_page(struct address_space *mapping, unsigned long offset){
-  uint64 pa = 0;
+page_t *find_page(struct address_space *mapping, unsigned long offset){
+  // uint64 pa = 0;
+  page_t *page;
 
   acquire(&mapping->tree_lock);
-  pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  // pa = (uint64)radix_tree_lookup(&mapping->page_tree, offset);
+  page = (page_t *)radix_tree_lookup(&mapping->page_tree, offset);
   release(&mapping->tree_lock);
-  return pa;
+  return page;
 }
 /*
  * a rather lightweight function, finding and getting a reference to a
  * hashed page atomically.
  */
-uint64 find_get_page(struct address_space *mapping, unsigned long offset)
+page_t *find_get_page(struct address_space *mapping, unsigned long offset)
 {
-  uint64 pa = 0;
+  // uint64 pa = 0;
+  page_t *page;
 
-  pa = find_page(mapping, offset);
+  page = find_page(mapping, offset);
   // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
-  if (pa)
-    get_page(PATOPAGE(pa));
-  return pa;
+  if (page)
+    get_page(page);
+  return page;
 }
 
-uint64 find_get_lock_page(struct address_space *mapping, unsigned long offset){
-  uint64_t pa = 0;
-  pa = find_get_page(mapping, offset);
-  if(pa)
-    lock_page(PATOPAGE(pa));
-  return pa;
+page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
+  // uint64_t pa = 0;
+  page_t *page;
+  page = find_get_page(mapping, offset);
+  if(page)
+    lock_page(page);
+  return page;
 }
 
 /**
@@ -155,14 +159,13 @@ uint64 find_get_lock_page(struct address_space *mapping, unsigned long offset){
 //   return 0;
 // }
 
-void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset)
+void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset)
 {
-  page_t *page = PATOPAGE(pa);
   page->mapping = mapping;
   page->index = offset;
 
   acquire(&mapping->tree_lock);
-  radix_tree_insert(&mapping->page_tree, offset, (void *)pa);
+  radix_tree_insert(&mapping->page_tree, offset, (void *)page);
   release(&mapping->tree_lock);
 }
 
@@ -194,11 +197,11 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
       /* the leaf node, 释放叶节点记录的物理地址的页 */
       if (c_h == height)
       {
-        void *pa = (node->slots[i]);
+        page_t *page = (page_t *)(node->slots[i]);
         // /* 是释放一整个物理页吗？ */
         // printf(bl("walk free pa: %p\n"), pa);
         // kfree(pa);
-        put_page(PATOPAGE(pa));
+        put_page(page);
         // printf("pa: %p\n", pa);
         // print_buddy(); 
       }
@@ -261,6 +264,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
   uint64 pa, pgoff;
   int rest, cur_off;
   uint32_t file_size;
+  page_t *page;
 
   rest = n;
   cur_off = off;
@@ -289,16 +293,17 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
         break;
     }
 
-    pa = find_get_page(mapping, index);
+    page = find_get_page(mapping, index);
 
     /* the content is not cached in page cache, read from disk and cache it */
-    if (!pa)
+    if (!page)
     {
       // if(user == 1)
         // for(;;);
       pa = (uint64)kalloc();
+      page = PATOPAGE(pa);
 
-      get_page(PATOPAGE(pa));
+      get_page(page);
       // printf(ylw("pa: %p\n"), pa);
       /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
       entry_t *entry = mapping->host;
@@ -311,12 +316,15 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
       // printf(ylw("pa: %p\n"), pa);
 
       /* 添加到page cache */
-      add_to_page_cache(pa, mapping, index);
+      add_to_page_cache(page, mapping, index);
       /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
-      lru_cache_add(&pages[PAGE2NUM(pa)]);
+      lru_cache_add(page);
+    }
+    else{
+      pa = PAGETOPA(page);
     }
 
-    mark_page_accessed(&pages[PAGE2NUM(pa)]);
+    mark_page_accessed(page);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min(rest, PGSIZE - pgoff);
     /* 文件最后一页 */
@@ -325,7 +333,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
 
-    put_page(PATOPAGE(pa));
+    put_page(page);
 
     cur_off += len;
     buff += len;
@@ -355,10 +363,12 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     pg_off = cur_off & ~PGMASK;
 
 
-    pa = find_get_lock_page(mapping, pg_id);
-    if(!pa){
+    page = find_get_lock_page(mapping, pg_id);
+    if(!page){
       pa = (uint64_t)kalloc();
-      get_lock_page(PATOPAGE(pa));
+      page = PATOPAGE(pa);
+
+      get_lock_page(page);
       /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
       #ifdef TODO
       todo("read_one_page: optimize point 1: use prepare_write, if the write is all page, no need to read!");
@@ -366,11 +376,12 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       /* 整个页都要重新写过的，就没必要从磁盘中读了 */
       if(!(pg_off == 0 && rest >= PGSIZE))
         read_one_page(mapping->host, pa, pg_id);
-      add_to_page_cache(pa, mapping, pg_id);
-      lru_cache_add(PATOPAGE(pa));
+      add_to_page_cache(page, mapping, pg_id);
+      lru_cache_add(page);
     }
-
-    page = PATOPAGE(pa);
+    else{
+      pa = PAGETOPA(page);
+    }
 
     mark_page_accessed(page);
 
@@ -379,7 +390,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     len = min(rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), 1, buff, len);
 
-    set_pg_rdt_dirty(pa, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
+    set_pg_rdt_dirty(page, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
     // memmove((void* )(pa + pg_off), (void *)buff, len);
     // for(;;);
     // todo("set page dirty");

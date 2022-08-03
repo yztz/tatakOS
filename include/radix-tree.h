@@ -89,7 +89,8 @@ pages_be_found_head_t * radix_tree_find_tags(radix_tree_root_t *root, uint32_t t
 
 
 /* functions defined in write-pageback.c */
-void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
+// void set_pg_rdt_dirty(uint64_t pa, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
+void set_pg_rdt_dirty(page_t *page, radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 
 
 #endif

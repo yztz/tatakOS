@@ -92,9 +92,9 @@ void sych_entry_in_disk(entry_t *entry);
 #define ROOTINO  1   // root i-number
 
 
-uint64 find_get_page(address_space_t *mapping, unsigned long offset);
+page_t *find_get_page(address_space_t *mapping, unsigned long offset);
 int filemap_nopage(uint64 address);
-void add_to_page_cache(uint64 pa, struct address_space *mapping, pgoff_t offset);
+void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset);
 void free_mapping(entry_t *entry);
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n);
 uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n);
