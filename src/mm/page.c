@@ -227,17 +227,21 @@ pgref_t put_page(page_t *page){
  * 使用类睡眠锁实现的lock page。
  */
 void lock_page(page_t *page){
+  page_spin_lock(page);
   while(unlikely(TestSetPageLocked(page))){
     while(PageLocked(page))
       sleep(page, NULL);
   }
+  page_spin_unlock(page);
 }
 
 
 void unlock_page(page_t *page){
+  page_spin_lock(page);
   if (!TestClearPageLocked(page))
     ER();
   wakeup(page);
+  page_spin_unlock(page);
 }
 
 void get_lock_page(page_t *page){

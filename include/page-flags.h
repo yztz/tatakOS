@@ -15,6 +15,11 @@
 #define PG_chainlock		15	/* lock bit for ->pte_chain */
 #define PG_direct		16	/* ->pte_chain points directly at pte */
 
+/**
+ * lock_page时使用，防止sleep还没完成，就被wakeup了。
+ */
+#define PG_spinlock 17
+
 /*
  * Global page accounting.  One instance per CPU.  Only unsigned longs are
  * allowed.
@@ -94,9 +99,9 @@ typedef struct page_state page_state_t;
 #define SetPageLocked(page)		\
 		__set_bit(PG_locked, &(page)->flags)
 #define TestSetPageLocked(page)		\
-		test_and_set_bit(PG_locked, &(page)->flags)
+		test_and_set_bit_lock(PG_locked, &(page)->flags)
 #define ClearPageLocked(page)		\
-		__clear_bit(PG_locked, &(page)->flags)
+		clear_bit_unlock(PG_locked, &(page)->flags)
 #define TestClearPageLocked(page)	\
 		test_and_clear_bit(PG_locked, &(page)->flags)
 
@@ -177,4 +182,9 @@ typedef struct page_state page_state_t;
 #define ClearPageDirect(page)		__clear_bit(PG_direct, &(page)->flags)
 #define TestClearPageDirect(page)	test_and_clear_bit(PG_direct, &(page)->flags)
 
+#define PageSpinlock(page) test_bit(PG_spinlock, &(page)->flags)
+#define SetPageSpinlock(page)	__set_bit(PG_spinlock, &(page)->flags)
+#define TestSetPageSpinlock(page)	test_and_set_bit(PG_spinlock, &(page)->flags)
+#define ClearPageSpinlock(page)		__clear_bit(PG_spinlock, &(page)->flags)
+#define TestClearPageSpinlock(page)	test_and_clear_bit(PG_spinlock, &(page)->flags)
 #endif

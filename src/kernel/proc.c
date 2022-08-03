@@ -613,6 +613,13 @@ sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
+  /**
+   * Go to sleep.
+   * 这两个语句是否应该放在释放lk的前面，否则不在临界区里面。
+   */
+  p->chan = chan;
+  p->state = SLEEPING;
+
   // Must acquire p->lock in order to
   // change p->state and then call sched.
   // Once we hold p->lock, we can be
@@ -621,13 +628,14 @@ sleep(void *chan, struct spinlock *lk)
   // so it's okay to release lk.
   if(lk != &p->lock){
     acquire(&p->lock);
+
     if(lk != NULL)
       release(lk);
+    else{
+      page_t *page = (page_t *)chan;
+      page_spin_unlock(page);
+    }
   }
-
-  // Go to sleep.
-  p->chan = chan;
-  p->state = SLEEPING;
 
   sched();
 
@@ -636,8 +644,13 @@ sleep(void *chan, struct spinlock *lk)
 
   // Reacquire original lock.
   release(&p->lock);
+
   if(lk != NULL)
     acquire(lk);
+  else{
+    page_t *page = (page_t *)chan;
+    page_spin_lock(page);
+  }
 }
 
 // Wake up all processes sleeping on chan.
