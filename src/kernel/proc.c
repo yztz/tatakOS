@@ -613,13 +613,6 @@ sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
-  /**
-   * Go to sleep.
-   * 这两个语句是否应该放在释放lk的前面，否则不在临界区里面。
-   */
-  p->chan = chan;
-  p->state = SLEEPING;
-
   // Must acquire p->lock in order to
   // change p->state and then call sched.
   // Once we hold p->lock, we can be
@@ -636,6 +629,9 @@ sleep(void *chan, struct spinlock *lk)
       page_spin_unlock(page);
     }
   }
+
+  p->chan = chan;
+  p->state = SLEEPING;
 
   sched();
 
@@ -661,14 +657,7 @@ wakeup(void *chan)
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
-    if(p != myproc()){
-
-      #ifdef TODO
-      todo("delete");
-      #endif
-      if(p->pid == 2)
-        continue;
-
+    if(p != myproc()){ 
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;
