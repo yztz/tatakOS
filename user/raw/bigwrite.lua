@@ -1,6 +1,6 @@
 io.output("test.txt")
 
-num = 128
+num = 4096
 
 for i = 64, 125 do
     c = string.char(i)

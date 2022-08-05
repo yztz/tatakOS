@@ -143,7 +143,7 @@ uint64_t sys_philosophy(void) {
 
 uint64_t sys_memuse(void) {
   buddy_print_free();
-  print_buddy();
+  // print_buddy();
   // print_zone_list_info(&memory_zone);
   return 0;
 }

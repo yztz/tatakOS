@@ -73,14 +73,14 @@ void test_mmap(void){
     array1 = mmap(NULL, kst.st_size, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     array2 = mmap(NULL, 0x111 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
     array3 = mmap(NULL, 0x1001, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    array4 = mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
-    array5 = mmap(NULL, 0x200 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    // array4 = mmap(NULL, 0x2000, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+    // array5 = mmap(NULL, 0x200 , PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
 
 	printf("mmap content: %s\n", array1);
 	printf("mmap content: %s\n", array2);
 	printf("mmap content: %s\n", array3);
-	printf("mmap content: %s\n", array4);
-	printf("mmap content: %s\n", array5);
+	// printf("mmap content: %s\n", array4);
+	// printf("mmap content: %s\n", array5);
 
 
 

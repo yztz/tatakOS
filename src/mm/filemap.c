@@ -347,16 +347,15 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
   uint32_t pg_id, pg_off, rest, cur_off;
   uint64_t pa;
   page_t *page;
-  // entry_t *entry = mapping->host;
+  entry_t *entry = mapping->host;
   int len;
+  uint64_t pgnums_in_disk;
+
+  pgnums_in_disk = ROUNDUP(entry->raw.size, PAGE_CACHE_SIZE) >> PAGE_CACHE_SHIFT;
 
   cur_off = off;
   rest = n;
 
-
-  #ifdef TODO
-  todo("if off biger the file size, expend tree");
-  #endif
   while(rest > 0){
     pg_id = cur_off >> PGSHIFT;
     pg_off = cur_off & ~PGMASK;
@@ -368,13 +367,10 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       page = PATOPAGE(pa);
 
       get_lock_page(page);
-      /* 先读再写，如果要写入的地方大于文件本身的长度(enlarge the file size),那么去读的话是读不到的…… */
-      #ifdef TODO
-      todo("read_one_page: optimize point 1: use prepare_write, if the write is all page, no need to read!");
-      #endif
-      /* 整个页都要重新写过的，就没必要从磁盘中读了 */
+      /* 整个页都要重新写过的，就没必要从磁盘中读了；或者要写的文件偏移大于文件在磁盘上的大小，也没必要读磁盘  */
       if(!(pg_off == 0 && rest >= PGSIZE))
-        read_one_page(mapping->host, pa, pg_id);
+        if(pg_id < pgnums_in_disk)
+          read_one_page(entry, pa, pg_id);
       add_to_page_cache(page, mapping, pg_id);
       lru_cache_add(page);
     }
@@ -390,9 +386,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     either_copyin((void* )(pa + pg_off), 1, buff, len);
 
     set_pg_rdt_dirty(page, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
-    // memmove((void* )(pa + pg_off), (void *)buff, len);
-    // for(;;);
-    // todo("set page dirty");
+
     unlock_put_page(page);
 
     rest -= len;
