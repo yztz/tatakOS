@@ -316,7 +316,9 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
 	LIST_HEAD(l_active);	/* Pages to go onto the active_list */
 	page_t *page;
 	struct pagevec pvec;
+#ifdef RMAP
 	int reclaim_mapped = 0;
+#endif
 	// long mapped_ratio;
 	// long distress;
 	// long swap_tendency;
@@ -360,11 +362,14 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
     page = lru_to_page(&l_hold);
     list_del(&page->lru);
     /* 目前没有实现swap的功能，采取的回收策略是映射到用户空间的页(page->_mapcount > 0)一律不回收 */
+#ifdef RMAP
     if(page_mapped(page)){
 			if(!reclaim_mapped)
       	list_add(&page->lru, &l_active);
       continue;
     }
+#endif
+		/* 当没有定义rmap时会把l_hold全移动到l_inactive */
     list_add(&page->lru, &l_inactive);
   }
 
@@ -396,7 +401,7 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
 	pgdeactivate += pgmoved;
 
   pgmoved = 0;
-  /* 第四次遍历 */
+  /* 第四次遍历，把l_active移到全局active list */
   while (!list_empty(&l_active)) {
 		page = lru_to_page(&l_active);
 		if (TestSetPageLRU(page))

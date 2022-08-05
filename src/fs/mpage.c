@@ -239,7 +239,7 @@ void free_rw_page_list(rw_page_list_t *pg_list){
  * 将由pg_head串联起来的页写回磁盘。
  * linux: mpage_writepages
  */
-int write_pages(entry_t *entry, rw_page_list_t *pg_list){
+int rw_pages(entry_t *entry, rw_page_list_t *pg_list, int rw){
   rw_page_t *cur_page, *next_page;
   uint32_t nr_continuous_pages;
 
@@ -273,7 +273,7 @@ int write_pages(entry_t *entry, rw_page_list_t *pg_list){
     // printf("merge end\n");
     // printf(rd("cur_page->pa: %p\t cur_page->pg_id: %d\t nr continuous pages: %d\n"), cur_page->pa, cur_page->pg_id, nr_continuous_pages);
     
-    bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, WRITE);
+    bio_t *bio = get_rw_pages_bio(entry, cur_page->pa, cur_page->pg_id, nr_continuous_pages, rw);
     // printf("bio get\n");
     // print_bio_vec(bio);
     // printf("submit...\n");
