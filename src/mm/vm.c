@@ -30,8 +30,7 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 void
 kvminit(void)
 {
-  kernel_pagetable = (pagetable_t)kalloc();
-  memset(kernel_pagetable, 0, PGSIZE);
+  kernel_pagetable = (pagetable_t)kzalloc(PGSIZE);
   nxt_mapid = 0;
 
   // uint64 UNUSED(va) = ioremap(0x2000000, 0x10000);

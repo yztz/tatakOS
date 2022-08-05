@@ -22,10 +22,6 @@ fat32_t *fat;
 entry_t pool[NENTRY];
 
 void fs_init() {
-  // for(int i = 0; i < ENTRY_HLIST_N; i++) {
-  //   entry_pool[i].first = NULL;
-  // }
-
   for(int i = 0; i < NENTRY; i++) {
     memset(&pool[i], 0, sizeof(entry_t));
     initsleeplock(&pool[i].lock, "pool_entry");
@@ -63,6 +59,10 @@ FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
   const int dirent_size = sizeof(struct linux_dirent64);
   struct dents_state *state = (struct dents_state *) s;
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
+
+  if(strncmp(name, ". ", 2) == 0 || strncmp(name, "..  ", 4) == 0)
+    return FR_CONTINUE;
+
   int namelen = strlen(name) + 1;
   int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
   // debug("total size is %d desc size is %d", total_size, desc->size);
@@ -148,18 +148,20 @@ extern uint64 ticks;
 // caller holds lock
 void estat(entry_t *entry, struct kstat *stat) {
   dir_item_t *item = &entry->raw;
+  int blksize = entry->fat->bytes_per_sec;
   stat->st_ino = (uint64_t)entry->clus_offset << 32 | entry->clus_start;
   stat->st_gid = 0;
   stat->st_uid = 0;
   stat->st_dev = entry->fat->dev;
   stat->st_rdev = entry->fat->dev;
   stat->st_mode = E_ISDIR(entry) ? S_IFDIR : S_IFREG;
-  stat->st_blksize = entry->fat->bytes_per_sec;
-  stat->st_blocks = 0;
+
   // stat->st_size = item->size;//文件在磁盘上的大小
   /* 这里遇到了问题，如果在文件还没有写回磁盘时就获取其大小，获得的数据可能时错误的，所以这里返回其
   在内存中的大小 */
   stat->st_size = entry->size_in_mem;//文件在内存上的大小，不一定同步更新到磁盘上了
+  stat->st_blksize = blksize;
+  stat->st_blocks = (entry->size_in_mem) / blksize;
   stat->st_atime_nsec = 0;
   stat->st_atime_sec = 0;
   stat->st_mtime_sec = 0;
@@ -349,7 +351,7 @@ entry_t *create(entry_t *from, char *path, short type) {
   return ep;
 }
 
-static char *skipelem(char *path, char *name) {
+char *skipelem(char *path, char *name) {
   char *s;
   int len;
   // 跳过路径起始的'/'

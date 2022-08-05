@@ -102,3 +102,10 @@ void free_one_page(page_t *page){
 //         kfree(NUM2PAGE(pvec->pages[i] - pages));
 //     }
 // }
+uint64_t get_total_mem() {
+    return buddy_gettotal();
+}
+
+uint64_t get_free_mem() {
+    return buddy_getfree();
+}

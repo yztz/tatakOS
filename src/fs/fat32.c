@@ -18,6 +18,7 @@
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
+#define IS_FAT_CLUS_END(clus) ((clus) >= 0x0FFFFFF8) // 簇结束标识
 #define FAT_CLUS_END 0x0FFFFFFF // 簇结束标识
 #define FAT_CLUS_FREE 0x0       // 空闲簇
 #define __FAT_LFN_ATTR 0xF    // 长文件名标识
@@ -152,9 +153,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
-    // memset(buffer->data, 0, 256);
-    // bwrite(buffer);
-    // print_block(buffer->data);
+    
     brelse(buffer);
     fat->root = get_root(fat);
 
@@ -167,7 +166,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 
 /* 获取下一个簇号 */
 uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
-    if(cclus == FAT_CLUS_END || cclus == FAT_CLUS_FREE) return cclus;
+    if(IS_FAT_CLUS_END(cclus) || cclus == FAT_CLUS_FREE) return cclus;
 
     buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
     uint32_t offset = clus2offset(fat, cclus);
@@ -186,7 +185,7 @@ FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
     buf_t *buf = bread(fat->dev, clus2fatsec(fat, prev));
     uint32_t offset = clus2offset(fat, prev);
     uint32_t next = *(uint32_t *)(buf->data + offset);
-    if(FAT_CLUS_END != next) {
+    if(!IS_FAT_CLUS_END(next)) {
         panic("fat_append_cluster:prev is not the end");
     }
     *(uint32_t *)(buf->data + offset) = new;
@@ -203,7 +202,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
 
     // 计算起始簇
     int rest = n;
-    while(cclus != FAT_CLUS_END && rest > 0) {
+    while(!IS_FAT_CLUS_END(cclus) && rest > 0) {
         if(off >= BPC(fat)) {
             off -= BPC(fat);
             goto next_clus;
@@ -281,7 +280,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
     next_clus:
         prev_clus = cclus;
         cclus = fat_next_cluster(fat, cclus);
-        if(cclus == FAT_CLUS_END) {
+        if(IS_FAT_CLUS_END(cclus)) {
             if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR) {
                 debug("fat_write: alloc fail");
                 return 0;
@@ -421,7 +420,7 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
     uint32 cclus = clus;
     uint32 idx = 0;
 
-    while(cclus != FAT_CLUS_END) {
+    while(!IS_FAT_CLUS_END(cclus)) {
         uint32_t *pclus;
 
         buf_t *b = bread(fat->dev, clus2fatsec(fat, cclus));
@@ -576,7 +575,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
         prev_clus = curr_clus;
         curr_clus = fat_next_cluster(fat, curr_clus);
         // 触底了
-        if(curr_clus == FAT_CLUS_END) {
+        if(IS_FAT_CLUS_END(curr_clus)) {
             if(alloc) {
                 if(fat_alloc_cluster(fat, &curr_clus, 1) == FR_ERR)
                     return FR_ERR;
@@ -585,6 +584,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
                 break;
             }
         }
+        debug("next clus %d", curr_clus);
         clus_cnt++;
     }
 
@@ -729,17 +729,6 @@ static void fillname(dir_slot_t *slot, char *buf, int len) {
         goto refill;
     }
 }
-
-
-// static void char2unicode(uint16_t *buf, uint8_t *ch, int len, int rlen) {
-//     int i;
-//     for(i = 0; i < len; i++)
-//         buf[i] = ch[i];
-//     while(i < rlen) {
-//         buf[i] = 0xffff;
-//         i++;
-//     }
-// }
 
 
 static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *p2) {
@@ -965,7 +954,7 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *
             lp->next = id - 1;
             lp->checksum = slot->alias_checksum;
             char *buf = lp->longname + lp->next * FAT_LFN_LENGTH;
-            lp->p = buf + extractname(slot, buf); //  使p指向文件名末尾
+            lp->p = buf + extractname(slot, buf) + 1; //  使p指向文件名末尾
         } else { // 不是最后一段
             if(lp->next != FAT_LFN_ID(slot->id) || lp->checksum != slot->alias_checksum) { // 不匹配
                 lp->p = lp->longname;
@@ -1050,7 +1039,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
         cclus = fat_next_cluster(fat, cclus);
         off -= BPC(fat);
         /* 如果在把page写回disk之前，没有append足够的cluster，会出现这种情况 */
-        if(cclus == FAT_CLUS_END) {
+        if(IS_FAT_CLUS_END(cclus)) {
             ER();
         }
     }
@@ -1063,7 +1052,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     sect = clus2datsec(fat, cclus) + sec_off_num % spc;
     // printf(rd("sect: %d\n"), sect);
 
-    while(cclus != FAT_CLUS_END && sec_total_num > 0){
+    while(!IS_FAT_CLUS_END(cclus) && sec_total_num > 0){
         // printf(grn("sect: %d\n"), sect);
         /* bug了！无语句可以改变cur_bio_vec */
         if(cur_bio_vec == NULL){
@@ -1102,7 +1091,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
         cclus = fat_next_cluster(fat, cclus);
 
         /* 如果簇没了，但是还没有写完，error */
-        if(cclus == FAT_CLUS_END && sec_total_num > 0)
+        if(IS_FAT_CLUS_END(cclus) && sec_total_num > 0)
             ER();
         sect = clus2datsec(fat, cclus);
     }
@@ -1121,11 +1110,11 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
 uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus){
    uint32_t next_clus;
 
-   while(cur_clus != FAT_CLUS_END){
+   while(!IS_FAT_CLUS_END(cur_clus)){
         next_clus = fat_next_cluster(fat, cur_clus);
         if(next_clus == 0)
             ERROR("next_clus = 0, the entry's cluster may be reclaimed.");
-        if(next_clus == FAT_CLUS_END)
+        if(IS_FAT_CLUS_END(next_clus))
             return cur_clus;
         cur_clus = next_clus;
    } 
@@ -1135,7 +1124,7 @@ uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus){
 uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus){
     uint64_t clus_cnt = 0;
 
-    while(cur_clus != FAT_CLUS_END){
+    while(!IS_FAT_CLUS_END(cur_clus)){
         clus_cnt++;
         cur_clus = fat_next_cluster(fat, cur_clus);
     }

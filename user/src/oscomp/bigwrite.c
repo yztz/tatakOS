@@ -64,7 +64,7 @@ int main() {
 
     printf("end write\n");
     print_cache();
-    syscall(NR_profile);
+    // syscall(NR_profile);
     
 
     uint64 test_ret3 = syscall(NR_timetag);

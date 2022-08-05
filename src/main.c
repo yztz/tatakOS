@@ -23,14 +23,16 @@ static inline void clear_bss() {
   printf("\n.bss %#lx-%#lx (%#lx) cleared\n", &bss_start, &bss_end, len);
 }
 
+// TODO:
 extern int pdflush_init(void);
 
-void
-main()
-{
+extern void scavenger_routine();
+extern char *logo;
+
+void main() {
   if(cpuid() == 0){
     clear_bss();
-    printf("\nOS TATAKAI!\n\n");
+    printf("\n%s\n", logo);
     platform_early_init();
     /* PRCO && CPU */
     procinit();      // process table
@@ -66,6 +68,7 @@ main()
     userinit();      // first user process
 
     pdflush_init();
+    kthread_create("scavenger", scavenger_routine);
 
     for (int i = 1; i < NUM_CORES; i ++) {
 			unsigned long mask = 1 << i;

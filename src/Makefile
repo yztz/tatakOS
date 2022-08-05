@@ -5,24 +5,31 @@ CFLAGS += -I$K/include
 
 TARGET := $(BUILD_ROOT)/kernel
 
+obj-y+=atomic/
 obj-y+=driver/
 obj-y+=fs/
 obj-y+=kernel/
+obj-y+=misc/
 obj-y+=mm/
+obj-y+=net/
 obj-y+=platform/
-obj-y+=atomic/
 obj-y+=lib/
 obj-y+=tests/
 
-obj-y += printf.o
-obj-y += string.o
-obj-y += panic.o
-obj-y += utils.o
-obj-y += main.o
-obj-y += riscv.o
-obj-y += profile.o
 obj-y += device.o
-obj-y += misc.o
+obj-y += main.o
+obj-y += panic.o
+obj-y += printf.o
+obj-y += profile.o
+obj-y += riscv.o
+obj-y += string.o
+obj-y += utils.o
+
+
+
+
+obj-y += futex.o
+obj-y += fdtable.o
 
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))

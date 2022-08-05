@@ -5,7 +5,7 @@ MAKEFLAGS += --no-print-directory
 # CPU NUMS(qemu)
 CPUS ?= 4
 # platform [qemu|k210]
-platform ?= k210
+platform ?= qemu
 # debug [on|off]
 debug ?= off
 # serial-port
@@ -76,11 +76,14 @@ QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
+# all: kernel
+# 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
+# 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
+# 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
+# 	mv $(BUILD_ROOT)/k210.bin os.bin
 all: kernel
-	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
-	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
-	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
-	mv $(BUILD_ROOT)/k210.bin os.bin
+	cp $(BUILD_ROOT)/kernel kernel-qemu
+	cp bootloader/sbi-qemu sbi-qemu
 
 run: kernel
 ifeq ("$(platform)", "k210") # k210
@@ -88,8 +91,8 @@ ifeq ("$(platform)", "k210") # k210
 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
 	sudo chmod 777 $(serial-port)
-	$(TOOL)/kflash.py -p $(serial-port) -b 1500000 -B dan $(BUILD_ROOT)/k210.bin
-	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
+	$(TOOL)/kflash.py -p $(serial-port) -b 1500000 -B dan -t $(BUILD_ROOT)/k210.bin
+#	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
 else ifeq ("$(platform)", "qemu") # qemu
 	$(QEMU) $(QEMUOPTS) $(EXTRA_QEMUOPTS)
 else # others
@@ -133,6 +136,8 @@ clean:
 	-@rm -rf $(SCRIPT)/mkfs
 	-@rm -rf $(GEN_HEADER_DIR)
 	-@rm -rf os.bin
+	-@rm -rf sbi-qemu
+	-@rm -rf kernel-qemu
 	-@rm -rf $K/include/generated
 	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
 
@@ -151,7 +156,7 @@ $(MNT_DIR):
 
 # $(fs.img): user
 $(fs.img): user $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=1M count=128
+	@dd if=/dev/zero of=$@ bs=1M count=256
 	@mkfs.vfat -F 32 -s 8 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
@@ -164,7 +169,7 @@ $(fs.img): user $(MNT_DIR)
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
 	@make -C $U
-	@cp $U/raw/* $(U_PROG_DIR)
+	@cp -r $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
 mnt: $(fs.img)

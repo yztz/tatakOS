@@ -160,7 +160,6 @@ void
 consoleintr(char c)
 {
   acquire(&cons.lock);
-
   switch(c){
   case C('P'):  // Print process list.
     procdump();

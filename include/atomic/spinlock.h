@@ -9,6 +9,7 @@
 // #define ER()    ERROR("")
 
 #define INIT_SPINLOCK(ln) (spinlock_t){.locked=0, .name=#ln, .cpu=NULL};
+#define SPINLOCK_INIT(ln) static spinlock_t ln = (spinlock_t){.locked=0, .name=#ln, .cpu=NULL};
 
 // Mutual exclusion lock.
 struct spinlock {
@@ -25,6 +26,7 @@ typedef struct spinlock spinlock_t;
 #define spin_lock(lock) acquire(lock)
 #define spin_unlock(lock) release(lock)
 
+int             try_acquire(struct spinlock *lk);
 void            acquire(struct spinlock*);
 int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);

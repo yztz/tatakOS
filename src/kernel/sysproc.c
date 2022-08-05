@@ -10,7 +10,7 @@
 #include "kernel/time.h"
 #include "mm/vm.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
 #include "mm/mm.h"
@@ -38,37 +38,80 @@ sys_getppid(void)
 }
 
 uint64
+sys_getuid(void)
+{
+  return 0;
+}
+
+uint64
+sys_getgid(void)
+{
+  return 0;
+}
+
+uint64_t 
+sys_geteuid(void) 
+{
+    return 0;
+}
+
+uint64_t 
+sys_getegid(void) 
+{
+    return 0;
+}
+
+uint64
+sys_setgid(void)
+{
+  return 0;
+}
+
+uint64
+sys_setpgid(void)
+{
+  return 0;
+}
+
+uint64
+sys_getpgid(void)
+{
+  // return myproc()->tg->tg_id;
+  return 0;
+}
+
+uint64
+sys_setuid(void)
+{
+  return 0;
+}
+
+uint64
 sys_fork(void)
 {
-  return do_clone(0);
+  return do_clone(myproc(), 0, 0, 0, 0, 0);
 }
 
 uint64
 sys_set_tid_address(void)
 {
-  uint64 tid;
-  if(argaddr(0, &tid) < 0) {
+  proc_t *p = myproc();
+  uint64 tidaddr;
+
+  if(argaddr(0, &tidaddr) < 0) {
     return -1;
   }
-  return tid;
+
+  p->clear_tid_addr = tidaddr;
+
+  return p->pid;
 }
 
-uint64
-sys_rt_sigprocmask(void)
-{
-  return 0;
-}
-
-uint64
-sys_rt_sigtimedwait(void)
-{
-  return 0;
-}
 
 uint64
 sys_gettid(void)
 {
-  return sys_getpid();
+  return myproc()->pid;
 }
 
 
@@ -78,22 +121,23 @@ sys_exit_group(void)
   return sys_exit();
 }
 
-uint64
-sys_rt_sigaction(void)
-{
-  return 0;
-}
+
 
 uint64
 sys_clone(void)
 {
-  int flag; // ignored
-  uint64_t stack;
+  uint64 stack;
+  int flags;
+  uint64_t ptid;
+  uint64_t tls;
+  uint64_t ctid;
+
   // debug("clone: enter");
-  if(argint(0, &flag) < 0 || argaddr(1, &stack) < 0)
-    return -1;
-  debug("clone: stack is %x", stack);
-  return do_clone(stack);
+  if(argint(0, &flags) < 0 || argaddr(1, &stack) < 0 || 
+    argaddr(2, &ptid) < 0 || argaddr(3, &tls) < 0 || argaddr(4, &ctid) < 0)
+      return -1;
+  debug("clone: flags %x", flags);
+  return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 
 uint64
@@ -102,9 +146,9 @@ sys_wait(void)
   uint64 p;
   if(argaddr(0, &p) < 0)
     return -1;
-  return waitpid(-1, p);
+  return waitpid(-1, p, 0);
 }
-
+// ./busybox cat busybox_testcode.sh
 
 uint64
 sys_wait4(void)
@@ -116,23 +160,26 @@ sys_wait4(void)
   if(argint(0, &pid) < 0 || argaddr(1, &status) || argint(2, &options) < 0)
     return -1;
 
-  if(options > 0) 
-    panic("not support");
+  // debug("option is %x", options);
+  // if(options > 0) 
+  //   panic("not support");
 
-  return waitpid(pid, status);
+  return waitpid(pid, status, options);
 
 }
 
 uint64
-sys_sbrk(void)
+sys_brk(void)
 {
-  int n;
-  // uint64_t newbrk, oldbrk, brk;
-  // mm_struct_t *mm = myproc()->mm;
+  uint64_t brkaddr;
 
-  if(argint(0, &n) < 0)
+  if(argaddr(0, &brkaddr) < 0)
     return -1;
-  return growproc(n);
+  if(growproc(brkaddr) == -1) {
+    return -1;
+  } else {
+    return 0;
+  }
 }
 
 uint64
@@ -166,15 +213,15 @@ sys_sched_yield(void)
   return 0;
 }
 
-uint64
-sys_kill(void)
-{
-  int pid;
+// uint64
+// sys_kill(void)
+// {
+//   int pid;
 
-  if(argint(0, &pid) < 0)
-    return -1;
-  return kill(pid);
-}
+//   if(argint(0, &pid) < 0)
+//     return -1;
+//   return kill(pid);
+// }
 
 // return how many clock tick interrupts have occurred
 // since start.

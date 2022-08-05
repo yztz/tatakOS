@@ -40,12 +40,15 @@ struct trapframe {
   /* 264 */ uint64 t4;
   /* 272 */ uint64 t5;
   /* 280 */ uint64 t6;
+  struct trapframe *sigtf;
 };
 
 typedef struct trapframe tf_t;
 
 tf_t *tf_new();
 void tf_free(tf_t **pptf);
+void tf_backup(tf_t *self);
+void tf_restore(tf_t *self);
 
 void tf_print(tf_t *tf);
 

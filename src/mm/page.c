@@ -109,8 +109,6 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, in
   start = a = PGROUNDDOWN_SPEC(va, spec);
   last = PGROUNDDOWN_SPEC(va + size - 1, spec);
   for(;;){
-    if(a == 0xf4000)
-      for(;;);
     if((pte = _walk(pagetable, a, 1, spec)) == 0)
       goto bad;
     if(*pte & PTE_V)
@@ -147,7 +145,7 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
     if((pte = _walk(pagetable, a, 0, spec)) == 0){
       continue;
     }
-    if((*pte & PTE_V) == 0){
+    if((*pte & PTE_V) == 0) {
       continue;
     }
     if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)

@@ -22,7 +22,8 @@
 #include "utils.h"
 #include "memlayout.h"
 #include "list.h"
-#include "kthread.h"
+// #include "kthread.h"
+#include "kernel/proc.h"
 
 /**
  * @brief pdflush是内核中的写回线程，用来执行dirty页的写回操作。当一个进程需要写回
@@ -54,7 +55,7 @@ struct pdflush_work {
 
 typedef struct pdflush_work pdflush_work_t;
 
-static int __pdflush(pdflush_work_t *my_work){
+static int __pdflush(pdflush_work_t *my_work) {
   my_work->fn = NULL;
   my_work->who = myproc();
   INIT_LIST_HEAD(&my_work->list);
@@ -104,7 +105,7 @@ static int __pdflush(pdflush_work_t *my_work){
  * these are visible to other tasks and CPUs.  (No problem has actually
  * been observed.  This is just paranoia).
  */
-static int pdflush(void *dummy)
+static void pdflush()
 {
   /* 重要！同forkret */
   // Still holding p->lock from scheduler.
@@ -112,7 +113,7 @@ static int pdflush(void *dummy)
   /* 注释里说my_work被设置为了一个局部变量，my_work对于每个pdflush thread是私有的，
   确实没有设置为全局变量的必要 */
 	struct pdflush_work my_work;
-	return __pdflush(&my_work);
+	__pdflush(&my_work);
 }
 
 
@@ -150,9 +151,12 @@ int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0)
 	return ret;
 }
 
-static void start_one_pdflush_thread(void)
+static void start_one_pdflush_thread(int no)
 {
-	kthread_run(pdflush, NULL, "pdflush");
+	char name[20];
+	snprintf(name, 20, "pdflush0-%d", no);
+	// kthread_run(pdflush, NULL, "pdflush");
+	kthread_create(name, pdflush);
 }
 
 int pdflush_init(void)
@@ -160,6 +164,6 @@ int pdflush_init(void)
 	int i;
 
 	for (i = 0; i < PDFLUSH_THREADS_CNTS; i++)
-		start_one_pdflush_thread();
+		start_one_pdflush_thread(i);
 	return 0;
 }

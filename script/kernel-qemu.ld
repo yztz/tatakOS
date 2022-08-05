@@ -8,5 +8,6 @@ SECTIONS
    * where qemu's -kernel jumps.
    */
   . = 0x80200000;
+  /* . = 0x80020000; */
   INCLUDE kernel.ld
 }

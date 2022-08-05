@@ -1,11 +1,11 @@
 #include "kernel/sys.h"
 #include "kernel/time.h"
 #include "defs.h"
-#include "profile.h"
 #include "mm/buddy.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "sys/resource.h"
+#include "profile.h"
 
 #define __MODULE_NAME__ SYS
 #include "debug.h"
@@ -21,9 +21,43 @@ utsname_t sysname = {
   .machine = "xxxk210xxx",
   .nodename = "wtf",
   .release = "no release",
-  .version = "0.0.0.0.0.0.0.0.1"
+  .version = "0.0.0.0.0.0.0.0.1",
 };
 
+uint64_t sys_syslog(void) {
+  int type;
+  uint64_t bufaddr;
+  int len;
+
+  if(argint(0, &type) < 0 || argaddr(1, &bufaddr) < 0 || argint(2, &len) < 0)
+    return -1;
+
+  return 0;
+}
+
+uint64_t sys_sysinfo(void) {
+  uint64_t addr;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+
+  struct sysinfo si = {
+    .uptime = TICK2SEC(ticks),
+    .loads = {0},
+    .totalram = get_total_mem(),
+    .freeram = get_free_mem(),
+    .sharedram = 0,
+    .bufferram = 0,
+    .totalswap = 0,
+    .freeswap = 0,
+    .procs = get_proc_cnt(),
+    .totalhigh = 0,
+    .freehigh = 0,
+    .mem_unit = 1,
+  };
+
+  return copy_to_user(addr, &si, sizeof(struct sysinfo));
+}
 
 
 uint64 sys_timetag(void) {
@@ -60,36 +94,56 @@ uint64_t sys_prlimit64(void) {
     return -1;
   }
 
-  if(res != RLIMIT_STACK) {
+  if(res == RLIMIT_STACK) {
+    if(oldrl) {
+      rl.rlim_cur = p->mm->ustack->len;
+      rl.rlim_max = 30 * PGSIZE;
+      if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
+        return -1;
+      }
+    }
+
+    if(newrl) {
+      if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
+        return -1;
+      if(mmap_ext_stack(p->mm, rl.rlim_cur) < 0) 
+        return -1;
+    }
+  } else if(res == RLIMIT_NOFILE) {
+    if(oldrl) {
+      rl.rlim_cur = p->fdtable->maxfd;
+      rl.rlim_max = p->fdtable->maxfd;
+      if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
+        return -1;
+      }
+    }
+
+    if(newrl) {
+      if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
+        return -1;
+      
+      return fdtbl_setmaxfd(p->fdtable, rl.rlim_cur);
+    }
+  } else {
     debug("ukres %d", res);
     return -1;
   }
     
-
-  if(oldrl) {
-    rl.rlim_cur = p->mm->ustack->len;
-    rl.rlim_max = 30 * PGSIZE;
-    if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
-      return -1;
-    }
-  }
-  
-
-  if(newrl) {
-    if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
-      return -1;
-    if(mmap_ext_stack(p->mm, rl.rlim_cur) < 0) 
-      return -1;
-  }
-  
   return 0;
 }
 
 extern zone_t memory_zone;
 void print_buddy();
+extern char *philosophy;
+
+uint64_t sys_philosophy(void) {
+  printf("\n%s\n", philosophy);
+  return 0;
+}
+
 uint64_t sys_memuse(void) {
   buddy_print_free();
-  // print_buddy();
+  print_buddy();
   // print_zone_list_info(&memory_zone);
   return 0;
 }
@@ -134,17 +188,19 @@ uint64_t sys_gettimeofday(void) {
 uint64 sys_clock_gettime(void) {
   // int clockid;
   uint64_t addr;
-  timespec_t time;
+  timespec_t time = TICK2TIMESPEC(ticks);
 
   time.tv_sec = 0;
-  time.tv_usec = 0;
-
+  time.tv_nsec = 0;
+  // time_print(&time);
   if(argaddr(1, &addr) < 0) 
     return -1;
 
-  if(copy_to_user(addr, &time, sizeof(time)) == -1) {
+  if(copy_to_user(addr, &time, sizeof(time)) < 0) {
+    debug("copy fail");
     return -1;
   } 
+  
   return 0;
 }
 
@@ -179,4 +235,8 @@ uint64 sys_statfs64(void) {
 
   return 0;
 
+}
+
+uint64_t sys_membarrier(void) {
+  return 0;
 }

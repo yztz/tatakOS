@@ -92,7 +92,9 @@ static uint64_t loadinterp(mm_t *mm) {
       goto bad;
     if(loadseg(mm, ph.vaddr + INTERP_BASE, ep, ph.off, ph.filesz) < 0)
       goto bad;
+    // debug("load interp va %#lx filesz %#lx memsz %#lx", ph.vaddr, ph.filesz, ph.memsz);
   }
+
   eunlock(ep);
   // mmap_print(mm);
   // debug("load done");
@@ -134,7 +136,7 @@ int exec(char *path, char **argv, char **envp) {
   putaux(AT_SECURE, 0);
 
   /* alloc */
-  if((newmm = kzalloc(sizeof(mm_t))) == NULL) {
+  if((newmm = mmap_new()) == NULL) {
     debug("newmm alloc failure");
     return -1;
   }
@@ -148,14 +150,8 @@ int exec(char *path, char **argv, char **envp) {
   ustack = ustackbase + PGSIZE;
 
   /* load */
-  if(mmap_init(newmm) == -1) {
-    debug("newmm init fail");
-    kfree(newmm);
-    kfree((void *)ustackbase);
-    return -1;
-  }
 
-  if((ep = namee(NULL, path)) == 0){
+  if((ep = namee(NULL, path)) == 0) {
     debug("entry %s acquire failure", path);
     kfree(newmm);
     kfree((void *)ustackbase);
@@ -174,10 +170,9 @@ int exec(char *path, char **argv, char **envp) {
     goto bad;
 
   uint64_t elfentry = elf.entry;
-  uint64_t brk;
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)) {
-    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)){
+    if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) {
       goto bad;
     }
     if(ph.type == PT_PHDR) {
@@ -202,18 +197,18 @@ int exec(char *path, char **argv, char **envp) {
       goto bad;
     if(loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
-
-    brk = ph.vaddr + ph.memsz;
   }
-  debug("%s: loadseg done entry is %#lx", path, elfentry);
+  // debug("%s: loadseg done entry is %#lx", path, elfentry);
   // mmap_print(newmm);
-  eunlockput(ep);
-  ep = NULL;
+  eunlock(ep);
 
   p = myproc();
+  // initcode
+  if(p->exe) eput(p->exe);
+  p->exe = ep;
 
   //////////////STACK & HEAP////////////////
-  if(mmap_map_stack_heap(newmm, brk, oldmm->ustack->len, oldmm->uheap->len) == -1)
+  if(mmap_map_stack(newmm, oldmm->ustack->len) == -1)
     goto bad;
   
   uint64 envpc;

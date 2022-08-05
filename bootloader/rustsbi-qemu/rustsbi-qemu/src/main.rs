@@ -27,11 +27,11 @@ mod runtime;
 mod test_device;
 
 const PER_HART_STACK_SIZE: usize = 4 * 4096; // 16KiB
-const SBI_STACK_SIZE: usize = 8 * PER_HART_STACK_SIZE; // assume 8 cores in QEMU
+const SBI_STACK_SIZE: usize = 2 * PER_HART_STACK_SIZE; // assume 8 cores in QEMU --> 2 cores
 #[link_section = ".bss.uninit"]
 static mut SBI_STACK: [u8; SBI_STACK_SIZE] = [0; SBI_STACK_SIZE];
 
-const SBI_HEAP_SIZE: usize = 64 * 1024; // 64KiB
+const SBI_HEAP_SIZE: usize = 64 * 1024; // 64KiB --> 16k
 #[link_section = ".bss.uninit"]
 static mut HEAP_SPACE: [u8; SBI_HEAP_SIZE] = [0; SBI_HEAP_SIZE];
 #[global_allocator]
@@ -96,9 +96,11 @@ extern "C" fn rust_main(hartid: usize, opqaue: usize) -> ! {
             }
         }
         println!("[rustsbi] enter supervisor 0x80200000");
+        // println!("[rustsbi] enter supervisor 0x80020000");
     }
     // start SBI environment
     execute::execute_supervisor(0x80200000, hartid, opqaue, HSM.clone());
+    // execute::execute_supervisor(0x80020000, hartid, opqaue, HSM.clone());
 }
 
 fn init_heap() {

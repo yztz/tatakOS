@@ -273,7 +273,11 @@ int handle_pagefault(uint64_t scause) {
         }
     } else {
         // debug("u");
-            
+        // if(rva == 0xF00022000) {
+        //     tf_print(p->trapframe);
+        //     debug("MAP HERE pc is %#lx pid %d va %#lx", epc, p->pid, r_stval());
+        // }
+        
         vma = __vma_find_strict(p->mm, rva);
 
         if(vma == NULL) {

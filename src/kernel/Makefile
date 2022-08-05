@@ -3,11 +3,14 @@ obj-y += nulldev.o
 obj-y += zerodev.o
 obj-y += exec.o
 obj-y += proc.o
+obj-y += scavenger.o
+obj-y += signal.o
 obj-y += syscall.o
 obj-y += sysfile.o
 obj-y += sysproc.o
-obj-y += trap.o
 obj-y += sys.o
+obj-y += thread_group.o
+obj-y += trap.o
 obj-y += pagefault.o
 obj-y += kthread.o
 

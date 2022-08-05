@@ -24,24 +24,28 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
+atomic_t proc_cnt = INIT_ATOMIC;
+
 int nextpid = 0;
+int nexttid = 1;
 struct spinlock pid_lock;
+struct spinlock tid_lock;
 
 extern void forkret(void);
-static void freeproc(struct proc *p);
 
 
-extern uint64_t sys_memuse(void);
-void
-freewalk(pagetable_t pagetable);
+#define IS_MAIN_THREAD(p) ((p)->tg->master_pid==p->pid)
 
-// mm_struct_t *mm_init(mm_struct_t *mm, proc_t *tsk);
-// static void init_new_context(proc_t *tsk);
 // helps ensure that wakeups of wait()ing
 // parents are not lost. helps obey the
 // memory model when using p->parent.
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
+
+
+int get_proc_cnt() {
+  return atomic_get(&proc_cnt);
+}
 
 
 // initialize the proc table at boot time.
@@ -51,6 +55,7 @@ procinit(void)
   struct proc *p;
   nextpid = 0;
   initlock(&pid_lock, "nextpid");
+  initlock(&tid_lock, "tid");
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
@@ -58,9 +63,6 @@ procinit(void)
       p->mm = NULL;
       p->kstack = 0;
       p->trapframe = NULL;
-      for(int i = 0; i < NOFILE; i++) {
-        p->ofile[i] = NULL;
-      }
   }
   for(int i = 0; i < NUM_CORES; i++) {
     cpus[i].intena = 0;
@@ -88,8 +90,7 @@ myproc(void) {
   return p;
 }
 
-int
-allocpid() {
+int allocpid() {
   int pid;
   
   acquire(&pid_lock);
@@ -100,32 +101,17 @@ allocpid() {
   return pid;
 }
 
-// void
-// alloc_init_mm(struct proc *p){
-//   p->mm = kzalloc(sizeof(struct mm_struct));
-//   p->mm->mmap = NULL;
-//   p->mm->mm_rb.rb_node = NULL;
-//   p->mm->mmap_cache = NULL;
-//   p->mm->map_count = 0;
-//   initlock(&p->mm->mm_lock, "mm_lock");
-//   p->mm->free_area_cache = TASK_UNMAPPED_BASE;
-//   // p->mm->free_area_cache = 0;
+// int alloctid() {
+//   int tid;
+//   acquire(&tid_lock);
+//   tid = nexttid;
+//   nexttid = nexttid + 1;
+//   release(&tid_lock);
+
+//   return tid;
 // }
 
-
-// 0 initcode
-// 1 pd1
-// 2 pd2
-// 3 runtest.exe
-// 4 entry-static
-
-// Look in the process table for an UNUSED proc.
-// If found, initialize state required to run in the kernel,
-// and return with p->lock held.
-// If there are no free procs, or a memory allocation fails, return 0.
-struct proc*
-allocproc(int is_kthread)
-{
+proc_t *proc_new(int is_kthread) {
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -141,29 +127,27 @@ allocproc(int is_kthread)
 found:
   // printf("kill is %d and kill addr is %#lx\n", p->killed, &p->killed);
   p->pid = allocpid();
+  // p->tid = alloctid();
   p->killed = 0;
+  p->sig_pending = 0;
+  p->sig_mask = 0;
+  p->signaling = 0;
+  p->set_tid_addr = 0;
+  p->clear_tid_addr = 0;
   p->state = USED;
-  p->nfd = NOFILE;
-  p->ext_ofile = NULL;
-  p->fd_flags = 0;
+  INIT_LIST_HEAD(&p->head);
 
   if((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
     debug("kstack alloc failure");
     goto bad;
   }
+
   if(!is_kthread) {
-    p->mm = (mm_t *)kzalloc(sizeof(mm_t));
-    if((p->trapframe = kalloc()) == 0) {
+    if((p->trapframe = tf_new()) == 0) {
       debug("trapframe alloc failure");
       goto bad;
     }
-
-    if(mmap_init(p->mm) == -1){
-      debug("mmap_init failure");
-      goto bad;
-    }
   }
-  
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -171,6 +155,8 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + KSTACK_SZ;
 
+  atomic_inc(&proc_cnt);
+  
   return p;
 
 
@@ -183,22 +169,29 @@ bad:
 // free a proc structure and the data hanging from it,
 // including user pages.
 // p->lock must be held.
-static void
-freeproc(struct proc *p)
-{
+void freeproc(struct proc *p) {
+  fdtbl_free(&p->fdtable);
   mmap_free(&p->mm);
+  sig_free(&p->signal);
+  tg_free(&p->tg);
+  tf_free(&p->trapframe);
+
   if(p->kstack) kfree_safe(&p->kstack);
-  if(p->trapframe) kfree_safe(&p->trapframe);
-  if(p->ext_ofile) kfree_safe(&p->ext_ofile);
-  
-  memset(p->ofile, 0, NOFILE * sizeof(struct file *));
+  if(p->exe) eput(p->exe);
+
+
+  // memset(p->ofile, 0, NOFILE * sizeof(struct file *));
+  p->exe = NULL;
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
   p->chan = 0;
+  p->futex_chan = 0;
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+
+  atomic_dec(&proc_cnt);
 }
 
 // a user program that calls exec("/init")
@@ -211,24 +204,19 @@ uchar initcode[] = {
 static void init_std(proc_t *p) {
   struct file *stdin = filealloc();
   struct file *stdout = filealloc();
-  struct file *stderr = filealloc();
-  
-  p->ofile[0] = stdin;
-  p->ofile[1] = stdout;
-  p->ofile[2] = stderr;
+
+  fdtbl_setfile(p->fdtable, 0, stdin, 0);
+  fdtbl_setfile(p->fdtable, 1, stdout, 0);
+  fdtbl_setfile(p->fdtable, 2, stdout, 0);
 
   stdin->type = FD_DEVICE;
   stdout->type = FD_DEVICE;
-  stderr->type = FD_DEVICE;
   stdin->readable = 1;
   stdin->writable = 0;
   stdout->readable = 0;
   stdout->writable = 1;
-  stderr->readable = 0;
-  stderr->writable = 1;
   stdin->dev = &devs[CONSOLE];
   stdout->dev = &devs[CONSOLE];
-  stderr->dev = &devs[CONSOLE];
 }
 
 // Set up first user process.
@@ -236,19 +224,38 @@ void
 userinit(void)
 {
   struct proc *p;
-  p = allocproc(0);
+  mm_t *mm;
+  fdtable_t *fdtable;
+  signal_t *sig;
+  tg_t *tg;
+
+  p = proc_new(0);
   initproc = p;
+
+  if(p == NULL) {
+    panic("alloc");
+  }
+
+  if((mm = mmap_new()) == NULL || (fdtable = fdtbl_new()) == NULL || 
+    (sig = sig_new()) == NULL || (tg = tg_new(p)) == NULL) 
+    panic("alloc");
+  
+  proc_switchmm(p, mm);
+  proc_setfdtbl(p, fdtable);
+  proc_setsig(p, sig);
+  proc_settg(p, tg);
+
 
   if(sizeof(initcode) >= PGSIZE)
     panic("inituvm: more than a page");
+  
+  // debug("initcode size: %d", sizeof(initcode));
 
-  switchuvm(p->mm);
-
-  if(do_mmap_alloc(p->mm, PGSIZE, PGSIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+  if(do_mmap_alloc(p->mm, PGSIZE, 2 * PGSIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
     panic("mmap1 failure");
   }
 
-  if(mmap_map_stack_heap(p->mm, 2 * PGSIZE, USTACKSIZE, UHEAPSIZE) == -1) {
+  if(mmap_map_stack(p->mm, USTACKSIZE) == -1) {
     panic("mmap2 failure");
   }
 
@@ -273,7 +280,6 @@ userinit(void)
   release(&p->lock);
 }
 
-
 uint64 growproc(uint64_t newbreak) {
   struct proc *p = myproc();
   if(newbreak == 0) {
@@ -286,59 +292,107 @@ uint64 growproc(uint64_t newbreak) {
   return PROGRAM_BREAK(p->mm);
 }
 
-// Create a new process, copying the parent.
-// Sets up child kernel stack to return as if from fork() system call.
-int
-do_clone(uint64_t stack)
-{
-  // sys_memuse();
-  int i, pid;
+
+int kthread_create(char *name, void (*entry)()) {
+  if(initproc == NULL)
+    panic("initproc required");
+
+  struct proc *np = proc_new(1);
+
+  if(np == NULL)
+    return -1;
+
+  proc_setmm(np, initproc->mm);
+  np->context.ra = (uint64_t)entry;
+
+  strncpy(np->name, name, 20);
+
+  np->state = RUNNABLE;
+
+  release(&np->lock);
+
+  return 0;
+}
+
+int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid) {
+  int pid;
   struct proc *np;
-  struct proc *p = myproc();
+  mm_t *newmm;
+  fdtable_t *newfdtbl;
+  signal_t *newsig;
+  tg_t *newtg;
 
   // Allocate process.
-  if((np = allocproc(0)) == 0){
+  if((np = proc_new(0)) == NULL){
     return -1;
   }
 
-  // sys_memuse();
-  // copy_mm(0, np);
-  // sys_memuse();
-
-  // init_new_context(np);
-
-  // 拷贝内存布局(如果开启了COW，那么仅仅是复制页表)
-  if(mmap_dup(np->mm, p->mm) == -1){
-    freeproc(np);
-    release(&np->lock);
-    return -1;
+  if((flags & CLONE_VM)) {
+    newmm = p->mm;
+  } else {
+    if((newmm = mmap_clone(p->mm)) == NULL)
+      goto bad;
   }
+
+  if((flags & CLONE_FILES)) {
+    newfdtbl = p->fdtable;
+  } else {
+    if((newfdtbl = fdtbl_clone(p->fdtable)) == NULL)
+      goto bad;
+  }
+
+  if((flags & CLONE_THREAD)) {
+    // debug("new thread statk is %#lx", stack);
+    newtg = p->tg;
+    tg_join(newtg, np);
+  } else {
+    if((newtg = tg_new(np)) == NULL)
+      goto bad;
+  }
+
+  if((flags & CLONE_SIGHAND)) {
+    newsig = p->signal;
+  } else {
+    if((newsig = sig_clone(p->signal)) == NULL)
+      goto bad;
+  }
+
+  if((flags & CLONE_CHILD_CLEARTID)) {
+    np->clear_tid_addr = ctid;
+  }
+
+  if((flags & CLONE_CHILD_SETTID)) {
+    panic("not support now");
+  }
+
+  if((flags & CLONE_PARENT_SETTID)) {
+    copy_to_user(ptid, &np->pid, sizeof(int));
+  }
+
+  proc_setmm(np, newmm);
+  proc_setfdtbl(np, newfdtbl);
+  proc_setsig(np, newsig);
+  proc_settg(np, newtg);
 
   // 拷贝trapframe
   memcpy(proc_get_tf(np), proc_get_tf(p), sizeof(tf_t));
+
+  if((flags & CLONE_SETTLS)) {
+    proc_get_tf(np)->tp = tls;
+  }
 
   // 将返回值置为0
   proc_get_tf(np)->a0 = 0;
 
   // 如果指定了栈，那么重设sp
-  if(stack)
+  if(stack) {
     proc_get_tf(np)->sp = stack;
-
-  // 增加文件描述符引用 
-  // TODO: mmap file dup
-  if(fdrealloc(np, p->nfd) == -1) {
-    freeproc(np);
-    release(&np->lock);
-    return -1;
   }
 
-  for(i = 0; i < p->nfd; i++) {
-    struct file *fp;
-    if((fp = get_file(p, i)) != NULL)
-      set_file(np, i, filedup(fp));
-  }
   
   np->cwd = edup(p->cwd);
+  if(np->exe)
+    np->exe = edup(p->exe);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
@@ -357,6 +411,12 @@ do_clone(uint64_t stack)
 
   // np->cur_mmap_sz = p->cur_mmap_sz;
   return pid;
+
+
+ bad:
+  freeproc(np);
+  release(&np->lock);
+  return -1;
 }
 
 // Pass p's abandoned children to init.
@@ -374,36 +434,24 @@ reparent(struct proc *p)
   }
 }
 
-void proc_close_files(proc_t *p) {
-  for(int fd = 0; fd < p->nfd; fd++){
-    struct file *f;
-    if((f = get_file(p, fd)) != NULL){
-      fileclose(f);
-    }
-  }
-}
-void buddy_print_free();
-// Exit the current process.  Does not return.
-// An exited process remains in the zombie state
-// until its parent calls wait().
-void
-exit(int status)
-{
-  struct proc *p = myproc();
+extern void buddy_print_free();
+#include "kernel/futex.h"
+
+void exit(int status) {
+  proc_t *p = myproc();
+  // tg_t *thrdgrp = p->tg;
+  // proc_t *mp = tg_main_thrd(thrdgrp);
+  int thrdcnt = tg_quit(p->tg);
+
   if(p == initproc) {
     panic("init exiting");
   }
-  // mmap_print(p->mm);
 
-  #ifdef DEBUG
-  buddy_print_free();
-  #endif
-  // buddy_print_free();
-  // if(status == -1) {
-  //   panic("exception quit");
-  // }
-  // Close all open files.
-  proc_close_files(p);
+  debug("PID %d EXIT", p->pid);
+
+  if(thrdcnt == 0) {
+    fdtbl_closeall(p->fdtable);
+  }
 
   eput(p->cwd);
   p->cwd = 0;
@@ -418,7 +466,9 @@ exit(int status)
   reparent(p);
 
   // Parent might be sleeping in wait().
-  wakeup(p->parent);
+  if(thrdcnt == 0) {
+    wakeup(p->parent);
+  }
   
   acquire(&p->lock);
 
@@ -426,6 +476,13 @@ exit(int status)
   p->state = ZOMBIE;
 
   release(&wait_lock);
+
+  if(p->clear_tid_addr) {
+    memset_user(p->clear_tid_addr, 0, sizeof(int));
+    acquire(&p->tg->lock);
+    futex_wake((void *)p->clear_tid_addr, 1);
+    release(&p->tg->lock);
+  }
 
   // Jump into the scheduler, never to return.
   sched();
@@ -435,7 +492,7 @@ exit(int status)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-waitpid(int cid, uint64 addr)
+waitpid(int cid, uint64 addr, int options)
 {
   struct proc *np;
   int havekids, pid, haveckid;
@@ -524,10 +581,30 @@ scheduler(void)
   }
 }
 
+void proc_setmm(proc_t *p, mm_t *newmm) {
+  mmap_ref(newmm);
+  p->mm = newmm;
+}
+
+void proc_setsig(proc_t *p, signal_t *newsig) {
+  sig_ref(newsig);
+  p->signal = newsig;
+}
+
+void proc_settg(proc_t *p, tg_t *tg) {
+  tg_ref(tg);
+  p->tg = tg;
+}
+
+void proc_setfdtbl(proc_t *p, fdtable_t *fdtbl) {
+  fdtbl_ref(fdtbl);
+  p->fdtable = fdtbl;
+}
 
 tf_t *proc_get_tf(proc_t *p) {
   return p->trapframe;
 }
+
 
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
@@ -586,16 +663,12 @@ forkret(void)
     first = 0;
 
     extern fat32_t *fat;
-    debug("ready to mount\n");
     fat_mount(ROOTDEV, &fat);
-    debug("mount done\n");
     p->cwd = namee(NULL, "/");
     // init dir...
     entry_t *tmp = create(fat->root, "/tmp", T_DIR);
     if(tmp)
       eunlockput(tmp);
-    // LOOP();
-    // fsinit(ROOTDEV);
   }
 
   usertrapret();
@@ -613,6 +686,7 @@ sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
+  sig_handle(p->signal);
   // Must acquire p->lock in order to
   // change p->state and then call sched.
   // Once we hold p->lock, we can be
@@ -665,6 +739,14 @@ wakeup(void *chan)
       release(&p->lock);
     }
   }
+}
+
+void wake_up_process(proc_t *p) {
+  if(p->state != SLEEPING)
+    ER();
+  acquire(&p->lock);
+  p->state = RUNNABLE;
+  release(&p->lock);
 }
 
 // Kill the process with the given pid.
@@ -721,7 +803,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 
 
 void proc_switchmm(proc_t *p, mm_t *newmm) {
-  p->mm = newmm;
+  proc_setmm(p, newmm);
   switchuvm(p->mm);
 }
 
@@ -749,86 +831,6 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    printf("%d %s %s", p->pid, state, p->name);
-    printf("\n");
+    printf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
   }
-}
-
-
-struct file *get_file(proc_t *p, int fd) {
-    if(fd < 0 || fd >= p->nfd)
-        return NULL;
-    // debug("nfd is %d fd is %d ext_ofile is %#x", p->nfd, fd, p->ext_ofile);
-    if(fd < NOFILE) 
-        return p->ofile[fd];
-    else 
-        return p->ext_ofile[fd - NOFILE];
-}
-
-void set_file(proc_t *p, int fd, struct file *f) {
-    if(fd < 0 || fd >= p->nfd)
-        return;
-    if(fd < NOFILE)
-        p->ofile[fd] = f;
-    else 
-        p->ext_ofile[fd - NOFILE] = f; 
-}
-
-
-int fdrealloc(proc_t *p, int nfd) {
-    if(nfd > MAX_FD || nfd < NOFILE) 
-        return -1;
-    if(nfd == NOFILE)
-      return 0;
-
-    int oldsz = max(p->nfd - NOFILE, 0) * sizeof(struct file *);
-    int newsz = (nfd - NOFILE) * sizeof(struct file *);
-    struct file **newfdarray;
-
-    if((newfdarray = (struct file **)kzalloc(newsz)) == NULL) {
-        debug("alloc fail");
-        return -1;
-    }
-    memmove(newfdarray, p->ext_ofile, min(oldsz, newsz));
-    p->nfd = nfd;
-    kfree((void *)p->ext_ofile);
-    p->ext_ofile = newfdarray;
-    // debug("alloc newfdarray %#lx nfd %d addr %lx", newfdarray, nfd, &p->ext_ofile);
-    return 0;
-}
-
-// Allocate a file descriptor for the given file.
-// Takes over file reference from caller on success.
-int fdalloc(proc_t *p, struct file* f) {
-    int fd;
-
-    for (fd = 0; fd < NOFILE; fd++) {
-        if (p->ofile[fd] == 0) {
-            p->ofile[fd] = f;
-            return fd;
-        }
-    }
-    for (fd = 0; fd < p->nfd - NOFILE; fd++) {
-        if (p->ext_ofile[fd] == 0) {
-            p->ext_ofile[fd] = f;
-            return fd + NOFILE;
-        }
-    }
-    
-    if(p->nfd == MAX_FD || fdrealloc(p, min(p->nfd + 10, MAX_FD)) < 0)
-        return -1;
-
-    for (; fd < p->nfd - NOFILE; fd++) {
-        if (p->ext_ofile[fd] == 0) {
-            p->ext_ofile[fd] = f;
-            return fd + NOFILE;
-        }
-    }
-    panic("unreached");
-}
-
-void wake_up_process(proc_t *tsk) {
-  if(tsk->state != SLEEPING)
-    ER();
-  tsk->state = RUNNABLE;
 }

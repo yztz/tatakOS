@@ -80,7 +80,6 @@ usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
-    // debug_if(p->pid == 3, "usertrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
     syscall();
   } else if(devintr(scause) == 0) {
     // ok
@@ -100,6 +99,9 @@ usertrap(void)
   if (scause == INTR_TIMER) {
     yield();
   }
+
+  sig_handle(p->signal);
+
   usertrapret();
 }
 
@@ -206,11 +208,15 @@ kerneltrap()
   w_sstatus(sstatus);
 }
 
+#include "kernel/time.h"
+
 void
 clockintr()
 {
   acquire(&tickslock);
   ticks++;
+  // timespec_t time = TICK2TIMESPEC(ticks);
+  // time_print(&time);
   wakeup(&ticks);
   release(&tickslock);
 }
