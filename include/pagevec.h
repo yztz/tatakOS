@@ -21,7 +21,7 @@
 #include "types.h"
 #include "mm/page.h"
 
-#define PAGEVEC_SIZE	1
+#define PAGEVEC_SIZE	8
 
 struct page;
 struct address_space;

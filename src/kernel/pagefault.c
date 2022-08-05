@@ -16,6 +16,8 @@ extern char cp_start;
 extern char cp_end;
 
 
+extern int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address);
+
 /* 复制COW页 */
 static inline int cow_copy(uint64_t va, pte_t *pte) {
   uint64 pa = PTE2PA(*pte);
@@ -35,6 +37,7 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
 
     *pte = PA2PTE(mem) | flag;
 
+    /* 引用数-1 */
     kfree((void *)pa);
   }
   // IMPORTANT! Flush TLB
@@ -44,22 +47,22 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
 }
 
 
-static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
-    // TODO: check file range
-    uint64_t len = PGSIZE;
-    off_t off = vma->offset;
-    struct file *fp = vma->map_file;
-    if(va == vma->addr) {
-        uint64_t delta = vma->raddr - vma->addr;
-        pa = pa + delta;
-        len = len - delta;
-    } else {
-        off += va - vma->raddr;
-    }
-    elock(fp->ep);
-    reade(fp->ep, 0, pa, off, len);
-    eunlock(fp->ep);
-}
+// static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
+//     // TODO: check file range
+//     uint64_t len = PGSIZE;
+//     off_t off = vma->offset;
+//     struct file *fp = vma->map_file;
+//     if(va == vma->addr) {
+//         uint64_t delta = vma->raddr - vma->addr;
+//         pa = pa + delta;
+//         len = len - delta;
+//     } else {
+//         off += va - vma->raddr;
+//     }
+//     elock(fp->ep);
+//     reade(fp->ep, 0, pa, off, len);
+//     eunlock(fp->ep);
+// }
 
 typedef enum {
     PF_LOAD,
@@ -87,70 +90,141 @@ static pagefault_t get_pagefault(uint64 scause) {
     }
 }
 #include "mm/buddy.h"
+
+// /**
+//  * @return 处理失败返回-1，成功返回1
+//  */
+// int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
+//     if(fault == PF_STORE) { // store page fault
+//         if(vma->prot & PROT_WRITE) {
+//             pte_t *pte = walk(p->mm->pagetable, rva, 1);
+//             // lazy
+//             if((*pte & PTE_V) == 0) {
+//                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
+
+//                 if(newpage == 0) {
+//                     debug("map fault");
+//                     return -1;
+//                 }
+//                 // load file content
+//                 if(vma->map_file) {
+//                     file_copy(rva, newpage, vma);
+//                 }
+
+//                 *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
+//                 sfence_vma_addr(rva);
+                
+//                 return 0;
+//             }
+//             // cow
+//             if(*pte & PTE_COW) {
+//                 if(cow_copy(rva, pte) == -1){
+//                     debug("cow fault");
+//                     return -1;
+//                 } else {
+//                     return 0;
+//                 }
+//             }
+
+//             panic("here?");
+//         } else {
+//             debug("no write prot");
+//             return -1;
+//         }
+//     }
+    
+//     if(fault == PF_LOAD) { 
+//         if(vma->prot & PROT_READ) {
+//             pte_t *pte = walk(p->mm->pagetable, rva, 1);
+//             // lazy
+//             if((*pte & PTE_V) == 0) {
+//                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
+//                 if(newpage == 0) {
+//                     return -1;
+//                 }
+//                 // load file content
+//                 if(vma->map_file) {
+//                     file_copy(rva, newpage, vma);
+//                 }
+//                 *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
+//                 sfence_vma_addr(rva);
+//                 return 0;
+//             }
+//         } else {
+//             return -1;
+//         }
+//     }
+
+//     return -1;
+// }
+
+static int have_prot(pagefault_t fault, vma_t *vma){
+    if(fault == PF_STORE){
+        if(vma->prot & PROT_WRITE)
+            return 1;
+    }
+    if(fault == PF_LOAD){
+        if(vma->prot & PROT_READ)
+            return 1;
+    }
+    return 0;
+}
+
+static int do_filemap_page(pte_t *pte, vma_t *vma, uint64_t address){
+    return filemap_nopage(pte, vma, address);
+}
+
+static int do_swap_page(){
+    ER();
+    return 1;
+}
+
+/**
+ * lazy allocation
+ */
+static int do_anonymous_page(pte_t *pte, vma_t *vma, uint64_t address){
+    uint64_t newpage = (uint64_t) kzalloc(PGSIZE);
+
+    *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
+
+    /* 本来就为0，是否有必要？ */
+    sfence_vma_addr(address);
+    return 1;
+}
+
+static int do_cow_page(uint64_t address, pte_t *pte){
+    return cow_copy(address, pte);
+}
+
 /**
  * @return 处理失败返回-1，成功返回1
  */
 int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
-    if(fault == PF_STORE) { // store page fault
-        if(vma->prot & PROT_WRITE) {
-            pte_t *pte = walk(p->mm->pagetable, rva, 1);
-            // lazy
-            if((*pte & PTE_V) == 0) {
-                uint64_t newpage = (uint64)kzalloc(PGSIZE);
-
-                if(newpage == 0) {
-                    debug("map fault");
-                    return -1;
-                }
-                // load file content
-                if(vma->map_file) {
-                    file_copy(rva, newpage, vma);
-                }
-
-                *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
-                sfence_vma_addr(rva);
-                
-                return 0;
-            }
-            // cow
-            if(*pte & PTE_COW) {
-                if(cow_copy(rva, pte) == -1){
-                    debug("cow fault");
-                    return -1;
-                } else {
-                    return 0;
-                }
-            }
-
-            panic("here?");
-        } else {
-            debug("no write prot");
-            return -1;
-        }
+    if(!have_prot(fault, vma)){
+        ERROR("have no prot");
     }
-    
-    if(fault == PF_LOAD) { 
-        if(vma->prot & PROT_READ) {
-            pte_t *pte = walk(p->mm->pagetable, rva, 1);
-            // lazy
-            if((*pte & PTE_V) == 0) {
-                uint64_t newpage = (uint64)kzalloc(PGSIZE);
-                if(newpage == 0) {
-                    return -1;
-                }
-                // load file content
-                if(vma->map_file) {
-                    file_copy(rva, newpage, vma);
-                }
-                *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
-                sfence_vma_addr(rva);
-                return 0;
-            }
-        } else {
-            return -1;
+    pte_t *pte, entry;
+
+    pte = walk(p->mm->pagetable, rva, 1);
+    entry = *pte;
+
+    /* 如果valid位不存在，意味着对应的页没有被map过（entry为0），或者不存在内存中（swap） */
+    if(!pte_valid(entry)) {
+        if(pte_none(entry)){
+            if(vma->map_file)
+                return do_filemap_page(pte, vma, rva);
+            /* lazy allocation */
+            return do_anonymous_page(pte, vma, rva);
         }
+        return do_swap_page();
     }
 
+    /* cow, 类型为store， 并且write位为0 */
+    if(fault == PF_STORE && !pte_write(entry) && (entry & PTE_COW))
+        return do_cow_page(rva, pte);
+
+    /* 未知页错误 */
+    ER();
     return -1;
 }
 
@@ -232,19 +306,19 @@ int handle_pagefault(uint64_t scause) {
     return 0;
 }
 
-int is_pagefault(uint64_t scause){
-    #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-    if(scause == EXCP_STORE_PAGE_FAULT || scause == EXCP_LOAD_PAGE_FAULT)
-    #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9 
-    /* 1.9 的pagefault触发的错误号是否有遗漏？ */
-    if(scause == EXCP_STORE_FAULT)
-    #else
-    ER();
-    #endif
-    {
-        return 1;
-    }
+// int is_pagefault(uint64_t scause){
+//     #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+//     if(scause == EXCP_STORE_PAGE_FAULT || scause == EXCP_LOAD_PAGE_FAULT)
+//     #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9 
+//     /* 1.9 的pagefault触发的错误号是否有遗漏？ */
+//     if(scause == EXCP_STORE_FAULT)
+//     #else
+//     ER();
+//     #endif
+//     {
+//         return 1;
+//     }
 
-    return 0;
+//     return 0;
 
-}
+// }

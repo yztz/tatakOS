@@ -81,12 +81,11 @@ page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
   return page;
 }
 
-/**
- * @brief read file into memory when page fault hapened
- *
- * @return int
- */
-// int filemap_nopage(uint64 address)
+// /**
+//  * @brief read file into memory when page fault hapened
+//  * mmap file 的pagefault处理函数。
+//  */
+// int filemap_nopage(uint64_t address)
 // {
 //   struct proc *p = myproc();
 //   struct mm_struct *mm = p->mm;
@@ -300,7 +299,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
     {
       // if(user == 1)
         // for(;;);
-      pa = (uint64)kalloc();
+      pa = (uint64_t)kalloc();
       page = PATOPAGE(pa);
 
       get_page(page);
@@ -404,6 +403,71 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
   return n - rest;
 }
 
+/**
+ * @brief read file into memory when page fault hapened
+ * mmap file 的pagefault处理函数。
+ * 类似于do_generic_mapping_read
+ */
+int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
+  uint64 pgoff, endoff, size;
+  page_t *page;
+  uint64 pa;
+
+  struct file *file = area->map_file;
+  address_space_t *mapping = file->ep->i_mapping;
+
+  /* address落在文件的pgoff页 */
+  pgoff = ((address - area->addr) >> PAGE_CACHE_SHIFT) + area->offset;
+  /* area所包含的最后一页 */
+  endoff = (area->len >> PAGE_CACHE_SHIFT) + area->offset;
+  /* 文件的总页数， 页号为（0 ~ size-1）*/
+  size = ROUNDUP(file->ep->size_in_mem, PAGE_CACHE_SIZE) >> PAGE_CACHE_SHIFT;
+
+  if(pgoff >= size || pgoff > endoff)
+    ER();
+
+  page = find_get_page(mapping, pgoff);
+
+  if(!page) {
+    pa = (uint64_t)kalloc();
+    page = PATOPAGE(pa);
+
+    get_page(page);
+    entry_t *entry = mapping->host;
+    read_one_page(entry, pa, pgoff);
+    add_to_page_cache(page, mapping, pgoff);
+    // lru_cache_add(page);
+  }
+  else {
+    pa = PAGETOPA(page);
+  }
+  // mark_page_accessed(page);
+  put_page(page);
+
+  /**
+   * private mmap和shared mmap
+   */
+  if(area->flags & MAP_PRIVATE){
+    uint64_t pa0 = (uint64_t)kalloc();
+    // page_t *page0 = PAGETOPA(pa0);
+    /* 页替换算法需要用到swap */
+    // lru_cache_add(page0);
+    // mark_page_accessed(page0);
+    memcpy((void *)pa0, (void *)pa, PGSIZE);
+    *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
+    sfence_vma_addr(address);
+  }
+  else if(area->flags & MAP_SHARED){
+    /* shared */
+    *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
+    sfence_vma_addr(address);
+
+  }
+
+  // todo("reverse mapping !");
+
+  return 0; 
+}
 
 void init_pg_head(rw_page_list_t *pg_list){
   pg_list->head = NULL;
