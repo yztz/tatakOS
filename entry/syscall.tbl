@@ -1,7 +1,6 @@
 ############Proc###############
  1     fork      sys_fork
  3     wait      sys_wait
- 6     kill      sys_kill    
 14     uptime    sys_uptime 
 93     exit      sys_exit  
 94     exit_group sys_exit_group
@@ -10,13 +9,20 @@
 100    get_robust_list  sys_get_robust_list
 101    nanosleep sys_nanosleep
 124    yield     sys_sched_yield
+129    kill      sys_kill
 130    tkill     sys_tkill
 134    rt_sigaction     sys_rt_sigaction
 135    rt_sigprocmask   sys_rt_sigprocmask
 137    rt_sigtimedwait  sys_rt_sigtimedwait
 139    rt_sigreturn  sys_rt_sigreturn
+144    setgid    sys_setgid
+146    setuid    sys_setuid
+154    setpgid   sys_setpgid
+155    getpgid   sys_getpgid
 172    getpid    sys_getpid 
 173    getppid   sys_getppid
+174    getuid    sys_getuid
+176    getgid    sys_getgid
 178    gettid    sys_gettid
 220    clone     sys_clone
 221    exec      sys_exec
@@ -31,8 +37,9 @@
 34     mkdirat   sys_mkdirat
 35     unlinkat  sys_unlinkat
 #37    linkat    sys_linkat  [doesn't impl]
-39    umount2   sys_umount
-40    mount     sys_mount
+39     umount2   sys_umount
+40     mount     sys_mount
+48     faccessat sys_faccessat
 49     chdir     sys_chdir  
 56     openat    sys_openat
 57     close     sys_close
@@ -44,6 +51,8 @@
 65     readv     sys_readv
 66     writev    sys_writev
 67     pread     sys_pread
+71     sendfile  sys_sendfile
+73     ppoll     sys_ppoll
 79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
 88     utimensat sys_utimensat
@@ -58,7 +67,7 @@
 207    recvfrom     sys_recvfrom
 208    setsockopt   sys_setsockopt
 ###############MM###############
-214     sbrk      sys_sbrk  
+214     brk      sys_brk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
 226     mprotect  sys_mprotect
@@ -66,9 +75,11 @@
 43      statfs64  sys_statfs64
 96      set_tid_address sys_set_tid_address
 113     clock_gettime   sys_clock_gettime
+116     syslog          sys_syslog
 153     times           sys_times
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday
+179     sysinfo         sys_sysinfo
 283     membarrier      sys_membarrier
 #############MISC###############
 175     geteuid     sys_geteuid

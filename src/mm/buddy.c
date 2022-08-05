@@ -34,6 +34,14 @@ buddy_list_t lists[MAX_ORDER];
 static atomic_t used;
 static uint total;
 
+uint64_t buddy_getfree() {
+  return total - atomic_get(&used);
+}
+
+uint64_t buddy_gettotal() {
+  return total;
+}
+
 void buddy_init() {
   for(int i = 0; i < MAX_ORDER; i++) {
     BUDDY_INIT_HEAD(lists[i].head);

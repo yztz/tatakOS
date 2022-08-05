@@ -81,3 +81,10 @@ void _kfree_safe(void **paddr) {
     }
 }
 
+uint64_t get_total_mem() {
+    return buddy_gettotal();
+}
+
+uint64_t get_free_mem() {
+    return buddy_getfree();
+}

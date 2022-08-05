@@ -8,6 +8,8 @@
 #include "kernel/sys.h"
 #include "defs.h"
 
+#include "debug.h"
+
 // Fetch the uint64 at addr from the current process.
 int
 fetchaddr(uint64 addr, uint64 *ip)
@@ -126,10 +128,12 @@ syscall(void)
 
   num = proc_get_tf(p)->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    // debug_if(p->pid >= 2, "PID %d syscall " grn("%s") " from %#lx", p->pid, syscall_name(num), r_sepc());
     proc_get_tf(p)->a0 = syscalls[num]();
   } else {
-    printf("pid %d %s: unknown sys call %d sepc %lx\n",
+    printf("PID %d %s: "rd("unknown sys call %d")" sepc %lx\n",
             p->pid, p->name, num, r_sepc());
     proc_get_tf(p)->a0 = -1;
+    panic("");
   }
 }

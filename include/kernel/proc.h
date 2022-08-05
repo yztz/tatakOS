@@ -141,7 +141,7 @@ void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             waitpid(int cid, uint64 addr);
+int             waitpid(int cid, uint64 addr, int options);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);
@@ -153,5 +153,6 @@ void            proc_switchmm(proc_t *p, mm_t *newmm);
 tf_t           *proc_get_tf(proc_t *p);
 int             kthread_create(char *name, void (*entry)());
 void            freeproc(struct proc *p);
+int             get_proc_cnt();
 
 #endif

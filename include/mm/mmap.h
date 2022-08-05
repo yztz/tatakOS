@@ -87,7 +87,7 @@ vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
 int mmap_ext_heap(mm_t *mm, uint64_t newsize);
 int mmap_ext_stack(mm_t *mm, uint64_t newsize);
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
-int mmap_map_stack_heap(mm_t *mm, uint64_t brk_addr, uint64_t stacksize, uint64_t heapsize);
+int mmap_map_stack(mm_t *mm, uint64_t stacksize);
 
 mm_t *mmap_clone(mm_t *mm);
 void mmap_print(mm_t *mm);

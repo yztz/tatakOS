@@ -17,10 +17,6 @@ fat32_t *fat;
 entry_t pool[NENTRY];
 
 void fs_init() {
-  // for(int i = 0; i < ENTRY_HLIST_N; i++) {
-  //   entry_pool[i].first = NULL;
-  // }
-
   for(int i = 0; i < NENTRY; i++) {
     memset(&pool[i], 0, sizeof(entry_t));
     initsleeplock(&pool[i].lock, "pool_entry");
@@ -58,6 +54,10 @@ FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
   const int dirent_size = sizeof(struct linux_dirent64);
   struct dents_state *state = (struct dents_state *) s;
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
+
+  if(strncmp(name, ". ", 2) == 0 || strncmp(name, "..  ", 4) == 0)
+    return FR_CONTINUE;
+
   int namelen = strlen(name) + 1;
   int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
   // debug("total size is %d desc size is %d", total_size, desc->size);
@@ -126,14 +126,15 @@ extern uint64 ticks;
 // caller holds lock
 void estat(entry_t *entry, struct kstat *stat) {
   dir_item_t *item = &entry->raw;
+  int blksize = entry->fat->bytes_per_sec;
   stat->st_ino = (uint64_t)entry->clus_offset << 32 | entry->clus_start;
   stat->st_gid = 0;
   stat->st_uid = 0;
   stat->st_dev = entry->fat->dev;
   stat->st_rdev = entry->fat->dev;
   stat->st_mode = E_ISDIR(entry) ? S_IFDIR : S_IFREG;
-  stat->st_blksize = entry->fat->bytes_per_sec;
-  stat->st_blocks = 0;
+  stat->st_blksize = blksize;
+  stat->st_blocks = (stat->st_size + blksize - 1) / blksize;
   stat->st_size = item->size;
   stat->st_atime_nsec = 0;
   stat->st_atime_sec = 0;

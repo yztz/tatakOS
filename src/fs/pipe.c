@@ -75,7 +75,7 @@ pipeclose(struct pipe *pi, int writable)
 }
 
 int
-pipewrite(struct pipe *pi, uint64 addr, int n)
+pipewrite(struct pipe *pi, int user, uint64 addr, int n)
 {
   int i = 0;
   struct proc *pr = myproc();
@@ -91,7 +91,7 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
       sleep(&pi->nwrite, &pi->lock);
     } else {
       char ch;
-      if(copyin(&ch, addr + i, 1) == -1)
+      if(either_copyin(&ch, user, addr + i, 1) == -1)
         break;
       pi->data[pi->nwrite++ % PIPESIZE] = ch;
       i++;

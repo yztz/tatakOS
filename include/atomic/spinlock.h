@@ -4,6 +4,7 @@
 #include "types.h"
 
 #define INIT_SPINLOCK(ln) (spinlock_t){.locked=0, .name=#ln, .cpu=NULL};
+#define SPINLOCK_INIT(ln) static spinlock_t ln = (spinlock_t){.locked=0, .name=#ln, .cpu=NULL};
 
 // Mutual exclusion lock.
 struct spinlock {

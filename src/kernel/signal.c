@@ -241,6 +241,25 @@ uint64_t sys_tkill(void) {
     return -1;
 }
 
+uint64_t sys_kill(void) {
+    int pid;
+    int sig;
+    proc_t *p;
+
+    if(argint(0, &pid) < 0 || argint(1, &sig) < 0) 
+        return -1;
+
+    for(p = proc; p < &proc[NPROC]; p++) {
+        if(p->pid == pid) {
+            acquire(&p->lock);
+            p->sig_pending |= (1L << (sig - 1));
+            release(&p->lock);
+            return 0;
+        }
+    }
+
+    return 0;
+}
 
 
 
@@ -277,12 +296,16 @@ uint64_t sys_rt_sigaction(void) {
     if(argint(0, &signum) < 0 || argaddr(1, &act_addr) < 0 || argaddr(2, &oldact_addr) < 0)
         return -1;
 
-    if(copy_from_user(&act, act_addr, sizeof(sigaction_t)) < 0)
-        return -1;
 
-    // debug("register for pid %d signum is %d flags is %#lx", p->pid, signum, act.flags);
+    if(act_addr) {
+        if(copy_from_user(&act, act_addr, sizeof(sigaction_t)) < 0)
+            return -1;
 
-    sig_setaction(p->signal, signum, &act, &oldact);
+        // debug("register for pid %d signum is %d flags is %#lx", p->pid, signum, act.flags);
+
+        sig_setaction(p->signal, signum, &act, &oldact);
+    }
+    
 
     if(oldact_addr) {
         if(copy_to_user(oldact_addr, &oldact, sizeof(sigaction_t)) < 0)

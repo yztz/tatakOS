@@ -23,6 +23,8 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
+atomic_t proc_cnt = INIT_ATOMIC;
+
 int nextpid = 0;
 int nexttid = 1;
 struct spinlock pid_lock;
@@ -38,6 +40,11 @@ extern void forkret(void);
 // memory model when using p->parent.
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
+
+
+int get_proc_cnt() {
+  return atomic_get(&proc_cnt);
+}
 
 
 // initialize the proc table at boot time.
@@ -144,6 +151,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + KSTACK_SZ;
 
+  atomic_inc(&proc_cnt);
   // p->cur_mmap_sz = MMAP_BASE;
   return p;
 
@@ -177,6 +185,8 @@ void freeproc(struct proc *p) {
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+
+  atomic_dec(&proc_cnt);
 }
 
 // a user program that calls exec("/init")
@@ -190,9 +200,9 @@ static void init_std(proc_t *p) {
   struct file *stdin = filealloc();
   struct file *stdout = filealloc();
 
-  fdtbl_setfile(p->fdtable, 0, stdin);
-  fdtbl_setfile(p->fdtable, 1, stdout);
-  fdtbl_setfile(p->fdtable, 2, stdout);
+  fdtbl_setfile(p->fdtable, 0, stdin, 0);
+  fdtbl_setfile(p->fdtable, 1, stdout, 0);
+  fdtbl_setfile(p->fdtable, 2, stdout, 0);
 
   stdin->type = FD_DEVICE;
   stdout->type = FD_DEVICE;
@@ -240,7 +250,7 @@ userinit(void)
     panic("mmap1 failure");
   }
 
-  if(mmap_map_stack_heap(p->mm, 3 * PGSIZE, USTACKSIZE, UHEAPSIZE) == -1) {
+  if(mmap_map_stack(p->mm, USTACKSIZE) == -1) {
     panic("mmap2 failure");
   }
 
@@ -471,7 +481,7 @@ void exit(int status) {
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-waitpid(int cid, uint64 addr)
+waitpid(int cid, uint64 addr, int options)
 {
   struct proc *np;
   int havekids, pid, haveckid;

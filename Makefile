@@ -150,7 +150,7 @@ $(MNT_DIR):
 
 # $(fs.img): user
 $(fs.img): user $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=1M count=128
+	@dd if=/dev/zero of=$@ bs=1M count=256
 	@mkfs.vfat -F 32 -s 8 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
@@ -162,7 +162,7 @@ $(fs.img): user $(MNT_DIR)
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
 #	@make -C $U
-	@cp $U/raw/* $(U_PROG_DIR)
+	@cp -r $U/raw/* $(U_PROG_DIR)
 	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
 
 mnt: $(fs.img)

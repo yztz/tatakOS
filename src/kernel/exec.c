@@ -165,7 +165,6 @@ int exec(char *path, char **argv, char **envp) {
     goto bad;
 
   uint64_t elfentry = elf.entry;
-  uint64_t brk;
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)) {
     if(reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) {
@@ -193,8 +192,6 @@ int exec(char *path, char **argv, char **envp) {
       goto bad;
     if(loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
-
-    brk = ph.vaddr + ph.memsz;
   }
   // debug("%s: loadseg done entry is %#lx", path, elfentry);
   // mmap_print(newmm);
@@ -204,7 +201,7 @@ int exec(char *path, char **argv, char **envp) {
   p = myproc();
 
   //////////////STACK & HEAP////////////////
-  if(mmap_map_stack_heap(newmm, brk, oldmm->ustack->len, oldmm->uheap->len) == -1)
+  if(mmap_map_stack(newmm, oldmm->ustack->len) == -1)
     goto bad;
   
   uint64 envpc;

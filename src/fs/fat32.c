@@ -15,6 +15,7 @@
 #define __MODULE_NAME__ FAT
 #include "debug.h"
 
+#define IS_FAT_CLUS_END(clus) ((clus) >= 0x0FFFFFF8) // 簇结束标识
 #define FAT_CLUS_END 0x0FFFFFFF // 簇结束标识
 #define FAT_CLUS_FREE 0x0       // 空闲簇
 #define __FAT_LFN_ATTR 0xF    // 长文件名标识
@@ -152,7 +153,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 
 /* 获取下一个簇号 */
 uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
-    if(cclus == FAT_CLUS_END || cclus == FAT_CLUS_FREE) return cclus;
+    if(IS_FAT_CLUS_END(cclus) || cclus == FAT_CLUS_FREE) return cclus;
 
     buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
     uint32_t offset = clus2offset(fat, cclus);
@@ -171,7 +172,7 @@ FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
     buf_t *buf = bread(fat->dev, clus2fatsec(fat, prev));
     uint32_t offset = clus2offset(fat, prev);
     uint32_t next = *(uint32_t *)(buf->data + offset);
-    if(FAT_CLUS_END != next) {
+    if(!IS_FAT_CLUS_END(next)) {
         panic("fat_append_cluster:prev is not the end");
     }
     *(uint32_t *)(buf->data + offset) = new;
@@ -188,7 +189,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
 
     // 计算起始簇
     int rest = n;
-    while(cclus != FAT_CLUS_END && rest > 0) {
+    while(!IS_FAT_CLUS_END(cclus) && rest > 0) {
         if(off >= BPC(fat)) {
             off -= BPC(fat);
             goto next_clus;
@@ -265,7 +266,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
     next_clus:
         prev_clus = cclus;
         cclus = fat_next_cluster(fat, cclus);
-        if(cclus == FAT_CLUS_END) {
+        if(IS_FAT_CLUS_END(cclus)) {
             if(fat_alloc_cluster(fat, &cclus, alloc_num) == FR_ERR) {
                 debug("fat_write: alloc fail");
                 return 0;
@@ -328,7 +329,7 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
     uint32 cclus = clus;
     uint32 idx = 0;
 
-    while(cclus != FAT_CLUS_END) {
+    while(!IS_FAT_CLUS_END(cclus)) {
         uint32_t *pclus;
 
         buf_t *b = bread(fat->dev, clus2fatsec(fat, cclus));
@@ -483,7 +484,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
         prev_clus = curr_clus;
         curr_clus = fat_next_cluster(fat, curr_clus);
         // 触底了
-        if(curr_clus == FAT_CLUS_END) {
+        if(IS_FAT_CLUS_END(curr_clus)) {
             if(alloc) {
                 if(fat_alloc_cluster(fat, &curr_clus, 1) == FR_ERR)
                     return FR_ERR;
@@ -492,6 +493,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
                 break;
             }
         }
+        debug("next clus %d", curr_clus);
         clus_cnt++;
     }
 

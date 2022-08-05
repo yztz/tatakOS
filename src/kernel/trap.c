@@ -80,8 +80,6 @@ usertrap(void)
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
-    debug_if(p->pid >= 2, "PID %d syscall " grn("%s") " from %#lx", p->pid, syscall_name(proc_get_tf(p)->a7), r_sepc());
-
     syscall();
   } else if(devintr(scause) == 0) {
     // ok

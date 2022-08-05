@@ -1,7 +1,10 @@
 #include "kernel/thread_group.h"
 #include "kernel/proc.h"
 #include "mm/alloc.h"
+#include "atomic/spinlock.h"
 
+int tg_id = 0;
+SPINLOCK_INIT(tg_id_lock);
 
 /* 
 ref与thrdcnt不能混用
@@ -39,6 +42,10 @@ tg_t *tg_new(proc_t *p) {
     
     newtg->master_pid = p->pid;
     tg_join(newtg, p);
+
+    acquire(&tg_id_lock);
+    newtg->tg_id = tg_id++;
+    release(&tg_id_lock);
 
     return newtg;
 }

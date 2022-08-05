@@ -90,8 +90,7 @@ int copy_from_user(void *to, uint64 from, size_t n) {
 
   // todo: more checks, such as: guard pages, **mmap**...
   if(vma_exist(p->mm, (uint64)from, n) == NULL) {
-    debug("not exist");
-    panic("");
+    panic("not exist");
     return -1;
   }
 

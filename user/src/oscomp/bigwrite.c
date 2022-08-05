@@ -41,7 +41,7 @@ int main() {
 
     printf("end write\n");
     print_cache();
-    syscall(NR_profile);
+    // syscall(NR_profile);
     
     close(fd);
 

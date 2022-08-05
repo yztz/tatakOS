@@ -9,8 +9,14 @@
 #define O_TRUNC     00001000
 #define O_LARGEFILE 00100000
 #define O_DIRECTORY 00200000
-
-#define O_NONBLOCK 04000
+#define O_NOCTTY       0400
+#define O_APPEND      02000
+#define O_NONBLOCK    04000
+#define O_DSYNC      010000
+#define O_SYNC     04010000
+#define O_RSYNC    04010000
+#define O_NOFOLLOW  0400000
+#define O_CLOEXEC  02000000
 
 #define SEEK_SET	0	/* seek relative to beginning of file */
 #define SEEK_CUR	1	/* seek relative to current file position */
@@ -24,6 +30,7 @@
 #define F_SETFD  2
 #define F_GETFL  3
 #define F_SETFL  4
+#define F_DUPFD_CLOEXEC 1030
 
 #define FD_CLOEXEC	1
 

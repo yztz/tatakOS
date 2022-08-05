@@ -38,5 +38,6 @@ int             fileread(struct file*, uint64, int n);
 int             filestat(struct file *f, struct kstat *stat);
 int             filewrite(struct file *f, uint64 addr, int n);
 void            file_print(file_t *self);
+int             filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len);
 
 #endif

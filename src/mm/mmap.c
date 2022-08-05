@@ -174,15 +174,21 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
     vma = vma_inter(mm, addr_align, len);
 
     if(flags & MAP_FIXED) {
+        // 对齐检查
         if(addr != addr_align) return -1;
         if(vma) {
             if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
+                vma_print(vma);
+                mmap_print(mm);
                 debug("fixed map must be mapped in existed map");
+                release(&mm->mm_lock);
                 return -1;
             }
             vma->len = addr - vma->addr;
         }
     } else if(vma != NULL) {
+        debug("vma remmapped");
+        release(&mm->mm_lock);
         return -1;
     }
 
@@ -288,6 +294,7 @@ void mmap_free(mm_t **pself) {
     if(self->ref == 0)
         panic("ref");
 
+    // 2 --> 1 --> 0
     mmap_deref(self);
     if(self->ref > 0)
         return;
@@ -354,24 +361,26 @@ mm_t *mmap_clone(mm_t *mm) {
 
 
 // called after load
-int mmap_map_stack_heap(mm_t *mm, uint64_t brk_addr, uint64_t stacksize, uint64_t heapsize) {
-    brk_addr = PGROUNDUP(brk_addr);
-    if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
-        return -1;
-    }
+int mmap_map_stack(mm_t *mm, uint64_t stacksize) {
+    // brk_addr = PGROUNDUP(brk_addr);
+    // if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
+    //     return -1;
+    // }
     if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_USER) == -1) {
-        do_unmap(mm, brk_addr, 0);
+        // do_unmap(mm, brk_addr, 0);
         return -1;
     }
 
+    mm->uheap = list_last_entry(&mm->vma_head, vma_t, head);
     mm->ustack = __vma_find(mm, USERSPACE_END - stacksize);
-    mm->uheap = __vma_find(mm, brk_addr);
 
     return 0;
 }
 
 int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
     if(mm->uheap == NULL) return -1;
+    if(newbreak <= mm->uheap->addr) return -1;
+
     uint64_t newsize = newbreak - mm->uheap->addr;
     uint64_t cursize = mm->uheap->len;
     if(cursize == newsize) {
@@ -391,6 +400,7 @@ int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
         }
     }
     // debug("uheap: %d -> %d", cursize, newsize);
+    mmap_print(mm);
     mm->uheap->len = newsize;
     return 0;
 }

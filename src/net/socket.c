@@ -25,7 +25,7 @@ uint64_t sys_socket(void) {
     f->readable = 1;
     f->writable = 1;
 
-    return fdtbl_fdalloc(p->fdtable, f);
+    return fdtbl_fdalloc(p->fdtable, f, -1, 0);
 }
 
 uint64_t sys_sendto(void) {

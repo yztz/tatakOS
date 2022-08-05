@@ -61,7 +61,7 @@ uint64 sys_dup(void) {
 
     if (argfd(0, 0, &f) < 0)
         return -1;
-    if ((fd = fdtbl_fdalloc(tbl, f)) < 0)
+    if ((fd = fdtbl_fdalloc(tbl, f, -1, 0)) < 0)
         return -EMFILE;
     filedup(f);
     return fd;
@@ -79,11 +79,9 @@ uint64 sys_dup3(void) {
         fileclose(oldf);
     }
 
-    fdtbl_setfile(tbl, new, f);
+    fdtbl_setfile(tbl, new, f, 0);
     filedup(f);
     return new;
-
-    return 0;
 }
 
 
@@ -247,6 +245,8 @@ uint64 sys_fstatat(void) {
          argaddr(2, &ustat) < 0 || argint(3, &flags) < 0)
         return -1;
 
+    // debug("dirfd %d path %s", dirfd, path);
+
     // sepcial for device...
     if((pf = getdevfile(path)) != NULL) {
         filestat(pf, &stat);
@@ -278,12 +278,17 @@ uint64 sys_getcwd(void) {
 
     char* end = getcwd(p->cwd, buf);
     assert(*end == '\0');
-    // debug("%s", buf);
+    debug("%s", buf);
     if (copyout(addr, buf, size) == -1) {
         return 0;
     }
 
     return addr;
+}
+
+
+uint64_t sys_faccessat(void) {
+    return -1;
 }
 
 uint64_t sys_mount(void) {
@@ -375,7 +380,7 @@ uint64 sys_openat(void) {
     //     }
     // }
 
-    // debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
+    debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
 
     // not support shm now
     if(strncmp(path, "/dev/shm/testshm", 16) == 0) {
@@ -385,7 +390,7 @@ uint64 sys_openat(void) {
     // sepcial for device...
     f = getdevfile(path);
     if(f != NULL) {
-        if((fd = fdtbl_fdalloc(tbl, f)) == -1) {
+        if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
             fileclose(f);
             return -EMFILE;
         }
@@ -408,13 +413,13 @@ uint64 sys_openat(void) {
         }
 
         elock(ep);
-        if (E_ISDIR(ep) && omode != O_RDONLY && omode != O_DIRECTORY) {
+        if (E_ISDIR(ep) && (omode & 1) != 0 && (omode & O_DIRECTORY) == 0) {
             eunlockput(ep);
             return -1;
         }
     }
 
-    if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f)) < 0) {
+    if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f, -1, omode)) < 0) {
         if (f)
             fileclose(f);
         eunlockput(ep);
@@ -459,25 +464,59 @@ uint64 sys_mkdirat(void) {
 uint64 sys_fcntl(void) {
     int fd, cmd;
     uint64_t arg;
+    file_t *f;
+    proc_t *p = myproc();
 
-    if(argint(0, &fd) < 0 || argint(1, &cmd) < 0 || argaddr(2, &arg) < 0) {
+    if(argfd(0, &fd, &f) < 0 || argint(1, &cmd) < 0 || argaddr(2, &arg) < 0) {
         return -1;
     }
 
-    proc_t *p = myproc();
-
     // debug("fd is %d cmd is %d arg is %ld", fd, cmd, arg);
     if(cmd == F_SETFD) {
-        fdtbl_setflags(p->fdtable, arg);
+        fdtbl_setflags(p->fdtable, fd, arg);
         return 0;
     } else if(cmd == O_NONBLOCK) {
         return 0;
+    } else if(cmd == F_DUPFD_CLOEXEC) {
+        int dupfd;
+        if((dupfd = fdtbl_fdalloc(p->fdtable, f, arg, O_CLOEXEC)) < 0) 
+            return -1;
+        filedup(f);
+        return dupfd;
+    } else if(cmd == F_GETFL) {
+        return fdtbl_getflags(p->fdtable, fd);
+    } else {
+        debug("unknown cmd %d", cmd);
+        return -1;
+    }
+    
+
+}
+
+uint64_t sys_sendfile(void) {
+    file_t *inf, *outf;
+    uint64_t poff;
+    size_t count;
+    off_t off;
+
+    if(argfd(0, NULL, &outf) < 0 || argfd(1, NULL, &inf) < 0 || 
+      argaddr(2, &poff) < 0 || argaddr(3, (uint64_t *)&count) < 0)
+        return -1;
+    
+    if(poff) {
+        if(copy_from_user(&off, poff, sizeof(off_t)) < 0)
+            return -1;
     }
 
-
-
-
-    return -1;
+    int ret;
+    if((ret = filesend(inf, outf, poff ? &off : NULL, count)) < 0)
+        return -1;
+    else {
+        if(copy_to_user(poff, &off, sizeof(off_t)) < 0)
+            return -1;
+        debug("len %ld rlen %ld", count, ret);
+        return ret;
+    }
 
 }
 
@@ -532,17 +571,23 @@ uint64 sys_exec(void) {
         if (fetchstr(uarg, argv[i], PGSIZE) < 0)
             goto bad;
     }
-    char *envp[2] = {"LD_LIBRARY_PATH=/", NULL};
+    char cwd[MAXPATH];
+    char pwd[MAXPATH];
+    getcwd(p->cwd, cwd);
+    snprintf(pwd, MAXPATH, "PWD=%s", cwd);
+    char *envp[] = {"LD_LIBRARY_PATH=/",
+                    "USER=Dear_u",
+                    "LONGNAME=Dear_u",
+                    pwd,
+                    "PS1=\\u\\w\\$ ",
+                    NULL};
 
     int ret = exec(path, argv, envp);
 
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
 
-    if(fdtbl_getflags(p->fdtable) & FD_CLOEXEC) {
-        debug("close all");
-        fdtbl_closeall(p->fdtable);
-    }
+    fdtbl_closexec(p->fdtable);
 
     return ret;
 
@@ -565,19 +610,21 @@ uint64 sys_pipe2(void) {
         return -1;
 
     fd0 = -1;
-    if ((fd0 = fdtbl_fdalloc(tbl, rf)) < 0 || (fd1 = fdtbl_fdalloc(tbl, wf)) < 0) {
-        if (fd0 >= 0)
-            fdtbl_setfile(tbl, fd0, NULL);
+    if ((fd0 = fdtbl_fdalloc(tbl, rf, -1, 0)) < 0) {
         fileclose(rf);
+        return -1;
+    }
+
+    if((fd1 = fdtbl_fdalloc(tbl, wf, -1, 0)) < 0) {
+        fdtbl_close(tbl, fd0);
         fileclose(wf);
         return -1;
     }
+
     if (copyout(fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
         copyout(fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) < 0) {
-        fdtbl_setfile(tbl, fd0, NULL);
-        fdtbl_setfile(tbl, fd1, NULL);
-        fileclose(rf);
-        fileclose(wf);
+        fdtbl_close(tbl, fd0);
+        fdtbl_close(tbl, fd1);
         return -1;
     }
     return 0;
@@ -587,14 +634,56 @@ uint64 sys_pipe2(void) {
 uint64 sys_ioctl(void) {
     int fd;
     uint64 request;
+    uint64 arg0;
 
-    if(argfd(0, &fd, NULL) < 0 && argaddr(1, &request) < 0) 
+    int pgrp = 0;
+
+    if(argfd(0, &fd, NULL) < 0 || argaddr(1, &request) < 0 || argaddr(2, &arg0) < 0) 
         return -1;
-    // debug("req %#x TIOCGWINSZ is %#x", request, TIOCGWINSZ);
+    // debug("req %#x", request);
     // if(request != TIOCGWINSZ) {
     //     panic("unsupport req");
     // }
-    return -1;
+    switch(request) {
+        case TCGETS:
+            if (copy_to_user(arg0, &(struct termios){
+                .c_iflag = 0,
+                // .c_oflag = OPOST|ONLCR,
+                .c_oflag = 0,
+                .c_cflag = 0,
+                // .c_lflag = ICANON|ECHO,
+                .c_lflag = 0,
+                .c_line = 0,
+                .c_cc = {0},
+            }, sizeof(struct termios)) < 0)
+                return -1;
+            break;
+        case TCSETS:
+
+            break;
+        case TIOCGPGRP:
+            
+            if(copy_to_user(arg0, &pgrp, sizeof(int)) < 0)
+                return -1;
+            break;
+        case TIOCSPGRP:
+        
+            break;
+        case TIOCGWINSZ:
+            if (copy_to_user(arg0, &(struct winsize){
+                .ws_row = 0,
+                .ws_col = 0,
+            }, sizeof(struct winsize)) < 0)
+                return -1;
+            break;
+        default:
+            panic("un");
+    }
+    return 0;
+}
+
+uint64 sys_ppoll(void) {
+    return 1;
 }
 
 uint64 sys_lseek(void) {
@@ -632,13 +721,15 @@ uint64 sys_mmap(void) {
 
     fp = fdtbl_getfile(p->fdtable, fd);
 
-    debug("MMAP addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
+    // debug("MMAP addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
     if(flags & MAP_SHARED) {
         panic("ns");
     }
 
-    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) 
+    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1)  {
+        debug("mmap failure");
         return -1;
+    }
 
     
     return addr;

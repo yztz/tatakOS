@@ -37,6 +37,55 @@ sys_getppid(void)
 }
 
 uint64
+sys_getuid(void)
+{
+  return 0;
+}
+
+uint64
+sys_getgid(void)
+{
+  return 0;
+}
+
+uint64_t 
+sys_geteuid(void) 
+{
+    return 0;
+}
+
+uint64_t 
+sys_getegid(void) 
+{
+    return 0;
+}
+
+uint64
+sys_setgid(void)
+{
+  return 0;
+}
+
+uint64
+sys_setpgid(void)
+{
+  return 0;
+}
+
+uint64
+sys_getpgid(void)
+{
+  // return myproc()->tg->tg_id;
+  return 0;
+}
+
+uint64
+sys_setuid(void)
+{
+  return 0;
+}
+
+uint64
 sys_fork(void)
 {
   return do_clone(myproc(), 0, 0, 0, 0, 0);
@@ -96,9 +145,9 @@ sys_wait(void)
   uint64 p;
   if(argaddr(0, &p) < 0)
     return -1;
-  return waitpid(-1, p);
+  return waitpid(-1, p, 0);
 }
-
+// ./busybox cat busybox_testcode.sh
 
 uint64
 sys_wait4(void)
@@ -110,21 +159,26 @@ sys_wait4(void)
   if(argint(0, &pid) < 0 || argaddr(1, &status) || argint(2, &options) < 0)
     return -1;
 
-  if(options > 0) 
-    panic("not support");
+  // debug("option is %x", options);
+  // if(options > 0) 
+  //   panic("not support");
 
-  return waitpid(pid, status);
+  return waitpid(pid, status, options);
 
 }
 
 uint64
-sys_sbrk(void)
+sys_brk(void)
 {
-  int n;
+  uint64_t brkaddr;
 
-  if(argint(0, &n) < 0)
+  if(argaddr(0, &brkaddr) < 0)
     return -1;
-  return growproc(n);
+  if(growproc(brkaddr) == -1) {
+    return -1;
+  } else {
+    return 0;
+  }
 }
 
 uint64
@@ -158,15 +212,15 @@ sys_sched_yield(void)
   return 0;
 }
 
-uint64
-sys_kill(void)
-{
-  int pid;
+// uint64
+// sys_kill(void)
+// {
+//   int pid;
 
-  if(argint(0, &pid) < 0)
-    return -1;
-  return kill(pid);
-}
+//   if(argint(0, &pid) < 0)
+//     return -1;
+//   return kill(pid);
+// }
 
 // return how many clock tick interrupts have occurred
 // since start.

@@ -9,6 +9,7 @@
 struct proc;
 
 typedef struct tg {
+    int tg_id;
     int ref;
     int thrdcnt;
     spinlock_t lock;

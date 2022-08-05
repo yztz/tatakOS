@@ -21,15 +21,42 @@ utsname_t sysname = {
   .machine = "xxxk210xxx",
   .nodename = "wtf",
   .release = "no release",
-  .version = "0.0.0.0.0.0.0.0.1"
+  .version = "0.0.0.0.0.0.0.0.1",
 };
 
-uint64_t sys_geteuid(void) {
-    return 0;
+uint64_t sys_syslog(void) {
+  int type;
+  uint64_t bufaddr;
+  int len;
+
+  if(argint(0, &type) < 0 || argaddr(1, &bufaddr) < 0 || argint(2, &len) < 0)
+    return -1;
+
+  return 0;
 }
 
-uint64_t sys_getegid(void) {
-    return 0;
+uint64_t sys_sysinfo(void) {
+  uint64_t addr;
+
+  if(argaddr(0, &addr) < 0)
+    return -1;
+
+  struct sysinfo si = {
+    .uptime = TICK2SEC(ticks),
+    .loads = {0},
+    .totalram = get_total_mem(),
+    .freeram = get_free_mem(),
+    .sharedram = 0,
+    .bufferram = 0,
+    .totalswap = 0,
+    .freeswap = 0,
+    .procs = get_proc_cnt(),
+    .totalhigh = 0,
+    .freehigh = 0,
+    .mem_unit = 1,
+  };
+
+  return copy_to_user(addr, &si, sizeof(struct sysinfo));
 }
 
 
