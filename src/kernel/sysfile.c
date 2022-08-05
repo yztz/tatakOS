@@ -603,9 +603,9 @@ uint64 sys_mmap(void) {
     fp = get_file(p, fd);
 
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
-    if(flags & MAP_SHARED) {
-        panic("ns");
-    }
+    // if(flags & MAP_SHARED) {
+        // panic("ns");
+    // }
 
     if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) 
         return -1;
