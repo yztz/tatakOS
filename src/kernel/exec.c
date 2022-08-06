@@ -151,7 +151,7 @@ int exec(char *path, char **argv, char **envp) {
 
   /* load */
 
-  if((ep = namee(NULL, path)) == 0) {
+  if((ep = namee(p->cwd, path)) == 0) {
     debug("entry %s acquire failure", path);
     kfree(newmm);
     kfree((void *)ustackbase);
@@ -188,7 +188,7 @@ int exec(char *path, char **argv, char **envp) {
       putaux(AT_BASE, INTERP_BASE);
       if((elfentry = loadinterp(newmm)) == 0) goto bad;
     }
-
+    
     if(ph.type != PT_LOAD)
       continue;
     if(ph.memsz < ph.filesz)
@@ -202,7 +202,6 @@ int exec(char *path, char **argv, char **envp) {
   // mmap_print(newmm);
   eunlock(ep);
 
-  p = myproc();
   // initcode
   if(p->exe) eput(p->exe);
   p->exe = ep;

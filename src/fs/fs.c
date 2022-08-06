@@ -211,7 +211,7 @@ static void __eput(entry_t *entry) {
   // 所以在删除的时候无需考虑子目录的并发访问问题
   if(entry->ref == 0) { 
 
-    buddy_print_free();
+    // buddy_print_free();
 
     if(entry == entry->fat->root) 
       panic("eput: root?");
@@ -300,6 +300,12 @@ static entry_t *dirlookup(entry_t *parent, const char *name) {
   dir_item_t item;
   uint32_t offset;
   //todo: root 下的..
+
+  if(strncmp(name, "..", 2) == 0) {
+    if(parent->parent != NULL) 
+      return edup(parent->parent);
+    return NULL;
+  }
 
   if(strncmp(name, ".", 1) == 0) {
     return edup(parent);

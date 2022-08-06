@@ -154,7 +154,7 @@ int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0)
 static void start_one_pdflush_thread(int no)
 {
 	char name[20];
-	snprintf(name, 20, "pdflush0-%d", no);
+	snprintf(name, 20, "pdflush-%d", no);
 	// kthread_run(pdflush, NULL, "pdflush");
 	kthread_create(name, pdflush);
 }

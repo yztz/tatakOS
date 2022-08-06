@@ -90,3 +90,4 @@
 231    profile        sys_profile
 232    philosophy   sys_philosophy
 233    memuse       sys_memuse
+234    halt         sys_halt

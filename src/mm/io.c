@@ -8,7 +8,7 @@
 #define __MODULE_NAME__ IO
 #include "debug.h"
 
-static uint64_t head = IO_BASE_ADDRESS;
+static uint64_t head = IO_BASE;
 
 void *vm_alloc(size_t size);
 

@@ -24,17 +24,17 @@ int memset_user(uint64 dstva, int val, uint64 len) {
     return -1;
   }
   // 3. 复制
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+
   enable_sum();
-  #endif
+
   char *dst = (char *)dstva;
   while(len > 0) {
     *dst++ = val;
     len--;
   }
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+
   disable_sum();
-  #endif
+
   return 0;
 }
 
@@ -53,9 +53,7 @@ int copy_to_user(uint64 dstva, void *src, uint64 len) {
     return -1;
   }
   // 3. 直接拷贝 
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
-  #endif
 
   char *s = (char *)src;
   char *d = (char *)dstva;
@@ -67,9 +65,9 @@ int copy_to_user(uint64 dstva, void *src, uint64 len) {
   } else
     while(len-- > 0)
       *d++ = *s++;
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+
   disable_sum();
-  #endif
+
   return 0;
 }
 
@@ -94,11 +92,9 @@ int copy_from_user(void *to, uint64 from, size_t n) {
     return -1;
   }
 
-  /* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+
   enable_sum();
-  #endif
-  // memmove(to, (void *)from, n);
+
   char *s = (char *)from;
   char *d = (char *)to;
   if(s < d && s + n > d){
@@ -109,9 +105,9 @@ int copy_from_user(void *to, uint64 from, size_t n) {
   } else
     while(n-- > 0)
       *d++ = *s++;
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+
   disable_sum();
-  #endif
+
   return 0;
 }
 
@@ -141,9 +137,7 @@ copyinstr(char *dst, uint64 srcva, uint64 max)
   }
   max = min(max, vma->len - (srcva - vma->addr));
 
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
-  #endif
   char *p = (char *)srcva;
   // no consider wrap
   while(max > 0){
@@ -156,8 +150,6 @@ copyinstr(char *dst, uint64 srcva, uint64 max)
     p++;
     dst++;
   }
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
-  #endif
   return (got_null ? 0 : -1);
 }

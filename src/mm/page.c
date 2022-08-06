@@ -33,7 +33,7 @@ void reset_page(page_t *page){
 void page_init(void) {
   initlock(&reflock, "reflock");
   for(int i = 0; i < PAGE_NUMS; i++) {
-    pages[i].refcnt = 1;
+    pages[i].refcnt = (atomic_t){1};
     pages[i].order = 0;
     pages[i].alloc = 1;
     reset_page(&pages[i]);
@@ -46,24 +46,25 @@ void page_init(void) {
 }
 
 pgref_t ref_page(uint64_t pa) {
-  pgref_t ret;
-  acquire(&reflock);
-  ret = ++pages[PAGE2NUM(pa)].refcnt;
-  release(&reflock);
-  return ret;
+  // pgref_t ret;
+  // acquire(&reflock);
+  // ret = ++pages[PAGE2NUM(pa)].refcnt;
+  // release(&reflock);
+  // return ret;
+  return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
 }
 
 pgref_t deref_page(uint64_t pa) {
-  pgref_t ret;
-  acquire(&reflock);
-  ret = --pages[PAGE2NUM(pa)].refcnt;
-  release(&reflock);
-  return ret;
+  // pgref_t ret;
+  // acquire(&reflock);
+  // ret = --pages[PAGE2NUM(pa)].refcnt;
+  // release(&reflock);
+  return atomic_dec(&pages[PAGE2NUM(pa)].refcnt);
 }
 
-pgref_t page_ref(uint64_t pa) {
-  return pages[PAGE2NUM(pa)].refcnt;
-}
+// pgref_t page_ref(uint64_t pa) {
+//   return atomic_get(&pages[PAGE2NUM(pa)].refcnt);
+// }
 
 void mark_page(uint64_t pa, int type) {
   pages[PAGE2NUM(pa)].type = type;
@@ -173,43 +174,54 @@ void pte_print(pte_t *pte) {
   printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
 }
 
-pgref_t page_refcnt(page_t *page){
-  pgref_t ret;
-  acquire(&reflock);
-  ret = page->refcnt;
-  release(&reflock);
-  return ret;
+// return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
+
+pgref_t __page_refcnt_pointer(page_t *page){
+  // pgref_t ret;
+  // acquire(&reflock);
+  // ret = page->refcnt;
+  // release(&reflock);
+  return atomic_get(&page->refcnt);
+}
+
+pgref_t __page_refcnt_paddr(uint64_t pa){
+  // pgref_t ret;
+  // acquire(&reflock);
+  // ret = page->refcnt;
+  // release(&reflock);
+  return __page_refcnt_pointer(PATOPAGE(pa));
 }
 
 /**
- * @brief 增加1个引用，返回增加后的
+ * @brief 增加1个引用，返回旧的
  * 
  */
 pgref_t get_page(page_t *page){
-  pgref_t ret;
-  acquire(&reflock);
-  ret = ++page->refcnt;
-  release(&reflock);
-  return ret;
+  // pgref_t ret;
+  // acquire(&reflock);
+  // ret = ++page->refcnt;
+  // release(&reflock);
+  return atomic_inc(&page->refcnt);
 }
 
 /**
- * @brief refcnt减1，返回最终的refcnt，如果refcnt为0，从
+ * @brief refcnt减1，返回旧的
  * 
  */
 pgref_t put_page(page_t *page){
   pgref_t ret;
 
-  #ifdef TODO
-  todo("use atomic to replace reflock may inprove performance");
-  #endif
+  // #ifdef TODO
+  // todo("use atomic to replace reflock may inprove performance");
+  // #endif
 
-  if(page->refcnt <= 0)
+  if(page_refcnt(page) <= 0)
     ER();
-  acquire(&reflock);
-  ret = --page->refcnt;
-  release(&reflock);
-  if(ret == 0){
+  // acquire(&reflock);
+  // ret = --page->refcnt;
+  // release(&reflock);
+  ret = atomic_dec(&page->refcnt);
+  if(ret == 1){
     zone_t *zone = &memory_zone;
     spin_lock(&zone->lru_lock);
     if(TestClearPageLRU(page))

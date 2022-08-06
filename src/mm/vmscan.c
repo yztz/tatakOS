@@ -163,7 +163,7 @@ static int shrink_list(struct list_head *page_list, struct scan_control *sc){
 		}
 
 		/* 如果现在页引用数为2（page/swap cache + shrink cache 引用的，那么可以回收 */
-		if(page->refcnt != 2)
+		if(page_refcnt(page) != 2)
 			goto keep_locked;
 
 		/* 从pagecache中移除 */

@@ -54,8 +54,8 @@ kvminit(void)
   // map kernel data and the physical RAM we'll make use of.
   uint64_t aligned_data = PGROUNDUP_SPEC(etext, PGSPEC_LARGE);
   // map free mem
-  kvmmap((uint64)etext, (uint64)etext, aligned_data-(uint64)etext, PROT_READ | PROT_WRITE, PGSPEC_NORMAL);
-  kvmmap(aligned_data, aligned_data, MEM_END-aligned_data, PROT_READ | PROT_WRITE, PGSPEC_LARGE);
+  kvmmap((uint64)etext, (uint64)etext, aligned_data-(uint64)etext, PROT_READ | PROT_WRITE | PROT_EXEC, PGSPEC_NORMAL);
+  kvmmap(aligned_data, aligned_data, MEM_END-aligned_data, PROT_READ | PROT_WRITE | PROT_EXEC, PGSPEC_LARGE);
 
   debug("init success!");
 }
