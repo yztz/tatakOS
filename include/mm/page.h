@@ -13,6 +13,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #include "bitops.h"
 #include "list.h"
 #include "atomic/spinlock.h"
+#include "atomic/atomic.h"
 #include "page-flags.h"
 #include "config.h"
 // #include "fs/fs.h"
@@ -76,8 +77,8 @@ typedef uint8_t pgref_t;
 struct address_space;
 // 8MB/PAGESIZE = 2K * 2B
 typedef struct _page_t {
-    pgref_t refcnt;        
-
+    atomic_t refcnt;        
+    
     struct {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
@@ -119,7 +120,7 @@ void    page_init(void);
 
 pgref_t ref_page(uint64_t pa);
 pgref_t deref_page(uint64_t pa);
-pgref_t page_ref(uint64_t pa);
+// pgref_t page_ref(uint64_t pa);
 void    mark_page(uint64_t pa, int type);
 int     page_type(uint64_t pa);
 
@@ -130,7 +131,11 @@ void    pte_print(pte_t *pte);
 
 pgref_t get_page(page_t *page);
 pgref_t put_page(page_t *page);
-pgref_t page_refcnt(page_t *page);
+
+// pgref_t page_refcnt(page_t *page);
+pgref_t __page_refcnt_pointer(page_t *page);
+pgref_t __page_refcnt_paddr(uint64_t pa);
+#define page_refcnt(param) _Generic((param), uint64_t: __page_refcnt_paddr, page_t *: __page_refcnt_pointer)(param)   
 
 void lock_page(page_t *page);
 void unlock_page(page_t *page);

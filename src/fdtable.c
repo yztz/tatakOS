@@ -9,7 +9,7 @@
 
 // lock hold
 static int fdrealloc(fdtable_t *self, int nfd) {
-    if(nfd >= self->maxfd || nfd < NOFILE) 
+    if(nfd > self->max_nfd || nfd < NOFILE) 
         return -1;
     if(nfd == NOFILE)
       return 0;
@@ -48,7 +48,7 @@ static fdtable_t *__fdtbl_new(int nfd) {
     if(!self)
         return NULL;
     initlock(&self->fdlock, "fdlock");
-    self->maxfd = MAX_FD;
+    self->max_nfd = MAX_FD;
     
     if(nfd > NOFILE && fdrealloc(self, nfd) < 0) {
         kfree(self);
@@ -95,7 +95,7 @@ int fdtbl_setfile(fdtable_t *self, int fd, file_t *file, int flag) {
         return -1;
     acquire(&self->fdlock);
     if(fd >= self->nfd) {
-        if(self->nfd == self->maxfd || fdrealloc(self, min(self->nfd + 10, self->maxfd)) < 0) {
+        if(self->nfd == self->max_nfd || fdrealloc(self, min(self->nfd + 10, self->max_nfd)) < 0) {
             release(&self->fdlock);
             return -1;
         }
@@ -107,13 +107,13 @@ int fdtbl_setfile(fdtable_t *self, int fd, file_t *file, int flag) {
     return 0;
 }
 
-int fdtbl_setmaxfd(fdtable_t *self, int max) {
+int fdtbl_setmaxnfd(fdtable_t *self, int max) {
     acquire(&self->fdlock);
     if(max < self->nfd) {
         release(&self->fdlock);
         return -1;
     }
-    self->maxfd = max;
+    self->max_nfd = max;
     release(&self->fdlock);
     return 0;
 }
@@ -138,7 +138,7 @@ int fdtbl_getflags(fdtable_t *self, int fd) {
 }
 
 int fdtbl_fdalloc(fdtable_t *self, file_t* file, int min, int flag) {
-    if(min >= self->maxfd)
+    if(min >= self->max_nfd)
         return -1;
     int fd;
     fdt_entry_t *entry;
@@ -152,7 +152,7 @@ int fdtbl_fdalloc(fdtable_t *self, file_t* file, int min, int flag) {
         }
     }
     
-    if(self->nfd == self->maxfd || fdrealloc(self, min(self->nfd + 10, self->maxfd)) < 0) {
+    if(self->nfd == self->max_nfd || fdrealloc(self, min(self->nfd + 10, self->max_nfd)) < 0) {
         goto error;
     }
 

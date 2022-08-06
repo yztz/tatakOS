@@ -21,6 +21,8 @@ void platform_early_init() {
     /* 开启8M内存 */
     sysctl_pll_enable(SYSCTL_PLL1);
     sysctl_clock_enable(SYSCTL_CLOCK_PLL1);
+
+    enable_sum();
 }
 
 void platform_plic_init() {

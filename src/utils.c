@@ -221,7 +221,7 @@ void print_not_freed_pages() {
       // printf("pgnum: %d\taddr: %p\n", pgnum, p);
   // }
   for(int i = 0; i < PAGE_NUMS; i++){
-    if(pages[i].refcnt)
+    if(page_refcnt(&pages[i]) > 0)
       print_page_info(&pages[i]);
   }
 }

@@ -259,13 +259,9 @@ userinit(void)
     panic("mmap2 failure");
   }
 
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   enable_sum();
-  #endif
   memmove((void *)PGSIZE, initcode, sizeof(initcode));
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   disable_sum();
-  #endif
 
   // prepare for the very first "return" from kernel to user.
   proc_get_tf(p)->epc = PGSIZE;      // user program counter

@@ -227,7 +227,7 @@ void buddy_free(void *pa) {
     panic("buddy_free: out of range");
   }
 
-  if(deref_page((uint64_t)pa) > 0)
+  if(deref_page((uint64_t)pa) > 1)
     return;
 
   page = &pages[pgnum];
@@ -299,7 +299,7 @@ void buddy_free_one_page(struct _page_t *page){
   /**
    * page->refcnt为0才会调用free函数free掉页
    */
-  if(page->refcnt != 0)
+  if(page_refcnt(page) != 0)
     ER();
 
   // if(deref_page((uint64_t)pa) > 0)

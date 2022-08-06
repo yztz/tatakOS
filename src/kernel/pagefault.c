@@ -21,7 +21,7 @@ extern int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address);
 /* 复制COW页 */
 static inline int cow_copy(uint64_t va, pte_t *pte) {
   uint64 pa = PTE2PA(*pte);
-  if(page_ref(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
+  if(page_refcnt(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
     *pte |= PTE_W;
     *pte &= ~PTE_COW;
   } else {
@@ -256,7 +256,7 @@ int handle_pagefault(uint64_t scause) {
         }
 
         if(p == NULL) {
-            info("not user context");
+            info("no user context");
             goto kernel_fail;
         }
 

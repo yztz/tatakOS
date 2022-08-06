@@ -111,8 +111,8 @@ uint64_t sys_prlimit64(void) {
     }
   } else if(res == RLIMIT_NOFILE) {
     if(oldrl) {
-      rl.rlim_cur = p->fdtable->maxfd;
-      rl.rlim_max = p->fdtable->maxfd;
+      rl.rlim_cur = p->fdtable->max_nfd;
+      rl.rlim_max = p->fdtable->max_nfd;
       if(copyout(oldrl, (char *)&rl, sizeof(struct rlimit)) < 0) {
         return -1;
       }
@@ -122,7 +122,7 @@ uint64_t sys_prlimit64(void) {
       if(copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
         return -1;
       
-      return fdtbl_setmaxfd(p->fdtable, rl.rlim_cur);
+      return fdtbl_setmaxnfd(p->fdtable, rl.rlim_cur);
     }
   } else {
     debug("ukres %d", res);
@@ -159,6 +159,12 @@ uint64_t sys_times(void) {
     ret = -1;
 
   return ret;
+}
+
+
+uint64_t sys_halt(void) {
+  LOOP();
+  return 0;
 }
 
 uint64_t sys_uname(void) {
