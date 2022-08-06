@@ -73,7 +73,7 @@ void buddy_init() {
   }
   total = 0;
   /* 从kernel end处一直释放到MEM_END */
-  printf(rd("end is %p\n"), end);
+  // printf(rd("end is %p\n"), end);
   for(uint64_t p = (uint64_t)end; p < MEM_END; p += PGSIZE) {
     buddy_free((void *)p);
     total++;

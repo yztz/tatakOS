@@ -15,6 +15,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #include "atomic/spinlock.h"
 #include "atomic/atomic.h"
 #include "page-flags.h"
+#include "config.h"
 // #include "fs/fs.h"
 
 /* use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
@@ -77,12 +78,7 @@ struct address_space;
 // 8MB/PAGESIZE = 2K * 2B
 typedef struct _page_t {
     atomic_t refcnt;        
-    pgref_t _mapcount; /* Count of ptes mapped in mms,
-					    * to show when page is mapped
-					    * & limit reverse map searches.
-                        * 这个值表示的是mm中的映射，是否只包含用户空间，不包括
-                        * 内核映射？
-					    */
+    
     struct {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
@@ -95,15 +91,16 @@ typedef struct _page_t {
 
     uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
     list_head_t lru; /* 串联页，active/inactive list */
+    struct address_space *mapping;
+    uint32_t index;
 
+#ifdef RMAP
     union {
 		struct pte_chain *chain;/* Reverse pte mapping pointer.
 					 * protected by PG_chainlock */
 		pte_addr_t direct;
 	} pte;
-
-    struct address_space *mapping;
-    uint64_t index;
+#endif
 } page_t;
 
 /* 页的数量 */
@@ -176,6 +173,7 @@ void reset_page(page_t *page);
 
 /* page frame reclaiming 页回收算法需要的数据结构 */
 
+#ifdef RMAP
 /*
  * Return true if this page is mapped into pagetables.
  */
@@ -184,7 +182,7 @@ static inline int page_mapped(page_t *page)
     return page->pte.direct != 0;
 	// return page->_mapcount;
 }
-
+#endif
 /* mmzone.h */
 struct zone{
 

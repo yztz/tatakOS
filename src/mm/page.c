@@ -25,9 +25,11 @@ extern void sleep(void *chan, struct spinlock *lk);
 void reset_page(page_t *page){
   page->flags = 0;
   INIT_LIST_HEAD(&page->lru);
-  page->pte.direct = 0;
   page->mapping = 0;
   page->index = 0;
+#ifdef RMAP
+  page->pte.direct = 0;
+#endif
 }
 
 void page_init(void) {

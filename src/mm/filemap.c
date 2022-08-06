@@ -13,6 +13,7 @@
 
 #include "fs/mpage.h"
 #include "swap.h"
+#include "config.h"
 /**
  * 定义了关于file map相关的函数，函数声明在fs.h
  *
@@ -246,6 +247,53 @@ void free_mapping(entry_t *entry)
 }
 
 /**
+ * 从entry的index页开始，读取pg_cnt个页，加入到pagecache和lru
+ */
+void readahead(entry_t *entry, uint64_t index, int pg_cnt){
+  int i;
+  rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
+  // uint64_t pa = (uint64_t)kzalloc(pg_cnt * PGSIZE);
+  // uint64_t cur_pa = pa;
+  uint64_t cur_index = index;
+
+
+  for(i = 0; i < pg_cnt; i++){
+    rw_page_t *read_page= kzalloc(sizeof(rw_page_t));
+    uint64_t cur_pa = (uint64_t)kalloc();
+    page_t *page = PATOPAGE(cur_pa);
+    add_to_page_cache(page, entry->i_mapping, cur_index);
+    lru_cache_add(page);  
+    read_page->pa = cur_pa;
+    // cur_pa += PGSIZE;
+    read_page->pg_id = cur_index;
+    cur_index++;
+    read_page->next  = NULL;
+
+    /* i == 0 */
+    if(pg_list->head == NULL){
+      pg_list->head = read_page;
+      pg_list->tail = read_page;
+    }
+    else{
+      pg_list->tail->next = read_page;
+      pg_list->tail = read_page;
+    }
+  }
+
+  read_pages(entry, pg_list);
+
+  // cur_pa = pa, cur_index = index;
+
+  // for(i = 0; i < pg_cnt; i++){
+  //   page_t *page = PATOPAGE(cur_pa);
+  //   add_to_page_cache(page, entry->i_mapping, cur_index);
+  //   lru_cache_add(page);
+  //   cur_pa += PGSIZE;
+  //   cur_index++;
+  // }
+}
+
+/**
  * @brief 正常的读文件一次读一个page（8 sectors）, 可以考虑使用"read ahead".
  * 
  * @param mapping 
@@ -264,6 +312,7 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
   int rest, cur_off;
   uint32_t file_size;
   page_t *page;
+  entry_t *entry = mapping->host;
 
   rest = n;
   cur_off = off;
@@ -292,32 +341,32 @@ int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t bu
         break;
     }
 
+retry:
     page = find_get_page(mapping, index);
 
     /* the content is not cached in page cache, read from disk and cache it */
     if (!page)
     {
-      // if(user == 1)
-        // for(;;);
-      pa = (uint64_t)kalloc();
-      page = PATOPAGE(pa);
+      /* 剩余的页数 */
+      int remain = ROUND_COUNT(rest);
 
-      get_page(page);
-      // printf(ylw("pa: %p\n"), pa);
-      /* 这里不能像之前filemap_nopage一样，再返回去调用reade */
-      entry_t *entry = mapping->host;
-      /* 我这里user是用户地址，但是pa是物理(内核)地址, 不能直接填user， 要填0*/
-      // fat_read(entry->fat, entry->clus_start, 0, pa, index*PGSIZE, PGSIZE);
-      read_one_page(entry, pa, index);
+      if(remain == 1){
+        pa = (uint64_t)kalloc();
+        page = PATOPAGE(pa);
 
-      // print_page_contents((uint64 *)pa);
-      // for(;;);
-      // printf(ylw("pa: %p\n"), pa);
+        get_page(page);
+        read_one_page(entry, pa, index);
 
-      /* 添加到page cache */
-      add_to_page_cache(page, mapping, index);
-      /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
-      lru_cache_add(page);
+        /* 添加到page cache */
+        add_to_page_cache(page, mapping, index);
+        /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
+        lru_cache_add(page);
+      }
+      else{
+        /* 发挥连续读多块的优势，减小I/O次数 */
+        readahead(entry, index, remain);
+        goto retry;
+      }
     }
     else{
       pa = PAGETOPA(page);
@@ -453,6 +502,8 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
   }
   else if(area->flags & MAP_SHARED){
     /* shared */
+    /* 这里小心被页回收算法回收掉！要建立rmap，如果不支持rmap需要从lru上取下来，防止被回收 */
+    todo("!!!!!");
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
 

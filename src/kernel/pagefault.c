@@ -281,6 +281,7 @@ int handle_pagefault(uint64_t scause) {
         vma = __vma_find_strict(p->mm, rva);
 
         if(vma == NULL) {
+            /* maybe userstack overflow! */
             info("noexistent uvm");
             goto user_fail;
         }

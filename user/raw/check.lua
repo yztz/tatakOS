@@ -1,6 +1,6 @@
 io.input("test.txt")
 
-num = 4096 * 4
+num = 4095
 
 for i = 64, 125 do
     truth = string.rep(string.char(i), num)
