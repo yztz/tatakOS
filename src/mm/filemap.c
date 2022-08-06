@@ -252,6 +252,7 @@ void free_mapping(entry_t *entry)
 void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   int i;
   rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
+  // todo("allocate more than one page has bug!");
   // uint64_t pa = (uint64_t)kzalloc(pg_cnt * PGSIZE);
   // uint64_t cur_pa = pa;
   uint64_t cur_index = index;
@@ -479,7 +480,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     entry_t *entry = mapping->host;
     read_one_page(entry, pa, pgoff);
     add_to_page_cache(page, mapping, pgoff);
-    // lru_cache_add(page);
+    lru_cache_add(page);
   }
   else {
     pa = PAGETOPA(page);
@@ -492,10 +493,12 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
    */
   if(area->flags & MAP_PRIVATE){
     uint64_t pa0 = (uint64_t)kalloc();
-    // page_t *page0 = PAGETOPA(pa0);
+#ifdef SWAP
     /* 页替换算法需要用到swap */
-    // lru_cache_add(page0);
-    // mark_page_accessed(page0);
+    page_t *page0 = PAGETOPA(pa0);
+    lru_cache_add(page0);
+    mark_page_accessed(page0);
+#endif
     memcpy((void *)pa0, (void *)pa, PGSIZE);
     *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
@@ -503,13 +506,13 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
   else if(area->flags & MAP_SHARED){
     /* shared */
     /* 这里小心被页回收算法回收掉！要建立rmap，如果不支持rmap需要从lru上取下来，防止被回收 */
-    todo("!!!!!");
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
-
+    /* 没有rmap，从lru链表上删除，不参与页回收 */
+#ifndef RMAP
+    del_page_from_lru(page);
+#endif
   }
-
-  // todo("reverse mapping !");
 
   return 0; 
 }
