@@ -231,16 +231,19 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
-
-  // printf_radix_tree(root);
-
   void *addr;
+
+/**
+ * 当高度为0且node != NULL，表示里面存储的是一个页指针，否则为一个rdt node指针。
+ */
   if (root->height > 0)
   {
-    // printf("root node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
   }
-  /* freee i_mapping */
+  if(root->height == 0 && root->rnode){
+    put_page((page_t *)root->rnode);
+  }
+  /* free i_mapping */
   addr = entry->i_mapping;
   kfree(addr);
   entry->i_mapping = NULL;
@@ -351,7 +354,7 @@ retry:
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
 
-      if(remain == 1){
+      if(remain == 1) {
         pa = (uint64_t)kalloc();
         page = PATOPAGE(pa);
 
@@ -510,7 +513,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     sfence_vma_addr(address);
     /* 没有rmap，从lru链表上删除，不参与页回收 */
 #ifndef RMAP
-    del_page_from_lru(page);
+    del_page_from_lru(&memory_zone, page);
 #endif
   }
 

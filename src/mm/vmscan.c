@@ -28,6 +28,7 @@
 #include "swap.h"
 #include "writeback.h"
 #include "fs/mpage.h"
+#include "config.h"
 
 struct scan_control {
 	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */
@@ -499,6 +500,8 @@ int try_to_free_pages(){
 			goto out;
 		}
 	}
+	if(priority < 0)
+		ERROR("out of memory!");
 	// total_scanned += sc.nr_scanned;
 	// total_reclaimed += sc.nr_reclaimed;
 

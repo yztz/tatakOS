@@ -245,13 +245,15 @@ userinit(void)
   proc_setsig(p, sig);
   proc_settg(p, tg);
 
+  const int USER_SIZE = 2 * PGSIZE;
+  // debug("initcode size: %d", sizeof(initcode));
 
-  if(sizeof(initcode) >= PGSIZE)
+  if(sizeof(initcode) >= USER_SIZE)
     panic("inituvm: more than a page");
   
   // debug("initcode size: %d", sizeof(initcode));
 
-  if(do_mmap_alloc(p->mm, PGSIZE, 2 * PGSIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+  if(do_mmap_alloc(p->mm, PGSIZE, PGSIZE + USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
     panic("mmap1 failure");
   }
 

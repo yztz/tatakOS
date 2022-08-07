@@ -38,21 +38,10 @@
 // };
 
 
-
-/** 根据rdt的高度返回其最大的id值。注意height为0，最大id不为0，
- * id为0，则至少有一个节点，高度至少为1。所以
- * return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
- * 的表达是错的(要排除掉height为0的情况）。前面使用这个表达式，把pa存在了rdt root指向node的指针中
- * 歪打正着也能读出来。
- * 如果height为0选择返回一个负值，还要考虑有符号数和无符号数比较时的转化，所以我们选择特殊处理height=0
- * 的情况。
- */
-uint64
+uint64_t
 radix_tree_maxindex(uint height){
-	if(height == 0)
-		return 0;
-		// panic("rdt maxindex: height is 0!");
-		// return -1;
+	if(height > RADIX_TREE_MAX_PATH)
+		ER();
   return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
 }
 
@@ -108,9 +97,9 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 
 
 	/* make sure the tree is high enough */
-	if(root->height == 0 || index > radix_tree_maxindex(root->height)){
+	if(index > radix_tree_maxindex(root->height)){
 		if(radix_tree_extend(root, index))	
-			panic("rdt insert 1");
+			ER();
 	}
 	slot = &root->rnode;
 	height = root->height;
@@ -174,7 +163,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
 
 	/* Figure out what the height should be.  */
 	height = root->height + 1;
-	while (height == 0 || index > radix_tree_maxindex(height))
+	while (index > radix_tree_maxindex(height))
 		height++;
 	
 	/* 如果root->rnode为NULL，在插入函数的while循环中会分配 */
@@ -442,6 +431,7 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
 	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
 	pathp->node = NULL;
 
+	/* path[0] 不使用 */
 	do{
 		if(slot == NULL)
 			goto out;

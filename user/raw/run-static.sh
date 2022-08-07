@@ -27,7 +27,7 @@
 ./runtest.exe -w entry-static.exe snprintf
 ./runtest.exe -w entry-static.exe socket
 ./runtest.exe -w entry-static.exe sscanf
-./runtest.exe -w entry-static.exe sscanf_long
+# ./runtest.exe -w entry-static.exe sscanf_long
 ./runtest.exe -w entry-static.exe stat
 ./runtest.exe -w entry-static.exe strftime
 ./runtest.exe -w entry-static.exe string

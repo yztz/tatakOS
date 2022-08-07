@@ -7,6 +7,7 @@
 #include "common.h"
 #include "mm/page.h"
 #include "mm/buddy.h"
+#include "mm/mmap.h"
 
 #define __MODULE_NAME__ BUDDY
 #include "debug.h"
@@ -90,6 +91,11 @@ static inline void insert(int order, buddy_t *b) {
 }
 
 static inline void remove(buddy_t *b) {
+  // #ifdef DEBUG
+  if((uint64_t)b > MEM_END || (uint64_t)b->next > MEM_END || (uint64_t)b->pre > MEM_END)
+    ER();
+  // #endif
+
   b->next->pre = b->pre;
   b->pre->next = b->next;
   b->next = b;
