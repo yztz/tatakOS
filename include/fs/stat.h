@@ -17,6 +17,9 @@
 typedef unsigned int mode_t;
 typedef long int off_t;
 
+#define UTIME_NOW	((1l << 30) - 1l)
+#define UTIME_OMIT	((1l << 30) - 2l)
+
 struct kstat {
         uint64 st_dev;
         uint64 st_ino;

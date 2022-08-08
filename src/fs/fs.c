@@ -435,6 +435,7 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   return ep;
 }
 
+// extern void print_chars(char *c, int n);
 /**
  * @brief int 类型最大表示的整数为1<<31-1,折合2G-1个字节。不知是否会有溢出的危险。
  * 
@@ -452,6 +453,7 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
 
   uint64_t ret = 0;
 
+  // print_chars((char *)buff, n);
   ret = do_generic_mapping_write(entry->i_mapping, user, buff, off, n);
 
   int newsize = off + ret;

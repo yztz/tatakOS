@@ -432,7 +432,10 @@ uint64 sys_openat(void) {
     f->readable = !(omode & O_WRONLY);
     f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
     f->type = FD_ENTRY;
-    f->off = 0;
+    if(omode & O_APPEND)
+        f->off = ep->raw.size;
+    else
+        f->off = 0;
     // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
     //   etrunc(ep);
     // }
@@ -749,22 +752,105 @@ uint64 sys_munmap(void) {
 
 #include "kernel/time.h"
 
-uint64 sys_utimensat(void) {
+// uint64 sys_utimensat(void) {
+//     timespec_t ts[2];
+//     uint64 addr;
+//     proc_t *p = myproc();
+//     int fd;
+
+//     if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
+//         return -1;
+
+//     printf(rd("fd: %d\taddr: %p\n"), fd, addr);
+//     if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
+//         return -1;
+//     }
+    
+//     if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
+        // fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
+//     }
+
+//     return 0;
+// }
+
+uint64_t sys_utimensat(void){
+    /* times[0]: last access time
+        times[1]: last modificatin time */
     timespec_t ts[2];
-    uint64 addr;
     proc_t *p = myproc();
     int fd;
+    char path[MAXPATH];
+    uint64 addr;
+    int flags;
+    entry_t *from, *ep;
 
-    if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
+    if(argint(0, &fd) < 0 || argstr(1, path, MAXPATH) < 0 || 
+        argaddr(2, &addr) < 0 || argint(3, &flags) < 0) 
         return -1;
 
-    if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
-        return -1;
-    }
-    
-    if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
-        fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
+    debug("fd: %d\naddr: %p\npath: %s\nflags: %d\n", fd, addr, path, flags);
+
+    from = getep(p, fd);
+
+    /* 文件不存在 */
+    if((ep = namee(from, path)) == 0){
+        if ((ep = create(from, path, T_FILE)) == 0)
+            ER();
+
+        fdtable_t *tbl = p->fdtable;
+        struct file *f;
+        int omode = 0101101;
+        if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f, -1, omode)) < 0) {
+            if (f)
+                fileclose(f);
+            eunlockput(ep);
+            return -EMFILE;
+        }
+
+        f->ep = ep;
+        f->readable = !(omode & O_WRONLY);
+        f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+        f->type = FD_ENTRY;
+        f->off = 0;
+        // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
+        //   etrunc(ep);
+        // }
+
+        eunlock(ep);
+        return 0;
     }
 
-    return 0;
+    /* 根据手册，如果为null，把两个timestamps都设置为当前时间 */
+    if((uint64_t *)addr == NULL){
+        ep->raw.adate.year_from_1980 = ticks; 
+        ep->raw.mdate.year_from_1980 = ticks;
+    }
+    else{
+        if(copy_from_user(ts, addr, 2*sizeof(ts)) < 0) {
+            return -1;
+        }
+        for(int i = 0; i < 2; i++){
+            if(ts[i].tv_nsec == UTIME_NOW){
+                if(i == 0){
+                    ep->raw.adate.year_from_1980 = ticks;
+                }
+                else{
+                    ep->raw.mdate.year_from_1980 = ticks;
+                }
+            }
+            else if(ts[i].tv_nsec == UTIME_OMIT){
+                /* do noting*/
+            }
+            else{
+                uint64_t ms = ts[i].tv_sec*1000 + ts[i].tv_nsec/1000;
+                if(i == 0){
+                    ep->raw.adate.year_from_1980 = ms;
+                }
+                else{
+                    ep->raw.mdate.year_from_1980 = ms;
+                }
+            }
+        }
+    }
+    return 0; 
 }

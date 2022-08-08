@@ -34,6 +34,8 @@ typedef struct radix_tree_root
 {
   uint8 height;
   struct radix_tree_node *rnode;
+  /* 因为现在只有index为0的页时直接存入rnode，所以设置了一个tags位 */
+  uint64_t tags;
 } radix_tree_root_t;
 
 /**

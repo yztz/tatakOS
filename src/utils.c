@@ -249,3 +249,13 @@ void print_rw_page_list(struct rw_page_list *pg_list){
     pg = pg->next;
   } 
 }
+
+void print_chars(char *c, int n){
+  for (int i = 0; i < n; i++)
+  {
+    printf(grn("%c"), *c);
+    c++;
+    printf("\n");
+  }
+  
+}

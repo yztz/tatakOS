@@ -277,7 +277,7 @@ void page_remove_rmap(page_t *page, pte_t *ptep){
 	if(!page_mmaped(page))
 		goto out_unlock;
 
-
+	ERROR();
 out:
 	if (!page_mapped(page))
 		dec_page_state(nr_mapped);
