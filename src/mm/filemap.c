@@ -39,6 +39,9 @@ void remove_from_page_cache(page_t *page)
 {
 	struct address_space *mapping = page->mapping;
 
+  /* 一个页添加到多个pagecache中，在remove_from_page_cache中put */
+  // put_page(page);
+
 	if (unlikely(!PageLocked(page)))
     ER();
 	spin_lock(&mapping->tree_lock);
@@ -163,6 +166,9 @@ void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offs
 {
   page->mapping = mapping;
   page->index = offset;
+
+  /* 一个页添加到多个pagecache中，在remove_from_page_cache中put */
+  // get_page(page);
 
   acquire(&mapping->tree_lock);
   radix_tree_insert(&mapping->page_tree, offset, (void *)page);
@@ -436,7 +442,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     // SetPageDirect(page);
 
     len = min(rest, PGSIZE - pg_off);
-    either_copyin((void* )(pa + pg_off), 1, buff, len);
+    either_copyin((void* )(pa + pg_off), user, buff, len);
 
     // ERROR("to handle the only index 0 set tag and clear tag");
     set_pg_rdt_dirty(page, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);

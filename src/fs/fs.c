@@ -225,7 +225,8 @@ static void __eput(entry_t *entry) {
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
       /* 忘加了，造成内存泄漏 */
-      free_mapping(entry);
+      if(entry->raw.attr == FAT_ATTR_FILE)
+        free_mapping(entry);
       goto no_writeback;
     }
 
@@ -255,9 +256,8 @@ static void __eput(entry_t *entry) {
         }
         acquire(&entry->fat->cache_lock);
 
-        /* dirty的entry在writeback_single_entry里面调用free_mapping */
-        if(!entry->dirty)
-          free_mapping(entry);
+        /* 释放掉pagecache */
+        free_mapping(entry);
     }
 no_writeback:
     __eput(entry->parent);
