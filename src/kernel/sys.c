@@ -1,5 +1,4 @@
 #include "kernel/sys.h"
-#include "kernel/time.h"
 #include "defs.h"
 #include "mm/buddy.h"
 #include "mm/vm.h"
@@ -20,8 +19,8 @@ utsname_t sysname = {
   .domainname = "tatak.os",
   .machine = "xxxk210xxx",
   .nodename = "wtf",
-  .release = "no release",
-  .version = "0.0.0.0.0.0.0.0.1",
+  .release = "5.0",
+  .version = "0.0.0",
 };
 
 uint64_t sys_syslog(void) {
@@ -191,13 +190,47 @@ uint64_t sys_gettimeofday(void) {
   return 0;
 }
 
+uint64_t sys_getrusage(void) {
+  int who;
+  uint64_t addr;
+  proc_t *p = myproc();
+  struct rusage usage;
+
+  if(argint(0, &who) < 0 || argaddr(1, &addr) < 0) {
+    return -1;
+  }
+
+  if(who == RUSAGE_SELF) {
+      usage.ru_utime = TICK2TIMEVAL(p->u_time);
+      usage.ru_stime = TICK2TIMEVAL(p->s_time);
+      if(copy_to_user(addr, &usage, sizeof(struct rusage)) < 0) {
+        return -1;
+      }
+      
+      return 0;
+  }
+
+  return -1;
+}
+
+
+uint64_t sys_umask(void) {
+  return 0;
+}
+
+
+uint64_t sys_setitimer(void) {
+  debug("settimer called");
+  return 0;
+} 
+
 uint64 sys_clock_gettime(void) {
   // int clockid;
   uint64_t addr;
   timespec_t time = TICK2TIMESPEC(ticks);
 
-  time.tv_sec = 0;
-  time.tv_nsec = 0;
+  // time.tv_sec = 0;
+  // time.tv_nsec = 0;
   // time_print(&time);
   if(argaddr(1, &addr) < 0) 
     return -1;

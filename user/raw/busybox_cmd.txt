@@ -5,7 +5,7 @@
 #cal
 #clear
 #date 
-#df 
+df 
 #dirname /aaa/bbb
 #dmesg 
 #du
@@ -14,15 +14,15 @@
 #true
 #which ls
 #uname
-uptime
-printf "abc\n"
-ps
-pwd
+#uptime
+#printf "abc\n"
+#ps
+#pwd
 free
 hwclock
-kill 10
-ls
-sleep 1
+#kill 10
+#ls
+#sleep 1
 echo "#### file opration test"
 touch test.txt
 echo "hello world" > test.txt

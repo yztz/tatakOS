@@ -180,7 +180,7 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
             if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
                 vma_print(vma);
                 mmap_print(mm);
-                debug("fixed map must be mapped in existed map");
+                debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx", addr, len);
                 release(&mm->mm_lock);
                 return -1;
             }
@@ -366,7 +366,7 @@ int mmap_map_stack(mm_t *mm, uint64_t stacksize) {
     // if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
     //     return -1;
     // }
-    if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_USER) == -1) {
+    if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
         // do_unmap(mm, brk_addr, 0);
         return -1;
     }
@@ -400,7 +400,7 @@ int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
         }
     }
     // debug("uheap: %d -> %d", cursize, newsize);
-    mmap_print(mm);
+    // mmap_print(mm);
     mm->uheap->len = newsize;
     return 0;
 }

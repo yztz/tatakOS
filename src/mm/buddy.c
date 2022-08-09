@@ -132,9 +132,7 @@ retry:
     acquire(&lists[order].lock);
   }
 
-  /**
-   * 没有页了，调用free_more_memory释放更多的内存，返回之后，goto重新分配。还不行则使用oom killer
-   */
+  
   // no rooms
   if(empty(order)) {
     release(&lists[order].lock);

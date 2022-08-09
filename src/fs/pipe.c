@@ -7,22 +7,18 @@
 #include "fs/fs.h"
 #include "atomic/sleeplock.h"
 #include "fs/file.h"
+#include "fs/pipe.h"
 #include "mm/vm.h"
 
-#define PIPESIZE 512
 
-struct pipe {
-  struct spinlock lock;
-  char data[PIPESIZE];
-  uint nread;     // number of bytes read
-  uint nwrite;    // number of bytes written
-  int readopen;   // read fd is still open
-  int writeopen;  // write fd is still open
-};
+static int __pipe_full(struct pipe *pi) {
+  return pi->nwrite == pi->nread + PIPESIZE;
+}
+static int __pipe_empty(struct pipe *pi) {
+  return pi->nread == pi->nwrite;
+}
 
-int
-pipealloc(struct file **f0, struct file **f1)
-{
+int pipealloc(struct file **f0, struct file **f1) {
   struct pipe *pi;
 
   pi = 0;
@@ -56,9 +52,7 @@ pipealloc(struct file **f0, struct file **f1)
   return -1;
 }
 
-void
-pipeclose(struct pipe *pi, int writable)
-{
+void pipeclose(struct pipe *pi, int writable) {
   acquire(&pi->lock);
   if(writable){
     pi->writeopen = 0;
@@ -74,9 +68,7 @@ pipeclose(struct pipe *pi, int writable)
     release(&pi->lock);
 }
 
-int
-pipewrite(struct pipe *pi, int user, uint64 addr, int n)
-{
+int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
   int i = 0;
   struct proc *pr = myproc();
 
@@ -103,9 +95,7 @@ pipewrite(struct pipe *pi, int user, uint64 addr, int n)
   return i;
 }
 
-int
-piperead(struct pipe *pi, uint64 addr, int n)
-{
+int piperead(struct pipe *pi, uint64 addr, int n) {
   int i;
   struct proc *pr = myproc();
   char ch;
@@ -128,4 +118,19 @@ piperead(struct pipe *pi, uint64 addr, int n)
   wakeup(&pi->nwrite);  //DOC: piperead-wakeup
   release(&pi->lock);
   return i;
+}
+
+
+int pipe_full(struct pipe *pi) {
+  acquire(&pi->lock);
+  int ans = __pipe_full(pi);
+  release(&pi->lock);
+  return ans;
+}
+
+int pipe_empty(struct pipe *pi) {
+  acquire(&pi->lock);
+  int ans = __pipe_empty(pi);
+  release(&pi->lock);
+  return ans;
 }

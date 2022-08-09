@@ -66,7 +66,7 @@ usertrap(void)
   write_csr(stvec, (uint64)kernelvec);
 
   struct proc *p = myproc();
-
+  p->u_time += ticks - p->stub_time;
   // save user program counter.
   proc_get_tf(p)->epc = read_csr(sepc);
 
@@ -79,8 +79,10 @@ usertrap(void)
     proc_get_tf(p)->epc += 4;
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
+    p->stub_time = ticks;
     intr_on();
     syscall();
+    p->s_time += ticks - p->stub_time;
   } else if(devintr(scause) == 0) {
     // ok
   } else if(handle_pagefault(scause) == 0) {
@@ -118,6 +120,7 @@ usertrapret(void)
   // kerneltrap() to usertrap(), so turn off interrupts until
   // we're back in user space, where usertrap() is correct.
   intr_off();
+  p->stub_time = ticks;
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec((uint64)uservec);
 
@@ -150,16 +153,17 @@ usertrapret(void)
 // interrupts and exceptions from kernel code go here via kernelvec,
 // on whatever the current kernel stack is.
 void 
-kerneltrap()
+kerneltrap(ktf_t *context)
 {
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
+  proc_t *p = myproc();
   
   
-  if(myproc()) {
-    myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
-  }
+  // if(myproc()) {
+  //   myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
+  // }
 
   // if(!IS_INTR(scause)) {
   //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
@@ -197,8 +201,10 @@ kerneltrap()
 
   if(scause == INTR_TIMER) {
     // give up the CPU if this is a timer interrupt.
-    if(myproc() != 0 && myproc()->state == RUNNING) {
+    if(p && p->state == RUNNING) {
+      // p->s_time += ticks - p->stub_time;
       yield();
+      // p->stub_time = ticks;
     }
   }
 

@@ -287,7 +287,7 @@ int exec(char *path, char **argv, char **envp) {
   // debug("pid %d proc %s entry is %lx", p->pid, p->name, elf.entry);
   proc_get_tf(p)->epc = elfentry;  // initial program counter = main
   mmap_free(&oldmm);
-  return argc; // this ends up in a0, the first argument to main(argc, argv)
+  return 0; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
   // TODO:

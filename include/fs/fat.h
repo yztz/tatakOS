@@ -157,7 +157,16 @@ typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset
 FR_t fat_mount(uint dev, fat32_t **ppfat);
 /* 获取下一个簇号 */
 uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
-FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
+// FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
+/**
+ * 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项
+ * todo: 不是本函数的TODO！主要是上层函数调用时，可能还要增加父entry的文件大小？
+ * @dir_clus: 目录簇号
+ * @cname: 目录项名称
+ * @attr: 目录项属性
+ * @offset: 用于返回的目录项偏移量
+ */
+FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
 FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
 FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
@@ -166,7 +175,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
 FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
-
+FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t* item, const char *newname, uint32_t *offset);
 
 struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n);
 // int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n);

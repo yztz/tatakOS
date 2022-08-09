@@ -175,11 +175,13 @@ sys_brk(void)
 
   if(argaddr(0, &brkaddr) < 0)
     return -1;
-  if(growproc(brkaddr) == -1) {
-    return -1;
-  } else {
-    return 0;
-  }
+  // debug("brk addr is %#lx", brkaddr);
+  // if(growproc(brkaddr) == -1) {
+  //   return -1;
+  // } else {
+  //   return 0;
+  // }
+  return growproc(brkaddr);
 }
 
 uint64
@@ -193,9 +195,11 @@ sys_nanosleep(void)
     return -1;
   if(copy_from_user(&time, addr, sizeof(timespec_t)) == -1)
     return -1;
+
+  uint64_t timeout = SEC2TICK(time.ts_sec);
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < SEC2TICK(time.tv_sec)){
+  while(ticks - ticks0 < timeout){
     if(myproc()->killed){
       release(&tickslock);
       return -1;

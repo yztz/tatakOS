@@ -300,10 +300,11 @@ int handle_pagefault(uint64_t scause) {
     return 0;
 
     kernel_fail:
-    info("kernel_fail pid %d: epc %#lx va %#lx", p->pid, read_csr(sepc), read_csr(stval));
+    info("[Kernel] "rd("%s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));
+    
     panic("pagefault handle fault");
     user_fail:
-    info("user_fail pid %d: epc %#lx va %#lx", p->pid, read_csr(sepc), read_csr(stval));
+    info("[User] "rd("%s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));
     mmap_print(p->mm);
     p->killed = 1;
     // vmprint(p->pagetable);

@@ -5,7 +5,6 @@
 #include "mm/page.h"
 #include "atomic/spinlock.h"
 
-#define USERSPACE_END (0x80000000) // 2GB
 #define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
 
 #define PAGECACHE_TAG_DIRTY 0

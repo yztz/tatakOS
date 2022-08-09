@@ -13,8 +13,9 @@
 #define PLIC_MODE M_MODE
 
 // #define CLOCK_FREQ    3000000 // 1/2.5s
-#define CLOCK_FREQ    1500000 // 1/5s
+// #define CLOCK_FREQ    1500000 // 1/5s
 // #define CLOCK_FREQ    770000 // 1/10s
+#define CLOCK_FREQ    7700000
 // #define CLOCK_FREQ    400000 // 1/20s
 // #define CLOCK_FREQ 40300000
 

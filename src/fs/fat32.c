@@ -505,7 +505,7 @@ int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *n
         strncpy(shortname + 8, ext, min(strlen(ext), 3));
     }
 
-    shortname[FAT_SFN_LENGTH] = '\0';
+    // shortname[FAT_SFN_LENGTH] = '\0';
 
     return ret;
 }
@@ -602,43 +602,6 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t 
     fat_destory_clus_chain(fat, FAT_FETCH_CLUS(item), 0);
     debug("cluster recycled");
     return FR_OK;
-}
-
-static FR_t unlink_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofst) {
-    uint8_t checksum = *(uint8_t *)checkson;
-    uint32_t offset = *(uint32_t *)ofst;
-
-    if(meta->offset > offset) return FR_ERR;
-
-    if(item->name[0] == FAT_NAME_END) {
-        return FR_OK; // 找不到了
-    } else if(item->name[0] == FAT_NAME_FREE) {
-        // JUST a free entry
-    } else {
-        if(FAT_IS_LFN(item->attr)) { // 长目录项
-            if(((dir_slot_t *)item)->alias_checksum == checksum) {
-                item->name[0] = FAT_NAME_FREE;
-                bwrite(meta->buf);
-            }
-        } else { // 短目录项
-            if(meta->offset == offset) {
-                item->name[0] = FAT_NAME_FREE;
-                bwrite(meta->buf);
-                return FR_OK;
-            }
-        }
-        
-    }
-    return FR_CONTINUE;
-}
-
-FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item) {
-    uint32_t checksum = cal_checksum((char *)item->name);
-    debug_if(FAT_IS_DIR(item->attr), "warning! You are trying del a dir");
-    // 截断文件
-    fat_trunc(fat, dir_clus, dir_offset, item);
-    // 删除目录项
-    return fat_travs_dir(fat, dir_clus, 0, unlink_handler, 0, NULL, &checksum, &dir_offset);
 }
 
 
@@ -800,39 +763,85 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
     }
 }
 
-// todo: 不是本函数的TODO！主要是上层函数调用时，可能还要增加父entry的文件大小？
-/* 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项*/
-FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset) {
+static FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *item, uint32_t *offset) {
     char name[MAX_FILE_NAME];
-    uint32_t clus;
+    
     int len = strlen(cname);
     int entry_num = (len + 1 + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1; // 包括'\0'
     strncpy(name, cname, MAX_FILE_NAME);
     int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name); // 结束符'\0'的溢出并不重要
     debug("short name gened: %s", item->name);
-    // debug("gen %s", (char *)item->name);
-    // 预分配一个簇
-    if(fat_alloc_cluster(fat, &clus, 1) == FR_ERR)
-        panic("fat_alloc_entry: alloc clus fail");
-
-    debug("cluster allocated clus id is %d", clus);
-    // 构造目录项
-    item->attr = attr;
-    item->startl = clus & FAT_CLUS_LOW_MASK;
-    item->starth = clus >> 16;
-    item->size = 0;
 
     int cnt = 0;
     ap_t ap = {.checksum = cal_checksum((char *)item->name), .entry_num = entry_num, .item = item, .longname = (char *)cname, .length = len + 1};
 
     if(fat_travs_dir(fat, dir_clus, 0, entry_alloc_handler, 1, offset, &ap, &cnt) == FR_ERR)
         panic("fat_alloc_entry: fail");
-    debug("alloc success");
-    if(attr == FAT_ATTR_DIR) { // 如果是目录，创建'.'与'..'
+
+    return FR_OK;
+}
+
+static FR_t entry_free_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofst) {
+    uint8_t checksum = *(uint8_t *)checkson;
+    uint32_t offset = *(uint32_t *)ofst;
+
+    if(meta->offset > offset) return FR_ERR;
+
+    if(item->name[0] == FAT_NAME_END) {
+        return FR_OK; // 找不到了
+    } else if(item->name[0] == FAT_NAME_FREE) {
+        // JUST a free entry
+    } else {
+        if(FAT_IS_LFN(item->attr)) { // 长目录项
+            if(((dir_slot_t *)item)->alias_checksum == checksum) {
+                item->name[0] = FAT_NAME_FREE;
+                bwrite(meta->buf);
+            }
+        } else { // 短目录项
+            if(meta->offset == offset) {
+                item->name[0] = FAT_NAME_FREE;
+                bwrite(meta->buf);
+                return FR_OK;
+            }
+        }
+        
+    }
+    return FR_CONTINUE;
+}
+
+static FR_t fat_free_entry(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item) {
+    uint32_t checksum = cal_checksum((char *)item->name);
+    return fat_travs_dir(fat, dir_clus, 0, entry_free_handler, 0, NULL, &checksum, &dir_offset);
+}
+
+FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item) {
+    debug_if(FAT_IS_DIR(item->attr), "warning! You are trying del a dir");
+    // 截断文件
+    fat_trunc(fat, dir_clus, dir_offset, item);
+    // 删除目录项
+    return fat_free_entry(fat, dir_clus, dir_offset, item);
+}
+
+FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset) {
+    uint32_t clus;
+    // 预分配一个簇
+    if(fat_alloc_cluster(fat, &clus, 1) == FR_ERR)
+        panic("fat_alloc_entry: alloc clus fail");
+    debug("cluster allocated clus id is %d", clus);
+
+    // 构造目录项
+    item->attr = attr;
+    item->startl = clus & FAT_CLUS_LOW_MASK;
+    item->starth = clus >> 16;
+    item->size = 0;
+
+    FR_t ret = fat_alloc_entry(fat, dir_clus, cname, item, offset);
+
+    if(ret == FR_OK && attr == FAT_ATTR_DIR) { // 如果是目录，创建'.'与'..'
         generate_dot(fat, dir_clus, clus);
     }
-    // debug("gen end...");
-    return FR_OK;
+
+    return ret;
 }
 
 
@@ -926,6 +935,14 @@ static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, vo
     }
     return FR_CONTINUE;
 }
+
+
+
+FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t* item, const char *newname, uint32_t *offset) {
+    if(fat_free_entry(fat, dir_clus, dir_offset, item) != FR_OK) panic("free fail");
+    return fat_alloc_entry(fat, dir_clus, newname, item, offset);
+}
+
 
 /* 在指定目录簇下寻找名为name的目录项 */
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *ret, uint32_t *offset) {
@@ -1100,6 +1117,8 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
 
     return first_bio_vec;
 }
+
+
 
 
 /**

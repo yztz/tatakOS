@@ -45,7 +45,7 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
         wake_time = TICK2TIMESPEC(ticks);
         // printf("current time:\n");
         // time_print(&wake_time);
-        uint64_t ds = wake_time.tv_sec - cur_time.tv_sec;
+        uint64_t ds = wake_time.ts_sec - cur_time.ts_sec;
         // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
         // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {
         if(ds > 2) { // FIXME: 超时时间不准确可能导致错误的超时行为

@@ -19,5 +19,5 @@ uint64_t get_time() {
 }
 
 void reset_timer() {
-    sbi_legacy_set_timer(get_time() + CLOCK_FREQ);
+    sbi_legacy_set_timer(get_time() + CLOCK_FREQ * TICK_GRANULARITY / 1000);
 }

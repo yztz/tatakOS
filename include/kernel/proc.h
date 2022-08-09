@@ -119,6 +119,10 @@ struct proc {
   struct fat_entry *cwd;           // Current directory
   struct fat_entry *exe;           // Excutable
 
+  uint64_t stub_time;
+  uint64_t u_time;
+  uint64_t s_time;
+
   char name[20];               // Process name (debugging)
 
   uint64 ktrap_fp;

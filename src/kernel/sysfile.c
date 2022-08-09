@@ -25,6 +25,15 @@
 #include "mm/mm.h"
 
 
+static char *getlastname(char *path) {
+    char *last, *s;
+    for(last=s=path; *s; s++)
+    if(*s == '/')
+      last = s+1;
+    return last;
+}
+
+
 static entry_t *getep(proc_t *p, int dirfd) {
     struct file *fp;
     entry_t *ep = NULL;
@@ -247,7 +256,7 @@ uint64 sys_fstatat(void) {
          argaddr(2, &ustat) < 0 || argint(3, &flags) < 0)
         return -1;
 
-    // debug("dirfd %d path %s", dirfd, path);
+    debug("dirfd %d path %s", dirfd, path);
 
     // sepcial for device...
     if((pf = getdevfile(path)) != NULL) {
@@ -258,7 +267,7 @@ uint64 sys_fstatat(void) {
     from = getep(p, dirfd);
 
     if((ep = namee(from, path)) == NULL) {
-        return -1;
+        return -ENOENT;
     }
 
     elock(ep);
@@ -278,7 +287,7 @@ uint64 sys_getcwd(void) {
         return -1;
     }
 
-    char* end = getcwd(p->cwd, buf);
+    char* end = namepath(p->cwd, buf);
     assert(*end == '\0');
     debug("%s", buf);
     if (copyout(addr, buf, size) == -1) {
@@ -456,7 +465,7 @@ uint64 sys_mkdirat(void) {
     from = getep(p, dirfd);
 
     if ((ep = create(from, path, T_DIR)) == NULL)
-        return -1;
+        return -EEXIST;
 
     eunlockput(ep);
 
@@ -493,6 +502,31 @@ uint64 sys_fcntl(void) {
     }
     
 
+}
+
+uint64_t sys_readlinkat(void) {
+    int dirfd;
+    char path[MAXPATH];
+    uint64_t bufaddr;
+    size_t bufsz;
+    // entry_t *from;
+    proc_t *p = myproc();
+
+    int n;
+    if (argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 ||
+        argaddr(2, &bufaddr) < 0 || argaddr(3, &bufsz) < 0)
+        return -1;
+
+    if(strncmp(path, "/proc/self/exe", 14) == 0) {
+        char *end = namepath(p->exe, path);
+        int len = min(end - path, bufsz);
+        if(copy_to_user(bufaddr, path, len) < 0)
+            return -1;
+    } else {
+        ER();
+    }
+    
+    return 0;
 }
 
 uint64_t sys_sendfile(void) {
@@ -547,16 +581,19 @@ extern int exec(char *path, char **argv, char **envp);
 
 uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];
-    int i;
+    int i = 0;
     uint64 uargv, uarg;
     proc_t *p = myproc();
+
+    // [sharp] (arg0) (arg1) (arg2)...
 
     if (argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0) {
         return -1;
     }
 
     memset(argv, 0, sizeof(argv));
-    for (i = 0;; i++) {
+
+    while(1) {
         if (i >= NELEM(argv)) {
             goto bad;
         }
@@ -567,21 +604,38 @@ uint64 sys_exec(void) {
             argv[i] = 0;
             break;
         }
-        argv[i] = kalloc();
+        argv[i] = kmalloc(MAXARGLEN);
         if (argv[i] == 0)
             goto bad;   
         if (fetchstr(uarg, argv[i], PGSIZE) < 0)
             goto bad;
+        i++;
     }
+
+    if(endwith(path, ".sh")) {
+        memmove(argv + 2, argv, sizeof(uint64_t) * i);
+        strncpy(path, "./busybox", 10);
+        argv[0] = kmalloc(16);
+        if(argv[0] == NULL) return -1;
+        argv[1] = kmalloc(16);
+        if(argv[1] == NULL) {
+            kfree(argv[0]);
+            return -1;
+        }
+        strncpy(argv[0], "./busybox", 10);
+        strncpy(argv[1], "sh", 3);
+    }
+
     char cwd[MAXPATH];
     char pwd[MAXPATH];
-    getcwd(p->cwd, cwd);
+    namepath(p->cwd, cwd);
     snprintf(pwd, MAXPATH, "PWD=%s", cwd);
     char *envp[] = {"LD_LIBRARY_PATH=/",
-                    "USER=Dear_u",
                     "LONGNAME=Dear_u",
                     pwd,
-                    "PS1=\\u\\w\\$ ",
+                    "PS1=\\u"grn("\\w")"\\$ ",
+                    "PATH=/",
+                    "ENOUGH=5000", "TIMING_O=7", "LOOP_O=0.00249936",
                     NULL};
 
     int ret = exec(path, argv, envp);
@@ -597,6 +651,61 @@ bad:
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
     return -1;
+}
+
+// 简单的实现
+uint64_t sys_renameat2(void) {
+#define __bad(err) {ret = -(err);goto ret;}
+#define __ukn() {goto unknown;}
+    int ret = 0;
+    int olddirfd;
+    char oldpath[MAXPATH];
+    int newdirfd;
+    char newpath[MAXPATH];
+    uint flags;
+    entry_t *dirold,*dirnew;
+    entry_t *epold = NULL, *epnew = NULL;
+    proc_t *p = myproc();
+
+    if(argint(0, &olddirfd) < 0 ||
+      argstr(1, oldpath, MAXPATH) < 0 ||
+      argint(2, &newdirfd) < 0 ||
+      argstr(3, newpath, MAXPATH) < 0 ||
+      argint(4, (int *)&flags) < 0) {
+        return -1;
+    }
+    
+    if(flags != 0)
+        panic("flags");
+    
+    dirold = getep(p, olddirfd);
+    dirnew = getep(p, newdirfd);
+
+    epold = namee(dirold, oldpath);
+    epnew = namee(dirold, newpath);
+
+    if(epold == NULL) __bad(ENOENT);
+    if(epnew) __ukn();
+
+    // 重命名
+    if(dirnew == dirold) {
+        char *newname;
+        // if(epnew) __ukn();
+        newname = getlastname(newpath);
+        if(*newname == '\0') __ukn();
+        return entry_rename(epold, newname);
+    } else {
+        __ukn();
+    }
+
+  ret:
+    if(epold) eput(epold);
+    if(epnew) eput(epnew);
+
+    return ret;
+
+  unknown:
+    panic("not support now");
 }
 
 // OK:
@@ -752,7 +861,7 @@ uint64 sys_munmap(void) {
 uint64 sys_utimensat(void) {
     timespec_t ts[2];
     uint64 addr;
-    proc_t *p = myproc();
+    // proc_t *p = myproc();
     int fd;
 
     if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
@@ -762,9 +871,9 @@ uint64 sys_utimensat(void) {
         return -1;
     }
     
-    if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
-        fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
-    }
+    // if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
+    //     fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
+    // }
 
     return 0;
 }

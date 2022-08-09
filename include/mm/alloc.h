@@ -15,4 +15,8 @@ uint64_t get_free_mem();
 #define kfree_safe(pp) _kfree_safe((void **)(pp))
 void free_one_page(page_t *page);
 
+
+#define AF_KERNEL 0x0
+#define AF_USER 0x1
+
 #endif

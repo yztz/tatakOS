@@ -21,16 +21,38 @@ void kinit(void) {
     slob_init();
 
     debug("init success");
-    // freelist_init();
-    // #ifdef BUDDY
-    // freelist_start = buddy_alloc(FREELIST_MEM);
-    // freelist_end = (void *)((uint64_t)freelist_start + FREELIST_MEM)
-    // #else
-    // freelist_start = end;
-    // freelist_end = (void *)PHYSTOP;
-    // #endif
-    // freelist_freerange(freelist_start, freelist_end);
 }
+
+// extern void free_more_memory(void);
+
+
+// /**
+//  *  内存存在优先级：内核数据结构 > 匿名页(SWAP) > pagecahce(FILE)
+//  *  当内核数据结构内存不足时，应从低优先级回收
+//  */
+// void *__kmalloc(size_t sz, int flag) {
+//     void *ret;
+
+//     if(flag & AF_USER) {
+//         if(sz != PGSIZE)
+//             ER();
+//     } else {
+//         // 
+//         int flag = 0;
+//       retry:
+//         ret = buddy_alloc(sz);
+//         if(ret == NULL) {
+//             if(flag) ERROR("out of mem");
+//             // 没有页了，调用free_more_memory释放更多的内存，返回之后，goto重新分配。还不行则使用oom killer
+//             buddy_print_free();
+//             // 当sz大于PGSIZE时，free_more_memory的策略可能需要调整，不然连续的释放可能凑不齐相连的页面
+//             free_more_memory();
+//             buddy_print_free();
+//             flag = 1;
+//             goto retry;
+//         }
+//     }
+// }
 
 void *kmalloc(size_t size) {
     void *ret = NULL;
@@ -42,9 +64,6 @@ void *kmalloc(size_t size) {
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
     }
-    // if((uint64_t)ret == 0x8025d000)
-        // for(;;);
-    // printf(ylw("pa: %p\n"), ret);
     return ret;
 }
 

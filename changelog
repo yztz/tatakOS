@@ -114,3 +114,8 @@
     2. 修改enable/disablesum（使用宏实现）
     3. 修复dirlookup..目录项的问题
     4. 新增页回收（目前仅支持pagechache的回收）
+
+2022/8/9
+    1. 完成lmbench适配工作
+    2. 完成chidr
+    3. 优化底层fat32逻辑的复用

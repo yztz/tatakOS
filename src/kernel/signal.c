@@ -11,6 +11,9 @@ static void sig_dfl(int signum) {
     exit(signum);
 }
 
+
+
+
 static inline void sigmaskadd(proc_t *p, sigset_t set) {
     p->sig_mask |= set;
 }
@@ -171,7 +174,9 @@ uint64_t sys_rt_sigreturn(void) {
     // debug("epc addr is %#lx", context->uc_mcontext.__gregs[0]);
     // debug("epc addr is %#lx", &(((ucontext_t *)tf->sp)->uc_mcontext.MC_PC));
     // sigmaskset(p->signal, context->uc_sigmask);
+    acquire(&p->lock);
     p->sig_pending &= ~(1L << (p->signaling - 1));
+    release(&p->lock);
 
     tf_restore(tf);
 
@@ -188,9 +193,17 @@ uint64_t sys_rt_sigreturn(void) {
     kfree(context);
 
     p->signaling = 0;
-    return 0;
+    
+    // 避免a0被覆盖
+    return tf->a0;
 }
 
+
+void sig_send(proc_t *p, int signum) {
+    acquire(&p->lock);
+    p->sig_pending |= (1L << (signum - 1));
+    release(&p->lock);
+}
 
 
 // 这个实现在proc里还是signal里似乎都可以接受...
@@ -203,17 +216,19 @@ void sig_handle(signal_t *self) {
     for(int i = 0; i < sizeof(sigset_t) * 8; i++) {
         if((p->sig_mask & (1L << i)) > 0) continue;
         if((p->sig_pending & (1L << i)) == 0) continue;
-        // debug("ready to handle sig %d", i + 1);
+        int signum = i + 1;
+        debug("ready to handle sig %d", i + 1);
         
-        sigaction_t *act = sig_getaction(self, i + 1);
+        sigaction_t *act = sig_getaction(self, signum);
         if(act->handler == SIG_DFL) {
             debug("sig handle DFL");
-            sig_dfl(i + 1);
+            sig_dfl(signum);
         } else if(act->handler == SIG_IGN) {
             debug("no dfl ign handler impl");
         } else {
             __sig_handle(p, self, i + 1, act);
-            p->signaling = i + 1;
+            p->signaling = signum;
+            break;
         }
     }
 }
@@ -231,9 +246,7 @@ uint64_t sys_tkill(void) {
 
     for(p = proc; p < &proc[NPROC]; p++) {
         if(p->pid == tid) {
-            acquire(&p->lock);
-            p->sig_pending |= (1L << (sig - 1));
-            release(&p->lock);
+            sig_send(p, sig);
             return 0;
         }
     }
@@ -251,13 +264,16 @@ uint64_t sys_kill(void) {
 
     for(p = proc; p < &proc[NPROC]; p++) {
         if(p->pid == pid) {
-            acquire(&p->lock);
-            p->sig_pending |= (1L << (sig - 1));
-            release(&p->lock);
+            sig_send(p, sig);
             return 0;
         }
     }
 
+    return 0;
+}
+
+uint64_t sys_tgkill(void) {
+    debug("called but not impl");
     return 0;
 }
 
@@ -281,8 +297,6 @@ void sig_setaction(signal_t *self, int signum, sigaction_t *act, sigaction_t *ol
     release(&self->siglock);
 }
 
-#define MC_PC __gregs[0]
-
 
 
 uint64_t sys_rt_sigaction(void) {
@@ -301,7 +315,7 @@ uint64_t sys_rt_sigaction(void) {
         if(copy_from_user(&act, act_addr, sizeof(sigaction_t)) < 0)
             return -1;
 
-        // debug("register for pid %d signum is %d flags is %#lx", p->pid, signum, act.flags);
+        // debug("register for pid %d signum is %d flags is %#lx handler is %#lx", p->pid, signum, act.flags, act.handler);
 
         sig_setaction(p->signal, signum, &act, &oldact);
     }

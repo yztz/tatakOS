@@ -135,6 +135,10 @@ found:
   p->set_tid_addr = 0;
   p->clear_tid_addr = 0;
   p->state = USED;
+  p->u_time = 0;
+  p->s_time = 0;
+  p->stub_time = ticks;
+  
   INIT_LIST_HEAD(&p->head);
 
   if((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
@@ -245,13 +249,14 @@ userinit(void)
   proc_setsig(p, sig);
   proc_settg(p, tg);
 
+  const int USER_SIZE = 2 * PGSIZE;
 
-  if(sizeof(initcode) >= PGSIZE)
+  if(sizeof(initcode) >= USER_SIZE)
     panic("inituvm: more than a page");
   
   // debug("initcode size: %d", sizeof(initcode));
 
-  if(do_mmap_alloc(p->mm, PGSIZE, 2 * PGSIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+  if(do_mmap_alloc(p->mm, PGSIZE, PGSIZE + USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
     panic("mmap1 failure");
   }
 
@@ -358,7 +363,8 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   }
 
   if((flags & CLONE_CHILD_SETTID)) {
-    panic("not support now");
+    // panic("not support now");
+    // copy_to_user(ctid, &np->pid, sizeof(int));
   }
 
   if((flags & CLONE_PARENT_SETTID)) {
@@ -661,10 +667,10 @@ forkret(void)
     extern fat32_t *fat;
     fat_mount(ROOTDEV, &fat);
     p->cwd = namee(NULL, "/");
-    // init dir...
-    entry_t *tmp = create(fat->root, "/tmp", T_DIR);
-    if(tmp)
-      eunlockput(tmp);
+    // // init dir...
+    // entry_t *tmp = create(fat->root, "/tmp", T_DIR);
+    // if(tmp)
+    //   eunlockput(tmp);
   }
 
   usertrapret();
@@ -694,7 +700,7 @@ sleep(void *chan, struct spinlock *lk)
 
     if(lk != NULL)
       release(lk);
-    else{
+    else {
       page_t *page = (page_t *)chan;
       page_spin_unlock(page);
     }
@@ -728,11 +734,13 @@ wakeup(void *chan)
 
   for(p = proc; p < &proc[NPROC]; p++) {
     if(p != myproc()){ 
-      acquire(&p->lock);
+      int hold = holding(&p->lock);
+      
+      if(!hold) acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;
       }
-      release(&p->lock);
+      if(!hold) release(&p->lock);
     }
   }
 }

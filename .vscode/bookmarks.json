@@ -1,21 +1,6 @@
 {
 	"files": [
 		{
-			"path": "src/kernel/syscall.c",
-			"bookmarks": [
-				{
-					"line": 82,
-					"column": 0,
-					"label": ""
-				},
-				{
-					"line": 87,
-					"column": 0,
-					"label": ""
-				}
-			]
-		},
-		{
 			"path": "src/platform/k210/driver/sysctl.c",
 			"bookmarks": [
 				{

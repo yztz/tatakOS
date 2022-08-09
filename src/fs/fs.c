@@ -28,13 +28,14 @@ void fs_init() {
   }
 }
 
+
 // todo:可能还需要考虑到挂载问题
-char *getcwd(entry_t *entry, char *buf) {
+static char *__namepath(entry_t *entry, char *buf) {
   char *end;
   if(entry->parent == NULL) { // root
     goto slash;
   }
-  end = getcwd(entry->parent, buf);
+  end = __namepath(entry->parent, buf);
   int len = strlen(entry->name);
   if(end - buf > MAXPATH - (len + 1)) {
     debug("too long");
@@ -47,6 +48,15 @@ slash:
   buf++;
   *buf = '\0';
   return buf;
+}
+
+
+char *namepath(entry_t *entry, char *buf) {
+  char *end = __namepath(entry, buf);
+  if(end == buf || end == buf + 1) return end;
+  // 去除末尾'/'
+  *(--end) = '\0';
+  return end;
 }
 
 /* 没什么实际意义，仅仅用来保存状态 */
@@ -126,7 +136,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   parent->ref++;
   
   /* 只有当entry的类型为FILE时，才需要i_mapping，否则为DIR时不需要 */
-  if(item->attr == FAT_ATTR_FILE){
+  if(item->attr == FAT_ATTR_FILE) {
     entry->i_mapping  = kzalloc(sizeof(struct address_space));
     entry->i_mapping->host = entry;
   }
@@ -323,6 +333,21 @@ static entry_t *dirlookup(entry_t *parent, const char *name) {
 
 }
 
+int entry_rename(entry_t *entry, const char *newname) {
+  elock(entry);
+  if(fat_rename(entry->fat, 
+                entry->parent->clus_start, 
+                entry->clus_offset, 
+                &entry->raw, 
+                newname, 
+                &entry->clus_offset) != FR_OK) {
+      eunlock(entry);
+      return -1;
+  }
+  strncpy(entry->name, newname, MAX_FILE_NAME);
+  eunlock(entry);
+  return 0;
+}
 
 entry_t *create(entry_t *from, char *path, short type) {
   entry_t *ep, *dp;
@@ -348,7 +373,7 @@ entry_t *create(entry_t *from, char *path, short type) {
   // 不存在，则创建之
   dir_item_t item;
   uint32_t offset;
-  fat_alloc_entry(fat, dp->clus_start, name, 
+  fat_create_entry(fat, dp->clus_start, name, 
           type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item, &offset);
 
   ep = eget(dp, offset, &item, name);

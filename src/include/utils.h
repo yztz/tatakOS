@@ -87,4 +87,8 @@ void print_pages_be_found(struct pages_be_found_head *pg_head);
 
 #define ROUNDUP(size, align_size) (((uint64_t)size + align_size-1) & ~(align_size - 1))
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+
+#define KB (1024)
+#define MB (1024 * KB)
+
 #endif

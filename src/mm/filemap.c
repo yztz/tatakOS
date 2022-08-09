@@ -239,6 +239,8 @@ void free_mapping(entry_t *entry)
   {
     // printf("root node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
+  } else if(root->rnode) {
+    put_page((page_t *)root->rnode);
   }
   /* freee i_mapping */
   addr = entry->i_mapping;

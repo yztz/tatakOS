@@ -11,6 +11,7 @@
 124    yield     sys_sched_yield
 129    kill      sys_kill
 130    tkill     sys_tkill
+131    tgkill    sys_tgkill
 134    rt_sigaction     sys_rt_sigaction
 135    rt_sigprocmask   sys_rt_sigprocmask
 137    rt_sigtimedwait  sys_rt_sigtimedwait
@@ -52,10 +53,13 @@
 66     writev    sys_writev
 67     pread     sys_pread
 71     sendfile  sys_sendfile
+72     pselect   sys_pselect
 73     ppoll     sys_ppoll
+78     readlinkat  sys_readlinkat
 79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
 88     utimensat sys_utimensat
+276    renameat2 sys_renameat2
 ###############SOCK#############
 198    socket    sys_socket
 200    bind      sys_bind
@@ -74,10 +78,13 @@
 ##############Sys###############
 43      statfs64  sys_statfs64
 96      set_tid_address sys_set_tid_address
+103     setitimer       sys_setitimer
 113     clock_gettime   sys_clock_gettime
 116     syslog          sys_syslog
 153     times           sys_times
 160     uname           sys_uname
+165     getrusage       sys_getrusage
+166     umask           sys_umask
 169     gettimeofday    sys_gettimeofday
 179     sysinfo         sys_sysinfo
 283     membarrier      sys_membarrier

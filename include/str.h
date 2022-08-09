@@ -10,5 +10,6 @@ int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
 void            to_upper(char *str);
+int             endwith(const char *s, const char *tail);
 
 #endif

@@ -3,6 +3,41 @@
 
 #include "types.h"
 
+
+struct k_trapframe {
+    uint64_t ra;
+    uint64_t sp;
+    uint64_t gp;
+    uint64_t tp;
+    uint64_t t0;
+    uint64_t t1;
+    uint64_t t2;
+    uint64_t s0;
+    uint64_t s1;
+    uint64_t a0;
+    uint64_t a1;
+    uint64_t a2;
+    uint64_t a3;
+    uint64_t a4;
+    uint64_t a5;
+    uint64_t a6;
+    uint64_t a7;
+    uint64_t s2;
+    uint64_t s3;
+    uint64_t s4;
+    uint64_t s5;
+    uint64_t s6;
+    uint64_t s7;
+    uint64_t s8;
+    uint64_t s9;
+    uint64_t s10;
+    uint64_t s11;
+    uint64_t t3;
+    uint64_t t4;
+    uint64_t t5;
+    uint64_t t6;
+};
+
 struct trapframe {
   /*   0 @depercated */ uint64 kernel_satp;   // kernel page table 
   /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
@@ -44,6 +79,7 @@ struct trapframe {
 };
 
 typedef struct trapframe tf_t;
+typedef struct k_trapframe ktf_t;
 
 tf_t *tf_new();
 void tf_free(tf_t **pptf);

@@ -39,5 +39,25 @@ void fdtbl_deref(fdtable_t *self);
 void fdtbl_closexec(fdtable_t *self);
 int fdtbl_getflags(fdtable_t *self, int fd);
 
+#define FD_SETSIZE 1024
+
+struct fdset {
+    unsigned long fds_bits[FD_SETSIZE / (8 * sizeof(long))];
+};
+
+#include "bitops.h"
+
+static inline void fdset_set(struct fdset* set, int nr) {
+  __set_bit(nr, (volatile unsigned long *)set);
+} 
+
+static inline void fdset_clear(struct fdset* set, int nr) {
+  __clear_bit(nr, (volatile unsigned long *)set);
+} 
+
+static inline int fdset_test(struct fdset* set, int nr) {
+  return test_bit(nr, (volatile unsigned long *)set);
+} 
+
 
 #endif

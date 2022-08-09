@@ -226,6 +226,16 @@ void print_not_freed_pages() {
   }
 }
 
+
+void debug_pages(uint64_t imapping) {
+  for(int i = 0; i < PAGE_NUMS; i++){
+    if((uint64_t)pages[i].mapping == imapping)
+      print_page_info(&pages[i]);
+  }
+}
+
+
+
 void print_zone_list(list_head_t *head){
   page_t *page;
   list_for_each_entry(page, head, lru){

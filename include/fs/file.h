@@ -4,6 +4,7 @@
 #include "device.h"
 #include "fs/fs.h"
 #include "fs/fcntl.h"
+#include "fs/pipe.h"
 #include "net/socket.h"
 
 struct file {

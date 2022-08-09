@@ -114,3 +114,23 @@ void to_upper(char *str) {
       str++;
   }
 }
+
+int endwith(const char *s, const char *tail) {
+  if(s == NULL || tail == NULL)
+    return 0;
+
+  int len = strlen(s);
+  int tail_len = strlen(tail);
+
+  if(tail_len > len)
+    return 0;
+  
+  s = s + len - tail_len;
+
+  for(int i = 0; i < tail_len; i++) {
+    if(s[i] != tail[i])
+      return 0;
+  }
+
+  return 1;
+}

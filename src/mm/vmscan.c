@@ -227,27 +227,27 @@ static void shrink_inactive_list(zone_t *zone, struct scan_control *sc){
 	spin_lock(&zone->lru_lock);
   while(max_scan > 0){
     page_t *page;
-		int nr_taken = 0;
-		int nr_scan = 0;
-		int nr_freed;
+	int nr_taken = 0;
+	int nr_scan = 0;
+	int nr_freed;
 
     while (nr_scan++ < SWAP_CLUSTER_MAX && !list_empty(&zone->inactive_list)) {
-      page = lru_to_page(&zone->inactive_list);
-      if(!TestClearPageLRU(page))
+      	page = lru_to_page(&zone->inactive_list);
+      	if(!TestClearPageLRU(page))
         ER();
-      list_del(&page->lru);
-      /* 说明ref前为0 */
-      if (page_refcnt(page) == 0) {
-				/*
-				 * It is being freed elsewhere
-				 */
-				SetPageLRU(page);
-				list_add(&page->lru, &zone->inactive_list);
-				continue;
-			}
-			get_page(page);
-      list_add(&page->lru, &page_list);
-      nr_taken++;
+      	list_del(&page->lru);
+      	/* 说明ref前为0 */
+      	if (page_refcnt(page) == 0) {
+			/*
+			* It is being freed elsewhere
+			*/
+			SetPageLRU(page);
+			list_add(&page->lru, &zone->inactive_list);
+			continue;
+	  	}
+		get_page(page);
+      	list_add(&page->lru, &page_list);
+      	nr_taken++;
     }
     zone->nr_inactive -= nr_taken;
     // zone->pages_scanned += nr_scan;
@@ -469,8 +469,8 @@ shrink_zone(struct zone *zone, struct scan_control *sc){
  * 扫描inactive list，如果一个full scan仍不能reclaim足够的页，就out of memory，kill一些process。
  */
 int try_to_free_pages(){
-  zone_t *zone = &memory_zone;
-  int priority;
+	zone_t *zone = &memory_zone;
+	int priority;
 	int ret = 0;
 	int total_scanned = 0, total_reclaimed = 0;
 	// struct reclaim_state *reclaim_state = current->reclaim_state;
@@ -506,6 +506,10 @@ out:
 	return ret;
 }
 
+
+static void needpool(entry_t pool[NENTRY]) {
+	return;
+}
 /*
  * 唤醒写回线程。写回更多的页。
  */
@@ -515,6 +519,7 @@ void free_more_memory(void)
 	/* 是否会出现两个线程写回一个页的情况？ */
 	// wakeup_bdflush(1024);
 	// yield();
-
+ extern entry_t pool[NENTRY];
+ needpool(pool);
   try_to_free_pages();
 }

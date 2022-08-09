@@ -7,6 +7,7 @@
 #define NDEV         10  // maximum major device number
 #define ROOTDEV       1  // device number of file system root disk
 #define MAXARG       32  // max exec arguments
+#define MAXARGLEN    64
 #define MAXENV       32  // max exec arguments
 
 #define NBUF         (30)  // size of disk block cache
@@ -22,6 +23,7 @@
 #define USTACKSIZE (4096 * 10)
 #define UHEAPSIZE 4096
 
+#define TICK_GRANULARITY 10 // ms
 
 /* Maximum number of active map areas.. This is a random (large) number, 
    即一个进程的地址空间拥有的vma_area_struct的最大数量*/

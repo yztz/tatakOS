@@ -156,6 +156,7 @@ consoleread(int user_dst, uint64 dst, int n)
 // wake up consoleread() if a whole line has arrived.
 // 基于中断，用于字符回显，以及存储字符到缓存
 //
+extern void buddy_print_free();
 void
 consoleintr(char c)
 {
@@ -163,6 +164,7 @@ consoleintr(char c)
   switch(c){
   case C('P'):  // Print process list.
     procdump();
+    buddy_print_free();
     break;
   case C('U'):  // Kill line.
     while(cons.e != cons.w &&

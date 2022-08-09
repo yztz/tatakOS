@@ -14,3 +14,5 @@ end
 
 io.flush()
 io.close()
+
+print("write success!");
