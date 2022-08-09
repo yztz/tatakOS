@@ -44,11 +44,15 @@ trapinithart(void)
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
 //
+#include "mm/vm.h"
 extern void vmprint(pagetable_t pagetable);
 void
 usertrap(void)
 {
   uint64 scause = read_csr(scause);
+
+
+
   if((r_sstatus() & SSTATUS_SPP) != 0){
     printf("scause %p\n", scause);
     printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
@@ -69,6 +73,15 @@ usertrap(void)
   p->u_time += ticks - p->stub_time;
   // save user program counter.
   proc_get_tf(p)->epc = read_csr(sepc);
+  if(scause != INTR_TIMER) {
+    // uint64_t instr;
+    // copy_from_user(&instr, 0x1000, 8);
+    printf("scause is %s sepc is %#lx\n", riscv_cause2str(scause), r_sepc());
+    
+    if(proc_get_tf(p)->epc == 0x1004)
+      proc_get_tf(p)->epc += 8;
+    tf_print(p->trapframe);
+  }
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
@@ -123,6 +136,7 @@ usertrapret(void)
   p->stub_time = ticks;
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec((uint64)uservec);
+  // printf("epc is %#lx\n", proc_get_tf(p)->epc);
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.        // kernel page table
@@ -223,6 +237,7 @@ clockintr()
   ticks++;
   // timespec_t time = TICK2TIMESPEC(ticks);
   // time_print(&time);
+  // printf("%ld\n", ticks);
   wakeup(&ticks);
   release(&tickslock);
 }

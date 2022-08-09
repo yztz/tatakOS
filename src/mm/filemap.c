@@ -244,10 +244,11 @@ void free_mapping(entry_t *entry)
  */
   if (root->height > 0)
   {
+    /* 高度超过限制 */
+    if(root->height > RADIX_TREE_MAX_PATH)
+      ER();
     walk_free_rdt(root->rnode, root->height, 1);
-  } 
-  
-  if(root->height == 0 && root->rnode){
+  } else if(root->height == 0 && root->rnode){
     put_page((page_t *)root->rnode);
   }
   /* free i_mapping */
@@ -269,25 +270,27 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
 
 
   for(i = 0; i < pg_cnt; i++){
-    rw_page_t *read_page= kzalloc(sizeof(rw_page_t));
-    uint64_t cur_pa = (uint64_t)kalloc();
-    page_t *page = PATOPAGE(cur_pa);
-    add_to_page_cache(page, entry->i_mapping, cur_index);
-    lru_cache_add(page);  
-    read_page->pa = cur_pa;
-    // cur_pa += PGSIZE;
-    read_page->pg_id = cur_index;
-    cur_index++;
-    read_page->next  = NULL;
+    if(find_page(entry->i_mapping, cur_index) == NULL){
+      rw_page_t *read_page= kzalloc(sizeof(rw_page_t));
+      uint64_t cur_pa = (uint64_t)kalloc();
+      page_t *page = PATOPAGE(cur_pa);
+      add_to_page_cache(page, entry->i_mapping, cur_index);
+      lru_cache_add(page);  
+      read_page->pa = cur_pa;
+      // cur_pa += PGSIZE;
+      read_page->pg_id = cur_index;
+      cur_index++;
+      read_page->next  = NULL;
 
-    /* i == 0 */
-    if(pg_list->head == NULL){
-      pg_list->head = read_page;
-      pg_list->tail = read_page;
-    }
-    else{
-      pg_list->tail->next = read_page;
-      pg_list->tail = read_page;
+      /* the first page */
+      if(pg_list->head == NULL){
+        pg_list->head = read_page;
+        pg_list->tail = read_page;
+      }
+      else{
+        pg_list->tail->next = read_page;
+        pg_list->tail = read_page;
+      }
     }
   }
 
@@ -361,7 +364,7 @@ retry:
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
 
-      if(remain > 0) {
+      if(remain == 1) {
         pa = (uint64_t)kalloc();
         page = PATOPAGE(pa);
 

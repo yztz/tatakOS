@@ -256,7 +256,8 @@ userinit(void)
   
   // debug("initcode size: %d", sizeof(initcode));
 
-  if(do_mmap_alloc(p->mm, PGSIZE, PGSIZE + USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+  // if(do_mmap_alloc(p->mm, 0, USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+  if(do_mmap_alloc(p->mm, PGSIZE, USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
     panic("mmap1 failure");
   }
 
@@ -266,9 +267,11 @@ userinit(void)
 
   enable_sum();
   memmove((void *)PGSIZE, initcode, sizeof(initcode));
+  // memmove((void *)0, initcode, sizeof(initcode));
   disable_sum();
 
   // prepare for the very first "return" from kernel to user.
+  // proc_get_tf(p)->epc = 0;      // user program counter
   proc_get_tf(p)->epc = PGSIZE;      // user program counter
   proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
 
@@ -822,11 +825,11 @@ void
 procdump(void)
 {
   static char *states[] = {
-  [UNUSED]    "unused",
-  [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
-  [ZOMBIE]    "zombie"
+  [UNUSED]    "UNUSED   ",
+  [SLEEPING]  "SLEEPING ",
+  [RUNNABLE]  "RUNNABLE ",
+  [RUNNING]   "RUNNING  ",
+  [ZOMBIE]    "ZOMBIE   ",
   };
   struct proc *p;
   char *state;

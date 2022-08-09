@@ -1,66 +1,8 @@
-GEN		syscall
 
-[37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/k210/include  -DK210 -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
+[37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/k210/include  -DK210 -DDEBUG -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
 
-CC		plic.c
-CC		timer.c
-CC		bio.c
-CC		file.c
-CC		fs.c
-CC		fat32.c
-CC		pipe.c
-CC		entry.S
-CC		kernelvec.S
-CC		swtch.S
-CC		uservec.S
-CC		console.c
-CC		nulldev.c
-CC		zerodev.c
-CC		exec.c
-GEN		init_code
-CC		proc.c
-CC		scavenger.c
-CC		signal.c
-CC		syscall.c
-CC		sysfile.c
-CC		sysproc.c
-CC		sys.c
-CC		thread_group.c
 CC		trap.c
-CC		pagefault.c
-CC		vm.c
-CC		io.c
-CC		copy.c
-CC		page.c
-CC		buddy.c
-CC		alloc.c
-CC		mmap.c
-CC		trapframe.c
-CC		slob.c
-CC		vma.c
-CC		dmac.c
-CC		sdcard.c
-CC		spi.c
-CC		sysctl.c
-CC		fpioa.c
-CC		gpiohs.c
-CC		uarths.c
-CC		wdt.c
-CC		k210.c
-CC		sleeplock.c
-CC		spinlock.c
-CC		mmtest.c
-CC		printf.c
-CC		string.c
-CC		panic.c
-CC		utils.c
 CC		main.c
-CC		riscv.c
-CC		profile.c
-CC		device.c
-CC		misc.c
-CC		futex.c
-CC		fdtable.c
 LD		kernel
 
 [32;1mKERNEL BUILD SUCCESSFUL![0m
@@ -76,7 +18,7 @@ sudo chmod 777 /dev/ttyUSB0
 .
 [32m[1m[INFO][0m Greeting Message Detected, Start Downloading ISP [0m
 [32m[1m[INFO][0m CH340 mode [0m
-Downloading ISP: |-------------------| 1.5% Downloading ISP: |-------------------| 3.1% Downloading ISP: |-------------------| 4.6% Downloading ISP: |=------------------| 6.2% Downloading ISP: |=------------------| 7.7% Downloading ISP: |=------------------| 9.2% Downloading ISP: |==-----------------| 10.8% Downloading ISP: |==-----------------| 12.3% Downloading ISP: |==-----------------| 13.8% Downloading ISP: |==-----------------| 15.4% Downloading ISP: |===----------------| 16.9% 10kiB/sDownloading ISP: |===----------------| 18.5% 10kiB/sDownloading ISP: |===----------------| 20.0% 10kiB/sDownloading ISP: |====---------------| 21.5% 10kiB/sDownloading ISP: |====---------------| 23.1% 10kiB/sDownloading ISP: |====---------------| 24.6% 10kiB/sDownloading ISP: |====---------------| 26.2% 10kiB/sDownloading ISP: |=====--------------| 27.7% 10kiB/sDownloading ISP: |=====--------------| 29.2% 10kiB/sDownloading ISP: |=====--------------| 30.8% 10kiB/sDownloading ISP: |======-------------| 32.3% 10kiB/sDownloading ISP: |======-------------| 33.8% 10kiB/sDownloading ISP: |======-------------| 35.4% 10kiB/sDownloading ISP: |=======------------| 36.9% 10kiB/sDownloading ISP: |=======------------| 38.5% 10kiB/sDownloading ISP: |=======------------| 40.0% 10kiB/sDownloading ISP: |=======------------| 41.5% 10kiB/sDownloading ISP: |========-----------| 43.1% 10kiB/sDownloading ISP: |========-----------| 44.6% 10kiB/sDownloading ISP: |========-----------| 46.2% 10kiB/sDownloading ISP: |=========----------| 47.7% 10kiB/sDownloading ISP: |=========----------| 49.2% 10kiB/sDownloading ISP: |=========----------| 50.8% 10kiB/sDownloading ISP: |=========----------| 52.3% 10kiB/sDownloading ISP: |==========---------| 53.8% 10kiB/sDownloading ISP: |==========---------| 55.4% 10kiB/sDownloading ISP: |==========---------| 56.9% 10kiB/sDownloading ISP: |===========--------| 58.5% 10kiB/sDownloading ISP: |===========--------| 60.0% 10kiB/sDownloading ISP: |===========--------| 61.5% 10kiB/sDownloading ISP: |===========--------| 63.1% 10kiB/sDownloading ISP: |============-------| 64.6% 10kiB/sDownloading ISP: |============-------| 66.2% 10kiB/sDownloading ISP: |============-------| 67.7% 10kiB/sDownloading ISP: |=============------| 69.2% 10kiB/sDownloading ISP: |=============------| 70.8% 10kiB/sDownloading ISP: |=============------| 72.3% 10kiB/sDownloading ISP: |==============-----| 73.8% 10kiB/sDownloading ISP: |==============-----| 75.4% 10kiB/sDownloading ISP: |==============-----| 76.9% 10kiB/sDownloading ISP: |==============-----| 78.5% 10kiB/sDownloading ISP: |===============----| 80.0% 10kiB/sDownloading ISP: |===============----| 81.5% 10kiB/sDownloading ISP: |===============----| 83.1% 10kiB/sDownloading ISP: |================---| 84.6% 10kiB/sDownloading ISP: |================---| 86.2% 10kiB/sDownloading ISP: |================---| 87.7% 10kiB/sDownloading ISP: |================---| 89.2% 10kiB/sDownloading ISP: |=================--| 90.8% 10kiB/sDownloading ISP: |=================--| 92.3% 10kiB/sDownloading ISP: |=================--| 93.8% 10kiB/sDownloading ISP: |==================-| 95.4% 10kiB/sDownloading ISP: |==================-| 96.9% 10kiB/sDownloading ISP: |==================-| 98.5% 10kiB/sDownloading ISP: |===================| 100.0% 10kiB/s
+Downloading ISP: |=---------------------------------------------------------------------------------------------------------------------------| 1.5% Downloading ISP: |===-------------------------------------------------------------------------------------------------------------------------| 3.1% Downloading ISP: |=====-----------------------------------------------------------------------------------------------------------------------| 4.6% Downloading ISP: |=======---------------------------------------------------------------------------------------------------------------------| 6.2% Downloading ISP: |=========-------------------------------------------------------------------------------------------------------------------| 7.7% Downloading ISP: |===========-----------------------------------------------------------------------------------------------------------------| 9.2% Downloading ISP: |=============---------------------------------------------------------------------------------------------------------------| 10.8% Downloading ISP: |===============-------------------------------------------------------------------------------------------------------------| 12.3% Downloading ISP: |=================-----------------------------------------------------------------------------------------------------------| 13.8% Downloading ISP: |===================---------------------------------------------------------------------------------------------------------| 15.4% Downloading ISP: |====================--------------------------------------------------------------------------------------------------------| 16.9% 10kiB/sDownloading ISP: |======================------------------------------------------------------------------------------------------------------| 18.5% 10kiB/sDownloading ISP: |========================----------------------------------------------------------------------------------------------------| 20.0% 10kiB/sDownloading ISP: |==========================--------------------------------------------------------------------------------------------------| 21.5% 10kiB/sDownloading ISP: |============================------------------------------------------------------------------------------------------------| 23.1% 10kiB/sDownloading ISP: |==============================----------------------------------------------------------------------------------------------| 24.6% 10kiB/sDownloading ISP: |================================--------------------------------------------------------------------------------------------| 26.2% 10kiB/sDownloading ISP: |==================================------------------------------------------------------------------------------------------| 27.7% 10kiB/sDownloading ISP: |====================================----------------------------------------------------------------------------------------| 29.2% 10kiB/sDownloading ISP: |======================================--------------------------------------------------------------------------------------| 30.8% 10kiB/sDownloading ISP: |========================================------------------------------------------------------------------------------------| 32.3% 10kiB/sDownloading ISP: |=========================================-----------------------------------------------------------------------------------| 33.8% 10kiB/sDownloading ISP: |===========================================---------------------------------------------------------------------------------| 35.4% 10kiB/sDownloading ISP: |=============================================-------------------------------------------------------------------------------| 36.9% 10kiB/sDownloading ISP: |===============================================-----------------------------------------------------------------------------| 38.5% 10kiB/sDownloading ISP: |=================================================---------------------------------------------------------------------------| 40.0% 10kiB/sDownloading ISP: |===================================================-------------------------------------------------------------------------| 41.5% 10kiB/sDownloading ISP: |=====================================================-----------------------------------------------------------------------| 43.1% 10kiB/sDownloading ISP: |=======================================================---------------------------------------------------------------------| 44.6% 10kiB/sDownloading ISP: |=========================================================-------------------------------------------------------------------| 46.2% 10kiB/sDownloading ISP: |===========================================================-----------------------------------------------------------------| 47.7% 10kiB/sDownloading ISP: |=============================================================---------------------------------------------------------------| 49.2% 10kiB/sDownloading ISP: |==============================================================--------------------------------------------------------------| 50.8% 10kiB/sDownloading ISP: |================================================================------------------------------------------------------------| 52.3% 10kiB/sDownloading ISP: |==================================================================----------------------------------------------------------| 53.8% 10kiB/sDownloading ISP: |====================================================================--------------------------------------------------------| 55.4% 10kiB/sDownloading ISP: |======================================================================------------------------------------------------------| 56.9% 10kiB/sDownloading ISP: |========================================================================----------------------------------------------------| 58.5% 10kiB/sDownloading ISP: |==========================================================================--------------------------------------------------| 60.0% 10kiB/sDownloading ISP: |============================================================================------------------------------------------------| 61.5% 10kiB/sDownloading ISP: |==============================================================================----------------------------------------------| 63.1% 10kiB/sDownloading ISP: |================================================================================--------------------------------------------| 64.6% 10kiB/sDownloading ISP: |==================================================================================------------------------------------------| 66.2% 10kiB/sDownloading ISP: |===================================================================================-----------------------------------------| 67.7% 10kiB/sDownloading ISP: |=====================================================================================---------------------------------------| 69.2% 10kiB/sDownloading ISP: |=======================================================================================-------------------------------------| 70.8% 10kiB/sDownloading ISP: |=========================================================================================-----------------------------------| 72.3% 10kiB/sDownloading ISP: |===========================================================================================---------------------------------| 73.8% 10kiB/sDownloading ISP: |=============================================================================================-------------------------------| 75.4% 10kiB/sDownloading ISP: |===============================================================================================-----------------------------| 76.9% 10kiB/sDownloading ISP: |=================================================================================================---------------------------| 78.5% 10kiB/sDownloading ISP: |===================================================================================================-------------------------| 80.0% 10kiB/sDownloading ISP: |=====================================================================================================-----------------------| 81.5% 10kiB/sDownloading ISP: |=======================================================================================================---------------------| 83.1% 10kiB/sDownloading ISP: |========================================================================================================--------------------| 84.6% 10kiB/sDownloading ISP: |==========================================================================================================------------------| 86.2% 10kiB/sDownloading ISP: |============================================================================================================----------------| 87.7% 10kiB/sDownloading ISP: |==============================================================================================================--------------| 89.2% 10kiB/sDownloading ISP: |================================================================================================================------------| 90.8% 10kiB/sDownloading ISP: |==================================================================================================================----------| 92.3% 10kiB/sDownloading ISP: |====================================================================================================================--------| 93.8% 10kiB/sDownloading ISP: |======================================================================================================================------| 95.4% 10kiB/sDownloading ISP: |========================================================================================================================----| 96.9% 10kiB/sDownloading ISP: |==========================================================================================================================--| 98.5% 10kiB/sDownloading ISP: |============================================================================================================================| 100.0% 10kiB/s
 [32m[1m[INFO][0m Booting From 0x80000000 [0m
 [32m[1m[INFO][0m Wait For 0.1 second for ISP to Boot [0m
 [32m[1m[INFO][0m Boot to Flashmode Successfully [0m
@@ -85,7 +27,7 @@ sudo chmod 777 /dev/ttyUSB0
 [32m[1m[INFO][0m Boot to Flashmode Successfully [0m
 [32m[1m[INFO][0m Selected Flash:  On-Board [0m
 [32m[1m[INFO][0m Initialization flash Successfully [0m
-Programming BIN: |-------------------| 2.6% 58kiB/sProgramming BIN: |=------------------| 5.3% 60kiB/sProgramming BIN: |=------------------| 7.9% 59kiB/sProgramming BIN: |===--------------------------------| 10.5% 59kiB/sProgramming BIN: |====-------------------------------| 13.2% 59kiB/sProgramming BIN: |=====------------------------------| 15.8% 60kiB/sProgramming BIN: |======-----------------------------| 18.4% 60kiB/sProgramming BIN: |=======----------------------------| 21.1% 60kiB/sProgramming BIN: |========---------------------------| 23.7% 60kiB/sProgramming BIN: |=========--------------------------| 26.3% 60kiB/sProgramming BIN: |==========-------------------------| 28.9% 60kiB/sProgramming BIN: |===========------------------------| 31.6% 60kiB/sProgramming BIN: |===========------------------------| 34.2% 60kiB/sProgramming BIN: |============-----------------------| 36.8% 60kiB/sProgramming BIN: |=============----------------------| 39.5% 60kiB/sProgramming BIN: |==============---------------------| 42.1% 60kiB/sProgramming BIN: |===============--------------------| 44.7% 61kiB/sProgramming BIN: |================-------------------| 47.4% 60kiB/sProgramming BIN: |=================------------------| 50.0% 60kiB/sProgramming BIN: |==================-----------------| 52.6% 61kiB/sProgramming BIN: |===================----------------| 55.3% 61kiB/sProgramming BIN: |====================---------------| 57.9% 61kiB/sProgramming BIN: |=====================--------------| 60.5% 61kiB/sProgramming BIN: |======================-------------| 63.2% 61kiB/sProgramming BIN: |=======================------------| 65.8% 61kiB/sProgramming BIN: |=======================------------| 68.4% 61kiB/sProgramming BIN: |========================-----------| 71.1% 61kiB/sProgramming BIN: |=========================----------| 73.7% 61kiB/sProgramming BIN: |==========================---------| 76.3% 61kiB/sProgramming BIN: |===========================--------| 78.9% 61kiB/sProgramming BIN: |============================-------| 81.6% 61kiB/sProgramming BIN: |=============================------| 84.2% 61kiB/sProgramming BIN: |==============================-----| 86.8% 61kiB/sProgramming BIN: |===============================----| 89.5% 61kiB/sProgramming BIN: |================================---| 92.1% 61kiB/sProgramming BIN: |=================================--| 94.7% 61kiB/sProgramming BIN: |==================================-| 97.4% 61kiB/sProgramming BIN: |===================================| 100.0% 61kiB/s
+Programming BIN: |===============-------------------------------------------------------------------------------------------------------------| 12.5% 50kiB/sProgramming BIN: |===============================---------------------------------------------------------------------------------------------| 25.0% 52kiB/sProgramming BIN: |==============================================------------------------------------------------------------------------------| 37.5% 51kiB/sProgramming BIN: |==============================================================--------------------------------------------------------------| 50.0% 51kiB/sProgramming BIN: |=============================================================================-----------------------------------------------| 62.5% 51kiB/sProgramming BIN: |=============================================================================================-------------------------------| 75.0% 51kiB/sProgramming BIN: |============================================================================================================----------------| 87.5% 52kiB/sProgramming BIN: |============================================================================================================================| 100.0% 52kiB/s
 [32m[1m[INFO][0m Rebooting... [0m
 [rustsbi] RustSBI version 0.2.2
 .______       __    __      _______.___________.  _______..______   __
@@ -101,1409 +43,59 @@ sudo chmod 777 /dev/ttyUSB0
 [rustsbi] medeleg: ima, bkpt, la, sa, uecall (0x1a9)
 [rustsbi] enter supervisor 0x80020000
 
-.bss 0x80048c20-0x802522f8 (0x2096d8) cleared
+.bss 0x800584e0-0x80074190 (0x1bcb0) cleared
 
-OS TATAKAI!
+ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄   ▄ ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ 
+█▓▓▓▓▓▓▓█       █▓▓▓▓▓▓▓█       █▓▓▓█ █▓█       █  █▓▓▓▓▓▓▓█▓▓▓▓▓▓▓█
+█▄     ▄█   ▄   █▄     ▄█   ▄   █   █▄█ █   ▄   █  █   ▄   █  ▄▄▄▄▄█
+  █   █ █  █▄█  █ █   █ █  █▄█  █      ▄█  █▄█  █  █  █ █  █ █▄▄▄▄▄ 
+  █   █ █       █ █   █ █       █     █▄█       █  █  █▄█  █▄▄▄▄▄  █
+  █   █ █   ▄   █ █   █ █   ▄   █    ▄  █   ▄   █  █       █▄▄▄▄▄█ █
+  █▄▄▄█ █▄▄█ █▄▄█ █▄▄▄█ █▄▄█ █▄▄█▄▄▄█ █▄█▄▄█ █▄▄█  █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█
 
-page usage: 0% ( 0 used | 941 total )
+[DEBUG][ALLOC: kinit] init success
+[DEBUG][VM: kvminit] init success!
+[DEBUG][PLIC: plic_init] init success!
+[DEBUG][k210: platform_dirver_init] sysctl init success!
+[DEBUG][k210: platform_dirver_init] fpioa init success!
+[DEBUG][k210: platform_dirver_init] spi init success!
+[DEBUG][k210: platform_dirver_init] dmac init success!
+[DEBUG][k210: platform_dirver_init] sdcard init success!
+[DEBUG][k210: platform_dirver_init] driver init success!
+[DEBUG][1: consoleinit] console init success!
+
 start sector   is 32
-fat sectors    is 256
+fat sectors    is 512
 sec per clus   is 8
 bytes per sec  is 512
+bytes per cluster is 4096
 fat table num  is 2
 root cluster   is 2
-page usage: 2% ( 21 used | 941 total )
-
-Ready To Run Test-1 argv
-========== START entry-static.exe argv ==========
-Pass!
-========== END entry-static.exe argv ==========
-child exit with 256
-
-Ready To Run Test-2 basename
-========== START entry-static.exe basename ==========
-Pass!
-========== END entry-static.exe basename ==========
-child exit with 256
-
-Ready To Run Test-3 clocale_mbfuncs
-========== START entry-static.exe clocale_mbfuncs ==========
-Pass!
-========== END entry-static.exe clocale_mbfuncs ==========
-child exit with 256
-
-Ready To Run Test-4 clock_gettime
-========== START entry-static.exe clock_gettime ==========
-Pass!
-========== END entry-static.exe clock_gettime ==========
-child exit with 256
-
-Ready To Run Test-5 crypt
-========== START entry-static.exe crypt ==========
-Pass!
-========== END entry-static.exe crypt ==========
-child exit with 256
-
-Ready To Run Test-6 dirname
-========== START entry-static.exe dirname ==========
-Pass!
-========== END entry-static.exe dirname ==========
-child exit with 256
-
-Ready To Run Test-7 env
-========== START entry-static.exe env ==========
-Pass!
-========== END entry-static.exe env ==========
-child exit with 256
-
-Ready To Run Test-8 fdopen
-========== START entry-static.exe fdopen ==========
-Pass!
-========== END entry-static.exe fdopen ==========
-child exit with 256
-
-Ready To Run Test-9 fnmatch
-========== START entry-static.exe fnmatch ==========
-Pass!
-========== END entry-static.exe fnmatch ==========
-child exit with 256
-
-Ready To Run Test-10 fscanf
-========== START entry-static.exe fscanf ==========
-Pass!
-========== END entry-static.exe fscanf ==========
-child exit with 256
-
-Ready To Run Test-11 fwscanf
-========== START entry-static.exe fwscanf ==========
-Pass!
-========== END entry-static.exe fwscanf ==========
-child exit with 256
-
-Ready To Run Test-12 iconv_open
-========== START entry-static.exe iconv_open ==========
-Pass!
-========== END entry-static.exe iconv_open ==========
-child exit with 256
-
-Ready To Run Test-13 inet_pton
-========== START entry-static.exe inet_pton ==========
-Pass!
-========== END entry-static.exe inet_pton ==========
-child exit with 256
-
-Ready To Run Test-14 mbc
-========== START entry-static.exe mbc ==========
-Pass!
-========== END entry-static.exe mbc ==========
-child exit with 256
-
-Ready To Run Test-15 memstream
-========== START entry-static.exe memstream ==========
-Pass!
-========== END entry-static.exe memstream ==========
-child exit with 256
-
-Ready To Run Test-17 pthread_cancel
-========== START entry-static.exe pthread_cancel ==========
-Pass!
-========== END entry-static.exe pthread_cancel ==========
-child exit with 256
-
-Ready To Run Test-18 pthread_cond
-========== START entry-static.exe pthread_cond ==========
-Pass!
-========== END entry-static.exe pthread_cond ==========
-child exit with 256
-
-Ready To Run Test-19 pthread_tsd
-========== START entry-static.exe pthread_tsd ==========
-Pass!
-========== END entry-static.exe pthread_tsd ==========
-child exit with 256
-
-Ready To Run Test-20 qsort
-========== START entry-static.exe qsort ==========
-Pass!
-========== END entry-static.exe qsort ==========
-child exit with 256
-
-Ready To Run Test-21 random
-========== START entry-static.exe random ==========
-Pass!
-========== END entry-static.exe random ==========
-child exit with 256
-
-Ready To Run Test-22 search_hsearch
-========== START entry-static.exe search_hsearch ==========
-Pass!
-========== END entry-static.exe search_hsearch ==========
-child exit with 256
-
-Ready To Run Test-23 search_insque
-========== START entry-static.exe search_insque ==========
-Pass!
-========== END entry-static.exe search_insque ==========
-child exit with 256
-
-Ready To Run Test-24 search_lsearch
-========== START entry-static.exe search_lsearch ==========
-Pass!
-========== END entry-static.exe search_lsearch ==========
-child exit with 256
-
-Ready To Run Test-25 search_tsearch
-========== START entry-static.exe search_tsearch ==========
-Pass!
-========== END entry-static.exe search_tsearch ==========
-child exit with 256
-
-Ready To Run Test-26 setjmp
-========== START entry-static.exe setjmp ==========
-Pass!
-========== END entry-static.exe setjmp ==========
-child exit with 256
-
-Ready To Run Test-27 snprintf
-========== START entry-static.exe snprintf ==========
-Pass!
-========== END entry-static.exe snprintf ==========
-child exit with 256
-
-Ready To Run Test-28 socket
-========== START entry-static.exe socket ==========
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
-src/functional/socket.c:20: (s=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 200 sepc 30ec0
-src/functional/socket.c:21: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 204 sepc 3104c
-src/functional/socket.c:22: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 208 sepc 318b0
-src/functional/socket.c:24: setsockopt(s, 1, 20, &(struct timeval){.tv_usec=1}, sizeof(struct timeval))==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
-src/functional/socket.c:27: (c=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 206 sepc 43aa0
-src/functional/socket.c:29: sendto(c, "x", 1, 0, (void *)&sa, sizeof sa)==1 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 207 sepc 43aa0
-src/functional/socket.c:30: recvfrom(s, buf, sizeof buf, 0, (void *)&sa, (socklen_t[]){sizeof sa})==1 failed: errno = Operation not permitted
-src/functional/socket.c:31: buf[0]=='x' failed: ' '
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
-src/functional/socket.c:38: (s=socket(2, 1|02000000, 6))>=0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 200 sepc 30ec0
-src/functional/socket.c:40: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 204 sepc 3104c
-src/functional/socket.c:41: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 201 sepc 31814
-src/functional/socket.c:44: listen(s, 1)==0 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 198 sepc 31900
-src/functional/socket.c:46: (c=socket(2, 1|04000, 6))>=0 failed: errno = Operation not permitted
-src/functional/socket.c:47: fcntl(c, F_GETFL)&O_NONBLOCK failed: SOCK_NONBLOCK did not work
-pid 66 entry-static.exe: unknown sys call 203 sepc 43aa0
-src/functional/socket.c:49: connect(c, (void *)&sa, sizeof sa)==0 || (*__errno_location())==115 failed: errno = Operation not permitted
-pid 66 entry-static.exe: unknown sys call 202 sepc 43aa0
-src/functional/socket.c:51: (t=accept(s, (void *)&sa, &(socklen_t){sizeof sa}))>=0 failed: errno = Operation not permitted
-FAIL socket [status 1]
-========== END entry-static.exe socket ==========
-child exit with 256
-
-Ready To Run Test-29 sscanf
-========== START entry-static.exe sscanf ==========
-Pass!
-========== END entry-static.exe sscanf ==========
-child exit with 256
-
-Ready To Run Test-30 sscanf_long
-========== START entry-static.exe sscanf_long ==========
-[INFO][PAGEFAULT: handle_pagefault] pagefault handle fault
-[INFO][PAGEFAULT: handle_pagefault] user_fail: epc 0x1bcc8 va 0xf002d4000
-1. vma: 0x10000--0xa6000 len: 0x96000 rwxu 
-2. vma: 0xa6000--0xae000 len: 0x8000 rwxu 
-3. vma: 0xae000--0xaf000 len: 0x1000 rwxu 
-4. vma: 0x7ffe7000--0x80000000 len: 0x19000 rw-u 
-5. vma: 0xf00000000--0xf00801000 len: 0x801000 rwxu 
-trapframe {
-    sp: 7ffffb00
-    fp: f00000020
-    pc: 1bcc8
-    ra: 1bcb8
+i_mapping addr is 8007c378
+scause is Store/AMO access fault sepc is 0x1004
+Trapframe {
+    sp: 7fffffb0
+    fp: 0
+    pc: 100c
+    ra: 0
+    a0: 0
+    a1: 0
+    a2: 0
+    a3: 0
+    a4: 0
+    a5: 0
 }
-FAIL sscanf_long [unknown]
-========== END entry-static.exe sscanf_long ==========
-child exit with 256
-
-Ready To Run Test-31 stat
-========== START entry-static.exe stat ==========
-Pass!
-========== END entry-static.exe stat ==========
-child exit with 256
-
-Ready To Run Test-32 strftime
-========== START entry-static.exe strftime ==========
-Pass!
-========== END entry-static.exe strftime ==========
-child exit with 256
-
-Ready To Run Test-33 string
-========== START entry-static.exe string ==========
-Pass!
-========== END entry-static.exe string ==========
-child exit with 256
-
-Ready To Run Test-34 string_memcpy
-========== START entry-static.exe string_memcpy ==========
-Pass!
-========== END entry-static.exe string_memcpy ==========
-child exit with 256
-
-Ready To Run Test-35 string_memmem
-========== START entry-static.exe string_memmem ==========
-Pass!
-========== END entry-static.exe string_memmem ==========
-child exit with 256
-
-Ready To Run Test-36 string_memset
-========== START entry-static.exe string_memset ==========
-Pass!
-========== END entry-static.exe string_memset ==========
-child exit with 256
-
-Ready To Run Test-37 string_strchr
-========== START entry-static.exe string_strchr ==========
-Pass!
-========== END entry-static.exe string_strchr ==========
-child exit with 256
-
-Ready To Run Test-38 string_strcspn
-========== START entry-static.exe string_strcspn ==========
-Pass!
-========== END entry-static.exe string_strcspn ==========
-child exit with 256
-
-Ready To Run Test-39 string_strstr
-========== START entry-static.exe string_strstr ==========
-Pass!
-========== END entry-static.exe string_strstr ==========
-child exit with 256
-
-Ready To Run Test-40 strptime
-========== START entry-static.exe strptime ==========
-Pass!
-========== END entry-static.exe strptime ==========
-child exit with 256
-
-Ready To Run Test-41 strtod
-========== START entry-static.exe strtod ==========
-Pass!
-========== END entry-static.exe strtod ==========
-child exit with 256
-
-Ready To Run Test-42 strtod_simple
-========== START entry-static.exe strtod_simple ==========
-Pass!
-========== END entry-static.exe strtod_simple ==========
-child exit with 256
-
-Ready To Run Test-43 strtof
-========== START entry-static.exe strtof ==========
-Pass!
-========== END entry-static.exe strtof ==========
-child exit with 256
-
-Ready To Run Test-44 strtol
-========== START entry-static.exe strtol ==========
-Pass!
-========== END entry-static.exe strtol ==========
-child exit with 256
-
-Ready To Run Test-45 strtold
-========== START entry-static.exe strtold ==========
-Pass!
-========== END entry-static.exe strtold ==========
-child exit with 256
-
-Ready To Run Test-46 swprintf
-========== START entry-static.exe swprintf ==========
-Pass!
-========== END entry-static.exe swprintf ==========
-child exit with 256
-
-Ready To Run Test-47 tgmath
-========== START entry-static.exe tgmath ==========
-Pass!
-========== END entry-static.exe tgmath ==========
-child exit with 256
-
-Ready To Run Test-48 time
-========== START entry-static.exe time ==========
-Pass!
-========== END entry-static.exe time ==========
-child exit with 256
-
-Ready To Run Test-49 tls_align
-========== START entry-static.exe tls_align ==========
-Pass!
-========== END entry-static.exe tls_align ==========
-child exit with 256
-
-Ready To Run Test-50 udiv
-========== START entry-static.exe udiv ==========
-Pass!
-========== END entry-static.exe udiv ==========
-child exit with 256
-
-Ready To Run Test-51 ungetc
-========== START entry-static.exe ungetc ==========
-Pass!
-========== END entry-static.exe ungetc ==========
-child exit with 256
-
-Ready To Run Test-52 utime
-========== START entry-static.exe utime ==========
-Pass!
-========== END entry-static.exe utime ==========
-child exit with 256
-
-Ready To Run Test-53 wcsstr
-========== START entry-static.exe wcsstr ==========
-Pass!
-========== END entry-static.exe wcsstr ==========
-child exit with 256
-
-Ready To Run Test-54 wcstol
-========== START entry-static.exe wcstol ==========
-Pass!
-========== END entry-static.exe wcstol ==========
-child exit with 256
-
-Ready To Run Test-55 pleval
-========== START entry-static.exe pleval ==========
-Pass!
-========== END entry-static.exe pleval ==========
-child exit with 256
-
-Ready To Run Test-56 daemon_failure
-========== START entry-static.exe daemon_failure ==========
-Pass!
-========== END entry-static.exe daemon_failure ==========
-child exit with 256
-
-Ready To Run Test-57 dn_expand_empty
-========== START entry-static.exe dn_expand_empty ==========
-Pass!
-========== END entry-static.exe dn_expand_empty ==========
-child exit with 256
-
-Ready To Run Test-58 dn_expand_ptr_0
-========== START entry-static.exe dn_expand_ptr_0 ==========
-Pass!
-========== END entry-static.exe dn_expand_ptr_0 ==========
-child exit with 256
-
-Ready To Run Test-59 fflush_exit
-========== START entry-static.exe fflush_exit ==========
-Pass!
-========== END entry-static.exe fflush_exit ==========
-child exit with 256
-
-Ready To Run Test-60 fgets_eof
-========== START entry-static.exe fgets_eof ==========
-Pass!
-========== END entry-static.exe fgets_eof ==========
-child exit with 256
-
-Ready To Run Test-61 fgetwc_buffering
-========== START entry-static.exe fgetwc_buffering ==========
-Pass!
-========== END entry-static.exe fgetwc_buffering ==========
-child exit with 256
-
-Ready To Run Test-62 fpclassify_invalid_ld80
-========== START entry-static.exe fpclassify_invalid_ld80 ==========
-Pass!
-========== END entry-static.exe fpclassify_invalid_ld80 ==========
-child exit with 256
-
-Ready To Run Test-63 ftello_unflushed_append
-========== START entry-static.exe ftello_unflushed_append ==========
-Pass!
-========== END entry-static.exe ftello_unflushed_append ==========
-child exit with 256
-
-Ready To Run Test-64 getpwnam_r_crash
-========== START entry-static.exe getpwnam_r_crash ==========
-Pass!
-========== END entry-static.exe getpwnam_r_crash ==========
-child exit with 256
-
-Ready To Run Test-65 getpwnam_r_errno
-========== START entry-static.exe getpwnam_r_errno ==========
-Pass!
-========== END entry-static.exe getpwnam_r_errno ==========
-child exit with 256
-
-Ready To Run Test-66 iconv_roundtrips
-========== START entry-static.exe iconv_roundtrips ==========
-Pass!
-========== END entry-static.exe iconv_roundtrips ==========
-child exit with 256
-
-Ready To Run Test-67 inet_ntop_v4mapped
-========== START entry-static.exe inet_ntop_v4mapped ==========
-Pass!
-========== END entry-static.exe inet_ntop_v4mapped ==========
-child exit with 256
-
-Ready To Run Test-68 inet_pton_empty_last_field
-========== START entry-static.exe inet_pton_empty_last_field ==========
-Pass!
-========== END entry-static.exe inet_pton_empty_last_field ==========
-child exit with 256
-
-Ready To Run Test-69 iswspace_null
-========== START entry-static.exe iswspace_null ==========
-Pass!
-========== END entry-static.exe iswspace_null ==========
-child exit with 256
-
-Ready To Run Test-70 lrand48_signextend
-========== START entry-static.exe lrand48_signextend ==========
-Pass!
-========== END entry-static.exe lrand48_signextend ==========
-child exit with 256
-
-Ready To Run Test-71 lseek_large
-========== START entry-static.exe lseek_large ==========
-Pass!
-========== END entry-static.exe lseek_large ==========
-child exit with 256
-
-Ready To Run Test-72 malloc_0
-========== START entry-static.exe malloc_0 ==========
-Pass!
-========== END entry-static.exe malloc_0 ==========
-child exit with 256
-
-Ready To Run Test-73 mbsrtowcs_overflow
-========== START entry-static.exe mbsrtowcs_overflow ==========
-Pass!
-========== END entry-static.exe mbsrtowcs_overflow ==========
-child exit with 256
-
-Ready To Run Test-74 memmem_oob_read
-========== START entry-static.exe memmem_oob_read ==========
-Pass!
-========== END entry-static.exe memmem_oob_read ==========
-child exit with 256
-
-Ready To Run Test-75 memmem_oob
-========== START entry-static.exe memmem_oob ==========
-Pass!
-========== END entry-static.exe memmem_oob ==========
-child exit with 256
-
-Ready To Run Test-76 mkdtemp_failure
-========== START entry-static.exe mkdtemp_failure ==========
-Pass!
-========== END entry-static.exe mkdtemp_failure ==========
-child exit with 256
-
-Ready To Run Test-77 mkstemp_failure
-========== START entry-static.exe mkstemp_failure ==========
-Pass!
-========== END entry-static.exe mkstemp_failure ==========
-child exit with 256
-
-Ready To Run Test-78 printf_1e9_oob
-========== START entry-static.exe printf_1e9_oob ==========
-Pass!
-========== END entry-static.exe printf_1e9_oob ==========
-child exit with 256
-
-Ready To Run Test-79 printf_fmt_g_round
-========== START entry-static.exe printf_fmt_g_round ==========
-Pass!
-========== END entry-static.exe printf_fmt_g_round ==========
-child exit with 256
-
-Ready To Run Test-80 printf_fmt_g_zeros
-========== START entry-static.exe printf_fmt_g_zeros ==========
-Pass!
-========== END entry-static.exe printf_fmt_g_zeros ==========
-child exit with 256
-
-Ready To Run Test-81 printf_fmt_n
-========== START entry-static.exe printf_fmt_n ==========
-Pass!
-========== END entry-static.exe printf_fmt_n ==========
-child exit with 256
-
-Ready To Run Test-82 pthread_robust_detach
-========== START entry-static.exe pthread_robust_detach ==========
-Pass!
-========== END entry-static.exe pthread_robust_detach ==========
-child exit with 256
-
-Ready To Run Test-83 pthread_cancel_sem_wait
-========== START entry-static.exe pthread_cancel_sem_wait ==========
-Pass!
-========== END entry-static.exe pthread_cancel_sem_wait ==========
-child exit with 256
-
-Ready To Run Test-85 pthread_condattr_setclock
-========== START entry-static.exe pthread_condattr_setclock ==========
-Pass!
-========== END entry-static.exe pthread_condattr_setclock ==========
-child exit with 256
-
-Ready To Run Test-86 pthread_exit_cancel
-========== START entry-static.exe pthread_exit_cancel ==========
-Pass!
-========== END entry-static.exe pthread_exit_cancel ==========
-child exit with 256
-
-Ready To Run Test-87 pthread_once_deadlock
-========== START entry-static.exe pthread_once_deadlock ==========
-Pass!
-========== END entry-static.exe pthread_once_deadlock ==========
-child exit with 256
-
-Ready To Run Test-88 pthread_rwlock_ebusy
-========== START entry-static.exe pthread_rwlock_ebusy ==========
-Pass!
-========== END entry-static.exe pthread_rwlock_ebusy ==========
-child exit with 256
-
-Ready To Run Test-89 putenv_doublefree
-========== START entry-static.exe putenv_doublefree ==========
-Pass!
-========== END entry-static.exe putenv_doublefree ==========
-child exit with 256
-
-Ready To Run Test-90 regex_backref_0
-========== START entry-static.exe regex_backref_0 ==========
-Pass!
-========== END entry-static.exe regex_backref_0 ==========
-child exit with 256
-
-Ready To Run Test-91 regex_bracket_icase
-========== START entry-static.exe regex_bracket_icase ==========
-Pass!
-========== END entry-static.exe regex_bracket_icase ==========
-child exit with 256
-
-Ready To Run Test-92 regex_ere_backref
-========== START entry-static.exe regex_ere_backref ==========
-Pass!
-========== END entry-static.exe regex_ere_backref ==========
-child exit with 256
-
-Ready To Run Test-93 regex_escaped_high_byte
-========== START entry-static.exe regex_escaped_high_byte ==========
-Pass!
-========== END entry-static.exe regex_escaped_high_byte ==========
-child exit with 256
-
-Ready To Run Test-94 regex_negated_range
-========== START entry-static.exe regex_negated_range ==========
-Pass!
-========== END entry-static.exe regex_negated_range ==========
-child exit with 256
-
-Ready To Run Test-95 regexec_nosub
-========== START entry-static.exe regexec_nosub ==========
-Pass!
-========== END entry-static.exe regexec_nosub ==========
-child exit with 256
-
-Ready To Run Test-96 rewind_clear_error
-========== START entry-static.exe rewind_clear_error ==========
-Pass!
-========== END entry-static.exe rewind_clear_error ==========
-child exit with 256
-
-Ready To Run Test-97 rlimit_open_files
-========== START entry-static.exe rlimit_open_files ==========
-src/regression/rlimit-open-files.c:19: setrlimit(7, 42) failed: Operation not permitted
-src/regression/rlimit-open-files.c:21: getrlimit(7) failed: Operation not permitted
-src/regression/rlimit-open-files.c:28: dup(1) failed with Operation not permitted, wanted EMFILE
-src/regression/rlimit-open-files.c:30: more fds are open than rlimit allows: fd=14, limit=42
-FAIL rlimit_open_files [status 1]
-========== END entry-static.exe rlimit_open_files ==========
-child exit with 256
-
-Ready To Run Test-98 scanf_bytes_consumed
-========== START entry-static.exe scanf_bytes_consumed ==========
-Pass!
-========== END entry-static.exe scanf_bytes_consumed ==========
-child exit with 256
-
-Ready To Run Test-99 scanf_match_literal_eof
-========== START entry-static.exe scanf_match_literal_eof ==========
-Pass!
-========== END entry-static.exe scanf_match_literal_eof ==========
-child exit with 256
-
-Ready To Run Test-100 scanf_nullbyte_char
-========== START entry-static.exe scanf_nullbyte_char ==========
-Pass!
-========== END entry-static.exe scanf_nullbyte_char ==========
-child exit with 256
-
-Ready To Run Test-101 setvbuf_unget
-========== START entry-static.exe setvbuf_unget ==========
-Pass!
-========== END entry-static.exe setvbuf_unget ==========
-child exit with 256
-
-Ready To Run Test-102 sigprocmask_internal
-========== START entry-static.exe sigprocmask_internal ==========
-Pass!
-========== END entry-static.exe sigprocmask_internal ==========
-child exit with 256
-
-Ready To Run Test-103 sscanf_eof
-========== START entry-static.exe sscanf_eof ==========
-Pass!
-========== END entry-static.exe sscanf_eof ==========
-child exit with 256
-
-Ready To Run Test-104 statvfs
-========== START entry-static.exe statvfs ==========
-Pass!
-========== END entry-static.exe statvfs ==========
-child exit with 256
-
-Ready To Run Test-105 strverscmp
-========== START entry-static.exe strverscmp ==========
-Pass!
-========== END entry-static.exe strverscmp ==========
-child exit with 256
-
-Ready To Run Test-106 syscall_sign_extend
-========== START entry-static.exe syscall_sign_extend ==========
-Pass!
-========== END entry-static.exe syscall_sign_extend ==========
-child exit with 256
-
-Ready To Run Test-107 uselocale_0
-========== START entry-static.exe uselocale_0 ==========
-Pass!
-========== END entry-static.exe uselocale_0 ==========
-child exit with 256
-
-Ready To Run Test-108 wcsncpy_read_overflow
-========== START entry-static.exe wcsncpy_read_overflow ==========
-Pass!
-========== END entry-static.exe wcsncpy_read_overflow ==========
-child exit with 256
-
-Ready To Run Test-109 wcsstr_false_negative
-========== START entry-static.exe wcsstr_false_negative ==========
-Pass!
-========== END entry-static.exe wcsstr_false_negative ==========
-child exit with 256
-
-Ready To Run Test-1 argv
-========== START entry-dynamic.exe argv ==========
-Pass!
-========== END entry-dynamic.exe argv ==========
-child exit with 256
-
-Ready To Run Test-2 basename
-========== START entry-dynamic.exe basename ==========
-Pass!
-========== END entry-dynamic.exe basename ==========
-child exit with 256
-
-Ready To Run Test-3 clocale_mbfuncs
-========== START entry-dynamic.exe clocale_mbfuncs ==========
-Pass!
-========== END entry-dynamic.exe clocale_mbfuncs ==========
-child exit with 256
-
-Ready To Run Test-4 clock_gettime
-========== START entry-dynamic.exe clock_gettime ==========
-Pass!
-========== END entry-dynamic.exe clock_gettime ==========
-child exit with 256
-
-Ready To Run Test-5 crypt
-========== START entry-dynamic.exe crypt ==========
-Pass!
-========== END entry-dynamic.exe crypt ==========
-child exit with 256
-
-Ready To Run Test-6 dirname
-========== START entry-dynamic.exe dirname ==========
-Pass!
-========== END entry-dynamic.exe dirname ==========
-child exit with 256
-
-Ready To Run Test-7 dlopen
-========== START entry-dynamic.exe dlopen ==========
-Pass!
-========== END entry-dynamic.exe dlopen ==========
-child exit with 256
-
-Ready To Run Test-8 env
-========== START entry-dynamic.exe env ==========
-Pass!
-========== END entry-dynamic.exe env ==========
-child exit with 256
-
-Ready To Run Test-9 fdopen
-========== START entry-dynamic.exe fdopen ==========
-Pass!
-========== END entry-dynamic.exe fdopen ==========
-child exit with 256
-
-Ready To Run Test-10 fnmatch
-========== START entry-dynamic.exe fnmatch ==========
-Pass!
-========== END entry-dynamic.exe fnmatch ==========
-child exit with 256
-
-Ready To Run Test-11 fscanf
-========== START entry-dynamic.exe fscanf ==========
-Pass!
-========== END entry-dynamic.exe fscanf ==========
-child exit with 256
-
-Ready To Run Test-12 fwscanf
-========== START entry-dynamic.exe fwscanf ==========
-Pass!
-========== END entry-dynamic.exe fwscanf ==========
-child exit with 256
-
-Ready To Run Test-13 iconv_open
-========== START entry-dynamic.exe iconv_open ==========
-Pass!
-========== END entry-dynamic.exe iconv_open ==========
-child exit with 256
-
-Ready To Run Test-14 inet_pton
-========== START entry-dynamic.exe inet_pton ==========
-Pass!
-========== END entry-dynamic.exe inet_pton ==========
-child exit with 256
-
-Ready To Run Test-15 mbc
-========== START entry-dynamic.exe mbc ==========
-Pass!
-========== END entry-dynamic.exe mbc ==========
-child exit with 256
-
-Ready To Run Test-16 memstream
-========== START entry-dynamic.exe memstream ==========
-Pass!
-========== END entry-dynamic.exe memstream ==========
-child exit with 256
-
-Ready To Run Test-18 pthread_cancel
-========== START entry-dynamic.exe pthread_cancel ==========
-Pass!
-========== END entry-dynamic.exe pthread_cancel ==========
-child exit with 256
-
-Ready To Run Test-19 pthread_cond
-========== START entry-dynamic.exe pthread_cond ==========
-Pass!
-========== END entry-dynamic.exe pthread_cond ==========
-child exit with 256
-
-Ready To Run Test-20 pthread_tsd
-========== START entry-dynamic.exe pthread_tsd ==========
-Pass!
-========== END entry-dynamic.exe pthread_tsd ==========
-child exit with 256
-
-Ready To Run Test-21 qsort
-========== START entry-dynamic.exe qsort ==========
-Pass!
-========== END entry-dynamic.exe qsort ==========
-child exit with 256
-
-Ready To Run Test-22 random
-========== START entry-dynamic.exe random ==========
-Pass!
-========== END entry-dynamic.exe random ==========
-child exit with 256
-
-Ready To Run Test-23 search_hsearch
-========== START entry-dynamic.exe search_hsearch ==========
-Pass!
-========== END entry-dynamic.exe search_hsearch ==========
-child exit with 256
-
-Ready To Run Test-24 search_insque
-========== START entry-dynamic.exe search_insque ==========
-Pass!
-========== END entry-dynamic.exe search_insque ==========
-child exit with 256
-
-Ready To Run Test-25 search_lsearch
-========== START entry-dynamic.exe search_lsearch ==========
-Pass!
-========== END entry-dynamic.exe search_lsearch ==========
-child exit with 256
-
-Ready To Run Test-26 search_tsearch
-========== START entry-dynamic.exe search_tsearch ==========
-Pass!
-========== END entry-dynamic.exe search_tsearch ==========
-child exit with 256
-
-Ready To Run Test-27 sem_init
-========== START entry-dynamic.exe sem_init ==========
-Pass!
-========== END entry-dynamic.exe sem_init ==========
-child exit with 256
-
-Ready To Run Test-28 setjmp
-========== START entry-dynamic.exe setjmp ==========
-Pass!
-========== END entry-dynamic.exe setjmp ==========
-child exit with 256
-
-Ready To Run Test-29 snprintf
-========== START entry-dynamic.exe snprintf ==========
-Pass!
-========== END entry-dynamic.exe snprintf ==========
-child exit with 256
-
-Ready To Run Test-30 socket
-========== START entry-dynamic.exe socket ==========
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
-src/functional/socket.c:20: (s=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
-src/functional/socket.c:21: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
-src/functional/socket.c:22: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 208 sepc 10000436b0
-src/functional/socket.c:24: setsockopt(s, 1, 20, &(struct timeval){.tv_usec=1}, sizeof(struct timeval))==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
-src/functional/socket.c:27: (c=socket(2, 2, 17))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 206 sepc 100006093c
-src/functional/socket.c:29: sendto(c, "x", 1, 0, (void *)&sa, sizeof sa)==1 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 207 sepc 100006093c
-src/functional/socket.c:30: recvfrom(s, buf, sizeof buf, 0, (void *)&sa, (socklen_t[]){sizeof sa})==1 failed: errno = Operation not permitted
-src/functional/socket.c:31: buf[0]=='x' failed: '�'
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
-src/functional/socket.c:38: (s=socket(2, 1|02000000, 6))>=0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 200 sepc 100003d6f0
-src/functional/socket.c:40: bind(s, (void *)&sa, sizeof sa)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 204 sepc 100003fc18
-src/functional/socket.c:41: getsockname(s, (void *)&sa, (socklen_t[]){sizeof sa})==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 201 sepc 1000040a04
-src/functional/socket.c:44: listen(s, 1)==0 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 198 sepc 1000043768
-src/functional/socket.c:46: (c=socket(2, 1|04000, 6))>=0 failed: errno = Operation not permitted
-src/functional/socket.c:47: fcntl(c, F_GETFL)&O_NONBLOCK failed: SOCK_NONBLOCK did not work
-pid 312 entry-dynamic.exe: unknown sys call 203 sepc 100006093c
-src/functional/socket.c:49: connect(c, (void *)&sa, sizeof sa)==0 || (*__errno_location())==115 failed: errno = Operation not permitted
-pid 312 entry-dynamic.exe: unknown sys call 202 sepc 100006093c
-src/functional/socket.c:51: (t=accept(s, (void *)&sa, &(socklen_t){sizeof sa}))>=0 failed: errno = Operation not permitted
-FAIL socket [status 1]
-========== END entry-dynamic.exe socket ==========
-child exit with 256
-
-Ready To Run Test-31 sscanf
-========== START entry-dynamic.exe sscanf ==========
-Pass!
-========== END entry-dynamic.exe sscanf ==========
-child exit with 256
-
-Ready To Run Test-32 sscanf_long
-========== START entry-dynamic.exe sscanf_long ==========
-[INFO][PAGEFAULT: handle_pagefault] pagefault handle fault
-[INFO][PAGEFAULT: handle_pagefault] user_fail: epc 0x241f4 va 0xf0026f000
-1. vma: 0x10000--0x59000 len: 0x49000 rwxu 
-2. vma: 0x5a000--0x63000 len: 0x9000 rwxu 
-3. vma: 0x63000--0x6b000 len: 0x8000 rwxu 
-4. vma: 0x7ffe7000--0x80000000 len: 0x19000 rw-u 
-5. vma: 0xf00000000--0xf00801000 len: 0x801000 rwxu 
-6. vma: 0x1000000000--0x10000a3000 len: 0xa3000 rwxu 
-7. vma: 0x10000a3000--0x10000a8000 len: 0x5000 rwxu 
-trapframe {
-    sp: 7ffff880
-    fp: f00000020
-    pc: 241f4
-    ra: 241e4
+ scause is Supervisor software interrupt sepc is 0x1768
+Trapframe {
+    sp: 7fffff40
+    fp: 80000000
+    pc: 1768
+    ra: 1020
+    a0: 1cf0
+    a1: 0
+    a2: 0
+    a3: 0
+    a4: 0
+    a5: 0
 }
-FAIL sscanf_long [unknown]
-========== END entry-dynamic.exe sscanf_long ==========
-child exit with 256
-
-Ready To Run Test-33 stat
-========== START entry-dynamic.exe stat ==========
-Pass!
-========== END entry-dynamic.exe stat ==========
-child exit with 256
-
-Ready To Run Test-34 strftime
-========== START entry-dynamic.exe strftime ==========
-Pass!
-========== END entry-dynamic.exe strftime ==========
-child exit with 256
-
-Ready To Run Test-35 string
-========== START entry-dynamic.exe string ==========
-Pass!
-========== END entry-dynamic.exe string ==========
-child exit with 256
-
-Ready To Run Test-36 string_memcpy
-========== START entry-dynamic.exe string_memcpy ==========
-Pass!
-========== END entry-dynamic.exe string_memcpy ==========
-child exit with 256
-
-Ready To Run Test-37 string_memmem
-========== START entry-dynamic.exe string_memmem ==========
-Pass!
-========== END entry-dynamic.exe string_memmem ==========
-child exit with 256
-
-Ready To Run Test-38 string_memset
-========== START entry-dynamic.exe string_memset ==========
-Pass!
-========== END entry-dynamic.exe string_memset ==========
-child exit with 256
-
-Ready To Run Test-39 string_strchr
-========== START entry-dynamic.exe string_strchr ==========
-Pass!
-========== END entry-dynamic.exe string_strchr ==========
-child exit with 256
-
-Ready To Run Test-40 string_strcspn
-========== START entry-dynamic.exe string_strcspn ==========
-Pass!
-========== END entry-dynamic.exe string_strcspn ==========
-child exit with 256
-
-Ready To Run Test-41 string_strstr
-========== START entry-dynamic.exe string_strstr ==========
-Pass!
-========== END entry-dynamic.exe string_strstr ==========
-child exit with 256
-
-Ready To Run Test-42 strptime
-========== START entry-dynamic.exe strptime ==========
-Pass!
-========== END entry-dynamic.exe strptime ==========
-child exit with 256
-
-Ready To Run Test-43 strtod
-========== START entry-dynamic.exe strtod ==========
-Pass!
-========== END entry-dynamic.exe strtod ==========
-child exit with 256
-
-Ready To Run Test-44 strtod_simple
-========== START entry-dynamic.exe strtod_simple ==========
-Pass!
-========== END entry-dynamic.exe strtod_simple ==========
-child exit with 256
-
-Ready To Run Test-45 strtof
-========== START entry-dynamic.exe strtof ==========
-Pass!
-========== END entry-dynamic.exe strtof ==========
-child exit with 256
-
-Ready To Run Test-46 strtol
-========== START entry-dynamic.exe strtol ==========
-Pass!
-========== END entry-dynamic.exe strtol ==========
-child exit with 256
-
-Ready To Run Test-47 strtold
-========== START entry-dynamic.exe strtold ==========
-Pass!
-========== END entry-dynamic.exe strtold ==========
-child exit with 256
-
-Ready To Run Test-48 swprintf
-========== START entry-dynamic.exe swprintf ==========
-Pass!
-========== END entry-dynamic.exe swprintf ==========
-child exit with 256
-
-Ready To Run Test-49 tgmath
-========== START entry-dynamic.exe tgmath ==========
-Pass!
-========== END entry-dynamic.exe tgmath ==========
-child exit with 256
-
-Ready To Run Test-50 time
-========== START entry-dynamic.exe time ==========
-Pass!
-========== END entry-dynamic.exe time ==========
-child exit with 256
-
-Ready To Run Test-51 tls_init
-========== START entry-dynamic.exe tls_init ==========
-Pass!
-========== END entry-dynamic.exe tls_init ==========
-child exit with 256
-
-Ready To Run Test-52 tls_local_exec
-========== START entry-dynamic.exe tls_local_exec ==========
-Pass!
-========== END entry-dynamic.exe tls_local_exec ==========
-child exit with 256
-
-Ready To Run Test-53 udiv
-========== START entry-dynamic.exe udiv ==========
-Pass!
-========== END entry-dynamic.exe udiv ==========
-child exit with 256
-
-Ready To Run Test-54 ungetc
-========== START entry-dynamic.exe ungetc ==========
-Pass!
-========== END entry-dynamic.exe ungetc ==========
-child exit with 256
-
-Ready To Run Test-55 utime
-========== START entry-dynamic.exe utime ==========
-Pass!
-========== END entry-dynamic.exe utime ==========
-child exit with 256
-
-Ready To Run Test-56 wcsstr
-========== START entry-dynamic.exe wcsstr ==========
-Pass!
-========== END entry-dynamic.exe wcsstr ==========
-child exit with 256
-
-Ready To Run Test-57 wcstol
-========== START entry-dynamic.exe wcstol ==========
-Pass!
-========== END entry-dynamic.exe wcstol ==========
-child exit with 256
-
-Ready To Run Test-58 daemon_failure
-========== START entry-dynamic.exe daemon_failure ==========
-Pass!
-========== END entry-dynamic.exe daemon_failure ==========
-child exit with 256
-
-Ready To Run Test-59 dn_expand_empty
-========== START entry-dynamic.exe dn_expand_empty ==========
-Pass!
-========== END entry-dynamic.exe dn_expand_empty ==========
-child exit with 256
-
-Ready To Run Test-60 dn_expand_ptr_0
-========== START entry-dynamic.exe dn_expand_ptr_0 ==========
-Pass!
-========== END entry-dynamic.exe dn_expand_ptr_0 ==========
-child exit with 256
-
-Ready To Run Test-61 fflush_exit
-========== START entry-dynamic.exe fflush_exit ==========
-Pass!
-========== END entry-dynamic.exe fflush_exit ==========
-child exit with 256
-
-Ready To Run Test-62 fgets_eof
-========== START entry-dynamic.exe fgets_eof ==========
-Pass!
-========== END entry-dynamic.exe fgets_eof ==========
-child exit with 256
-
-Ready To Run Test-63 fgetwc_buffering
-========== START entry-dynamic.exe fgetwc_buffering ==========
-Pass!
-========== END entry-dynamic.exe fgetwc_buffering ==========
-child exit with 256
-
-Ready To Run Test-64 fpclassify_invalid_ld80
-========== START entry-dynamic.exe fpclassify_invalid_ld80 ==========
-Pass!
-========== END entry-dynamic.exe fpclassify_invalid_ld80 ==========
-child exit with 256
-
-Ready To Run Test-65 ftello_unflushed_append
-========== START entry-dynamic.exe ftello_unflushed_append ==========
-Pass!
-========== END entry-dynamic.exe ftello_unflushed_append ==========
-child exit with 256
-
-Ready To Run Test-66 getpwnam_r_crash
-========== START entry-dynamic.exe getpwnam_r_crash ==========
-Pass!
-========== END entry-dynamic.exe getpwnam_r_crash ==========
-child exit with 256
-
-Ready To Run Test-67 getpwnam_r_errno
-========== START entry-dynamic.exe getpwnam_r_errno ==========
-Pass!
-========== END entry-dynamic.exe getpwnam_r_errno ==========
-child exit with 256
-
-Ready To Run Test-68 iconv_roundtrips
-========== START entry-dynamic.exe iconv_roundtrips ==========
-Pass!
-========== END entry-dynamic.exe iconv_roundtrips ==========
-child exit with 256
-
-Ready To Run Test-69 inet_ntop_v4mapped
-========== START entry-dynamic.exe inet_ntop_v4mapped ==========
-Pass!
-========== END entry-dynamic.exe inet_ntop_v4mapped ==========
-child exit with 256
-
-Ready To Run Test-70 inet_pton_empty_last_field
-========== START entry-dynamic.exe inet_pton_empty_last_field ==========
-Pass!
-========== END entry-dynamic.exe inet_pton_empty_last_field ==========
-child exit with 256
-
-Ready To Run Test-71 iswspace_null
-========== START entry-dynamic.exe iswspace_null ==========
-Pass!
-========== END entry-dynamic.exe iswspace_null ==========
-child exit with 256
-
-Ready To Run Test-72 lrand48_signextend
-========== START entry-dynamic.exe lrand48_signextend ==========
-Pass!
-========== END entry-dynamic.exe lrand48_signextend ==========
-child exit with 256
-
-Ready To Run Test-73 lseek_large
-========== START entry-dynamic.exe lseek_large ==========
-Pass!
-========== END entry-dynamic.exe lseek_large ==========
-child exit with 256
-
-Ready To Run Test-74 malloc_0
-========== START entry-dynamic.exe malloc_0 ==========
-Pass!
-========== END entry-dynamic.exe malloc_0 ==========
-child exit with 256
-
-Ready To Run Test-75 mbsrtowcs_overflow
-========== START entry-dynamic.exe mbsrtowcs_overflow ==========
-Pass!
-========== END entry-dynamic.exe mbsrtowcs_overflow ==========
-child exit with 256
-
-Ready To Run Test-76 memmem_oob_read
-========== START entry-dynamic.exe memmem_oob_read ==========
-Pass!
-========== END entry-dynamic.exe memmem_oob_read ==========
-child exit with 256
-
-Ready To Run Test-77 memmem_oob
-========== START entry-dynamic.exe memmem_oob ==========
-Pass!
-========== END entry-dynamic.exe memmem_oob ==========
-child exit with 256
-
-Ready To Run Test-78 mkdtemp_failure
-========== START entry-dynamic.exe mkdtemp_failure ==========
-Pass!
-========== END entry-dynamic.exe mkdtemp_failure ==========
-child exit with 256
-
-Ready To Run Test-79 mkstemp_failure
-========== START entry-dynamic.exe mkstemp_failure ==========
-Pass!
-========== END entry-dynamic.exe mkstemp_failure ==========
-child exit with 256
-
-Ready To Run Test-80 printf_1e9_oob
-========== START entry-dynamic.exe printf_1e9_oob ==========
-Pass!
-========== END entry-dynamic.exe printf_1e9_oob ==========
-child exit with 256
-
-Ready To Run Test-81 printf_fmt_g_round
-========== START entry-dynamic.exe printf_fmt_g_round ==========
-Pass!
-========== END entry-dynamic.exe printf_fmt_g_round ==========
-child exit with 256
-
-Ready To Run Test-82 printf_fmt_g_zeros
-========== START entry-dynamic.exe printf_fmt_g_zeros ==========
-Pass!
-========== END entry-dynamic.exe printf_fmt_g_zeros ==========
-child exit with 256
-
-Ready To Run Test-83 printf_fmt_n
-========== START entry-dynamic.exe printf_fmt_n ==========
-Pass!
-========== END entry-dynamic.exe printf_fmt_n ==========
-child exit with 256
-
-Ready To Run Test-84 pthread_robust_detach
-========== START entry-dynamic.exe pthread_robust_detach ==========
-Pass!
-========== END entry-dynamic.exe pthread_robust_detach ==========
-child exit with 256
-
-Ready To Run Test-86 pthread_condattr_setclock
-========== START entry-dynamic.exe pthread_condattr_setclock ==========
-Pass!
-========== END entry-dynamic.exe pthread_condattr_setclock ==========
-child exit with 256
-
-Ready To Run Test-87 pthread_exit_cancel
-========== START entry-dynamic.exe pthread_exit_cancel ==========
-Pass!
-========== END entry-dynamic.exe pthread_exit_cancel ==========
-child exit with 256
-
-Ready To Run Test-88 pthread_once_deadlock
-========== START entry-dynamic.exe pthread_once_deadlock ==========
-Pass!
-========== END entry-dynamic.exe pthread_once_deadlock ==========
-child exit with 256
-
-Ready To Run Test-89 pthread_rwlock_ebusy
-========== START entry-dynamic.exe pthread_rwlock_ebusy ==========
-Pass!
-========== END entry-dynamic.exe pthread_rwlock_ebusy ==========
-child exit with 256
-
-Ready To Run Test-90 putenv_doublefree
-========== START entry-dynamic.exe putenv_doublefree ==========
-Pass!
-========== END entry-dynamic.exe putenv_doublefree ==========
-child exit with 256
-
-Ready To Run Test-91 regex_backref_0
-========== START entry-dynamic.exe regex_backref_0 ==========
-Pass!
-========== END entry-dynamic.exe regex_backref_0 ==========
-child exit with 256
-
-Ready To Run Test-92 regex_bracket_icase
-========== START entry-dynamic.exe regex_bracket_icase ==========
-Pass!
-========== END entry-dynamic.exe regex_bracket_icase ==========
-child exit with 256
-
-Ready To Run Test-93 regex_ere_backref
-========== START entry-dynamic.exe regex_ere_backref ==========
-Pass!
-========== END entry-dynamic.exe regex_ere_backref ==========
-child exit with 256
-
-Ready To Run Test-94 regex_escaped_high_byte
-========== START entry-dynamic.exe regex_escaped_high_byte ==========
-Pass!
-========== END entry-dynamic.exe regex_escaped_high_byte ==========
-child exit with 256
-
-Ready To Run Test-95 regex_negated_range
-========== START entry-dynamic.exe regex_negated_range ==========
-Pass!
-========== END entry-dynamic.exe regex_negated_range ==========
-child exit with 256
-
-Ready To Run Test-96 regexec_nosub
-========== START entry-dynamic.exe regexec_nosub ==========
-Pass!
-========== END entry-dynamic.exe regexec_nosub ==========
-child exit with 256
-
-Ready To Run Test-97 rewind_clear_error
-========== START entry-dynamic.exe rewind_clear_error ==========
-Pass!
-========== END entry-dynamic.exe rewind_clear_error ==========
-child exit with 256
-
-Ready To Run Test-98 rlimit_open_files
-========== START entry-dynamic.exe rlimit_open_files ==========
-src/regression/rlimit-open-files.c:19: setrlimit(7, 42) failed: Operation not permitted
-src/regression/rlimit-open-files.c:21: getrlimit(7) failed: Operation not permitted
-src/regression/rlimit-open-files.c:28: dup(1) failed with Operation not permitted, wanted EMFILE
-src/regression/rlimit-open-files.c:30: more fds are open than rlimit allows: fd=14, limit=42
-FAIL rlimit_open_files [status 1]
-========== END entry-dynamic.exe rlimit_open_files ==========
-child exit with 256
-
-Ready To Run Test-99 scanf_bytes_consumed
-========== START entry-dynamic.exe scanf_bytes_consumed ==========
-Pass!
-========== END entry-dynamic.exe scanf_bytes_consumed ==========
-child exit with 256
-
-Ready To Run Test-100 scanf_match_literal_eof
-========== START entry-dynamic.exe scanf_match_literal_eof ==========
-Pass!
-========== END entry-dynamic.exe scanf_match_literal_eof ==========
-child exit with 256
-
-Ready To Run Test-101 scanf_nullbyte_char
-========== START entry-dynamic.exe scanf_nullbyte_char ==========
-Pass!
-========== END entry-dynamic.exe scanf_nullbyte_char ==========
-child exit with 256
-
-Ready To Run Test-102 setvbuf_unget
-========== START entry-dynamic.exe setvbuf_unget ==========
-Pass!
-========== END entry-dynamic.exe setvbuf_unget ==========
-child exit with 256
-
-Ready To Run Test-103 sigprocmask_internal
-========== START entry-dynamic.exe sigprocmask_internal ==========
-Pass!
-========== END entry-dynamic.exe sigprocmask_internal ==========
-child exit with 256
-
-Ready To Run Test-104 sscanf_eof
-========== START entry-dynamic.exe sscanf_eof ==========
-Pass!
-========== END entry-dynamic.exe sscanf_eof ==========
-child exit with 256
-
-Ready To Run Test-105 statvfs
-========== START entry-dynamic.exe statvfs ==========
-Pass!
-========== END entry-dynamic.exe statvfs ==========
-child exit with 256
-
-Ready To Run Test-106 strverscmp
-========== START entry-dynamic.exe strverscmp ==========
-Pass!
-========== END entry-dynamic.exe strverscmp ==========
-child exit with 256
-
-Ready To Run Test-107 syscall_sign_extend
-========== START entry-dynamic.exe syscall_sign_extend ==========
-Pass!
-========== END entry-dynamic.exe syscall_sign_extend ==========
-child exit with 256
-
-Ready To Run Test-108 tls_get_new_dtv
-========== START entry-dynamic.exe tls_get_new_dtv ==========
-Pass!
-========== END entry-dynamic.exe tls_get_new_dtv ==========
-child exit with 256
-
-Ready To Run Test-109 uselocale_0
-========== START entry-dynamic.exe uselocale_0 ==========
-Pass!
-========== END entry-dynamic.exe uselocale_0 ==========
-child exit with 256
-
-Ready To Run Test-110 wcsncpy_read_overflow
-========== START entry-dynamic.exe wcsncpy_read_overflow ==========
-Pass!
-========== END entry-dynamic.exe wcsncpy_read_overflow ==========
-child exit with 256
-
-Ready To Run Test-111 wcsstr_false_negative
-========== START entry-dynamic.exe wcsstr_false_negative ==========
-Pass!
-========== END entry-dynamic.exe wcsstr_false_negative ==========
-child exit with 256
-page usage: 2% ( 21 used | 941 total )
-ALL TEST DONE!
+ 

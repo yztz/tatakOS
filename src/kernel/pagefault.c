@@ -77,6 +77,7 @@ static pagefault_t get_pagefault(uint64 scause) {
     // 在特权级1.9下，由于没有pagefault(ref: p51)，因此SBI帮我在底层做了一下转换
     // 对于缺页的错误，它将非缺页以及非PMP访问的异常都归结到了xx_access_fault中，因此这里需要加一层宏判断
     // 这似乎违背了SBI的宗旨
+    // printf("%s\n", riscv_cause2str(scause));
     switch (scause)
     {
         // #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
@@ -224,6 +225,8 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
         return do_cow_page(rva, pte);
 
     /* 未知页错误 */
+    printf("pf: ra is %#lx\n", rva);
+    pte_print(pte);
     ER();
     return -1;
 }

@@ -327,7 +327,7 @@ uint64 sys_getcwd(void) {
 
 
 uint64_t sys_faccessat(void) {
-    return -1;
+    return 0;
 }
 
 uint64_t sys_mount(void) {
@@ -579,20 +579,18 @@ uint64_t sys_sendfile(void) {
       argaddr(2, &poff) < 0 || argaddr(3, (uint64_t *)&count) < 0)
         return -1;
     
-    if(poff) {
-        if(copy_from_user(&off, poff, sizeof(off_t)) < 0)
-            return -1;
-    }
+    if(poff && copy_from_user(&off, poff, sizeof(off_t)) < 0)
+        return -1;
 
     int ret;
     if((ret = filesend(inf, outf, poff ? &off : NULL, count)) < 0)
         return -1;
-    else {
-        if(copy_to_user(poff, &off, sizeof(off_t)) < 0)
-            return -1;
-        debug("len %ld rlen %ld", count, ret);
-        return ret;
-    }
+    
+    if(poff && copy_to_user(poff, &off, sizeof(off_t)) < 0)
+        return -1;
+
+    debug("len %ld rlen %ld", count, ret);
+    return ret;
 
 }
 
@@ -847,6 +845,11 @@ uint64 sys_lseek(void) {
 
     if(argfd(0, NULL, &f) < 0 || argaddr(1, (uint64 *)&offset) < 0 || argint(2, &whence) < 0)
         return -1;
+
+    if(f->type == FD_PIPE) {
+        return -ESPIPE;
+    }
+
     if(whence == SEEK_SET) {
         f->off = offset;
     } else if(whence == SEEK_CUR) {
