@@ -13,9 +13,9 @@ void main() {
     argv[1] = "sh";
     // argv[1] = "var";
     // argv[2] = "var";
-    // argv[2] = "busybox_testcode.sh";
+    argv[2] = "busybox_testcode.sh";
     // argv[2] = "-lh";
-    argv[2] = 0;
+    // argv[2] = 0;
     argv[3] = 0;
     
     // argv[2] = 0;

@@ -200,6 +200,34 @@ static struct file* getdevfile(char *path) {
         fzero->writable = 1;
         return fzero;
     } 
+
+    if(strncmp(path, "/dev/rtc", 8) == 0){
+        struct file *frtc = filealloc();
+        if(frtc == NULL){
+            debug("alloc fail");
+            return NULL;
+        }
+        frtc->type = T_DEVICE;
+        frtc->dev = &devs[DEVRTC];
+        frtc->readable = 1;
+        frtc->writable = 1;
+        return frtc;
+    }
+    return NULL;
+}
+
+static struct file* getprocfile(char *path){
+    if(strncmp(path, "/proc/meminfo", 13) == 0){
+        struct file *fmeminfo = filealloc();
+        if(fmeminfo == NULL){
+            debug("alloc fail");
+            return NULL;
+        }
+        fmeminfo->type = T_RAM;
+        fmeminfo->readable = 1;
+        fmeminfo->writable = 1;
+        return fmeminfo;
+    }
     return NULL;
 }
 
@@ -393,6 +421,15 @@ uint64 sys_openat(void) {
     // sepcial for device...
     f = getdevfile(path);
     if(f != NULL) {
+        if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
+            fileclose(f);
+            return -EMFILE;
+        }
+        return fd;
+    }
+
+    f = getprocfile(path);
+    if(f != NULL){
         if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
             fileclose(f);
             return -EMFILE;
@@ -681,6 +718,9 @@ uint64 sys_ioctl(void) {
                 .ws_col = 0,
             }, sizeof(struct winsize)) < 0)
                 return -1;
+            break;
+        /* for hwclock */
+        case 0xffffffff80247009:
             break;
         default:
             panic("un");

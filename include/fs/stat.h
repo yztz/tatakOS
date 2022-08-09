@@ -4,6 +4,7 @@
 #define T_DIR 1  // Directory
 #define T_FILE 2 // File
 #define T_DEVICE  3   // Device
+#define T_RAM        4 // ramfs
 
 #define S_IFMT     0170000  // bit mask for the file type bit field
 #define S_IFSOCK   0140000  // socket

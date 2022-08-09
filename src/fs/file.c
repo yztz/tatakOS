@@ -201,7 +201,11 @@ fileread(struct file *f, uint64 addr, int n)
       f->off += r;
     }
     eunlock(f->ep);
-  } else {
+  } 
+  else if(f->type == T_RAM){
+    r = 0;
+  }
+  else {
     panic("fileread");
   }
 

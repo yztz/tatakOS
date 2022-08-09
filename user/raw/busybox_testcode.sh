@@ -12,7 +12,7 @@
 
 ./busybox cat ./busybox_cmd.txt | while read line
 do
-	echo -e "\e[33;1m $line \e[0m"
+	# echo -e "\e[33;1m $line \e[0m"
 	if [[ ${line: 0: 1} == "#" ]] ; then
 		continue
 	fi

@@ -487,6 +487,8 @@ void exit(int status) {
   panic("zombie exit");
 }
 
+    
+extern void lru_add_drain();
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
@@ -515,7 +517,9 @@ waitpid(int cid, uint64 addr, int options)
         haveckid = 1;
         if(np->state == ZOMBIE){
           // Found one.
-          
+         
+          /* 进程退出的时候，有些页还在pagevec中，没有释放，看上去好像内存泄露了，所以这里加上这句。 */
+          lru_add_drain();
           if(addr != 0 && copyout(addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
             release(&np->lock);

@@ -14,6 +14,7 @@ typedef struct _device_t {
 #define CONSOLE 1
 #define DEVNULL 2
 #define DEVZERO 3
+#define DEVRTC  4
 
 extern device_t devs[];
 
