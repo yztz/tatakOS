@@ -13,11 +13,11 @@ void main() {
     printf("mkdone\n");
     memuse();
     
-    // char *sh[] = {"busybox", "sh", 0};
-    // run(sh);
-    char *busybox[] = {"busybox", "sh", "busybox_testcode.sh", 0};
+    char *sh[] = {"busybox", "sh", 0};
+    run(sh);
+    // char *busybox[] = {"busybox", "sh", "busybox_testcode.sh", -1};
     char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};
-    run(busybox);
+    // run(busybox);
     run(lua);
     
     memuse();
