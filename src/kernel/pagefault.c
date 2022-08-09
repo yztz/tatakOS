@@ -1,5 +1,5 @@
-#include "common.h"
 #include "platform.h"
+#include "common.h"
 #include "mm/alloc.h"
 #include "fs/fs.h"
 #include "fs/file.h"
@@ -47,23 +47,6 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
 }
 
 
-// static inline void file_copy(uint64_t va, uint64_t pa, vma_t *vma) {
-//     // TODO: check file range
-//     uint64_t len = PGSIZE;
-//     off_t off = vma->offset;
-//     struct file *fp = vma->map_file;
-//     if(va == vma->addr) {
-//         uint64_t delta = vma->raddr - vma->addr;
-//         pa = pa + delta;
-//         len = len - delta;
-//     } else {
-//         off += va - vma->raddr;
-//     }
-//     elock(fp->ep);
-//     reade(fp->ep, 0, pa, off, len);
-//     eunlock(fp->ep);
-// }
-
 typedef enum {
     PF_LOAD,
     PF_STORE,
@@ -91,73 +74,6 @@ static pagefault_t get_pagefault(uint64 scause) {
     }
 }
 #include "mm/buddy.h"
-
-// /**
-//  * @return 处理失败返回-1，成功返回1
-//  */
-// int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
-//     if(fault == PF_STORE) { // store page fault
-//         if(vma->prot & PROT_WRITE) {
-//             pte_t *pte = walk(p->mm->pagetable, rva, 1);
-//             // lazy
-//             if((*pte & PTE_V) == 0) {
-//                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
-
-//                 if(newpage == 0) {
-//                     debug("map fault");
-//                     return -1;
-//                 }
-//                 // load file content
-//                 if(vma->map_file) {
-//                     file_copy(rva, newpage, vma);
-//                 }
-
-//                 *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
-//                 sfence_vma_addr(rva);
-                
-//                 return 0;
-//             }
-//             // cow
-//             if(*pte & PTE_COW) {
-//                 if(cow_copy(rva, pte) == -1){
-//                     debug("cow fault");
-//                     return -1;
-//                 } else {
-//                     return 0;
-//                 }
-//             }
-
-//             panic("here?");
-//         } else {
-//             debug("no write prot");
-//             return -1;
-//         }
-//     }
-    
-//     if(fault == PF_LOAD) { 
-//         if(vma->prot & PROT_READ) {
-//             pte_t *pte = walk(p->mm->pagetable, rva, 1);
-//             // lazy
-//             if((*pte & PTE_V) == 0) {
-//                 uint64_t newpage = (uint64)kzalloc(PGSIZE);
-//                 if(newpage == 0) {
-//                     return -1;
-//                 }
-//                 // load file content
-//                 if(vma->map_file) {
-//                     file_copy(rva, newpage, vma);
-//                 }
-//                 *pte = PA2PTE(newpage) | riscv_map_prot(vma->prot) | PTE_V;
-//                 sfence_vma_addr(rva);
-//                 return 0;
-//             }
-//         } else {
-//             return -1;
-//         }
-//     }
-
-//     return -1;
-// }
 
 static int have_prot(pagefault_t fault, vma_t *vma){
     if(fault == PF_STORE){
@@ -225,8 +141,6 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
         return do_cow_page(rva, pte);
 
     /* 未知页错误 */
-    printf("pf: ra is %#lx\n", rva);
-    pte_print(pte);
     ER();
     return -1;
 }
