@@ -16,10 +16,10 @@ do
 	eval "busybox $line"
 	RTN=$?
 	if [[ $RTN -ne 0 && $line != "false" ]] ;then
-		echo "testcase busybox $line fail"
+		echo -e "\e[31;1mtestcase busybox $line fail\e[0m"
 		# echo "return: $RTN, cmd: $line" >> $RST
 	else
-		echo "testcase busybox $line success"
+		echo -e "\e[32;1mtestcase busybox $line success\e[0m"
 	fi
 done
 

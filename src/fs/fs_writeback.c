@@ -34,7 +34,7 @@ void writeback_single_entry(entry_t *entry){
   #ifdef TODO
   todo("");
   #endif
-  free_mapping(entry);
+  // free_mapping(entry);
   printf(ylw("end free mapping!\n"));
 
   // buddy_print_free();  

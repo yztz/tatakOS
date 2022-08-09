@@ -37,22 +37,70 @@
 //   uint64 tags[RADIX_TREE_MAX_TAGS];
 // };
 
+static struct radix_tree_node *
+radix_tree_node_alloc(){
+	struct radix_tree_node *ret;
+	ret = kzalloc(sizeof(struct radix_tree_node));
+	if(ret == NULL)
+		panic("rdt alloc");
+	
+	/* 这里需要初始化一下内容，否则似乎里面不为0 */
+	ret->count = 0;
+	for(int i = 0; i < RADIX_TREE_MAP_SIZE; i++)
+		ret->slots[i] = NULL;
+	return ret;
+}
+
+static inline void radix_tree_node_free(struct radix_tree_node *node){
+	kfree((void *)node);
+}
+
+static inline int root_tag_get(radix_tree_root_t *root, uint tag){
+	return test_bit(tag, &root->tags);
+}
 
 
-/** 根据rdt的高度返回其最大的id值。注意height为0，最大id不为0，
- * id为0，则至少有一个节点，高度至少为1。所以
- * return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
- * 的表达是错的(要排除掉height为0的情况）。前面使用这个表达式，把pa存在了rdt root指向node的指针中
- * 歪打正着也能读出来。
- * 如果height为0选择返回一个负值，还要考虑有符号数和无符号数比较时的转化，所以我们选择特殊处理height=0
- * 的情况。
+static inline void root_tag_set(radix_tree_root_t *root, uint tag){
+	return __set_bit(tag, &root->tags);
+}
+
+static inline void root_tag_clear(radix_tree_root_t *root, uint tag){
+	return __clear_bit(tag, &root->tags);
+}
+
+static inline void tag_set(radix_tree_node_t *node, uint32_t tag_type, int offset){
+	__set_bit(offset, node->tags[tag_type]);
+}
+
+static inline void tag_clear(struct radix_tree_node *node, unsigned int tag,
+		int offset)
+{
+	__clear_bit(offset, node->tags[tag]);
+}
+
+static inline int tag_get(struct radix_tree_node *node, unsigned int tag, int offset)
+{
+	return test_bit(offset, node->tags[tag]);
+}
+
+/*
+ * Returns 1 if any slot in the node has this tag set.
+ * Otherwise returns 0.
  */
-uint64
+static inline int any_tag_set(struct radix_tree_node *node, unsigned int tag)
+{
+	int idx;
+	for (idx = 0; idx < RADIX_TREE_TAG_LONGS; idx++) {
+		if (node->tags[tag][idx])
+			return 1;
+	}
+	return 0;
+}
+
+uint64_t
 radix_tree_maxindex(uint height){
-	if(height == 0)
-		return 0;
-		// panic("rdt maxindex: height is 0!");
-		// return -1;
+	if(height > RADIX_TREE_MAX_PATH)
+		ER();
   return (1<<(height * RADIX_TREE_MAP_SHIFT)) - 1;
 }
 
@@ -108,9 +156,9 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 
 
 	/* make sure the tree is high enough */
-	if(root->height == 0 || index > radix_tree_maxindex(root->height)){
+	if(index > radix_tree_maxindex(root->height)){
 		if(radix_tree_extend(root, index))	
-			panic("rdt insert 1");
+			ER();
 	}
 	slot = &root->rnode;
 	height = root->height;
@@ -146,23 +194,31 @@ int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *i
 	return 0;
 }
 
-/**
- * @brief Set the extend node tags object
- * the child is parent->slots[0] when extend a tree.
- * 
- * @param parent 
- * @param child 
- */
-static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
-	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
-		for(int j = 0; j < RADIX_TREE_TAG_LONGS; j++){
-			if(child->tags[i][j] > 0){
-				parent->tags[i][0] = 1;
-				break;
-			}
-		}
-	}	
-}
+
+// /**
+//  * @brief Set the extend node tags object
+//  * the child is parent->slots[0] when extend a tree.
+//  * 
+//  * @param parent 
+//  * @param child 
+//  */
+// static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
+// 	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
+// 		if(any_tag_set(child, i))
+// 			parent->tags[i][0] = 1;
+// 	}
+// }
+// static void set_extend_node_tags(radix_tree_node_t *parent, radix_tree_node_t *child){
+// 	for(int i = 0; i < RADIX_TREE_MAX_TAGS; i++){
+// 		for(int j = 0; j < RADIX_TREE_TAG_LONGS; j++){
+// 			if(child->tags[i][j] > 0){
+// 				parent->tags[i][0] = 1;
+// 				break;
+// 			}
+// 		}
+// 	}	
+// }
+
 
 /*
  *	Extend a radix tree so it can store key @index.
@@ -171,79 +227,42 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
 {
 	struct radix_tree_node *node;
 	unsigned int height;
+	int tag;
 
 	/* Figure out what the height should be.  */
 	height = root->height + 1;
-	while (height == 0 || index > radix_tree_maxindex(height))
+	while (index > radix_tree_maxindex(height))
 		height++;
-	
+
 	/* 如果root->rnode为NULL，在插入函数的while循环中会分配 */
-	if (root->rnode) {
-		do {
-			if (!(node = radix_tree_node_alloc()))
-				panic("rdt extend");
-				// return -ENOMEM;
-
-			/* Increase the height.  */
-			node->slots[0] = root->rnode;
-			node->count = 1;
-			root->rnode = node;
-			root->height++;
-			set_extend_node_tags(node, node->slots[0]);
-		} while (height > root->height);
-	} else{
-		// for(;;);
+	if(root->rnode == NULL){
 		root->height = height;
+		goto out;
 	}
-	return 0;
-}
-
-static struct radix_tree_node *
-radix_tree_node_alloc(){
-	struct radix_tree_node *ret;
-	ret = kzalloc(sizeof(struct radix_tree_node));
-	if(ret == NULL)
-		panic("rdt alloc");
 	
-	/* 这里需要初始化一下内容，否则似乎里面不为0 */
-	ret->count = 0;
-	for(int i = 0; i < RADIX_TREE_MAP_SIZE; i++)
-		ret->slots[i] = NULL;
-	return ret;
-}
+	do {
+		if (!(node = radix_tree_node_alloc()))
+			ER();
 
-static inline void radix_tree_node_free(struct radix_tree_node *node){
-	kfree((void *)node);
-}
+		/* Increase the height.  */
+		node->slots[0] = root->rnode;
 
-static inline void tag_set(radix_tree_node_t *node, uint32_t tag_type, int offset){
-	__set_bit(offset, node->tags[tag_type]);
-}
+		/* Propagate the aggregated tag info into the new root */
+		for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
+			if (root_tag_get(root, tag))
+				tag_set(node, tag, 0);
+		}
 
-static inline void tag_clear(struct radix_tree_node *node, unsigned int tag,
-		int offset)
-{
-	__clear_bit(offset, node->tags[tag]);
-}
+		node->count = 1;
+		root->rnode = node;
+		root->height++;
+	} while (height > root->height);
+	
 
-static inline int tag_get(struct radix_tree_node *node, unsigned int tag, int offset)
-{
-	return test_bit(offset, node->tags[tag]);
-}
-
-/*
- * Returns 1 if any slot in the node has this tag set.
- * Otherwise returns 0.
- */
-static inline int any_tag_set(struct radix_tree_node *node, unsigned int tag)
-{
-	int idx;
-	for (idx = 0; idx < RADIX_TREE_TAG_LONGS; idx++) {
-		if (node->tags[tag][idx])
-			return 1;
-	}
+out:
 	return 0;
 }
+
 
 
 void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
@@ -272,8 +291,10 @@ void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type){
 	}
 
 	/* the index of page to set is empty */
-	if(slot == NULL)
-		panic("rdt tag set 2");
+	// if(slot == NULL)
+		// panic("rdt tag set 2");
+	if(slot && !root_tag_get(root, tag_type))
+		root_tag_set(root, tag_type);
 
 	return;
 }
@@ -328,6 +349,10 @@ void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type
 		pathp--;
 	}
 
+	/* clear the root's tag bit */
+	if (root_tag_get(root, tag_type))
+		root_tag_clear(root, tag_type);
+
 out:
 	return;
 }
@@ -340,6 +365,9 @@ void lookup_tag(radix_tree_node_t *node, uint32_t tag, rw_page_list_t *pg_list, 
 	int i, shift;
 	shift = (height-1)*RADIX_TREE_MAP_SHIFT;
 	page_t *ppage;
+
+	if(height < 1)
+		ER();
 
 	for(i=0; i<RADIX_TREE_MAP_SIZE; i++){
 		if(tag_get(node, tag, i)){
@@ -376,9 +404,17 @@ void lookup_tag(radix_tree_node_t *node, uint32_t tag, rw_page_list_t *pg_list, 
  */
 rw_page_list_t *
 radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, rw_page_list_t *pg_list){
-	/* 打印出来是2，赋值为3试一试。*/
-	// root->rnode->tags[0][0] = 3;
-	lookup_tag(root->rnode, tag, pg_list, root->height, 0);
+	if(root->height == 0){
+		rw_page_t *page = kzalloc(sizeof(rw_page_t));
+		page_t *ppage = (page_t *)root->rnode;
+		page->pa = PAGETOPA(ppage);
+		page->pg_id = 0;
+
+		pg_list->head = page;
+		pg_list->tail = page;
+	}
+	else
+		lookup_tag(root->rnode, tag, pg_list, root->height, 0);
 	return pg_list;
 }
 
@@ -442,6 +478,7 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
 	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
 	pathp->node = NULL;
 
+	/* path[0] 不使用 */
 	do{
 		if(slot == NULL)
 			goto out;

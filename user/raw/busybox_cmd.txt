@@ -1,28 +1,28 @@
-#echo "#### independent command test"
-#ash -c exit
-#sh -c exit
-#basename /aaa/bbb
-#cal
-#clear
-#date 
+echo "#### independent command test"
+ash -c exit
+sh -c exit
+basename /aaa/bbb
+cal
+clear
+date 
 df 
-#dirname /aaa/bbb
-#dmesg 
-#du
-#expr 1 + 1
-#false
-#true
-#which ls
-#uname
-#uptime
-#printf "abc\n"
-#ps
-#pwd
+dirname /aaa/bbb
+dmesg 
+du
+expr 1 + 1
+false
+true
+which ls
+uname
+uptime
+printf "abc\n"
+ps
+pwd
 free
 hwclock
-#kill 10
-#ls
-#sleep 1
+kill 10
+ls
+sleep 1
 echo "#### file opration test"
 touch test.txt
 echo "hello world" > test.txt

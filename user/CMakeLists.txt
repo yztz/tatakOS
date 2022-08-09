@@ -52,11 +52,11 @@ set(ENTRY "0x1000")
 # 只编译要测试的文件
 # aux_source_directory(src/oscomp SRCS)
 # set(SRCS src/oscomp/openat.c)
-# set(SRCS src/oscomp/bigwrite.c)
+set(SRCS src/oscomp/bigwrite.c)
 # set(SRCS src/oscomp/ls.c)
 # set(SRCS src/oscomp/waitpid.c)
 # set(SRCS src/oscomp/brk.c)
-set(SRCS src/oscomp/mmap.c)
+# set(SRCS src/oscomp/mmap.c)
 
 set(EXECUTABLE_OUTPUT_PATH ${ARCH})
 foreach(PATH ${SRCS})

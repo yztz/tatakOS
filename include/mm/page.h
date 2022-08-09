@@ -180,7 +180,6 @@ void reset_page(page_t *page);
 static inline int page_mapped(page_t *page)
 {
     return page->pte.direct != 0;
-	// return page->_mapcount;
 }
 #endif
 /* mmzone.h */

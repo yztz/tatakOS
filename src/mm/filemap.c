@@ -39,6 +39,9 @@ void remove_from_page_cache(page_t *page)
 {
 	struct address_space *mapping = page->mapping;
 
+  /* 一个页添加到多个pagecache中，在remove_from_page_cache中put */
+  // put_page(page);
+
 	if (unlikely(!PageLocked(page)))
     ER();
 	spin_lock(&mapping->tree_lock);
@@ -164,6 +167,9 @@ void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offs
   page->mapping = mapping;
   page->index = offset;
 
+  /* 一个页添加到多个pagecache中，在remove_from_page_cache中put */
+  // get_page(page);
+
   acquire(&mapping->tree_lock);
   radix_tree_insert(&mapping->page_tree, offset, (void *)page);
   release(&mapping->tree_lock);
@@ -231,18 +237,21 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
 void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
-
-  // printf_radix_tree(root);
-
   void *addr;
+
+/**
+ * 当高度为0且node != NULL，表示里面存储的是一个页指针，否则为一个rdt node指针。
+ */
   if (root->height > 0)
   {
-    // printf("root node addr is %x root height is %d\n", root->rnode, root->height);
     walk_free_rdt(root->rnode, root->height, 1);
   } else if(root->rnode) {
     put_page((page_t *)root->rnode);
   }
-  /* freee i_mapping */
+  if(root->height == 0 && root->rnode){
+    put_page((page_t *)root->rnode);
+  }
+  /* free i_mapping */
   addr = entry->i_mapping;
   kfree(addr);
   entry->i_mapping = NULL;
@@ -254,6 +263,7 @@ void free_mapping(entry_t *entry)
 void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   int i;
   rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
+  // todo("allocate more than one page has bug!");
   // uint64_t pa = (uint64_t)kzalloc(pg_cnt * PGSIZE);
   // uint64_t cur_pa = pa;
   uint64_t cur_index = index;
@@ -352,7 +362,7 @@ retry:
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
 
-      if(remain == 1){
+      if(remain == 1) {
         pa = (uint64_t)kalloc();
         page = PATOPAGE(pa);
 
@@ -434,8 +444,9 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     // SetPageDirect(page);
 
     len = min(rest, PGSIZE - pg_off);
-    either_copyin((void* )(pa + pg_off), 1, buff, len);
+    either_copyin((void* )(pa + pg_off), user, buff, len);
 
+    // ERROR("to handle the only index 0 set tag and clear tag");
     set_pg_rdt_dirty(page, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
 
     unlock_put_page(page);
@@ -481,7 +492,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     entry_t *entry = mapping->host;
     read_one_page(entry, pa, pgoff);
     add_to_page_cache(page, mapping, pgoff);
-    // lru_cache_add(page);
+    lru_cache_add(page);
   }
   else {
     pa = PAGETOPA(page);
@@ -494,10 +505,12 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
    */
   if(area->flags & MAP_PRIVATE){
     uint64_t pa0 = (uint64_t)kalloc();
-    // page_t *page0 = PAGETOPA(pa0);
+#ifdef SWAP
     /* 页替换算法需要用到swap */
-    // lru_cache_add(page0);
-    // mark_page_accessed(page0);
+    page_t *page0 = PAGETOPA(pa0);
+    lru_cache_add(page0);
+    mark_page_accessed(page0);
+#endif
     memcpy((void *)pa0, (void *)pa, PGSIZE);
     *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
@@ -505,13 +518,13 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
   else if(area->flags & MAP_SHARED){
     /* shared */
     /* 这里小心被页回收算法回收掉！要建立rmap，如果不支持rmap需要从lru上取下来，防止被回收 */
-    todo("!!!!!");
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
-
+    /* 没有rmap，从lru链表上删除，不参与页回收 */
+#ifndef RMAP
+    del_page_from_lru(&memory_zone, page);
+#endif
   }
-
-  // todo("reverse mapping !");
 
   return 0; 
 }

@@ -7,6 +7,7 @@
 #include "common.h"
 #include "mm/page.h"
 #include "mm/buddy.h"
+#include "mm/mmap.h"
 
 #define __MODULE_NAME__ BUDDY
 #include "debug.h"
@@ -90,6 +91,11 @@ static inline void insert(int order, buddy_t *b) {
 }
 
 static inline void remove(buddy_t *b) {
+  // #ifdef DEBUG
+  if((uint64_t)b > MEM_END || (uint64_t)b->next > MEM_END || (uint64_t)b->pre > MEM_END)
+    ER();
+  // #endif
+
   b->next->pre = b->pre;
   b->pre->next = b->next;
   b->next = b;
@@ -183,9 +189,28 @@ retry:
   remove(b);
   release(&lists[order].lock);
   
+  /* 只设置了一个开头的页，所以连续分配的大页不能再分为4k的小页 */
   pages[PAGE2NUM(b)].alloc = 1;
   mark_page((uint64_t)b, ALLOC_BUDDY);
   ref_page((uint64_t)b);
+
+  /* 设置连续的页 */
+  // void *c = (void *)b;
+  // for(int i = 0; i < (2 ^ order); i++){
+  //   pages[PAGE2NUM(b)].alloc = 1;
+  //   mark_page((uint64_t)b, ALLOC_BUDDY);
+  //   ref_page((uint64_t)b);
+  //   b += PGSIZE;
+  // }
+
+  // /* 释放掉多余的 */
+  // c = c + pgnums*PGSIZE;
+  // for(int i = 0; i < (2^order) - pgnums; i++){
+  //   buddy_free(c);
+  //   c += PGSIZE;
+  // }
+
+
 
   atomic_add(&used, 1 << oorder);
   return (void *) b;
