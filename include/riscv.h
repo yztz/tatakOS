@@ -110,7 +110,7 @@ static inline void enable_sum() {
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   set_csr(sstatus, SSTATUS_SUM);
   #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
-  clear_csr(sstatus, SSTATUS_SUM);
+  // clear_csr(sstatus, SSTATUS_SUM);
   #else 
   #error "enable_sum"
   #endif
@@ -120,7 +120,7 @@ static inline void disable_sum() {
   #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
   clear_csr(sstatus, SSTATUS_SUM);
   #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
-  set_csr(sstatus, SSTATUS_SUM);
+  // set_csr(sstatus, SSTATUS_SUM);
   #else 
   #error "disable_sum"
   #endif

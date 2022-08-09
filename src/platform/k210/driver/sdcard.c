@@ -488,7 +488,16 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
 
 	acquire(&sdlock);
 
-	sd_send_cmd(SD_CMD24, sector, 0);
+	if (count == 1) {
+		frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
+		sd_send_cmd(SD_CMD24, sector, 0);
+	} else {
+		frame[1] = SD_START_DATA_MULTIPLE_BLOCK_WRITE;
+		sd_send_cmd(SD_ACMD23, count, 0);
+		sd_get_response();
+		sd_end_cmd();
+		sd_send_cmd(SD_CMD25, sector, 0);
+	}
 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
 		sd_end_cmd();
@@ -508,17 +517,8 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
 			sd_error("no data response");
 		}
 	}
-	uint8_t stop = 0xfd;
-	sd_write_data(&stop, 1);
-	if(sd_get_response() == 0xff) {
-		sd_error("stop error");
-	}
-	uint8_t response = 0;
-	/*!< Wait null data */
-	while (response == 0)
-		sd_read_data(&response, 1);
 
-	
+	sd_end_cmd();
 	sd_end_cmd();
 
 	release(&sdlock);
