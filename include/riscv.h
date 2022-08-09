@@ -2,6 +2,7 @@
 #define _H_RISCV_
 
 #include "types.h"
+#include "platform.h"
 
 #define INTERRUPT 0x8000000000000000UL
 #define EXCEPTION 0x0000000000000000UL
@@ -91,8 +92,18 @@ w_mepc(uint64 x)
   __tmp; })
 
 
+static inline uint64
+r_sstatus()
+{
+  uint64 x;
+  asm volatile("csrr %0, sstatus" : "=r" (x) );
+  return x;
+}
+
 extern void push_off(void);
 extern void pop_off(void);
+#define printf printf_
+extern int printf_(const char* format, ...);
   /* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
 static inline void enable_sum() {
   push_off();
@@ -116,13 +127,6 @@ static inline void disable_sum() {
   pop_off();
 }
 
-static inline uint64
-r_sstatus()
-{
-  uint64 x;
-  asm volatile("csrr %0, sstatus" : "=r" (x) );
-  return x;
-}
 
 static inline void 
 w_sstatus(uint64 x)

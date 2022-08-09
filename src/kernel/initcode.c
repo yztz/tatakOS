@@ -3,27 +3,29 @@
 
 void printf(const char *fmt, ...);
 
+void run(char *argv[]);
 __attribute__((section(".startup"))) 
 void main() {
+    printf("ready to mkdir\n");
     mkdirat(-100, "tmp");
     mkdirat(-100, "proc");
+    mkdirat(-100, "proc/mounts");
+    printf("mkdone\n");
     memuse();
-    int status;
-    char *argv[4];
-    argv[0] = "busybox";
-    // argv[1] = "du";
-    argv[1] = "sh";
-    // argv[1] = "var";
-    // argv[2] = "var";
-    // argv[2] = "busybox_testcode.sh";
-    // argv[2] = "lua_testcode.sh";
-    // argv[2] = "run-static.sh";
-    // argv[2] = "-lh";
-    argv[2] = 0;
-    argv[3] = 0;
     
-    // argv[2] = 0;
+    // char *sh[] = {"busybox", "sh", 0};
+    // run(sh);
+    char *busybox[] = {"busybox", "sh", "busybox_testcode.sh", 0};
+    char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};
+    run(busybox);
+    run(lua);
+    
+    memuse();
+    halt();
+    for(;;);
+}
 
+void run(char *argv[]) {
     int npid = fork();
     if(npid < 0) {
         printf("fork failed");
@@ -33,13 +35,10 @@ void main() {
         int ret = exec(argv[0], argv);
         printf("exec fail with %d\n", ret);
     } else {          // 父进程
+        int status;
         wait(&status);
         printf("child exit with %d\n", status);
     }
-    
-    memuse();
-    halt();
-    for(;;);
 }
 
 

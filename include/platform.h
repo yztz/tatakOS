@@ -12,8 +12,8 @@
 
 #include "device.h"
 
-#define PRIVILEGE_VERSION_1_9  0
-#define PRIVILEGE_VERSION_1_12 1
+#define PRIVILEGE_VERSION_1_9  1
+#define PRIVILEGE_VERSION_1_12 2
 
 /////////////////////////////////////////////////
 ////////////// platform list here ///////////////

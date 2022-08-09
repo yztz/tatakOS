@@ -23,7 +23,7 @@
 #define USTACKSIZE (4096 * 10)
 #define UHEAPSIZE 4096
 
-#define TICK_GRANULARITY 10 // ms
+#define TICK_GRANULARITY 10L // ms
 
 /* Maximum number of active map areas.. This is a random (large) number, 
    即一个进程的地址空间拥有的vma_area_struct的最大数量*/

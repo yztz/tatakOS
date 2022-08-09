@@ -4,6 +4,7 @@ ENTRY( main )
 SECTIONS
 { 
   . = 4096;
+  /* . = 0; */
   .text : {
     *(.startup)
     *(.text)

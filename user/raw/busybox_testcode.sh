@@ -12,17 +12,13 @@
 
 ./busybox cat ./busybox_cmd.txt | while read line
 do
-	# echo -e "\e[33;1m $line \e[0m"
-	if [[ ${line: 0: 1} == "#" ]] ; then
-		continue
-	fi
 	eval "./busybox $line"
 	RTN=$?
 	if [[ $RTN -ne 0 && $line != "false" ]] ;then
-		echo -e "\e[31;1mtestcase busybox $line fail\e[0m"
+		echo "testcase busybox $line fail"
 		# echo "return: $RTN, cmd: $line" >> $RST
 	else
-		echo -e "\e[32;1mtestcase busybox $line success\e[0m"
+		echo "testcase busybox $line success"
 	fi
 done
 
