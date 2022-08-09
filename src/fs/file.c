@@ -127,8 +127,9 @@ int filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len)
     return 0;
 
   // 目前暂时采用缓存区的办法，后续可以使用pagecahce来加速
-  const int SEND_SIZE = 255; 
-  static char buf[255];
+  const int SEND_SIZE = PGSIZE; 
+  // static char buf[PGSIZE];
+  char *buf = kalloc();
   off_t off;
   int rest = len;
 
@@ -146,6 +147,8 @@ int filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len)
     if(ret1 < SEND_SIZE || ret1 != ret2)
       break;
   }
+
+  kfree(buf);
   
   // 更新offset
   if(!poff) {
@@ -198,7 +201,11 @@ fileread(struct file *f, uint64 addr, int n)
       f->off += r;
     }
     eunlock(f->ep);
-  } else {
+  } 
+  else if(f->type == T_RAM){
+    r = 0;
+  }
+  else {
     panic("fileread");
   }
 

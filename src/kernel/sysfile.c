@@ -209,6 +209,34 @@ static struct file* getdevfile(char *path) {
         fzero->writable = 1;
         return fzero;
     } 
+
+    if(strncmp(path, "/dev/rtc", 8) == 0){
+        struct file *frtc = filealloc();
+        if(frtc == NULL){
+            debug("alloc fail");
+            return NULL;
+        }
+        frtc->type = T_DEVICE;
+        frtc->dev = &devs[DEVRTC];
+        frtc->readable = 1;
+        frtc->writable = 1;
+        return frtc;
+    }
+    return NULL;
+}
+
+static struct file* getprocfile(char *path){
+    if(strncmp(path, "/proc/meminfo", 13) == 0){
+        struct file *fmeminfo = filealloc();
+        if(fmeminfo == NULL){
+            debug("alloc fail");
+            return NULL;
+        }
+        fmeminfo->type = T_RAM;
+        fmeminfo->readable = 1;
+        fmeminfo->writable = 1;
+        return fmeminfo;
+    }
     return NULL;
 }
 
@@ -408,6 +436,15 @@ uint64 sys_openat(void) {
         return fd;
     }
 
+    f = getprocfile(path);
+    if(f != NULL){
+        if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
+            fileclose(f);
+            return -EMFILE;
+        }
+        return fd;
+    }
+
     from = getep(p, dirfd);
         
     if (omode & O_CREATE) {  // 创建标志
@@ -441,7 +478,10 @@ uint64 sys_openat(void) {
     f->readable = !(omode & O_WRONLY);
     f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
     f->type = FD_ENTRY;
-    f->off = 0;
+    if(omode & O_APPEND)
+        f->off = ep->raw.size;
+    else
+        f->off = 0;
     // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
     //   etrunc(ep);
     // }
@@ -787,6 +827,9 @@ uint64 sys_ioctl(void) {
             }, sizeof(struct winsize)) < 0)
                 return -1;
             break;
+        /* for hwclock */
+        case 0xffffffff80247009:
+            break;
         default:
             panic("un");
     }
@@ -858,22 +901,135 @@ uint64 sys_munmap(void) {
 
 #include "kernel/time.h"
 
-uint64 sys_utimensat(void) {
-    timespec_t ts[2];
-    uint64 addr;
-    // proc_t *p = myproc();
-    int fd;
+// uint64 sys_utimensat(void) {
+//     timespec_t ts[2];
+//     uint64 addr;
+//     proc_t *p = myproc();
+//     int fd;
 
-    if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
-        return -1;
+//     if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
+//         return -1;
 
-    if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
-        return -1;
-    }
+//     printf(rd("fd: %d\taddr: %p\n"), fd, addr);
+//     if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
+//         return -1;
+//     }
     
-    // if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
-    //     fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
-    // }
+//     if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
+        // fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
+//     }
+
+//     return 0;
+// }
+
+uint64_t sys_utimensat(void){
+    /* times[0]: last access time
+        times[1]: last modificatin time */
+    timespec_t ts[2];
+    proc_t *p = myproc();
+    int fd;
+    char path[MAXPATH];
+    uint64 addr;
+    int flags;
+    entry_t *from, *ep;
+
+    if(argint(0, &fd) < 0 || argstr(1, path, MAXPATH) < 0 || 
+        argaddr(2, &addr) < 0 || argint(3, &flags) < 0) 
+        return -1;
+
+    debug("fd: %d\taddr: %p\tpath: %s\tflags: %d\n", fd, addr, path, flags);
+
+    from = getep(p, fd);
+
+    /* 文件不存在 */
+    if((ep = namee(from, path)) == NULL){
+        /* 在这创建文件不太好，为了过样例 */
+        return -ENOENT;
+        // ER();
+        // if ((ep = create(from, path, T_FILE)) == 0)
+        //     return 0;
+
+        // fdtable_t *tbl = p->fdtable;
+        // struct file *f;
+        // int omode = 0101101;
+        // if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f, -1, omode)) < 0) {
+        //     if (f)
+        //         fileclose(f);
+        //     eunlockput(ep);
+        //     return -EMFILE;
+        // }
+
+        // f->ep = ep;
+        // f->readable = !(omode & O_WRONLY);
+        // f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+        // f->type = FD_ENTRY;
+        // f->off = 0;
+        // // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
+        // //   etrunc(ep);
+        // // }
+
+        // eunlock(ep);
+        // return fd;
+        // return ENOENT;
+    }
+
+    /* 根据手册，如果为null，把两个timestamps都设置为当前时间 */
+    if((uint64_t *)addr == NULL){
+        ep->raw.adate.year_from_1980 = ticks; 
+        ep->raw.mdate.year_from_1980 = ticks;
+    }
+    else{
+        if(copy_from_user(ts, addr, 2*sizeof(ts)) < 0) {
+            return -1;
+        }
+        for(int i = 0; i < 2; i++){
+            if(ts[i].ts_nsec == UTIME_NOW){
+                if(i == 0){
+                    ep->raw.adate.year_from_1980 = ticks;
+                }
+                else{
+                    ep->raw.mdate.year_from_1980 = ticks;
+                }
+            }
+            else if(ts[i].ts_nsec == UTIME_OMIT){
+                /* do noting*/
+            }
+            else{
+                uint64_t ms = ts[i].ts_sec*1000 + ts[i].ts_nsec/1000;
+                if(i == 0){
+                    ep->raw.adate.year_from_1980 = ms;
+                }
+                else{
+                    ep->raw.mdate.year_from_1980 = ms;
+                }
+            }
+        }
+    }
+    return 0; 
+}
+
+uint64_t
+sys_rename(void){
+    proc_t *p = myproc();
+    char old[MAXPATH], new[MAXPATH];
+    entry_t *new_entry, *old_entry, *from;
+
+    if (argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0) {
+      return -1;
+    }
+
+    from = p->cwd;
+
+    if((old_entry = namee(from, old)) == 0)
+        ER();
+
+    /* 改一下名字即可 */
+    if((new_entry = namee(from, new)) == 0){
+        /* 访问父目录，改写其中的name数据 */
+    }
+    else{
+
+    }
 
     return 0;
 }

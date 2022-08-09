@@ -4,6 +4,7 @@
 #define T_DIR 1  // Directory
 #define T_FILE 2 // File
 #define T_DEVICE  3   // Device
+#define T_RAM        4 // ramfs
 
 #define S_IFMT     0170000  // bit mask for the file type bit field
 #define S_IFSOCK   0140000  // socket
@@ -16,6 +17,9 @@
 
 typedef unsigned int mode_t;
 typedef long int off_t;
+
+#define UTIME_NOW	((1l << 30) - 1l)
+#define UTIME_OMIT	((1l << 30) - 2l)
 
 struct kstat {
         uint64 st_dev;

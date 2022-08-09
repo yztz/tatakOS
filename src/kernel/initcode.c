@@ -261,19 +261,19 @@ strncmp(const char *p, const char *q, uint n)
 // void read_test();
 
 // // FS
-// // char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-// //                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-// //                       "mount", "umount", "test_echo"};
-// // //
-// // char *proc_testcase[] = { "getppid", "getpid",
-// //                        "clone", "wait", "waitpid",
-// //                       "yield", "fork",  "execve", "exit", "sleep"};
+// char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
+//                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+//                       "mount", "umount", "test_echo"};
+// //
+// char *proc_testcase[] = { "getppid", "getpid",
+//                        "clone", "wait", "waitpid",
+//                       "yield", "fork",  "execve", "exit", "sleep"};
 
-// // char *mm_testcase[] = {"brk", "mmap", "munmap"};
+// char *mm_testcase[] = {"brk", "mmap", "munmap"};
 
-// // char *other_testcase[] = {"gettimeofday", "times", "uname"};
+// char *other_testcase[] = {"gettimeofday", "times", "uname"};
 // // //  单项测试
-// char* prog_name[] = { "busybox" };
+// char* prog_name[] = { "bigwrite" };
 
 // void run(char *testcases[], int cnt);
 // #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
@@ -291,13 +291,13 @@ strncmp(const char *p, const char *q, uint n)
 // #undef run
 
 // void run(char *testcases[], int cnt) {
-//   char *argv[4];
-//   argv[1] = "ash";
+//   // char *argv[4];
+//   // argv[1] = "ash";
 //   // argv[2] = "./busybox_cmd.txt";
-//   argv[2] = "busybox_testcode.sh";
-//   argv[3] = 0;
-//   // char *argv[2];
-//   // argv[1] = 0;
+//   // argv[2] = "busybox_testcode.sh";
+//   // argv[3] = 0;
+//   char *argv[2];
+//   argv[1] = 0;
 //   for (int t = 0; t < cnt; t++) {
 //       printf("ready to run %s\n", testcases[t]);
 //       int npid = fork();

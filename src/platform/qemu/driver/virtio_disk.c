@@ -21,6 +21,7 @@
 #include "mm/io.h"
 #include "mm/page.h"
 #include "bio.h"
+#include "debug.h"
 
 // the address of virtio mmio register r.
 static uint64 virtio_base_address;
@@ -218,7 +219,10 @@ void
 virtio_disk_rw(bio_vec_t *bio_vec, int write)
 {
   // uint64 sector = b->blockno * (BSIZE / 512);
-  uint64 sector = bio_vec->bv_start_num;
+  if((uint64_t)bio_vec > MEM_END)
+    ER();
+    
+  uint64_t sector = bio_vec->bv_start_num;
 
   acquire(&disk.vdisk_lock);
 

@@ -2,8 +2,8 @@
 
 /****************功能*****************/
 /* 是否开启反向映射 */
-#define RMAP
-/* 是否开启swap，如果开启swap，需要先开启rmap */
-#define SWAP
+// #define RMAP
+/* 是否开启swap，如果开启swap，需要先开启rmap(SWAP是建立在RMAP的基础上的，开启了swap，就默认开启了rmap) */
+// #define SWAP
 
 /***************参数****************/

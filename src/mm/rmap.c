@@ -1,3 +1,4 @@
+#include "config.h"
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
@@ -30,6 +31,7 @@
 #include "mm/rmap.h"
 #include "page-flags.h"
 
+#ifdef RMAP
 /**
  * @brief 反向映射模块，参考linux2.6.0
  * 
@@ -44,9 +46,20 @@ static inline struct pte_chain *pte_chain_next(struct pte_chain *pte_chain)
 	return (struct pte_chain *)(pte_chain->next_and_idx & ~NRPTE);
 }
 
+static inline struct pte_chain *pte_chain_ptr(unsigned long pte_chain_addr)
+{
+	return (struct pte_chain *)(pte_chain_addr & ~NRPTE);
+}
+
 static inline int pte_chain_idx(struct pte_chain *pte_chain)
 {
 	return pte_chain->next_and_idx & NRPTE;
+}
+
+static inline unsigned long
+pte_chain_encode(struct pte_chain *pte_chain, int idx)
+{
+	return (unsigned long)pte_chain | idx;
 }
 
 /**
@@ -188,3 +201,88 @@ out:
 	return 0;
 }
 
+
+/**
+ * page_add_rmap - add reverse mapping entry to a page
+ * @page: the page to add the mapping to
+ * @ptep: the page table entry mapping this page
+ *
+ * Add a new pte reverse mapping to a page.
+ * The caller needs to hold the mm->page_table_lock.
+ */
+void 
+page_add_rmap(page_t *page, pte_t *ptep) {
+	pte_chain_t *cur_pte_chain;
+
+	pte_chain_lock(page);
+
+	/* 之前没有rmap */
+	if(page->pte.direct == 0){
+		page->pte.direct = ptep;
+		SetPageDirect(page);
+		inc_page_state(nr_mapped);
+		goto out;
+	}
+
+	/* 之前仅有一个rmap */
+	if(PageDirect(page)){
+		/* convert a direct pointer into a pte_chain */
+		ClearPageDirect(page);
+		cur_pte_chain = (pte_chain_t *)kzalloc(sizeof(pte_chain_t));
+
+		/* 从尾往头放 */
+		cur_pte_chain->ptes[NRPTE-1] = page->pte.direct;
+		cur_pte_chain->ptes[NRPTE-2] = ptep;
+		cur_pte_chain->next_and_idx = pte_chain_encode(NULL, NRPTE - 2);
+		page->pte.direct = 0;
+		page->pte.chain = cur_pte_chain;
+		cur_pte_chain = NULL;
+		goto out;
+	}
+
+	cur_pte_chain = page->pte.chain;
+	/* full */
+	if(cur_pte_chain->ptes[0]){
+		pte_chain_t *new_pte_chain = kzalloc(sizeof(pte_chain_t));
+
+		new_pte_chain->next_and_idx = pte_chain_encode(cur_pte_chain, NRPTE - 1);
+		page->pte.chain = new_pte_chain;
+		new_pte_chain->ptes[NRPTE-1] = ptep;
+		new_pte_chain = NULL;
+		goto out;
+	}
+
+	cur_pte_chain->ptes[pte_chain_idx(cur_pte_chain) - 1] = ptep;
+	cur_pte_chain->next_and_idx--;
+out:
+	pte_chain_unlock(page);
+	return;
+}
+
+/**
+ * page_remove_rmap - take down reverse mapping to a page
+ * @page: page to remove mapping from
+ * @ptep: page table entry to remove
+ *
+ * Removes the reverse mapping from the pte_chain of the page,
+ * after that the caller can clear the page table entry and free
+ * the page.
+ * Caller needs to hold the mm->page_table_lock.
+ */
+void page_remove_rmap(page_t *page, pte_t *ptep){
+	pte_chain_t *pc;
+
+	pte_chain_lock(page);
+
+	if(!page_mmaped(page))
+		goto out_unlock;
+
+	ERROR();
+out:
+	if (!page_mapped(page))
+		dec_page_state(nr_mapped);
+out_unlock:
+	pte_chain_unlock(page);
+	return;
+}
+#endif
