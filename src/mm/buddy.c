@@ -128,7 +128,7 @@ void *buddy_alloc(size_t size) {
     return NULL;
 
   /* 不能从这里retry，因为order第一次尝试的时候已经增加过了（为9），所以需要重置order */
-retry:
+// retry:
   order = oorder;
   // 从当前order向上，直到寻找到有空闲空间的order
   acquire(&lists[order].lock);
@@ -147,16 +147,16 @@ retry:
     // ER();
     /* 这里里要修改，否则有重复循环执行的可能 */
     // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
-    buddy_print_free();
-    free_more_memory();
-    buddy_print_free();
-    // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
-    printf("\n");
+    // buddy_print_free();
+    // free_more_memory();
+    // buddy_print_free();
+    // // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
+    // printf("\n");
 
-    /* 释放后重试 */
-    goto retry;
+    // /* 释放后重试 */
+    // goto retry;
 
-    ERROR("out of memory!!");
+    // ERROR("out of memory!!");
     return NULL;
   }
 

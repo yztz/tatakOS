@@ -54,7 +54,9 @@ void kinit(void) {
 //     }
 // }
 
+extern void free_more_memory(void);
 void *kmalloc(size_t size) {
+retry:
     void *ret = NULL;
     if(size < PGSIZE) { // Smaller, we use slob
         // printf("alloc from slob\n");
@@ -63,6 +65,14 @@ void *kmalloc(size_t size) {
         ret = slob_alloc(size);
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
+    }
+    /* slob和buddy分配失败，都会返回空 */
+    if(!ret){
+        buddy_print_free();
+        free_more_memory();
+        buddy_print_free();
+        printf("\n");
+        goto retry;
     }
     return ret;
 }
