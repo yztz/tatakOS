@@ -140,7 +140,8 @@ retry:
 
   
   // no rooms
-  if(empty(order)) {
+  int u = atomic_get(&used);
+  if(empty(order) || (u * 100 / total) >= 97) {
     release(&lists[order].lock);
 
     // ER();

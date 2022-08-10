@@ -517,7 +517,7 @@ int freechild() {
         /* 进程退出的时候，有些页还在pagevec中，没有释放，看上去好像内存泄露了，所以这里加上这句。 */
         // lru_add_drain();
         freeproc(np);
-        release(&np->lock);
+        // release(&np->lock);
         cnt++;
       }
       release(&np->lock);
