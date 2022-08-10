@@ -10,6 +10,7 @@ make static && cp entry-static.exe ../tatakOS/user/raw/entry-test && riscv64-unk
 
 
 ./busybox_testcode.sh
+./lmbench_testcode.sh
 echo hello > test.txt
 ./busybox mv test.txt tmp/
 ./busybox ls

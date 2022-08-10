@@ -263,6 +263,7 @@ void free_mapping(entry_t *entry)
 void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   int i;
   rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
+  assert(pg_list);
   // todo("allocate more than one page has bug!");
   // uint64_t pa = (uint64_t)kzalloc(pg_cnt * PGSIZE);
   // uint64_t cur_pa = pa;

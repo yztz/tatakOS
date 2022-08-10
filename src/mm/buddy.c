@@ -140,7 +140,8 @@ retry:
 
   
   // no rooms
-  if(empty(order)) {
+  int u = atomic_get(&used);
+  if(empty(order) || (u * 100 / total) >= 97) {
     release(&lists[order].lock);
 
     // ER();
@@ -234,7 +235,6 @@ void buddy_free(void *pa) {
   if(deref_page((uint64_t)pa) > 1)
     return;
 
-  page = &pages[pgnum];
 
   /* 不应该放在这里 */
   // if(!list_is_head(&page->lru, &page->lru))

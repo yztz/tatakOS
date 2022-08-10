@@ -68,10 +68,6 @@ pgref_t deref_page(uint64_t pa) {
 //   return atomic_get(&pages[PAGE2NUM(pa)].refcnt);
 // }
 
-void mark_page(uint64_t pa, int type) {
-  pages[PAGE2NUM(pa)].type = type;
-}
-
 int page_type(uint64_t pa) {
   return pages[PAGE2NUM(pa)].type;
 }
