@@ -114,8 +114,10 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, in
   for(;;){
     if((pte = _walk(pagetable, a, 1, spec)) == 0)
       goto bad;
-    if(*pte & PTE_V)
+    if(*pte & PTE_V) {
+      pte_print(pte);
       panic("mappages: remap");
+    }
     *pte = PA2PTE_SPEC(pa, spec) | prot | PTE_V;
     if(a == last)
       break;

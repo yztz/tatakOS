@@ -148,7 +148,6 @@ typedef struct __ucontext
 } ucontext_t;
 
 
-
 signal_t *sig_new();
 void sig_free(signal_t **pself);
 signal_t *sig_clone(signal_t *self);

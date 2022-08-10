@@ -57,7 +57,8 @@ struct dir_item;
 struct proc;
 struct zone;
 
-void backtrace(struct proc *p);
+
+void backtrace();
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);

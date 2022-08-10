@@ -4,27 +4,27 @@
 void printf(const char *fmt, ...);
 
 void run(char *argv[]);
+
+#define shell(...) {char *__cmd[] = {"busybox", "sh", __VA_ARGS__};run(__cmd);}
+#define lua(...) {char *__cmd[] = {"lua", __VA_ARGS__};run(__cmd);}
+#define lmbench(...) {char *__cmd[] = {"lmbench_all", __VA_ARGS__};run(__cmd);}
+
+
 __attribute__((section(".startup"))) 
 void main() {
-    printf("ready to mkdir\n");
+
     mkdirat(-100, "tmp");
     mkdirat(-100, "proc");
     mkdirat(-100, "proc/mounts");
-    printf("mkdone\n");
+
     memuse();
     
-    char *sh[] = {"busybox", "sh", 0};
-    run(sh);
-    // char *busybox[] = {"busybox", "sh", "busybox_testcode.sh", 0};
+    shell();
+    // char *busybox[] = {"lmbench_all", "lat_syscall", "-P", "1", "null", 0};
     // run(busybox);
     // char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};
     // run(lua);
-    // char *busybox1[] = {"busybox", "cp", "busybox_cmd.txt", "busybox_cmd.bak", 0};
-    // char *busybox2[] = {"busybox", "echo", "bbbbbbb", ">", "test.txt", 0};
-    // run(busybox1);
-    // run(busybox2);
-    
-    
+ 
     memuse();
     halt();
     for(;;);

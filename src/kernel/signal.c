@@ -3,15 +3,26 @@
 #include "mm/vm.h"
 #include "defs.h"
 
+#define QUIET
 #define __MODULE_NAME__ SIGNAL
 #include "debug.h"
 
-static void sig_dfl(int signum) {
-    debug("exit...");
-    exit(signum);
+
+static void sig_ign(int signum) {
+    debug("SIG %d ignored", signum);
 }
 
 
+static void sig_dfl(int signum) {
+    debug("SIG %d default", signum);
+    if(signum == SIGCHLD) {
+        int UNUSED(freed) = freechild();
+        debug("%d Child Freed", freed);
+        return;
+    } 
+    debug("DFL EXITED");
+    exit(signum);
+}
 
 
 static inline void sigmaskadd(proc_t *p, sigset_t set) {
@@ -41,12 +52,17 @@ void sig_deref(signal_t *self) {
 }
 
 
+static void sig_init(signal_t *self) {
+    self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
+}
+
+
 signal_t *sig_new() {
     signal_t *newsig = kzalloc(sizeof(signal_t));
     if(newsig == NULL) 
         return NULL;
     initlock(&newsig->siglock, "siglock");
-
+    sig_init(newsig);
     return newsig;
 }
 
@@ -199,11 +215,7 @@ uint64_t sys_rt_sigreturn(void) {
 }
 
 
-void sig_send(proc_t *p, int signum) {
-    acquire(&p->lock);
-    p->sig_pending |= (1L << (signum - 1));
-    release(&p->lock);
-}
+
 
 
 // 这个实现在proc里还是signal里似乎都可以接受...
@@ -221,13 +233,15 @@ void sig_handle(signal_t *self) {
         
         sigaction_t *act = sig_getaction(self, signum);
         if(act->handler == SIG_DFL) {
-            debug("sig handle DFL");
             sig_dfl(signum);
+            p->sig_pending &= ~(1L << i);
         } else if(act->handler == SIG_IGN) {
-            debug("no dfl ign handler impl");
+            sig_ign(signum);
+            p->sig_pending &= ~(1L << i);
         } else {
             __sig_handle(p, self, i + 1, act);
             p->signaling = signum;
+            // sig_pending将会被在sigreturn中清除
             break;
         }
     }
@@ -261,7 +275,7 @@ uint64_t sys_kill(void) {
 
     if(argint(0, &pid) < 0 || argint(1, &sig) < 0) 
         return -1;
-
+    if(sig == 0) return 0;
     for(p = proc; p < &proc[NPROC]; p++) {
         if(p->pid == pid) {
             sig_send(p, sig);
@@ -310,12 +324,13 @@ uint64_t sys_rt_sigaction(void) {
     if(argint(0, &signum) < 0 || argaddr(1, &act_addr) < 0 || argaddr(2, &oldact_addr) < 0)
         return -1;
 
+    // debug("sig called");
 
     if(act_addr) {
         if(copy_from_user(&act, act_addr, sizeof(sigaction_t)) < 0)
             return -1;
 
-        // debug("register for pid %d signum is %d flags is %#lx handler is %#lx", p->pid, signum, act.flags, act.handler);
+        debug("register for PID %d signum is %d flags is %#lx handler is %#lx", p->pid, signum, act.flags, act.handler);
 
         sig_setaction(p->signal, signum, &act, &oldact);
     }

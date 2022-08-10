@@ -12,9 +12,9 @@
 
 
 void 
-backtrace(proc_t *p) {
+backtrace() {
   uint64 fp, top;
-  fp = p->ktrap_fp;
+  fp = r_fp();
   top = PGROUNDUP(fp);
   while(fp < top) {
     printf("%p\n", *(uint64*)(fp-8));

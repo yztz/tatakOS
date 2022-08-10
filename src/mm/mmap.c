@@ -366,14 +366,15 @@ int mmap_map_stack(mm_t *mm, uint64_t stacksize) {
     // if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
     //     return -1;
     // }
+    mm->uheap = list_last_entry(&mm->vma_head, vma_t, head);
+
     if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
         // do_unmap(mm, brk_addr, 0);
         return -1;
     }
 
-    mm->uheap = list_last_entry(&mm->vma_head, vma_t, head);
     mm->ustack = __vma_find(mm, USERSPACE_END - stacksize);
-
+    assert(mm->uheap != mm->ustack);
     return 0;
 }
 

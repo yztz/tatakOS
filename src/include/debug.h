@@ -5,7 +5,7 @@
 #include "str.h"
 #include "common.h"
 
-#define assert(conditon) if(!(conditon)) panic("assert fail");
+#define assert(conditon) if(!(conditon)) {printf("assert fail: "#conditon"\n");LOOP()}
 
 
 #if defined DEBUG && !defined QUIET

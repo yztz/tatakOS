@@ -18,7 +18,7 @@
 #include "mm/io.h"
 #include "common.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 #include "utils.h"
@@ -455,8 +455,7 @@ uint64 sys_openat(void) {
         }
     } else {
         if ((ep = namee(from, path)) == 0) {
-            debug("file not found, cwd is %s", p->cwd->name);
-            debug("path %s omode %o", path, omode);
+            debug("file not found, cwd is %s, path is %s, omode is %o", p->cwd->name, path, omode);
             return -1;
         }
 
@@ -479,7 +478,7 @@ uint64 sys_openat(void) {
     f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
     f->type = FD_ENTRY;
     if(omode & O_APPEND)
-        f->off = ep->raw.size;
+        f->off = E_FILESIZE(ep);
     else
         f->off = 0;
     // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
@@ -880,7 +879,9 @@ uint64 sys_mmap(void) {
 
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
 
-    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1)  {
+    // if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1)  {
+    
+    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
         debug("mmap failure");
         return -1;
     }

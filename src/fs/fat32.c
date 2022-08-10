@@ -109,13 +109,15 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
 
     fat->root_cluster = dbr->fat32.root_cluster;
 
-    printf("start sector   is %d\n", fat->fat_start_sector);
-    printf("fat sectors    is %d\n", fat->fat_tbl_sectors);
-    printf("sec per clus   is %d\n", fat->sec_per_cluster);
-    printf("bytes per sec  is %d\n", fat->bytes_per_sec);
-    printf("bytes per cluster is %d\n", fat->bytes_per_cluster);
-    printf("fat table num  is %d\n", fat->fat_tbl_num);
-    printf("root cluster   is %d\n", fat->root_cluster);
+    debug("start sector   is %d", fat->fat_start_sector);
+    debug("fat sectors    is %d", fat->fat_tbl_sectors);
+    debug("sec per clus   is %d", fat->sec_per_cluster);
+    debug("bytes per sec  is %d", fat->bytes_per_sec);
+    debug("bytes per cluster is %d", fat->bytes_per_cluster);
+    debug("fat table num  is %d", fat->fat_tbl_num);
+    debug("root cluster   is %d", fat->root_cluster);
+
+    assert(fat->bytes_per_sec == 512);
 }
 
 static entry_t *get_root(fat32_t *fat) {
@@ -132,7 +134,7 @@ static entry_t *get_root(fat32_t *fat) {
     root->clus_start = fat->root_cluster;
     // printf("root clus is %d\n", root->clus_start);
     address_space_t *tmp = kzalloc(sizeof(address_space_t));
-    printf("i_mapping addr is %x\n", tmp);
+    // printf("i_mapping addr is %x\n", tmp);
     root->i_mapping = tmp;
     // printf("root clus is %d\n", root->clus_start);
     

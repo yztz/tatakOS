@@ -157,5 +157,7 @@ int             kthread_create(char *name, void (*entry)());
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
 void            wake_up_process(proc_t *p);
+void            sig_send(proc_t *p, int signum);
+int             freechild();
 
 #endif

@@ -273,8 +273,7 @@ userinit(void)
   // prepare for the very first "return" from kernel to user.
   // proc_get_tf(p)->epc = 0;      // user program counter
   proc_get_tf(p)->epc = PGSIZE;      // user program counter
-  proc_get_tf(p)->sp = PGSIZE + USER_SIZE;  // user stack pointer
-  // proc_get_tf(p)->ra = 0x12345678;  // user stack pointer
+  proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
 
@@ -474,6 +473,7 @@ void exit(int status) {
   // Parent might be sleeping in wait().
   if(thrdcnt == 0) {
     wakeup(p->parent);
+    sig_send(p->parent, SIGCHLD);
   }
   
   acquire(&p->lock);
@@ -495,8 +495,36 @@ void exit(int status) {
   panic("zombie exit");
 }
 
+void sig_send(proc_t *p, int signum) {
+    acquire(&p->lock);
+    p->sig_pending |= (1L << (signum - 1));
+    release(&p->lock);
+}
+
     
 extern void lru_add_drain();
+
+int freechild() {
+  proc_t *p = myproc();
+  proc_t *np;
+  int cnt = 0;
+  for(np = proc; np < &proc[NPROC]; np++) {
+    if(np->parent == p){
+      // make sure the child isn't still in exit() or swtch().
+      acquire(&np->lock);
+      if(np->state == ZOMBIE){
+        // Found one.
+        /* 进程退出的时候，有些页还在pagevec中，没有释放，看上去好像内存泄露了，所以这里加上这句。 */
+        // lru_add_drain();
+        freeproc(np);
+        release(&np->lock);
+        cnt++;
+      }
+      release(&np->lock);
+    }
+  }
+  return cnt;
+}
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
@@ -510,8 +538,8 @@ waitpid(int cid, uint64 addr, int options)
 
   for(;;){
     // Scan through table looking for exited children.
-    havekids = 0;
-    haveckid = 0;
+    havekids = 0; // 表示子进程存在
+    haveckid = 0; // 表示指定的cid存在
     for(np = proc; np < &proc[NPROC]; np++){
       if(np->parent == p){
         // make sure the child isn't still in exit() or swtch().
