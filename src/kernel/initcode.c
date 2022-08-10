@@ -16,9 +16,14 @@ void main() {
     char *sh[] = {"busybox", "sh", 0};
     run(sh);
     // char *busybox[] = {"busybox", "sh", "busybox_testcode.sh", 0};
-    // char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};
     // run(busybox);
+    // char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};
     // run(lua);
+    // char *busybox1[] = {"busybox", "cp", "busybox_cmd.txt", "busybox_cmd.bak", 0};
+    // char *busybox2[] = {"busybox", "echo", "bbbbbbb", ">", "test.txt", 0};
+    // run(busybox1);
+    // run(busybox2);
+    
     
     memuse();
     halt();
