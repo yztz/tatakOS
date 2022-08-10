@@ -136,7 +136,7 @@ sys_clone(void)
   if(argint(0, &flags) < 0 || argaddr(1, &stack) < 0 || 
     argaddr(2, &ptid) < 0 || argaddr(3, &tls) < 0 || argaddr(4, &ctid) < 0)
       return -1;
-  debug("clone: flags %x", flags);
+  // debug("clone: flags %x", flags);
   return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 
