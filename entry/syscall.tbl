@@ -58,6 +58,7 @@
 78     readlinkat  sys_readlinkat
 79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
+82     fsync     sys_fsync
 88     utimensat sys_utimensat
 276    renameat2 sys_renameat2
 ###############SOCK#############

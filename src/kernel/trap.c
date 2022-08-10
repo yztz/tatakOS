@@ -71,6 +71,15 @@ usertrap(void)
   p->u_time += ticks - p->stub_time;
   // save user program counter.
   proc_get_tf(p)->epc = read_csr(sepc);
+  // if(scause != INTR_TIMER) {
+  //   // uint64_t instr;
+  //   // copy_from_user(&instr, 0x1000, 8);
+  //   printf("scause is %s sepc is %#lx\n", riscv_cause2str(scause), r_sepc());
+    
+  //   if(proc_get_tf(p)->epc == 0x1004)
+  //     proc_get_tf(p)->epc += 8;
+  //   tf_print(p->trapframe);
+  // }
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
