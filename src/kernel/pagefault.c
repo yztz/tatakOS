@@ -141,6 +141,8 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
         return do_cow_page(rva, pte);
 
     /* 未知页错误 */
+    printf("pf: va is %#lx\n", rva);
+    pte_print(pte);
     ER();
     return -1;
 }

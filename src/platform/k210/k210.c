@@ -23,7 +23,7 @@ void platform_early_init() {
     sysctl_clock_enable(SYSCTL_CLOCK_PLL1);
 
     // enable_sum();
-    set_csr(sstatus, SSTATUS_SUM);
+    // set_csr(sstatus, SSTATUS_SUM);
 }
 
 void platform_plic_init() {

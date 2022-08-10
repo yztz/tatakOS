@@ -30,8 +30,8 @@ U := $(ROOT)/user
 P := $(ROOT)/src/platform
 
 #==========================TOOLCHAINS==============================#
-TOOLPREFIX := riscv64-unknown-elf-
-# TOOLPREFIX := /opt/kendryte-toolchain/bin/riscv64-unknown-elf-
+# TOOLPREFIX := riscv64-unknown-elf-
+TOOLPREFIX := /opt/kendryte-toolchain/bin/riscv64-unknown-elf-
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld

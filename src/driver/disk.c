@@ -19,8 +19,10 @@ extern void virtio_disk_rw(bio_vec_t *, int);
 void (disk_io)(bio_vec_t *bio_vec, int write) {
   #ifdef K210
   if(write) {
+    // printf("out no %d %d\n", bio_vec->bv_start_num, bio_vec->bv_count);
     sd_write_sector_dma(bio_vec->bv_buff, bio_vec->bv_start_num, bio_vec->bv_count);
   } else {
+    // printf("in no %d %d\n", bio_vec->bv_start_num, bio_vec->bv_count);
     sd_read_sector_dma(bio_vec->bv_buff, bio_vec->bv_start_num, bio_vec->bv_count);
   }
   #else

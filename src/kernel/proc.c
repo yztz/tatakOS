@@ -273,7 +273,8 @@ userinit(void)
   // prepare for the very first "return" from kernel to user.
   // proc_get_tf(p)->epc = 0;      // user program counter
   proc_get_tf(p)->epc = PGSIZE;      // user program counter
-  proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
+  proc_get_tf(p)->sp = PGSIZE + USER_SIZE;  // user stack pointer
+  // proc_get_tf(p)->ra = 0x12345678;  // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 [37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/k210/include  -DK210 -DDEBUG -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
 
@@ -64,6 +65,32 @@ sudo chmod 777 /dev/ttyUSB0
 [DEBUG][k210: platform_dirver_init] driver init success!
 [DEBUG][1: consoleinit] console init success!
 
+=======
+[rustsbi] RustSBI version 0.2.2
+.______       __    __      _______.___________.  _______..______   __
+|   _  \     |  |  |  |    /       |           | /       ||   _  \ |  |
+|  |_)  |    |  |  |  |   |   (----`---|  |----`|   (----`|  |_)  ||  |
+|      /     |  |  |  |    \   \       |  |      \   \    |   _  < |  |
+|  |\  \----.|  `--'  |.----)   |      |  |  .----)   |   |  |_)  ||  |
+| _| `._____| \______/ |_______/       |__|  |_______/    |______/ |__|
+
+[rustsbi] Implementation: RustSBI-K210 Version 0.0.2
+[rustsbi] misa: RV64ACDFIMSU
+[rustsbi] mideleg: ssoft, stimer (0x22)
+[rustsbi] medeleg: ima, bkpt, la, sa, uecall (0x1a9)
+[rustsbi] enter supervisor 0x80020000
+
+.bss 0x80055c40-0x800718e0 (0x1bca0) cleared
+
+ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄   ▄ ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ 
+█▓▓▓▓▓▓▓█       █▓▓▓▓▓▓▓█       █▓▓▓█ █▓█       █  █▓▓▓▓▓▓▓█▓▓▓▓▓▓▓█
+█▄     ▄█   ▄   █▄     ▄█   ▄   █   █▄█ █   ▄   █  █   ▄   █  ▄▄▄▄▄█
+  █   █ █  █▄█  █ █   █ █  █▄█  █      ▄█  █▄█  █  █  █ █  █ █▄▄▄▄▄ 
+  █   █ █       █ █   █ █       █     █▄█       █  █  █▄█  █▄▄▄▄▄  █
+  █   █ █   ▄   █ █   █ █   ▄   █    ▄  █   ▄   █  █       █▄▄▄▄▄█ █
+  █▄▄▄█ █▄▄█ █▄▄█ █▄▄▄█ █▄▄█ █▄▄█▄▄▄█ █▄█▄▄█ █▄▄█  █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█
+
+>>>>>>> 58f41bc61fc5bcc05bdae58e9f9fd86c5bef3532
 start sector   is 32
 fat sectors    is 512
 sec per clus   is 8
@@ -71,6 +98,7 @@ bytes per sec  is 512
 bytes per cluster is 4096
 fat table num  is 2
 root cluster   is 2
+<<<<<<< HEAD
 i_mapping addr is 8007c378
 scause is Store/AMO access fault sepc is 0x1004
 Trapframe {
@@ -99,3 +127,224 @@ Trapframe {
     a5: 0
 }
  
+=======
+i_mapping addr is 80079378
+ready to mkdir
+mkdone
+page usage: 1% ( 23 used | 1422 total )
+#### independent command test
+sh: "####: unknown operand
+testcase busybox echo "#### independent command test" success
+sh: -c: unknown operand
+testcase busybox ash -c exit success
+sh: -c: unknown operand
+testcase busybox sh -c exit success
+bbb
+sh: /aaa/bbb: unknown operand
+testcase busybox basename /aaa/bbb success
+    January 1970
+Su Mo Tu We Th Fr Sa
+             1  2  3
+ 4  5  6  7  8  9 10
+11 12 13 14 15 16 17
+18 19 20 21 22 23 24
+25 26 27 28 29 30 31
+                     
+testcase busybox cal success
+[H[Jtestcase busybox clear success
+Thu Jan  1 00:00:02 UTC 1970
+testcase busybox date success
+Filesystem           1K-blocks      Used Available Use% Mounted on
+testcase busybox df success
+/aaa
+sh: /aaa/bbb: unknown operand
+testcase busybox dirname /aaa/bbb success
+testcase busybox dmesg success
+0	./var/tmp
+0	./var
+0	./tmp
+0	./proc/mounts
+0	./proc
+3436	.
+testcase busybox du success
+2
+sh: 1: unknown operand
+testcase busybox expr 1 + 1 success
+testcase busybox false success
+testcase busybox true success
+sh: ls: unknown operand
+testcase busybox which ls success
+
+testcase busybox uname success
+ 00:00:04 up 0 min,  0 users,  load average: 0.00, 0.00, 0.00
+testcase busybox uptime success
+PID   USER     TIME  COMMAND
+testcase busybox ps success
+/
+testcase busybox pwd success
+              total        used        free      shared  buff/cache   available
+Mem:              1           1           0           0           0           0
+-/+ buffers/cache:            1           0
+Swap:             0           0           0
+testcase busybox free success
+Sun Dec 31 00:00:00 1899  0.000000 seconds
+testcase busybox hwclock success
+sh: 10: unknown operand
+testcase busybox kill 10 success
+[0;0mbigwrite[m             [0;0mlmbench_testcode.sh[m  [0;0mrun-static.sh[m
+[0;0mbusybox[m              [0;0mlua[m                  [0;0mruntest.exe[m
+[0;0mbusybox_cmd.txt[m      [0;0mlua_testcode.sh[m      [0;0msin30.lua[m
+[0;0mbusybox_testcode.sh[m  [0;0mmax_min.lua[m          [0;0msort.lua[m
+[0;0mdate.lua[m             [1;34mproc[m                 [0;0mstrings.lua[m
+[0;0mentry-static.exe[m     [0;0mrandom.lua[m           [0;0mtest.sh[m
+[0;0mfile_io.lua[m          [0;0mremove.lua[m           [1;34mtmp[m
+[0;0mlmbench_all[m          [0;0mround_num.lua[m        [1;34mvar[m
+testcase busybox ls success
+sh: 1: unknown operand
+testcase busybox sleep 1 success
+#### file opration test
+sh: "####: unknown operand
+testcase busybox echo "#### file opration test" success
+sh: test.txt: unknown operand
+testcase busybox touch test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "hello: unknown operand
+testcase busybox echo "hello world" > test.txt success
+hello world
+sh: test.txt: unknown operand
+testcase busybox cat test.txt success
+l
+sh: -c: unknown operand
+testcase busybox cut -c 3 test.txt success
+0000000 062550 066154 020157 067567 066162 005144
+0000014
+sh: test.txt: unknown operand
+testcase busybox od test.txt success
+hello world
+sh: test.txt: unknown operand
+testcase busybox head test.txt success
+hello world
+sh: test.txt: unknown operand
+testcase busybox tail test.txt success
+00000000  68 65 6c 6c 6f 20 77 6f  72 6c 64 0a              |hello world.|
+0000000c
+sh: -C: unknown operand
+testcase busybox hexdump -C test.txt success
+6f5902ac237024bdd0c176cb93063dc4  test.txt
+sh: test.txt: unknown operand
+testcase busybox md5sum test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "ccccccc": unknown operand
+testcase busybox echo "ccccccc" >> test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "bbbbbbb": unknown operand
+testcase busybox echo "bbbbbbb" >> test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "aaaaaaa": unknown operand
+testcase busybox echo "aaaaaaa" >> test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "2222222": unknown operand
+testcase busybox echo "2222222" >> test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "1111111": unknown operand
+testcase busybox echo "1111111" >> test.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: "bbbbbbb": unknown operand
+testcase busybox echo "bbbbbbb" >> test.txt success
+1111111
+2222222
+aaaaaaa
+bbbbbbb
+ccccccc
+hello world
+sh: test.txt: unknown operand
+testcase busybox sort test.txt | ./busybox uniq success
+  File: test.txt
+  Size: 60        	Blocks: 0          IO Block: 512    regular file
+Device: 1h/1d	Inode: 7421703488371  Links: 1
+Access: (0000/----------)  Uid: (    0/ UNKNOWN)   Gid: (    0/ UNKNOWN)
+Access: 1970-01-01 00:00:00.000000000 +0000
+Modify: 1970-01-01 00:00:00.000000000 +0000
+Change: 1970-01-01 00:00:00.000000000 +0000
+sh: test.txt: unknown operand
+testcase busybox stat test.txt success
+hello world
+ccccccc
+bbbbbbb
+aaaaaaa
+2222222
+1111111
+bbbbbbb
+sh: test.txt: unknown operand
+testcase busybox strings test.txt success
+        7         8        60 test.txt
+sh: test.txt: unknown operand
+testcase busybox wc test.txt success
+sh: -f: unknown operand
+testcase busybox [ -f test.txt ] success
+hello world
+ccccccc
+bbbbbbb
+aaaaaaa
+2222222
+1111111
+bbbbbbb
+sh: test.txt: unknown operand
+testcase busybox more test.txt success
+sh: test.txt: unknown operand
+testcase busybox rm test.txt success
+sh: test_dir: unknown operand
+testcase busybox mkdir test_dir success
+sh: test_dir: unknown operand
+testcase busybox mv test_dir test success
+sh: test: unknown operand
+testcase busybox rmdir test success
+echo "hello world" > test.txt
+grep hello busybox_cmd.txt
+sh: hello: unknown operand
+testcase busybox grep hello busybox_cmd.txt success
+[33;1mbegin write pages!
+[0m[33;1mend write pages!
+[0m[33;1mbegin free mapping!
+[0m[33;1mend free mapping!
+[0msh: busybox_cmd.txt: unknown operand
+testcase busybox cp busybox_cmd.txt busybox_cmd.bak success
+sh: busybox_cmd.bak: unknown operand
+testcase busybox rm busybox_cmd.bak success
+./busybox_cmd.txt
+sh: -name: unknown operand
+testcase busybox find -name "busybox_cmd.txt" success
+child exit with 0
+testcase lua date.lua success
+testcase lua file_io.lua success
+testcase lua max_min.lua success
+testcase lua random.lua success
+testcase lua remove.lua success
+testcase lua round_num.lua success
+testcase lua sin30.lua success
+testcase lua sort.lua success
+testcase lua strings.lua success
+child exit with 0
+page usage: 1% ( 23 used | 1422 total )
+>>>>>>> 58f41bc61fc5bcc05bdae58e9f9fd86c5bef3532
