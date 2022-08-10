@@ -17,7 +17,7 @@ lmbench_all lat_proc -P 1 fork # 5000
 lmbench_all lat_proc -P 1 exec # 49992
 busybox cp hello /tmp
 lmbench_all lat_proc -P 1 shell # 1019992 page recycle
-lmbench_all lmdd label="File /var/tmp/XXX write bandwidth:" of=/var/tmp/XXX move=1m fsync=1 print=3 # unknown syscall 82
+lmbench_all lmdd label="File /var/tmp/XXX write bandwidth:" of=/var/tmp/XXX move=1m fsync=1 print=3 # 2330 KB/sec
 lmbench_all lat_pagefault -P 1 /var/tmp/XXX # no file?
 lmbench_all lat_mmap -P 1 512k /var/tmp/XXX # sleep
 busybox echo file system latency

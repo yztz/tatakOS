@@ -1036,3 +1036,16 @@ sys_rename(void){
 
     return 0;
 }
+
+uint64_t sys_fsync(void){
+    int fd;
+    entry_t *ep;
+
+    if(argint(0, &fd) < 0)
+        return -1;
+
+    ep = getep(myproc(), fd);    
+
+    sych_entry_in_disk(ep);
+    return 0;
+}
