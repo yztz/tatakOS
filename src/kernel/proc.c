@@ -452,7 +452,7 @@ void exit(int status) {
     panic("init exiting");
   }
 
-  debug("PID %d EXIT", p->pid);
+  debug("PID %d EXIT %d", p->pid, status);
 
   if(thrdcnt == 0) {
     fdtbl_closeall(p->fdtable);

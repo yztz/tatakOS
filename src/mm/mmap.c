@@ -180,7 +180,10 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
             if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
                 // vma_print(vma);
                 // mmap_print(mm);
-                debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx", addr, len);
+                #ifdef DEBUG
+                vma_print(vma);
+                #endif
+                debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
                 release(&mm->mm_lock);
                 return -1;
             }
