@@ -34,7 +34,7 @@ struct writeback_control {
 /*
  * fs/fs-writeback.c
  */
-void writeback_entrys(struct writeback_control *wbc);
+void writeback_entrys_and_free_mapping(struct writeback_control *wbc);
 // void writeback_single_entry(entry_t *entry, struct writeback_control *wbc);
 void writeback_single_entry(entry_t *entry);
 void writeback_single_entry_idx(uint64_t idx);

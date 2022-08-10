@@ -485,6 +485,8 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   // /* 更改文件在父目录中的元数据 */
   if(ret > 0){
     entry->dirty = 1;
+    if(list_empty(&entry->e_list))
+      list_add(&fat->fat_dirty, &entry->e_list);
     /* update the file's size in mem */
     if(newsize > entry->raw.size) {
       entry->size_in_mem = newsize;

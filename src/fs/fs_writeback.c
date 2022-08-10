@@ -37,6 +37,7 @@ void writeback_single_entry(entry_t *entry){
   // free_mapping(entry);
   printf(ylw("end free mapping!\n"));
 
+  list_del(&entry->e_list);
   // buddy_print_free();  
 }
 
@@ -51,7 +52,8 @@ void writeback_single_entry_idx(uint64_t idx){
  * linux 中的原型函数为writeback_inodes
  */
 void
-writeback_entrys(struct writeback_control *wbc){
+writeback_entrys_and_free_mapping(struct writeback_control *wbc){
+  /* 不仅是dirty的entry占据pagecache，可执行文件也会 */
   while(!list_empty(&fat->fat_dirty)){
     entry_t *entry = list_entry(fat->fat_dirty.prev, entry_t, e_list);
     // address_space_t *mapping = entry->i_mapping;
@@ -61,6 +63,8 @@ writeback_entrys(struct writeback_control *wbc){
     writeback_single_entry(entry);
     releasesleep(&entry->lock);
 
-    list_del(&entry->e_list);
+    free_mapping(entry);
+
+    // list_del(&entry->e_list);
   }
 }

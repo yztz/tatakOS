@@ -32,7 +32,7 @@ extern char end[];
 
 buddy_list_t lists[MAX_ORDER];
 
-static atomic_t used;
+atomic_t used;
 static uint total;
 
 /**
@@ -108,7 +108,6 @@ static inline int empty(int order) {
 }
 
 
-extern void free_more_memory(void);
 void *buddy_alloc(size_t size) {
   // print_buddy();
   // printf("\n");

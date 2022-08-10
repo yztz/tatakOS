@@ -513,6 +513,9 @@ out:
 static void needpool(entry_t pool[NENTRY]) {
 	return;
 }
+
+void writeback_entrys_and_free_mapping(struct writeback_control *wbc);
+extern atomic_t used;
 /*
  * 唤醒写回线程。写回更多的页。
  */
@@ -520,6 +523,11 @@ void free_more_memory(void)
 {
   /* 启动bdflush写回 */
 	/* 是否会出现两个线程写回一个页的情况？ */
+  // int u1 = atomic_get(&used);
+	// writeback_entrys_and_free_mapping(NULL);
+	// int u2 = atomic_get(&used);
+	// if(u1 - u2 > SWAP_CLUSTER_MAX)
+		// return;
 	// wakeup_bdflush(1024);
 	// yield();
  extern entry_t pool[NENTRY];

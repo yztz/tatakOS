@@ -363,6 +363,8 @@ retry:
     {
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
+      /* 最大连读设置为20 */
+      remain = min(remain, 20);
 
       if(remain == 1) {
         pa = (uint64_t)kalloc();
