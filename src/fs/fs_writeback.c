@@ -37,7 +37,7 @@ void writeback_single_entry(entry_t *entry){
   // free_mapping(entry);
   printf(ylw("end free mapping!\n"));
 
-  list_del(&entry->e_list);
+  list_del_init(&entry->e_list);
   // buddy_print_free();  
 }
 

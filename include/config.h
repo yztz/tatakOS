@@ -7,3 +7,5 @@
 // #define SWAP
 
 /***************参数****************/
+/* 最大readahead页数占当前空余内存的页数 */
+#define READ_AHEAD_RATE 10

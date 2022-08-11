@@ -33,7 +33,7 @@ extern char end[];
 buddy_list_t lists[MAX_ORDER];
 
 atomic_t used;
-static uint total;
+uint total;
 
 /**
  * @brief this func and the next one is for debug
