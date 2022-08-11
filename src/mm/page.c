@@ -42,30 +42,20 @@ void page_init(void) {
   }
 }
 
-pgref_t ref_page(uint64_t pa) {
-  // pgref_t ret;
-  // acquire(&reflock);
-  // ret = ++pages[PAGE2NUM(pa)].refcnt;
-  // release(&reflock);
-  // return ret;
-  return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
-}
+// pgref_t ref_page(uint64_t pa) {
+//   // pgref_t ret;
+//   // acquire(&reflock);
+//   // ret = ++pages[PAGE2NUM(pa)].refcnt;
+//   // release(&reflock);
+//   // return ret;
+//   return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
+// }
 
-pgref_t deref_page(uint64_t pa) {
-  // pgref_t ret;
-  // acquire(&reflock);
-  // ret = --pages[PAGE2NUM(pa)].refcnt;
-  // release(&reflock);
-  return atomic_dec(&pages[PAGE2NUM(pa)].refcnt);
-}
+
 
 // pgref_t page_ref(uint64_t pa) {
 //   return atomic_get(&pages[PAGE2NUM(pa)].refcnt);
 // }
-
-void mark_page(uint64_t pa, int type) {
-  pages[PAGE2NUM(pa)].type = type;
-}
 
 int page_type(uint64_t pa) {
   return pages[PAGE2NUM(pa)].type;
@@ -173,63 +163,50 @@ void pte_print(pte_t *pte) {
   printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
 }
 
-// return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
 
 pgref_t __page_refcnt_pointer(page_t *page){
-  // pgref_t ret;
-  // acquire(&reflock);
-  // ret = page->refcnt;
-  // release(&reflock);
   return atomic_get(&page->refcnt);
 }
 
 pgref_t __page_refcnt_paddr(uint64_t pa){
-  // pgref_t ret;
-  // acquire(&reflock);
-  // ret = page->refcnt;
-  // release(&reflock);
   return __page_refcnt_pointer(PATOPAGE(pa));
 }
 
-/**
- * @brief 增加1个引用，返回旧的
- * 
- */
-pgref_t get_page(page_t *page){
-  // pgref_t ret;
-  // acquire(&reflock);
-  // ret = ++page->refcnt;
-  // release(&reflock);
-  return atomic_inc(&page->refcnt);
+
+pgref_t __deref_page_pointer(page_t *page) {
+  return atomic_dec(&page->refcnt) - 1;
 }
 
-/**
- * @brief refcnt减1，返回旧的
- * 
- */
-pgref_t put_page(page_t *page){
-  pgref_t ret;
+pgref_t __deref_page_paddr(uint64_t pa) {
+  return __deref_page_pointer(&pages[PAGE2NUM(pa)]);
+}
 
-  // #ifdef TODO
-  // todo("use atomic to replace reflock may inprove performance");
-  // #endif
+pgref_t __get_page_pointer(page_t *page){
+  assert(atomic_get(&page->refcnt) > 0);
+  return atomic_inc(&page->refcnt) + 1;
+}
+
+pgref_t __get_page_paddr(uint64_t pa){
+  return __get_page_pointer(&pages[PAGE2NUM(pa)]);
+}
+
+
+pgref_t __put_page_pointer(page_t *page){
+  pgref_t ret;
 
   if(page_refcnt(page) <= 0)
     ER();
-  // acquire(&reflock);
-  // ret = --page->refcnt;
-  // release(&reflock);
-  ret = atomic_dec(&page->refcnt);
-  if(ret == 1){
-    zone_t *zone = &memory_zone;
-    spin_lock(&zone->lru_lock);
-    if(TestClearPageLRU(page))
-      del_page_from_lru(zone, page);
-    spin_unlock(&zone->lru_lock);
+
+  ret = atomic_dec(&page->refcnt) - 1;
+  if(ret == 0){
     free_one_page(page);
   }
   return ret; 
 
+}
+
+pgref_t __put_page_padder(uint64_t pa){
+  return __put_page_pointer(&pages[PAGE2NUM(pa)]);
 }
 
 /**

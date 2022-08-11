@@ -107,10 +107,10 @@ static inline int empty(int order) {
   return lists[order].head.next == &lists[order].head;
 }
 
+#define REF_PAGE(pa) {pages[PAGE2NUM(pa)].refcnt.counter = 1;}
 
 void *buddy_alloc(size_t size) {
   // print_buddy();
-  // printf("\n");
 
   int pgnums;
   int order, oorder;
@@ -191,9 +191,12 @@ void *buddy_alloc(size_t size) {
   release(&lists[order].lock);
   
   /* 只设置了一个开头的页，所以连续分配的大页不能再分为4k的小页 */
-  pages[PAGE2NUM(b)].alloc = 1;
+  page_t *page = PATOPAGE(b);
+  assert(page_refcnt(page) == 0);
+  page->alloc = 1;
   mark_page((uint64_t)b, ALLOC_BUDDY);
-  ref_page((uint64_t)b);
+
+  REF_PAGE(b);
 
   /* 设置连续的页 */
   // void *c = (void *)b;
@@ -232,10 +235,9 @@ void buddy_free(void *pa) {
     panic("buddy_free: out of range");
   }
 
-  if(page_refcnt((uint64_t)pa) <= 0)
-    ER();
+  assert(page_refcnt((uint64_t)pa) > 0);
 
-  if(deref_page((uint64_t)pa) > 1)
+  if(put_page_nofree((uint64_t)pa) > 0)
     return;
 
   page = &pages[pgnum];

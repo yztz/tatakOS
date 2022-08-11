@@ -28,11 +28,15 @@ typedef struct slob_page {
 #include "mm/buddy.h"
 static inline void *__alloc_one_page() {
 	debug("alloc new page");
-	return buddy_alloc(PGSIZE);
+	void *new = buddy_alloc(PGSIZE);
+	if(new)
+		mark_page((uint64_t)new, ALLOC_SLOB);
+	return new;
 }
 
 static inline void __free_one_page(void *addr) {
 	debug("page freed");
+	unmark_page((uint64_t)addr, ALLOC_SLOB);
 	/* 这里改位put_page，其检测到page refcnt为0自动释放 */
 	buddy_free(addr);
 }

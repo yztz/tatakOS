@@ -6,13 +6,16 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "defs.h"
-#include "debug.h"
 #include "mm/page.h"
 #include "radix-tree.h"
 // #include "mm/.h"
 
 #include "fs/mpage.h"
 #include "writeback.h"
+
+#define QUIET
+#define __MODULE_NAME__ WB
+#include "debug.h"
 
 extern fat32_t *fat;
 
@@ -27,19 +30,20 @@ void writeback_single_entry(entry_t *entry){
   if(!entry->dirty)
     return;
 
-  printf(ylw("begin write pages!\n"));
+  debug(ylw("begin write pages!"));
   sych_entry_in_disk(entry);
   // mpage_writepages(mapping);
-  printf(ylw("end write pages!\n"));
+  debug(ylw("end write pages!\n"));
 
-  printf(ylw("begin free mapping!\n"));
+  debug(ylw("begin free mapping!"));
   /* 这里不对，写回不意味着要回收 */
   #ifdef TODO
   todo("");
   #endif
   // free_mapping(entry);
-  printf(ylw("end free mapping!\n"));
+  debug(ylw("end free mapping!"));
 
+  // list_del(&entry->e_list); 在运行lat_fs时错误
   list_del_init(&entry->e_list);
   // buddy_print_free();  
 }

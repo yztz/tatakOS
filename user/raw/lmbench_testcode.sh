@@ -24,9 +24,9 @@ lmbench_all lat_mmap -P 1 512k /var/tmp/XXX # x: Operation not permitted
 # lmbench_all lat_fs /var/tmp # store fault
 # busybox echo Bandwidth measurements
 # lmbench_all bw_pipe -P 1 # too long
-# lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX # 0.52 inf ofd = open(state->filename, O_RDONLY): Operation not permitted
-# lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX # 0.5, 587.3
-# lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX # x: No such file or directory
-# lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX # x: No such file or directory
+# lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX # 0.52 83.9
+# lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX # 0.5, 4.03
+# lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX # ERR: file: page.c func: put_page  line: 223
+# lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX # ERR: file: page.c func: put_page  line: 223
 # busybox echo context switch overhead
 # lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96 # no result?

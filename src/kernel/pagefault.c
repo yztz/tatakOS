@@ -38,7 +38,7 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
     *pte = PA2PTE(mem) | flag;
 
     /* 引用数-1 */
-    kfree((void *)pa);
+    put_page(pa);
   }
   // IMPORTANT! Flush TLB
   sfence_vma_addr(va);
@@ -224,7 +224,6 @@ int handle_pagefault(uint64_t scause) {
 
     kernel_fail:
     info("[Kernel] "rd("%s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));
-    
     panic("pagefault handle fault");
     user_fail:
     info("[User] "rd("%s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));

@@ -82,9 +82,9 @@ typedef struct _page_t {
     struct {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
-#define ALLOC_BUDDY     0
-#define ALLOC_FREELIST  1
-#define ALLOC_SLOB      2
+#define ALLOC_BUDDY     0b10
+// #define ALLOC_FREELIST  1
+#define ALLOC_SLOB      0b01
         uint8_t type  : 2; // page type ()
     };
     // uint8_t resv[2]; // reserved for special use
@@ -121,7 +121,13 @@ void    page_init(void);
 pgref_t ref_page(uint64_t pa);
 pgref_t deref_page(uint64_t pa);
 // pgref_t page_ref(uint64_t pa);
-void    mark_page(uint64_t pa, int type);
+static inline void mark_page(uint64_t pa, int type) {
+  pages[PAGE2NUM(pa)].type |= type;
+}
+
+static inline void unmark_page(uint64_t pa, int type) {
+  pages[PAGE2NUM(pa)].type &= ~type;
+}
 int     page_type(uint64_t pa);
 
 int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int perm, int spec);
@@ -129,13 +135,22 @@ pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 void    pte_print(pte_t *pte);
 
-pgref_t get_page(page_t *page);
-pgref_t put_page(page_t *page);
 
-// pgref_t page_refcnt(page_t *page);
+pgref_t __get_page_pointer(page_t *page);
+pgref_t __get_page_paddr(uint64_t pa);
+#define get_page(param) _Generic((param), uint64_t: __get_page_paddr, page_t *: __get_page_pointer)(param)  
+
+pgref_t __put_page_pointer(page_t *page);
+pgref_t __put_page_padder(uint64_t pa);
+#define put_page(param) _Generic((param), uint64_t: __put_page_padder, page_t *: __put_page_pointer)(param)  
+
 pgref_t __page_refcnt_pointer(page_t *page);
 pgref_t __page_refcnt_paddr(uint64_t pa);
-#define page_refcnt(param) _Generic((param), uint64_t: __page_refcnt_paddr, page_t *: __page_refcnt_pointer)(param)   
+#define page_refcnt(param) _Generic((param), uint64_t: __page_refcnt_paddr, page_t *: __page_refcnt_pointer)(param)  
+ 
+pgref_t __deref_page_pointer(page_t *page);
+pgref_t __deref_page_paddr(uint64_t pa);
+#define put_page_nofree(param) _Generic((param), uint64_t: __deref_page_paddr, page_t *: __deref_page_pointer)(param)   
 
 void lock_page(page_t *page);
 void unlock_page(page_t *page);

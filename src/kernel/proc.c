@@ -15,6 +15,7 @@
 #include "fs/fs.h"
 #include "fs/file.h"
 
+#define QUIET
 #define __MODULE_NAME__ PROC
 #include "debug.h"
 
@@ -452,7 +453,7 @@ void exit(int status) {
     panic("init exiting");
   }
 
-  debug("PID %d EXIT", p->pid);
+  debug("PID %d EXIT %d", p->pid, status);
 
   if(thrdcnt == 0) {
     fdtbl_closeall(p->fdtable);
@@ -498,6 +499,8 @@ void exit(int status) {
 void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
     p->sig_pending |= (1L << (signum - 1));
+    if(p->state == SLEEPING)
+      p->state = RUNNABLE;
     release(&p->lock);
 }
 
@@ -724,7 +727,7 @@ sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
-  sig_handle(p->signal);
+  // sig_handle(p->signal);
   // Must acquire p->lock in order to
   // change p->state and then call sched.
   // Once we hold p->lock, we can be
@@ -752,6 +755,8 @@ sleep(void *chan, struct spinlock *lk)
 
   // Reacquire original lock.
   release(&p->lock);
+
+  sig_handle(p->signal);
 
   if(lk != NULL)
     acquire(lk);

@@ -14,10 +14,16 @@ static void sig_ign(int signum) {
 
 
 static void sig_dfl(int signum) {
+    proc_t *p = myproc();
     debug("SIG %d default", signum);
     if(signum == SIGCHLD) {
         int UNUSED(freed) = freechild();
         debug("%d Child Freed", freed);
+        return;
+    } 
+
+    if(signum == SIGKILL) {
+        p->killed = 1;
         return;
     } 
     debug("DFL EXITED");
@@ -52,17 +58,20 @@ void sig_deref(signal_t *self) {
 }
 
 
-static void sig_init(signal_t *self) {
+void sig_reset(signal_t *self) {
+    acquire(&self->siglock);
+    memset(self->actions, 0, sizeof(self->actions));
     self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
+    release(&self->siglock);
 }
 
 
 signal_t *sig_new() {
-    signal_t *newsig = kzalloc(sizeof(signal_t));
+    signal_t *newsig = kmalloc(sizeof(signal_t));
     if(newsig == NULL) 
         return NULL;
     initlock(&newsig->siglock, "siglock");
-    sig_init(newsig);
+    sig_reset(newsig);
     return newsig;
 }
 
@@ -166,6 +175,8 @@ uint64_t sys_rt_sigreturn(void) {
         return -1;
     }
 
+    debug("PID %d sig return", p->pid);
+
     // struct start_args args;
     // pte_t *pte = walk(p->mm->pagetable, 0xF00022B00, 0);
     // if(copy_from_user(&args, 0xF00022B00, sizeof(struct start_args)) >= 0)
@@ -229,7 +240,7 @@ void sig_handle(signal_t *self) {
         if((p->sig_mask & (1L << i)) > 0) continue;
         if((p->sig_pending & (1L << i)) == 0) continue;
         int signum = i + 1;
-        debug("ready to handle sig %d", i + 1);
+        debug("PID %d ready to handle sig %d", p->pid, i + 1);
         
         sigaction_t *act = sig_getaction(self, signum);
         if(act->handler == SIG_DFL) {

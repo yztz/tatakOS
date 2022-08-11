@@ -672,7 +672,9 @@ uint64 sys_exec(void) {
                     pwd,
                     "PS1=\\u"grn("\\w")"\\$ ",
                     "PATH=/",
-                    "ENOUGH=5000", "TIMING_O=7", "LOOP_O=0.00249936",
+                    "ENOUGH=3000", 
+                    "TIMING_O=7", 
+                    "LOOP_O=0",
                     NULL};
 
     int ret = exec(path, argv, envp);

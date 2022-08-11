@@ -220,7 +220,7 @@ uint64_t sys_umask(void) {
 
 
 uint64_t sys_setitimer(void) {
-  debug("setitimer called");
+  // debug("setitimer called");
   return 0;
 } 
 

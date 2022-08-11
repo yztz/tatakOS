@@ -1,7 +1,7 @@
 #ifndef _H_PARAM_
 #define _H_PARAM_
 
-#define NPROC        32  // maximum number of processes
+#define NPROC        100  // maximum number of processes
 #define NOFILE       5  // open files per process
 #define NFILE        30  // open files per system
 #define NDEV         10  // maximum major device number
@@ -14,13 +14,13 @@
 #define MAXPATH      128   // maximum file path name
 #define MAX_MAP      15    // maximum io map
 
-#define MAX_FD       64
+#define MAX_FD       128
 
 #define BSIZE 512
 #define NENTRY 10
 #define MAX_FILE_NAME 64
 
-#define USTACKSIZE (4096 * 10)
+#define USTACKSIZE (4096 * 40)
 #define UHEAPSIZE 4096
 
 #define TICK_GRANULARITY 10L // ms

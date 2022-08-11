@@ -105,7 +105,7 @@ usertrap(void)
   }
 
   if(p->killed) {
-    tf_print(proc_get_tf(p));
+    // tf_print(proc_get_tf(p));
     exit(-1);
   }
 
@@ -184,25 +184,9 @@ kerneltrap(ktf_t *context)
   proc_t *p = myproc();
   
   
-  // if(myproc()) {
-  //   myproc()->ktrap_fp = *(uint64*)(r_fp()-16);
-  // }
-
-  // if(!IS_INTR(scause)) {
-  //   debug("sepc is %lx scause is %lx stval is %lx intr is %d", r_sepc(), scause, r_stval(), intr_get());
-  //   debug("kstack: %lx", myproc()->mm->kstack);
-  //   // backtrace(myproc());
-  //   LOOP();
-  // }
-
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
 
-  // debug_if(scause != INTR_SOFT, "scause: "rd("%s")" SIE: %d va %#lx spec %#lx", riscv_cause2str(scause), intr_get(), r_stval(), sepc);
-  // debug_if(myproc(), "pagetable is %#lx", myproc()->mm->pagetable);
-  // debug_if(myproc(), "curr sp is %#lx", r_sp());
-  // debug_if(myproc(), "proc sp is %#lx", myproc()->kstack);
-  // if(IS_INTR(scause)) 
   if(intr_get() != 0) {
     printf("scause %s\n", riscv_cause2str(scause));
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
@@ -211,8 +195,6 @@ kerneltrap(ktf_t *context)
 
   if(devintr(scause) == 0) {
     // ok
-    //  debug_if(debug_flag == 2, "kdev %s\n", riscv_cause2str(scause));
-    // debug_if(myproc() && myproc()->pid == 2, "ktrap: proc is %s syscall num is %d sepc is %lx", p->name, proc_get_tf(p)->a7, r_sepc());
   } else if(handle_pagefault(scause) == 0) {
     // ok
     // debug("lazy addr %#lx", r_stval());
