@@ -76,6 +76,7 @@
 215     munmap    sys_munmap
 222     mmap      sys_mmap
 226     mprotect  sys_mprotect
+227     msync     sys_msync
 ##############Sys###############
 43      statfs64  sys_statfs64
 96      set_tid_address sys_set_tid_address

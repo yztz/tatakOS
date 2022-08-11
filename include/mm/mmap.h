@@ -15,6 +15,7 @@ struct vma{
   uint64 addr;
   uint64 len;
   uint64_t pa;
+  /* 表示的是vma addr对应的page index，单位是页，而非字节 */
   off_t offset;
 
   uint flags;

@@ -1,4 +1,4 @@
-#!/bin/bash
+# #!/bin/bash
 # echo latency measurements
 # lmbench_all lat_syscall -P 1 null # 6
 # lmbench_all lat_syscall -P 1 read # 26
@@ -18,8 +18,8 @@ busybox touch /var/tmp/lmbench
 # busybox cp hello /tmp
 # lmbench_all lat_proc -P 1 shell # 1019992 page recycle (buddy, remove error)
 lmbench_all lmdd label="File /var/tmp/XXX write bandwidth:" of=/var/tmp/XXX move=1m fsync=1 print=3 # 2330 KB/sec
-# lmbench_all lat_pagefault -P 1 /var/tmp/XXX # x: Operation not permitted
-lmbench_all lat_mmap -P 1 512k /var/tmp/XXX # x: Operation not permitted
+lmbench_all lat_pagefault -P 1 /var/tmp/XXX # x: Operation not permitted
+# lmbench_all lat_mmap -P 1 512k /var/tmp/XXX # x: Operation not permitted
 # busybox echo file system latency
 # lmbench_all lat_fs /var/tmp # store fault
 # busybox echo Bandwidth measurements
