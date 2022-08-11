@@ -18,6 +18,9 @@ extern fat32_t *fat;
 
 extern void buddy_print_free();
 
+/**
+ * 只写回，不释放pagecache。
+ */
 void writeback_single_entry(entry_t *entry){
   /* wbc暂时无用 */
   // wbc = NULL;

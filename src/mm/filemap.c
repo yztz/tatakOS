@@ -164,6 +164,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
  * 以上论述都是错的，mmap会增加文件引用数，到了这一步说明文件引用数为0，释放。
  * 
  */
+/*文件回收了，页必须回收 */
 void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
@@ -230,6 +231,9 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
 extern atomic_t used;
 extern uint total;
 
+/**
+ * 预读的页数最大为READ_AHEAD_RATE%
+ */
 int cal_readahead_page_counts(int rest){
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
@@ -238,6 +242,7 @@ int cal_readahead_page_counts(int rest){
       int pgcnts = min(remain, DIV_ROUND_UP((total - u), READ_AHEAD_RATE));
       return pgcnts;
 }
+
 /**
  * @brief 正常的读文件一次读一个page（8 sectors）, 可以考虑使用"read ahead".
  * 
@@ -452,6 +457,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
     /* 没有rmap，从lru链表上删除，不参与页回收 */
+    lru_add_drain();
 #ifndef RMAP
     del_page_from_lru(&memory_zone, page);
 #endif

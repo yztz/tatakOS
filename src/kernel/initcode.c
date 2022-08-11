@@ -19,8 +19,8 @@ void main() {
 
     memuse();
     
-    // shell("./lmbench_testcode.sh");
-    shell();
+    shell("./lmbench_testcode.sh");
+    // shell();
     // char *busybox[] = {"lmbench_all", "lat_syscall", "-P", "1", "null", 0};
     // run(busybox);
     // char *lua[] = {"busybox", "sh", "lua_testcode.sh", 0};

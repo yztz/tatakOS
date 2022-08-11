@@ -140,7 +140,8 @@ void *buddy_alloc(size_t size) {
   
   // no rooms
   int u = atomic_get(&used);
-  if(empty(order) || (u * 100 / total) >= 97) {
+  if(empty(order) || (u * 100 / total) >= 99) {
+  // if(empty(order)) {
     release(&lists[order].lock);
 
     // ER();
@@ -230,6 +231,9 @@ void buddy_free(void *pa) {
   if(pgnum >= PAGE_NUMS) {
     panic("buddy_free: out of range");
   }
+
+  if(page_refcnt((uint64_t)pa) <= 0)
+    ER();
 
   if(deref_page((uint64_t)pa) > 1)
     return;
