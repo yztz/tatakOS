@@ -6,13 +6,16 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "defs.h"
-#include "debug.h"
 #include "mm/page.h"
 #include "radix-tree.h"
 // #include "mm/.h"
 
 #include "fs/mpage.h"
 #include "writeback.h"
+
+#define QUIET
+#define __MODULE_NAME__ WB
+#include "debug.h"
 
 extern fat32_t *fat;
 
@@ -24,19 +27,21 @@ void writeback_single_entry(entry_t *entry){
   if(!entry->dirty)
     return;
 
-  printf(ylw("begin write pages!\n"));
+  debug(ylw("begin write pages!"));
   sych_entry_in_disk(entry);
   // mpage_writepages(mapping);
-  printf(ylw("end write pages!\n"));
+  debug(ylw("end write pages!\n"));
 
-  printf(ylw("begin free mapping!\n"));
+  debug(ylw("begin free mapping!"));
   /* 这里不对，写回不意味着要回收 */
   #ifdef TODO
   todo("");
   #endif
   // free_mapping(entry);
-  printf(ylw("end free mapping!\n"));
+  debug(ylw("end free mapping!"));
 
+  // list_del(&entry->e_list); 在运行lat_fs时错误
+  list_del_init(&entry->e_list);
   // buddy_print_free();  
 }
 
@@ -51,7 +56,8 @@ void writeback_single_entry_idx(uint64_t idx){
  * linux 中的原型函数为writeback_inodes
  */
 void
-writeback_entrys(struct writeback_control *wbc){
+writeback_entrys_and_free_mapping(struct writeback_control *wbc){
+  /* 不仅是dirty的entry占据pagecache，可执行文件也会 */
   while(!list_empty(&fat->fat_dirty)){
     entry_t *entry = list_entry(fat->fat_dirty.prev, entry_t, e_list);
     // address_space_t *mapping = entry->i_mapping;
@@ -61,6 +67,8 @@ writeback_entrys(struct writeback_control *wbc){
     writeback_single_entry(entry);
     releasesleep(&entry->lock);
 
-    list_del(&entry->e_list);
+    free_mapping(entry);
+
+    // list_del(&entry->e_list);
   }
 }

@@ -40,7 +40,7 @@ print_sbiret(sbiret_t ret) {
 void
 print_page(int pgnum) {
   page_t *page = &pages[pgnum];
-  printf("page %d {order: %d, refcnt: %d, alloc: %d}\n", page->order, page->refcnt, page->alloc);
+  printf("page %d {order: %d, refcnt: %d, alloc: %d, type: %d}\n", pgnum, page->order, page->refcnt, page->alloc, page->type);
 }
 
 void

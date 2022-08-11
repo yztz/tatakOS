@@ -57,7 +57,7 @@ void background_writeout(uint64_t min_pages){
 
   for(;;){
     wbc.nr_to_write = MAX_WRITEBACK_PAGES;
-    writeback_entrys(&wbc);
+    writeback_entrys_and_free_mapping(&wbc);
     
     /* 先写一遍就推出 */
     break;

@@ -135,13 +135,22 @@ pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 void    pte_print(pte_t *pte);
 
-pgref_t get_page(page_t *page);
-pgref_t put_page(page_t *page);
 
-// pgref_t page_refcnt(page_t *page);
+pgref_t __get_page_pointer(page_t *page);
+pgref_t __get_page_paddr(uint64_t pa);
+#define get_page(param) _Generic((param), uint64_t: __get_page_paddr, page_t *: __get_page_pointer)(param)  
+
+pgref_t __put_page_pointer(page_t *page);
+pgref_t __put_page_padder(uint64_t pa);
+#define put_page(param) _Generic((param), uint64_t: __put_page_padder, page_t *: __put_page_pointer)(param)  
+
 pgref_t __page_refcnt_pointer(page_t *page);
 pgref_t __page_refcnt_paddr(uint64_t pa);
-#define page_refcnt(param) _Generic((param), uint64_t: __page_refcnt_paddr, page_t *: __page_refcnt_pointer)(param)   
+#define page_refcnt(param) _Generic((param), uint64_t: __page_refcnt_paddr, page_t *: __page_refcnt_pointer)(param)  
+ 
+pgref_t __deref_page_pointer(page_t *page);
+pgref_t __deref_page_paddr(uint64_t pa);
+#define put_page_nofree(param) _Generic((param), uint64_t: __deref_page_paddr, page_t *: __deref_page_pointer)(param)   
 
 void lock_page(page_t *page);
 void unlock_page(page_t *page);

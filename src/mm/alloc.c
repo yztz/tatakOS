@@ -54,8 +54,10 @@ void kinit(void) {
 //     }
 // }
 
+extern void free_more_memory(void);
 void *kmalloc(size_t size) {
     void *ret = NULL;
+retry:
     if(size < PGSIZE) { // Smaller, we use slob
         // printf("alloc from slob\n");
         // if(size == 1)
@@ -63,6 +65,14 @@ void *kmalloc(size_t size) {
         ret = slob_alloc(size);
     } else { // more than one page, We use buddy
         ret = buddy_alloc(size);
+    }
+    /* slob和buddy分配失败，都会返回空 */
+    if(!ret){
+        // buddy_print_free();
+        free_more_memory();
+        // buddy_print_free();
+        // printf("\n");
+        goto retry;
     }
     return ret;
 }
@@ -107,7 +117,12 @@ void _kfree_safe(void **paddr) {
     }
 }
 
-void free_one_page(page_t *page){
+void free_one_page(page_t *page) {
+    zone_t *zone = &memory_zone;
+    spin_lock(&zone->lru_lock);
+    if(TestClearPageLRU(page))
+    del_page_from_lru(zone, page);
+    spin_unlock(&zone->lru_lock);
     buddy_free_one_page(page);
 }
 

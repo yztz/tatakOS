@@ -177,6 +177,7 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
         // 对齐检查
         if(addr != addr_align) return -1;
         if(vma) {
+            // IMPROVE ME: 目前支持在存在的MMAP的后边界处做MAP_FIXED操作
             if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
                 // vma_print(vma);
                 // mmap_print(mm);

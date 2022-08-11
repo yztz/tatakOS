@@ -32,7 +32,7 @@ extern char end[];
 
 buddy_list_t lists[MAX_ORDER];
 
-static atomic_t used;
+atomic_t used;
 static uint total;
 
 /**
@@ -107,11 +107,10 @@ static inline int empty(int order) {
   return lists[order].head.next == &lists[order].head;
 }
 
+#define REF_PAGE(pa) {pages[PAGE2NUM(pa)].refcnt.counter = 1;}
 
-extern void free_more_memory(void);
 void *buddy_alloc(size_t size) {
   // print_buddy();
-  // printf("\n");
 
   int pgnums;
   int order, oorder;
@@ -128,7 +127,7 @@ void *buddy_alloc(size_t size) {
     return NULL;
 
   /* 不能从这里retry，因为order第一次尝试的时候已经增加过了（为9），所以需要重置order */
-retry:
+// retry:
   order = oorder;
   // 从当前order向上，直到寻找到有空闲空间的order
   acquire(&lists[order].lock);
@@ -147,16 +146,16 @@ retry:
     // ER();
     /* 这里里要修改，否则有重复循环执行的可能 */
     // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
-    buddy_print_free();
-    free_more_memory();
-    buddy_print_free();
-    // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
-    printf("\n");
+    // buddy_print_free();
+    // free_more_memory();
+    // buddy_print_free();
+    // // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
+    // printf("\n");
 
-    /* 释放后重试 */
-    goto retry;
+    // /* 释放后重试 */
+    // goto retry;
 
-    ERROR("out of memory!!");
+    // ERROR("out of memory!!");
     return NULL;
   }
 
@@ -191,9 +190,12 @@ retry:
   release(&lists[order].lock);
   
   /* 只设置了一个开头的页，所以连续分配的大页不能再分为4k的小页 */
-  pages[PAGE2NUM(b)].alloc = 1;
+  page_t *page = PATOPAGE(b);
+  assert(page_refcnt(page) == 0);
+  page->alloc = 1;
   mark_page((uint64_t)b, ALLOC_BUDDY);
-  ref_page((uint64_t)b);
+
+  REF_PAGE(b);
 
   /* 设置连续的页 */
   // void *c = (void *)b;
@@ -232,9 +234,12 @@ void buddy_free(void *pa) {
     panic("buddy_free: out of range");
   }
 
-  if(deref_page((uint64_t)pa) > 1)
+  assert(page_refcnt((uint64_t)pa) > 0);
+
+  if(put_page_nofree((uint64_t)pa) > 0)
     return;
 
+  page = &pages[pgnum];
 
   /* 不应该放在这里 */
   // if(!list_is_head(&page->lru, &page->lru))

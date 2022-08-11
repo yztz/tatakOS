@@ -364,6 +364,8 @@ retry:
     {
       /* 剩余的页数 */
       int remain = ROUND_COUNT(rest);
+      /* 最大连读设置为20 */
+      remain = min(remain, 20);
 
       if(remain == 1) {
         pa = (uint64_t)kalloc();
@@ -487,7 +489,9 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
 
   page = find_get_page(mapping, pgoff);
 
+// TODO: 存在或不存在LRU链表是契税不确定的
   if(!page) {
+    // 不存在LRU
     pa = (uint64_t)kalloc();
     page = PATOPAGE(pa);
 
@@ -495,13 +499,15 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     entry_t *entry = mapping->host;
     read_one_page(entry, pa, pgoff);
     add_to_page_cache(page, mapping, pgoff);
-    lru_cache_add(page);
+    // lru_cache_add(page);
   }
   else {
+    // 存在/不存在LRU
     pa = PAGETOPA(page);
+    if(TestClearPageLRU(page))
+      del_page_from_lru(&memory_zone, page);
   }
   // mark_page_accessed(page);
-  put_page(page);
 
   /**
    * private mmap和shared mmap
@@ -515,6 +521,10 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     mark_page_accessed(page0);
 #endif
     memcpy((void *)pa0, (void *)pa, PGSIZE);
+    
+    lru_cache_add(page);
+    put_page(page);
+
     *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
   }
@@ -524,9 +534,10 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
     sfence_vma_addr(address);
     /* 没有rmap，从lru链表上删除，不参与页回收 */
-#ifndef RMAP
-    del_page_from_lru(&memory_zone, page);
-#endif
+//     lru_add_drain();
+// #ifndef RMAP
+//     del_page_from_lru(&memory_zone, page);
+// #endif
   }
 
   return 0; 

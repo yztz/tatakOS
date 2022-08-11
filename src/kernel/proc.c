@@ -499,6 +499,8 @@ void exit(int status) {
 void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
     p->sig_pending |= (1L << (signum - 1));
+    if(p->state == SLEEPING)
+      p->state = RUNNABLE;
     release(&p->lock);
 }
 
@@ -725,7 +727,7 @@ sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
-  sig_handle(p->signal);
+  // sig_handle(p->signal);
   // Must acquire p->lock in order to
   // change p->state and then call sched.
   // Once we hold p->lock, we can be
@@ -753,6 +755,8 @@ sleep(void *chan, struct spinlock *lk)
 
   // Reacquire original lock.
   release(&p->lock);
+
+  sig_handle(p->signal);
 
   if(lk != NULL)
     acquire(lk);

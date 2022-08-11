@@ -143,7 +143,7 @@ int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma)
     /* IMPORTANT!
       We have changed origin pte, so we need to flash the TLB to make it effective */
     sfence_vma_addr(i);
-    ref_page(pa);
+    get_page(pa);
     
     prot = PTE_FLAGS(*pte);
     if(mappages(new, i, PGSIZE, pa, prot) != 0){

@@ -1,0 +1,60 @@
+
+[37;1mCFLAGS = -I/home/yztz/tatakOS/src/platform/qemu/include  -DQEMU -DCPUS=1 -DDEBUG -Wno-unused-function -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -mcmodel=medany -march=rv64g -ffreestanding -fno-common -nostdlib -mno-relax -fno-stack-protector -fno-pie -no-pie -I/home/yztz/tatakOS/include -I/home/yztz/tatakOS/src/include[0m
+
+
+[32;1mKERNEL BUILD SUCCESSFUL![0m
+
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/yztz/tatakOS/build/u_objs
+[  9%] Generating syscall_ids.h
+Scanning dependencies of target ulib
+Consolidate compiler generated dependencies of target ulib
+[ 18%] Building C object CMakeFiles/ulib.dir/lib/syscall.c.o
+[ 27%] Linking C static library libulib.a
+[ 81%] Built target ulib
+Consolidate compiler generated dependencies of target bigwrite
+[ 90%] Linking C executable riscv64/bigwrite
+[100%] Built target bigwrite
+
+[32;1mUSER EXE BUILD SUCCESSFUL![0m
+
+mkfs.fat 4.2 (2021-01-31)
+qemu-system-riscv64 -machine virt -bios bootloader/sbi-qemu -kernel /home/yztz/tatakOS/build/kernel -m 24M -smp 1 -nographic -drive file=/home/yztz/tatakOS/build/fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 -S -gdb tcp::26000
+[rustsbi] RustSBI version 0.2.1, adapting to RISC-V SBI v0.3
+.______       __    __      _______.___________.  _______..______   __
+|   _  \     |  |  |  |    /       |           | /       ||   _  \ |  |
+|  |_)  |    |  |  |  |   |   (----`---|  |----`|   (----`|  |_)  ||  |
+|      /     |  |  |  |    \   \       |  |      \   \    |   _  < |  |
+|  |\  \----.|  `--'  |.----)   |      |  |  .----)   |   |  |_)  ||  |
+| _| `._____| \______/ |_______/       |__|  |_______/    |______/ |__|
+
+[rustsbi] Implementation: RustSBI-QEMU Version 0.1.0
+[rustsbi-dtb] Hart count: cluster0 with 1 cores
+[rustsbi] misa: RV64ACDFIMSU
+[rustsbi] mideleg: ssoft, stimer, sext (0x222)
+[rustsbi] medeleg: ima, ia, bkpt, la, sa, uecall, ipage, lpage, spage (0xb1ab)
+[rustsbi] pmp0: 0x10000000 ..= 0x10001fff (rw-)
+[rustsbi] pmp1: 0x2000000 ..= 0x200ffff (rw-)
+[rustsbi] pmp2: 0xc000000 ..= 0xc3fffff (rw-)
+[rustsbi] pmp3: 0x80000000 ..= 0x8fffffff (rwx)
+[rustsbi] enter supervisor 0x80200000
+
+.bss 0x8022d000-0x80254000 (0x27000) cleared
+
+ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄   ▄ ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ 
+█▓▓▓▓▓▓▓█       █▓▓▓▓▓▓▓█       █▓▓▓█ █▓█       █  █▓▓▓▓▓▓▓█▓▓▓▓▓▓▓█
+█▄     ▄█   ▄   █▄     ▄█   ▄   █   █▄█ █   ▄   █  █   ▄   █  ▄▄▄▄▄█
+  █   █ █  █▄█  █ █   █ █  █▄█  █      ▄█  █▄█  █  █  █ █  █ █▄▄▄▄▄ 
+  █   █ █       █ █   █ █       █     █▄█       █  █  █▄█  █▄▄▄▄▄  █
+  █   █ █   ▄   █ █   █ █   ▄   █    ▄  █   ▄   █  █       █▄▄▄▄▄█ █
+  █▄▄▄█ █▄▄█ █▄▄█ █▄▄▄█ █▄▄█ █▄▄█▄▄▄█ █▄█▄▄█ █▄▄█  █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█
+
+[DEBUG][VM: kvminit] init success!
+[DEBUG][PLIC: plic_init] init success!
+[DEBUG][1: consoleinit] console init success!
+
+page usage: 1% ( 26 used | 1452 total )
+Pipe latency: 6707.2744 microseconds
+child exit with 0
+page usage: 1% ( 26 used | 1452 total )

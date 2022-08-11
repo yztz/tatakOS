@@ -20,7 +20,7 @@
 #define NENTRY 10
 #define MAX_FILE_NAME 64
 
-#define USTACKSIZE (4096 * 10)
+#define USTACKSIZE (4096 * 40)
 #define UHEAPSIZE 4096
 
 #define TICK_GRANULARITY 10L // ms
