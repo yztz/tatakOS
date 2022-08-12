@@ -756,7 +756,7 @@ sleep(void *chan, struct spinlock *lk)
   // Reacquire original lock.
   release(&p->lock);
 
-  sig_handle(p->signal);
+  // sig_handle(p->signal);
 
   if(lk != NULL)
     acquire(lk);
