@@ -224,6 +224,14 @@ uint64_t sys_setitimer(void) {
   return 0;
 } 
 
+uint64_t sys_getrandom(void) {
+  return 0;
+}
+
+uint64_t sys_prctl(void) {
+  return 0;
+}
+
 uint64 sys_clock_gettime(void) {
   // int clockid;
   uint64_t addr;

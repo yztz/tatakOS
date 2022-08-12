@@ -367,6 +367,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   }
 
   if((flags & CLONE_CHILD_SETTID)) {
+    np->set_tid_addr = ctid;
     // panic("not support now");
     // copy_to_user(ctid, &np->pid, sizeof(int));
   }
@@ -397,7 +398,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
   
   np->cwd = edup(p->cwd);
-  if(np->exe)
+  if(p->exe)
     np->exe = edup(p->exe);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
@@ -420,6 +421,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
 
  bad:
+  debug("clone fail");
   freeproc(np);
   release(&np->lock);
   return -1;
@@ -697,6 +699,9 @@ forkret(void)
   // Still holding p->lock from scheduler.
   release(&p->lock);
 
+  if(p->set_tid_addr)
+    copy_to_user(p->set_tid_addr, &p->pid, 4);
+
   if (first) {
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
@@ -756,7 +761,7 @@ sleep(void *chan, struct spinlock *lk)
   // Reacquire original lock.
   release(&p->lock);
 
-  sig_handle(p->signal);
+  // sig_handle(p->signal);
 
   if(lk != NULL)
     acquire(lk);

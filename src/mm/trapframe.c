@@ -47,5 +47,6 @@ void tf_print(tf_t *tf) {
     printf("    a3: %lx\n", tf->a3);
     printf("    a4: %lx\n", tf->a4);
     printf("    a5: %lx\n", tf->a5);
+    printf("    s3: %lx\n", tf->s3);
     printf("}\n");
 }

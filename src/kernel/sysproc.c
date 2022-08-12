@@ -10,7 +10,7 @@
 #include "kernel/time.h"
 #include "mm/vm.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
 #include "mm/mm.h"

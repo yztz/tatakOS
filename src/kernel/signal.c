@@ -3,25 +3,25 @@
 #include "mm/vm.h"
 #include "defs.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ SIGNAL
 #include "debug.h"
 
 
 static void sig_ign(int signum) {
     debug("SIG %d ignored", signum);
+    if(signum == SIGCHLD) {
+        int UNUSED(freed) = freechild();
+        debug("%d Child Freed", freed);
+        return;
+    } 
 }
 
 
 static void sig_dfl(int signum) {
     proc_t *p = myproc();
     debug("SIG %d default", signum);
-    if(signum == SIGCHLD) {
-        int UNUSED(freed) = freechild();
-        debug("%d Child Freed", freed);
-        return;
-    } 
-
+    
     if(signum == SIGKILL) {
         p->killed = 1;
         return;
@@ -67,7 +67,7 @@ void sig_reset(signal_t *self) {
 
 
 signal_t *sig_new() {
-    signal_t *newsig = kmalloc(sizeof(signal_t));
+    signal_t *newsig = kzalloc(sizeof(signal_t));
     if(newsig == NULL) 
         return NULL;
     initlock(&newsig->siglock, "siglock");
@@ -80,7 +80,7 @@ void sig_free(signal_t **pself) {
         return;
     signal_t *self = *pself;
 
-    if(self->ref == 0)
+    if(self->ref <= 0)
         panic("ref");
     
     sig_deref(self);
@@ -114,6 +114,7 @@ struct start_args {
 static char sigret_code[] = { 0x93, 0x08, 0xB0, 0x08, 0x73, 0x00, 0x00, 0x00 };
 
 static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *act) {
+    debug("SIG %d handled handler is %#lx", signum, (uint64_t)act->handler);
     tf_t *tf = proc_get_tf(p);
 
     tf_backup(tf);

@@ -3,11 +3,12 @@
 
 void printf(const char *fmt, ...);
 
-void run(char *argv[]);
+void __run(char *argv[]);
 
-#define shell(...) {char *__cmd[] = {"busybox", "sh", __VA_ARGS__};run(__cmd);}
-#define lua(...) {char *__cmd[] = {"lua", __VA_ARGS__};run(__cmd);}
-#define lmbench(...) {char *__cmd[] = {"lmbench_all", __VA_ARGS__};run(__cmd);}
+#define run(...) {char *__cmd[] = {__VA_ARGS__};__run(__cmd);}
+#define shell(...) {char *__cmd[] = {"busybox", "sh", __VA_ARGS__};__run(__cmd);}
+#define lua(...) {char *__cmd[] = {"lua", __VA_ARGS__};__run(__cmd);}
+#define lmbench(...) {char *__cmd[] = {"lmbench_all", __VA_ARGS__};__run(__cmd);}
 
 
 __attribute__((section(".startup"))) 
@@ -31,7 +32,7 @@ void main() {
     for(;;);
 }
 
-void run(char *argv[]) {
+void __run(char *argv[]) {
     int npid = fork();
     if(npid < 0) {
         printf("fork failed");

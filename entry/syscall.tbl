@@ -87,8 +87,10 @@
 160     uname           sys_uname
 165     getrusage       sys_getrusage
 166     umask           sys_umask
+167     prctl           sys_prctl
 169     gettimeofday    sys_gettimeofday
 179     sysinfo         sys_sysinfo
+278     getrandom       sys_getrandom
 283     membarrier      sys_membarrier
 #############MISC###############
 175     geteuid     sys_geteuid
