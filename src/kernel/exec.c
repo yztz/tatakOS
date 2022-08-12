@@ -272,8 +272,6 @@ int exec(char *path, char **argv, char **envp) {
   ustack -= sizeof(uint64) * argc;
   memcpy((void *)ustack, argcv, sizeof(uint64) * argc);
   
-  // 初始化栈地址
-  proc_get_tf(p)->sp = UPOS(ustack, ustackbase);
 
   if(mappages(newmm->pagetable, USERSPACE_END - PGSIZE, PGSIZE, ustackbase, riscv_map_prot(newmm->ustack->prot)) == -1) {
     goto bad;
@@ -285,7 +283,8 @@ int exec(char *path, char **argv, char **envp) {
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
   // debug("pid %d proc %s entry is %lx", p->pid, p->name, elf.entry);
-  proc_get_tf(p)->epc = elfentry;  // initial program counter = main
+
+  tf_reset(proc_get_tf(p), elfentry, UPOS(ustack, ustackbase));
   mmap_free(&oldmm);
   sig_reset(p->signal);
   return 0; // this ends up in a0, the first argument to main(argc, argv)

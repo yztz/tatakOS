@@ -3,7 +3,7 @@
 #include "mm/vm.h"
 #include "defs.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ SIGNAL
 #include "debug.h"
 
@@ -215,7 +215,7 @@ uint64_t sys_rt_sigreturn(void) {
         tf->epc = context->uc_mcontext.__gregs[0];
     }
 
-    debug("epc is %#lx", tf->epc);
+    debug("return to %#lx", tf->epc);
 
     kfree(context);
 

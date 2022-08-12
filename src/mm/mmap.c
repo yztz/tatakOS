@@ -126,7 +126,8 @@ void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t le
     vma->flags = flags;
     vma->map_file = fp;
     vma->prot = prot;
-    vma->offset = foff;
+    /* 存储的是page index */
+    vma->offset = foff >> PGSHIFT;
     vma_insert(mm, vma);
 
 //   merge:

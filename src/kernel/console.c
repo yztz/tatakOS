@@ -162,7 +162,7 @@ consoleintr(char c)
 {
   acquire(&cons.lock);
   switch(c){
-  case C('P'):  // Print process list.
+  case C('N'):  // Print process list.
     procdump();
     buddy_print_free();
     break;

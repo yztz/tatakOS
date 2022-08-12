@@ -13,10 +13,10 @@
 # lmbench_all lat_sig -P 1 catch # 70
 # lmbench_all lat_sig -P 1 prot lat_sig # 12
 # lmbench_all lat_pipe -P 1 # 1113
-# lmbench_all lat_proc -P 1 fork # 5000
-# lmbench_all lat_proc -P 1 exec # 49992
-# busybox cp hello /tmp
-lmbench_all lat_proc -P 1 shell # 1019992 page recycle
+lmbench_all lat_proc -P 1 fork # 5000
+lmbench_all lat_proc -P 1 exec # 49992
+busybox cp hello /tmp
+# lmbench_all lat_proc -P 1 shell # 1019992 page recycle
 # lmbench_all lmdd label="File /var/tmp/XXX write bandwidth:" of=/var/tmp/XXX move=1m fsync=1 print=3 # 2330 KB/sec
 # lmbench_all lat_pagefault -P 1 /var/tmp/XXX # unknown sys call 227
 # lmbench_all lat_mmap -P 1 512k /var/tmp/XXX # 0.524288 3749

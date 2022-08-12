@@ -1,6 +1,7 @@
 #include "mm/trapframe.h"
 #include "common.h"
 #include "mm/alloc.h"
+#include "str.h"
 
 tf_t *tf_new() {
     tf_t *tf = (tf_t*)kzalloc(PGSIZE);
@@ -21,6 +22,12 @@ void tf_restore(tf_t *self) {
         panic("whereis tf?");
     *self = *self->sigtf;
     self->sigtf = NULL;
+}
+
+void tf_reset(tf_t *self, uint64_t pc, uint64_t sp) {
+    memset(self, 0, sizeof(tf_t));
+    self->sp = sp;
+    self->epc = pc;
 }
 
 void tf_free(tf_t **pptf) {

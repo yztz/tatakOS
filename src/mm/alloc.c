@@ -68,9 +68,9 @@ retry:
     }
     /* slob和buddy分配失败，都会返回空 */
     if(!ret){
-        buddy_print_free();
+        // buddy_print_free();
         free_more_memory();
-        buddy_print_free();
+        // buddy_print_free();
         // printf("\n");
         goto retry;
     }

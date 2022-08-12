@@ -33,7 +33,7 @@ extern char end[];
 buddy_list_t lists[MAX_ORDER];
 
 atomic_t used;
-static uint total;
+uint total;
 
 /**
  * @brief this func and the next one is for debug
@@ -140,7 +140,8 @@ void *buddy_alloc(size_t size) {
   
   // no rooms
   int u = atomic_get(&used);
-  if(empty(order) || (u * 100 / total) >= 97) {
+  if(empty(order) || (u * 100 / total) >= 99) {
+  // if(empty(order)) {
     release(&lists[order].lock);
 
     // ER();
