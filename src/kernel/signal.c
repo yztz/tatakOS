@@ -10,17 +10,18 @@
 
 static void sig_ign(int signum) {
     debug("SIG %d ignored", signum);
-    if(signum == SIGCHLD) {
-        int UNUSED(freed) = freechild();
-        debug("%d Child Freed", freed);
-        return;
-    } 
 }
 
 
 static void sig_dfl(int signum) {
     proc_t *p = myproc();
     debug("SIG %d default", signum);
+
+    if(signum == SIGCHLD) {
+        int UNUSED(freed) = freechild();
+        debug("%d Child Freed", freed);
+        return;
+    } 
     
     if(signum == SIGKILL) {
         p->killed = 1;
@@ -61,7 +62,7 @@ void sig_deref(signal_t *self) {
 void sig_reset(signal_t *self) {
     acquire(&self->siglock);
     memset(self->actions, 0, sizeof(self->actions));
-    self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
+    // self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
     release(&self->siglock);
 }
 
@@ -166,6 +167,16 @@ static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *a
     // if(copy_from_user(&args, 0xF00022B00, sizeof(struct start_args)) >= 0)
     //     debug("func %#lx param %#lx", args.start_func, args.start_arg);
 }
+
+// C KILL WAITPID
+// A  --->   <-- B
+// 浅度睡眠（Interr） 深度睡眠（）
+// SIGCHLD: 子进程退出时，发送给父进程
+// waitpid/SIGCHLD
+// 用户定义 SIG_IGN SIG_DFL
+// waitpid ----> SLEEP <---- SIGCHILD
+// waitpid
+// SIGCHLD 用户处理函数-->waitpid()
 
 uint64_t sys_rt_sigreturn(void) {
     proc_t *p = myproc();

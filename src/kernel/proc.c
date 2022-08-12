@@ -500,6 +500,7 @@ void exit(int status) {
 
 void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
+    if(signum == SIGKILL) p->killed = 1;
     p->sig_pending |= (1L << (signum - 1));
     if(p->state == SLEEPING)
       p->state = RUNNABLE;

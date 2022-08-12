@@ -411,6 +411,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
   address_space_t *mapping = file->ep->i_mapping;
 
   /* address落在文件的pgoff页 */
+  /* 之前area->offset的单位是字节，哪里会引发错误？ */
   pgoff = ((address - area->addr) >> PAGE_CACHE_SHIFT) + area->offset;
   /* area所包含的最后一页 */
   endoff = (area->len >> PAGE_CACHE_SHIFT) + area->offset;

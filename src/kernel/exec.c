@@ -10,6 +10,7 @@
 #include "mm/vm.h"
 #include "fs/fs.h"
 #include "mm/mm.h"
+#include "config.h"
 
 // ref: https://github.com/torvalds/linux/blob/v3.19/include/uapi/linux/auxvec.h
 #define AT_NULL   0	/* end of vector */
@@ -106,6 +107,7 @@ static uint64_t loadinterp(mm_t *mm) {
 
 }
 
+extern struct proc proc[NPROC];
 int exec(char *path, char **argv, char **envp) {
   // print_argv(argv);
   char *s, *last;
@@ -117,6 +119,26 @@ int exec(char *path, char **argv, char **envp) {
   struct proc *p = myproc();
   mm_t *newmm;
   mm_t *oldmm = p->mm;
+
+  /**
+   * 进程的新名字
+   */
+  // Save program name for debugging.
+  for(last=s=path; *s; s++)
+    if(*s == '/')
+      last = s+1;
+  safestrcpy(p->name, last, sizeof(p->name));
+
+#ifdef SHARE_LOAD
+  proc_t *same_proc = NULL,  *cur = NULL;
+  for(cur = proc; cur < &proc[NPROC]; cur++){
+    // if(cur->exe == p->exe && cur != p){
+    if(strncmp(cur->name, p->name, 20) == 0 && cur != p){
+      same_proc = cur;
+      break;
+    }
+  }
+#endif
 
   uint64_t aux[AUX_CNT][2];
   memset(aux, 0, sizeof(aux));
@@ -195,6 +217,44 @@ int exec(char *path, char **argv, char **envp) {
       goto bad;
     if(do_mmap(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1)
       goto bad;
+#ifdef SHARE_LOAD
+    if(same_proc){
+      pagetable_t old = same_proc->mm->pagetable, new = p->mm->pagetable;
+      pte_t *pte;
+      uint64_t pa;
+      uint prot;
+      if(ph.flags & PF_W)
+        goto loadseg;
+      /* 复制uvmcopy代码，把va复制为i了。 */
+      for(int va = PGROUNDDOWN(ph.vaddr); va < ph.vaddr + ph.filesz; va += PGSIZE){
+        if((pte = walk(old, va, 0)) == 0)
+          continue;
+        // if((*pte & PTE_V) == 0)
+          // continue;
+
+
+        pa = PTE2PA(*pte);
+
+        // if(va == 0x121000)
+        //   pa = (uint64_t)kalloc();
+
+        sfence_vma_addr(va);
+        get_page(pa); 
+
+        prot = PTE_FLAGS(*pte);
+        if(mappages(new, va, PGSIZE, pa, prot) != 0){
+          /* Free pa here is ok for COW, because we have added refcnt for it */
+          kfree((void *)pa);
+          ER();
+        }
+      }
+
+      // do_mmap(newmm, NULL, 0, 0x124000, 0x1000, 0, elf_map_prot(ph.flags));
+
+      continue;
+    }
+#endif
+loadseg:
     if(loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
   }
@@ -278,10 +338,10 @@ int exec(char *path, char **argv, char **envp) {
   }
 
   // Save program name for debugging.
-  for(last=s=path; *s; s++)
-    if(*s == '/')
-      last = s+1;
-  safestrcpy(p->name, last, sizeof(p->name));
+  // for(last=s=path; *s; s++)
+  //   if(*s == '/')
+  //     last = s+1;
+  // safestrcpy(p->name, last, sizeof(p->name));
   // debug("pid %d proc %s entry is %lx", p->pid, p->name, elf.entry);
 
   tf_reset(proc_get_tf(p), elfentry, UPOS(ustack, ustackbase));
