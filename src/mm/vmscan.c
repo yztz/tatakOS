@@ -526,14 +526,19 @@ void free_more_memory(void)
 	/* 是否会出现两个线程写回一个页的情况？ */
 	/* 尝试释放所有的pagecache */
   int u1 = atomic_get(&used);
-	// writeback_entrys_and_free_mapping(NULL);
+	writeback_entrys_and_free_mapping(NULL);
 	// wakeup_bdflush(1024);
 	// yield();
 //  extern entry_t pool[NENTRY];
 //  for(int i = NENTRY-1; i >= 0; i--){
 // 	entry_t * entry = &pool[i];
-// 	if(!entry->dirty && entry->i_mapping)
+// 	if(!entry->dirty && entry->i_mapping){
+// 		elock(entry);
 // 		free_mapping(entry);
+// 		entry->i_mapping = kzalloc(sizeof(address_space_t));
+// 		entry->i_mapping->host = entry;
+// 		eunlock(entry);
+// 	}
 //  }
 	int u2 = atomic_get(&used);
 	if(u1 - u2 > SWAP_CLUSTER_MAX)
