@@ -1,7 +1,5 @@
-#include "types.h"
 #include "riscv.h"
 #include "defs.h"
-#include "param.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
 #include "fs/fs.h"
@@ -14,6 +12,7 @@
 static int __pipe_full(struct pipe *pi) {
   return pi->nwrite == pi->nread + PIPESIZE;
 }
+
 static int __pipe_empty(struct pipe *pi) {
   return pi->nread == pi->nwrite;
 }
@@ -25,7 +24,7 @@ int pipealloc(struct file **f0, struct file **f1) {
   *f0 = *f1 = 0;
   if((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
     goto bad;
-  if((pi = (struct pipe*)kalloc()) == 0)
+  if((pi = (struct pipe*)kmalloc(PIPEPAGE)) == 0)
     goto bad;
   pi->readopen = 1;
   pi->writeopen = 1;
@@ -78,15 +77,24 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
       release(&pi->lock);
       return -1;
     }
-    if(pi->nwrite == pi->nread + PIPESIZE){ //DOC: pipewrite-full
+    if(__pipe_full(pi)){ //DOC: pipewrite-full
       wakeup(&pi->nread);
       sleep(&pi->nwrite, &pi->lock);
     } else {
-      char ch;
-      if(either_copyin(&ch, user, addr + i, 1) == -1)
-        break;
-      pi->data[pi->nwrite++ % PIPESIZE] = ch;
-      i++;
+      // 本次可写数据长度
+      int rest = min(pi->nread + PIPESIZE - pi->nwrite, n);
+      int cur = pi->nwrite % PIPESIZE;
+      // 管道数组到尾部的长度
+      int avail = PIPESIZE - cur;
+      if(rest <= avail) {
+        if(either_copyin(&pi->data[cur], user, addr, rest) == -1) break;
+      } else {
+        if(either_copyin(&pi->data[cur], user, addr, avail) == -1) break;
+        if(either_copyin(&pi->data[0], user, addr + avail, rest - avail) == -1) break;
+      }
+      
+      pi->nwrite+=rest;
+      i+=rest;
     }
   }
   wakeup(&pi->nread);
@@ -98,22 +106,32 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
 int piperead(struct pipe *pi, uint64 addr, int n) {
   int i;
   struct proc *pr = myproc();
-  char ch;
 
   acquire(&pi->lock);
-  while(pi->nread == pi->nwrite && pi->writeopen){  //DOC: pipe-empty
-    if(pr->killed){
+  while(i < n){
+    if(pi->writeopen == 0 || pr->killed){
       release(&pi->lock);
       return -1;
     }
-    sleep(&pi->nread, &pi->lock); //DOC: piperead-sleep
-  }
-  for(i = 0; i < n; i++){  //DOC: piperead-copy
-    if(pi->nread == pi->nwrite)
-      break;
-    ch = pi->data[pi->nread++ % PIPESIZE];
-    if(copyout(addr + i, &ch, 1) == -1)
-      break;
+    if(__pipe_empty(pi)){ //DOC: pipewrite-full
+      wakeup(&pi->nwrite);
+      sleep(&pi->nread, &pi->lock);
+    } else {
+      // 本次可读数据长度
+      int rest = min(pi->nwrite - pi->nread, n);
+      int cur = pi->nread % PIPESIZE;
+      // 管道数组到尾部的长度
+      int avail = PIPESIZE - cur;
+      if(rest <= avail) {
+        if(copy_to_user(addr, &pi->data[cur], rest) == -1) break;
+      } else {
+        if(copy_to_user(addr, &pi->data[cur], avail) == -1) break;
+        if(copy_to_user(addr + avail, &pi->data[0], rest - avail) == -1) break;
+      }
+      
+      pi->nread+=rest;
+      i+=rest;
+    }
   }
   wakeup(&pi->nwrite);  //DOC: piperead-wakeup
   release(&pi->lock);

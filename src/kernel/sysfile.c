@@ -548,7 +548,7 @@ uint64_t sys_readlinkat(void) {
     char path[MAXPATH];
     uint64_t bufaddr;
     size_t bufsz;
-    // entry_t *from;
+    entry_t *from, *ep;
     proc_t *p = myproc();
 
     int n;
@@ -561,10 +561,20 @@ uint64_t sys_readlinkat(void) {
         int len = min(end - path, bufsz);
         if(copy_to_user(bufaddr, path, len) < 0)
             return -1;
-    } else {
-        ER();
+        return 0;
+    } 
+
+    from = getep(p, dirfd);
+    if((ep = namee(from, path)) == NULL) {
+        return -1;
     }
-    
+    char *end = namepath(p->exe, path);
+    int len = min(end - path, bufsz);
+    if(copy_to_user(bufaddr, path, len) < 0)
+        return -1;
+
+    eput(ep);
+
     return 0;
 }
 
@@ -821,8 +831,8 @@ uint64 sys_ioctl(void) {
             break;
         case TIOCGWINSZ:
             if (copy_to_user(arg0, &(struct winsize){
-                .ws_row = 0,
-                .ws_col = 0,
+                .ws_row = 20,
+                .ws_col = 100,
             }, sizeof(struct winsize)) < 0)
                 return -1;
             break;
@@ -830,7 +840,7 @@ uint64 sys_ioctl(void) {
         case 0xffffffff80247009:
             break;
         default:
-            panic("un");
+            return 0;
     }
     return 0;
 }
@@ -856,7 +866,7 @@ uint64 sys_lseek(void) {
     } else if(whence == SEEK_CUR) {
         f->off += offset;
     } else if(whence == SEEK_END) {
-        f->off = E_FILESIZE(f->ep) + offset;
+        f->off = f->ep->size_in_mem + offset;
     } else {
         panic("unsupport whence");
     }

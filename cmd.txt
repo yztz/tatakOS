@@ -15,3 +15,12 @@ echo hello > test.txt
 ./busybox mv test.txt tmp/
 ./busybox ls
 ./lmbench_all lat_syscall -P 1 null
+
+// QJS
+cd qjs-examples && qjs hello_module.js
+cd qjs-examples && qjs pi_bigfloat.js
+cd qjs-tests && qjs test_loop.js
+cd qjs-tests && qjs test_std.js
+
+// XC
+xc test.c

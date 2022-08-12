@@ -520,6 +520,7 @@ int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   // ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
   if(off >= entry->size_in_mem)
     return 0;
+  n = min(n, entry->size_in_mem - off);
   ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
   // printf(rd("ret: %d\toff: %d\tn: %d\n"), ret, off, n);
   return ret;

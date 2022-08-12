@@ -769,9 +769,9 @@ static FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, 
     char name[MAX_FILE_NAME];
     
     int len = strlen(cname);
-    int entry_num = (len + 1 + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1; // 包括'\0'
+    int entry_num = (len + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1;
     strncpy(name, cname, MAX_FILE_NAME);
-    int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name); // 结束符'\0'的溢出并不重要
+    int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name);
     debug("short name gened: %s", item->name);
 
     int cnt = 0;
