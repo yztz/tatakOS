@@ -39,11 +39,6 @@ void page_init(void) {
     pages[i].order = 0;
     pages[i].alloc = 1;
     reset_page(&pages[i]);
-    // pages[i].flags = 0;
-    // INIT_LIST_HEAD(&pages[i].lru);
-    // pages[i].pte.direct = 0;
-    // pages[i].mapping = 0;
-    // pages[i].index = 0;
   }
 }
 

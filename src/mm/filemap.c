@@ -85,83 +85,6 @@ page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
   return page;
 }
 
-// /**
-//  * @brief read file into memory when page fault hapened
-//  * mmap file 的pagefault处理函数。
-//  */
-// int filemap_nopage(uint64_t address)
-// {
-//   struct proc *p = myproc();
-//   struct mm_struct *mm = p->mm;
-//   struct vm_area_struct *area = mm->mmap;
-//   uint64 pgoff, endoff, size;
-//   // page_t *page;
-//   uint64 pa;
-
-//   // find area that contains the address
-//   while (area)
-//   {
-//     if (area->vm_start <= address && area->vm_end > address)
-//       break;
-//     area = area->vm_next;
-//   }
-//   struct file *file = area->vm_file;
-//   struct address_space *mapping = file->ep->i_mapping;
-
-//   pgoff = ((address - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
-//   endoff = ((area->vm_end - area->vm_start) >> PAGE_CACHE_SHIFT) + area->vm_pgoff;
-//   size = (file->ep->raw.size + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
-
-//   // the page need to read greater than the total page
-//   if (pgoff >= size)
-//     panic("mmap fetch 1");
-
-//   /*
-//    * The "size" of the file, as far as mmap is concerned, isn't bigger
-//    * than the mapping
-//    */
-//   if (size > endoff)
-//     size = endoff;
-
-//   /* find from page cache first, if find page, increase it's ref count */
-//   pa = find_get_page(mapping, pgoff);
-//   // printf(ylw("pa: %p\n"), pa);
-//   /* 页缓存命中，把address和pa映射 */
-//   if (pa)
-//   {
-//     mark_page_accessed(&pages[PAGE2NUM(pa)]);
-//     pagetable_t pagetable = myproc()->mm->pagetable;
-//     if (mappages(pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
-//       panic("filemap no page 2");
-
-//     return 0;
-//   }
-//   // for(;;);
-
-//   // printf(rd("not hit\n"));
-//   // 没有命中，分配页，读磁盘
-//   pa = (uint64)kalloc();
-//   // printf(bl("pa: %p\n"), pa);
-//   if (mappages(myproc()->mm->pagetable, PGROUNDDOWN(address), PGSIZE, pa, PTE_U | PTE_V | PTE_W | PTE_R) < 0)
-//     panic("filemap no page 3");
-
-//   mark_page_accessed(&pages[PAGE2NUM(pa)]);
-
-//   //如果文件的最后一个页的内容不满一页，reade返回值大于0。
-//   entry_t *entry = area->vm_file->ep;
-//   if (fat_read(entry->fat, entry->clus_start, 1, PGROUNDDOWN(address), pgoff * PGSIZE, PGSIZE) < 0)
-//     panic("filemap no page 4");
-
-//   // if (do_generic_mapping_read(entry->i_mapping, 1, PGROUNDDOWN(address), pgoff * PGSIZE, PGSIZE) < 0)
-//     // panic("filemap no page 4");
-//   /* add page to page cache*/
-//   // printf(ylw("aaa: %p"), mapping->page_tree.rnode);
-//   add_to_page_cache(pa, mapping, pgoff);
-//   // printf_radix_tree(&mapping->page_tree);
-
-//   return 0;
-// }
-
 void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset)
 {
   page->mapping = mapping;
@@ -173,6 +96,13 @@ void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offs
   acquire(&mapping->tree_lock);
   radix_tree_insert(&mapping->page_tree, offset, (void *)page);
   release(&mapping->tree_lock);
+}
+
+void add_to_page_cache_lru(page_t *page, struct address_space *mapping, pgoff_t index){
+  /* 添加到page cache */
+  add_to_page_cache(page, mapping, index);
+  /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
+  lru_cache_add(page);
 }
 
 /**
@@ -234,6 +164,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
  * 以上论述都是错的，mmap会增加文件引用数，到了这一步说明文件引用数为0，释放。
  * 
  */
+/*文件回收了，页必须回收 */
 void free_mapping(entry_t *entry)
 {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
@@ -296,16 +227,21 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   }
 
   read_pages(entry, pg_list);
+}
 
-  // cur_pa = pa, cur_index = index;
+extern atomic_t used;
+extern uint total;
 
-  // for(i = 0; i < pg_cnt; i++){
-  //   page_t *page = PATOPAGE(cur_pa);
-  //   add_to_page_cache(page, entry->i_mapping, cur_index);
-  //   lru_cache_add(page);
-  //   cur_pa += PGSIZE;
-  //   cur_index++;
-  // }
+/**
+ * 预读的页数最大为READ_AHEAD_RATE%
+ */
+int cal_readahead_page_counts(int rest){
+      /* 剩余的页数 */
+      int remain = ROUND_COUNT(rest);
+      /* 最大连读设置为空余内存的10% */
+      int u = atomic_get(&used);
+      int pgcnts = min(remain, DIV_ROUND_UP((total - u), READ_AHEAD_RATE));
+      return pgcnts;
 }
 
 /**
@@ -362,26 +298,24 @@ retry:
     /* the content is not cached in page cache, read from disk and cache it */
     if (!page)
     {
-      /* 剩余的页数 */
-      int remain = ROUND_COUNT(rest);
-      /* 最大连读设置为20 */
-      remain = min(remain, 20);
 
-      if(remain == 1) {
+      int pgcnts = cal_readahead_page_counts(rest);
+
+      if(pgcnts < 1)
+        ER();
+
+      if(pgcnts == 1) {
         pa = (uint64_t)kalloc();
         page = PATOPAGE(pa);
 
         get_page(page);
         read_one_page(entry, pa, index);
 
-        /* 添加到page cache */
-        add_to_page_cache(page, mapping, index);
-        /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
-        lru_cache_add(page);
+        add_to_page_cache_lru(page, mapping, index);
       }
       else{
         /* 发挥连续读多块的优势，减小I/O次数 */
-        readahead(entry, index, remain);
+        readahead(entry, index, pgcnts);
         goto retry;
       }
     }
@@ -437,8 +371,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       if(!(pg_off == 0 && rest >= PGSIZE))
         if(pg_id < pgnums_in_disk)
           read_one_page(entry, pa, pg_id);
-      add_to_page_cache(page, mapping, pg_id);
-      lru_cache_add(page);
+      add_to_page_cache_lru(page, mapping, pg_id);
     }
     else{
       pa = PAGETOPA(page);
@@ -570,34 +503,3 @@ find_pages_tag(address_space_t *mapping, uint32_t tag){
   return pg_list;
 }
 
-
-/* 被writeback_single_entry函数所取代了 */
-/**
- * @brief 把内存中的文件映像写回磁盘。对于fat32来说，包括写fat表（给文件分配适当的簇），写文件的页，改写
- * 父目录中的文件元数据。
- * 
- */
-// void writeback_file_to_disk(entry_t *entry){
-//   /* 如果文件在内存中的大小和磁盘上的不一样（变大或变小）*/
-//   // if(entry->size_in_mem != entry->raw.size){
-//   if(entry->dirty){
-
-//     // /* bigger than disk */
-//     // if(entry->size_in_mem > entry->raw.size){
-//     //   fat_alloc_append_clusters(entry->fat, entry->clus_start, &entry->clus_end, &entry->clus_cnt, entry->size_in_mem);
-//     // }
-//     // /* smaller than disk */
-//     // else {
-//     //   todo("consider delete part of file!");
-//     // }
-
-//     // entry->raw.size = entry->size_in_mem;
-//     // fat_update(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
-//     sych_entry_size_in_disk(entry);
-//     mpage_writepages(entry->i_mapping);
-//   }
-//     /* wirte back dirty pages to disk, 即使大小没变，但是内容可能也变了，所以要写回 */
-//     // if(entry->dirty)
-//       // mpage_writepages(entry->i_mapping);
-
-// }

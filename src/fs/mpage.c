@@ -294,3 +294,41 @@ int rw_pages(entry_t *entry, rw_page_list_t *pg_list, int rw){
 
   return 0;
 }
+
+void msync(uint64_t addr, uint64_t length, int flags){
+  length = PGROUNDUP(length);
+  uint64_t rest_cnts = length >> PGSHIFT;
+
+  while(rest_cnts > 0) {
+    struct proc *p = myproc();
+    vma_t *vma = __vma_find_strict(p->mm, addr);
+
+    if(!vma)
+      ER();
+
+    uint64_t vma_len_pg_cnts = vma->len >> PGSHIFT;
+    uint64_t cnts = min(vma_len_pg_cnts, rest_cnts);
+    int begin_id = vma->offset;
+    rw_page_list_t *rwlist = kzalloc(sizeof(rw_page_list_t));
+
+    for(int i = 0; i < cnts; i++){
+      rw_page_t *rwpage = kzalloc(sizeof(rw_page_t));         
+      rwpage->pa = addr;
+      addr += PGSIZE;
+      rwpage->pg_id = begin_id++;
+
+      if(rwlist->head == NULL){
+        rwlist->head = rwpage;
+        rwlist->tail = rwpage;
+      }
+      else{
+        rwlist->tail->next = rwpage;
+        rwlist->tail = rwpage;
+      }
+    }
+
+    write_pages(vma->map_file->ep, rwlist);
+
+    rest_cnts -= cnts;
+  }
+}
