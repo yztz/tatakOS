@@ -13,8 +13,12 @@ void scavenger_routine() {
     for(;;) {
         for(p = proc; p < &proc[NPROC]; p++) {
             if(p == me) continue;
-            if(p->state != ZOMBIE || p->tg->master_pid == p->pid) continue;
             if(try_acquire(&p->lock)) {
+                if(p->state != ZOMBIE || p->tg->master_pid == p->pid) {
+                    release(&p->lock);
+                    continue;
+                }
+
                 #ifdef DEBUG
                 printf(grn("SCAVENGER: PID %d freed\n"), p->pid);
                 #endif

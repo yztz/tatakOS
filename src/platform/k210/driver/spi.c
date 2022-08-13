@@ -173,7 +173,7 @@ uint32_t spi_set_clk_rate(spi_device_num_t spi_num, uint32_t spi_clk)
     
     volatile spi_t *spi_adapter = spi[spi_num];
     spi_adapter->baudr = spi_baudr;
-    printf("2 %d\n", sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num));
+    // printf("2 %d\n", sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num));
     return sysctl_clock_get_freq(SYSCTL_CLOCK_SPI0 + spi_num) / spi_baudr;
 }
 

@@ -5,10 +5,10 @@ void printf(const char *fmt, ...);
 
 void __run(char *argv[]);
 
-#define run(...) {char *__cmd[] = {__VA_ARGS__, 0};__run(__cmd);}
-#define shell(...) {char *__cmd[] = {"busybox", "sh", __VA_ARGS__, 0};__run(__cmd);}
-#define lua(...) {char *__cmd[] = {"lua", __VA_ARGS__, 0};__run(__cmd);}
-#define lmbench(...) {char *__cmd[] = {"lmbench_all", __VA_ARGS__, 0};__run(__cmd);}
+#define run(...) {char *__cmd[] = {##__VA_ARGS__, 0};__run(__cmd);}
+#define shell(...) {char *__cmd[] = {"busybox", "sh", ##__VA_ARGS__, 0};__run(__cmd);}
+#define lua(...) {char *__cmd[] = {"lua", ##__VA_ARGS__, 0};__run(__cmd);}
+#define lmbench(...) {char *__cmd[] = {"lmbench_all", ##__VA_ARGS__, 0};__run(__cmd);}
 
 
 __attribute__((section(".startup"))) 
@@ -38,7 +38,7 @@ void main() {
     lmbench("lat_proc", "-P", "1", "fork");
     lmbench("lat_proc", "-P", "1", "exec");
     lmbench("lat_proc", "-P", "1", "shell");
-    lmbench("lmdd", "label=\"File /var/tmp/XXX write bandwidth:\"", "of=/var/tmp/XXX", "move=1m", "fsync=1", "print=3");
+    lmbench("lmdd", "label=File /var/tmp/XXX write bandwidth:", "of=/var/tmp/XXX", "move=1m", "fsync=1", "print=3");
     // lmbench("lat_pagefault", "-P", "1", "/var/tmp/XXX");
     lmbench("lat_mmap", "-P", "1", "512k", "/var/tmp/XXX");
     lmbench("lat_fs", "/var/tmp");

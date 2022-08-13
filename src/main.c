@@ -68,12 +68,14 @@ void main() {
     userinit();      // first user process
 
     pdflush_init();
-    kthread_create("scavenger", scavenger_routine);
+    // kthread_create("scavenger", scavenger_routine);
 
-    for (int i = 1; i < NUM_CORES; i ++) {
+    #ifdef K210
+    for (int i = 1; i < NUM_CORES; i++) {
 			unsigned long mask = 1 << i;
 			sbi_send_ipi(mask, 0);
     }
+    #endif
 
     __sync_synchronize();
     started = 1;
@@ -81,20 +83,12 @@ void main() {
     while(started == 0)
       ;
     __sync_synchronize();
-    // extern uint64 ticks;
-    while(1) {
-      // uint64 a1 = ticks;
-      // uint64 i = 0;
-      // while(i++ < 100000000);
-      // __sync_synchronize();
-      // uint64 a2 = ticks;
-      // printf("a1 is %ld a2 is %ld\n", a1, a2);
-      // if(a1 == a2) panic("wuwuwu");
-    }
-    // kvminithart();    // turn on paging
-    // trapinithart();   // install kernel trap vector
-    // plic_init_hart();   // ask PLIC for device interrupts
-    // platform_plic_init_hart();
+    while(1);
+    kvminithart();    // turn on paging
+    trapinithart();   // install kernel trap vector
+    plic_init_hart();   // ask PLIC for device interrupts
+    platform_plic_init_hart();
   }
+  printf("hart %d start\n", cpuid());
   scheduler();        
 }

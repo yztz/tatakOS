@@ -606,7 +606,7 @@ scheduler(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
+      if(!try_acquire(&p->lock)) continue;
       if(p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it

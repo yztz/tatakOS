@@ -101,6 +101,7 @@ usertrap(void)
     // ok
   } else {
     info("pid is %d sepc is %lx scause is "rd("%s")" stval is %lx", p->pid, r_sepc(), riscv_cause2str(scause), r_stval());
+    ER();
     p->killed = 1;
   }
 

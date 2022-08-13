@@ -395,7 +395,7 @@ uint8_t sd_init(void)
 	/* 设置功能管脚 */
 	io_mux_init();
 	/*!< Initialize SD_SPI */
-	// sd_lowlevel_init(); // 拉低HS7电平，设置时钟速率为低速模式
+	sd_lowlevel_init(); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */
 	SD_CS_HIGH(); // 拉高HS7电平
 
@@ -454,7 +454,7 @@ uint8_t sd_init(void)
 	if ((frame[0] & 0x40) == 0)
 		sd_error("CMD58 frame");
 
-	// SD_HIGH_SPEED_ENABLE();
+	SD_HIGH_SPEED_ENABLE();
 	return sd_get_cardinfo(&cardinfo);
 }
 

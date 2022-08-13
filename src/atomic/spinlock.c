@@ -24,18 +24,16 @@ int try_acquire(struct spinlock *lk) {
   int i = 0;
 
 
-  while(__sync_lock_test_and_set(&lk->locked, 1) != 0 && i < 100)
+  while(i < 100 && __sync_lock_test_and_set(&lk->locked, 1) != 0)
     i++;
 
   __sync_synchronize();
 
-  if(lk->locked) {
+  if(i < 100) {
     lk->cpu = mycpu();
-    lk->pid = myproc() ? myproc()->pid : -1;
-
     return 1;
   }
-
+  pop_off();
   return 0;
 }
 
@@ -64,7 +62,7 @@ acquire(struct spinlock *lk)
 
   // Record info about lock acquisition for holding() and debugging.
   lk->cpu = mycpu();
-  lk->pid = myproc() ? myproc()->pid : -1;
+  // lk->pid = myproc() ? myproc()->pid : -1;
 }
 
 // Release the lock.
