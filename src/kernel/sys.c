@@ -161,6 +161,15 @@ uint64_t sys_times(void) {
 }
 
 
+uint64_t sys_madvice(void) {
+  int UNUSED(advice);
+  
+  // argint(2, &advice);
+
+  return 0;
+}
+
+
 uint64_t sys_halt(void) {
   LOOP();
   return 0;

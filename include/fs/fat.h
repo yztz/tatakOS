@@ -167,7 +167,16 @@ uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
  * @offset: 用于返回的目录项偏移量
  */
 FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
-FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n);
+
+FR_t __fat_alloc_cluster_reversed_order(fat32_t *fat, uint32_t *news, int n);
+FR_t __fat_alloc_cluster_order(fat32_t *fat, uint32_t *news, int n);
+
+static inline FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
+	return __fat_alloc_cluster_order(fat, news, n);
+	// return __fat_alloc_cluster_reversed_order(fat, news, n);
+}
+
+FR_t fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem);
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
 FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
 FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
@@ -181,5 +190,4 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n);
 // int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n);
 uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus);
 uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus);
-int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem);
 #endif

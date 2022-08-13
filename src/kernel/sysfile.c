@@ -624,7 +624,7 @@ uint64 sys_chdir(void) {
     return 0;
 }
 
-extern int exec(char *path, char **argv, char **envp);
+extern int exec(char *path, char *argv[], char *envp[]);
 
 uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];

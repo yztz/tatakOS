@@ -1,1 +1,1 @@
-print("Hello?")
+io.write("Hello?")

@@ -295,56 +295,8 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
     return n - rest;
 }
 
-// /* 申请指定数量的簇并将它们串在一起 */
-// FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
-//     const int entry_per_sect = BPS(fat) / 4;
-//     uint32_t sect = fat->fat_start_sector;
-//     int cnt = n - 1;
-//     uint32_t next = 0;
-
-//     for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
-//         int changed = 0; // 用于标记当前的块是否被写
-//         buf_t *b = bread(fat->dev, sect);
-//         // if(sect == clus2datsec(fat, 72)) panic("alloc data clus?");
-//         uint32_t *entry = (uint32_t *)b->data;
-//         for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
-//             if(i == 0 && j < 2) continue; // 跳过第0,1号簇
-//             if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
-//                 uint32_t clus_num = i * entry_per_sect + j;
-//                 if(next == 0) { // 如果是最后一个簇，则标记为END
-//                     debug("mark clus %d[sect: %d] as end", clus_num, clus2datsec(fat, clus_num));
-//                     *(entry + j) = FAT_CLUS_END;
-//                 } else { // 如果是前面的簇，则标记为下一个簇的簇号
-//                     *(entry + j) = next;
-//                     debug("mark clus %d as head", clus_num);
-//                 }
-//                 next = clus_num;
-//                 changed = 1;
-//                 cnt--;
-//                 if(cnt < 0) {
-//                     *news = clus_num;
-//                     bwrite(b);
-//                     brelse(b);
-//                     return FR_OK;
-//                 }
-//             } 
-//         }
-//         if(changed) {
-//             bwrite(b);
-//         }
-//         brelse(b);
-//     }
-
-//     return FR_ERR;
-// }
-
-
 /* 申请指定数量的簇并将它们串在一起 */
-/**
- * @brief 此函数原来分配的n个簇的簇号是逆序的，为了传输效率，将其改为正序。
- * 
- */
-FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
+FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
     const int entry_per_sect = BPS(fat) / 4;
     uint32_t sect = fat->fat_start_sector;
     int cnt = n - 1;
@@ -379,30 +331,6 @@ FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
                     brelse(b);
                     return FR_OK;
                 }
-
-                // if(first == 0){
-                //     first = 1;
-                //     *news = clus_num;
-                // }
-
-                /**
-                 * @brief 循环读取了新的sect之后，这里又改写上个sect，
-                 * 但是没有对上个sect设置dirty，未写入磁盘出错。
-                 * 
-                 */
-                // if(pre != NULL){
-                //     *pre = clus_num;
-                // }
- 
-                // pre = (entry + j);
-                // changed = 1;
-                // cnt--;
-                // if(cnt < 0){
-                //     *(entry + j) = FAT_CLUS_END;
-                //     bwrite(b);
-                //     brelse(b);
-                //     return FR_OK;
-                // }
             } 
         }
         if(changed) {
@@ -413,6 +341,61 @@ FR_t (fat_alloc_cluster)(fat32_t *fat, uint32_t *news, int n) {
 
     return FR_ERR;
 }
+
+FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
+    assert(n > 0);
+    const int entry_per_sect = BPS(fat) / 4;
+    uint32_t sect = fat->fat_start_sector;
+
+    int cnt = n;
+    // uint32_t next = 0;
+    // uint32_t first = 0;
+    /* 存放当前簇号的前一个簇entry的地址 */
+    // uint32_t *pre = NULL;
+
+    buf_t *pb = NULL;
+    uint32_t *pe = NULL;
+
+    for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
+        buf_t *b = bread(fat->dev, sect);
+        uint32_t *entry = (uint32_t *)b->data;
+        for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
+            if(i == 0 && j < 2) continue; // 跳过第0,1号簇
+
+            if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
+                uint32_t clus_num = i * entry_per_sect + j;
+                if(pe) {
+                    *pe = clus_num;
+                    if(pb) { // 如果存在pb，那么pe必定指向上个pb的内容，所以接下来写回释放即可
+                        bwrite(pb);
+                        brelse(pb);
+                        pb = NULL;
+                    }
+                } else {
+                    *news = clus_num;
+                }
+
+                if(--cnt == 0) {
+                    debug("mark clus %d[sect: %d] as end", clus_num, clus2datsec(fat, clus_num));
+                    *(entry + j) = FAT_CLUS_END;
+                    bwrite(b);
+                    brelse(b);
+                    return FR_OK;
+                }
+                pe = entry + j;
+            } 
+        }
+        if(pb || !pe) {
+            brelse(b);
+        } else {
+            pb = b;
+        }
+    }
+
+    return FR_ERR;
+}
+
+
 
 
 /* 释放cclus簇以及接下来的簇 置位keepfirst将会保留首节点置为END*/
@@ -1190,7 +1173,7 @@ uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus){
  * @param size_in_mem 
  * @return int 
  */
-int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem){
+FR_t fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem){
     /**
      * @brief 在eget中将这两个值赋为0，如果这两个值都为0，说明这个entry对应的file自从
      * 读入打开以来，还没有调用过此函数。
@@ -1209,9 +1192,9 @@ int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_
 
     alloc_num = size/bpc - *clus_cnt;
     
-    #ifdef TODO
-    todo("make the fat_alloc_cluster func positive sequence ");
-    #endif
+    if(alloc_num == 0)
+        return FR_OK;
+
 
     /* 连续逆序分配 */
     if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
@@ -1237,5 +1220,5 @@ int fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_
 
     *clus_cnt += alloc_num;
 
-    return 0; 
+    return FR_OK; 
 }

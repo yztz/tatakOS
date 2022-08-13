@@ -108,7 +108,7 @@ static uint64_t loadinterp(mm_t *mm) {
 }
 
 extern struct proc proc[NPROC];
-int exec(char *path, char **argv, char **envp) {
+int exec(char *path, char *argv[], char *envp[]) {
   // print_argv(argv);
   char *s, *last;
   int i, off;

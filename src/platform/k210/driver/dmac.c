@@ -717,18 +717,38 @@ int dmac_is_idle(dmac_channel_number_t channel_num)
     else
         return 1;
 }
-extern spinlock_t sdlock;
+
+// extern spinlock_t sdlock;
+#include "sdcard.h"
+
 void dmac_wait_idle(dmac_channel_number_t channel_num)
 {   
+    proc_t *p = myproc();
     while(!dmac_is_idle(channel_num)) {
         // printf("sleep...\n");
-        sleep((void *)dmac, &sdlock);
+        sleep((void *)dmac, &p->lock);
+        // printf("wake...\n");
     }
 }
 
+
+
 int dmac_intr(void *ctx)
 {
+    // printf("dma intr...\n");
     dmac_chanel_interrupt_clear(DMAC_CHANNEL0);
+    // if(tran && tran->rw) {
+    //     if (sd_get_dataresponse() != 0x00) {
+    //         // sd_end_cmd();
+    //         // info("sector %d cur %d count %d", sector, count, count, oc);
+    //         // sd_error("no data response");
+    //         panic("no data response");
+    //     }
+    //     tran = NULL;
+    // } else {
+    //     // sd_read_data(frame, 2);
+    // }
+    
     wakeup((void *)dmac);
     return 0;
 }
