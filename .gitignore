@@ -7,3 +7,4 @@ sbi-qemu
 kernel-qemu
 include/generated
 src/include/generated
+lmbench_all.asm

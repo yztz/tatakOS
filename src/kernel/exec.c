@@ -253,8 +253,8 @@ int exec(char *path, char **argv, char **envp) {
 
       continue;
     }
-#endif
 loadseg:
+#endif
     if(loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0)
       goto bad;
   }
