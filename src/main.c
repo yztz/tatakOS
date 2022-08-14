@@ -34,6 +34,7 @@ void main() {
     clear_bss();
     printf("\n%s\n", logo);
     platform_early_init();
+    platform_early_init_hart();
     /* PRCO && CPU */
     procinit();      // process table
     /* PM */
@@ -83,7 +84,8 @@ void main() {
     while(started == 0)
       ;
     __sync_synchronize();
-    while(1);
+    // while(1);
+    platform_early_init_hart();
     kvminithart();    // turn on paging
     trapinithart();   // install kernel trap vector
     plic_init_hart();   // ask PLIC for device interrupts

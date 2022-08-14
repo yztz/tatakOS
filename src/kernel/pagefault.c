@@ -130,7 +130,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
     entry = *pte;
 
     /* 如果valid位不存在，意味着对应的页没有被map过（entry为0），或者不存在内存中（swap） */
-    if(!pte_valid(entry)) {
+    if(!pte_valid(entry)){
         if(pte_none(entry)){
             if(vma->map_file)
                 return do_filemap_page(pte, vma, rva);

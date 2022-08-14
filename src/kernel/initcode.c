@@ -19,7 +19,7 @@ void main() {
     mkdirat(-100, "proc/mounts");
 
     memuse();
-    // shell();
+    shell();
     shell("./busybox_testcode.sh");
     shell("./lua_testcode.sh");
     // shell("./lmbench_testcode.sh");
