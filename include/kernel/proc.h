@@ -75,7 +75,7 @@ struct cpu {
 extern struct cpu cpus[NUM_CORES];
 
 
-enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum procstate { UNUSED, USED, SLEEPING, DEEP_SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 struct fat_entry;
 // Per-process state
@@ -142,6 +142,7 @@ void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
+void            sleep_deep(void *chan, struct spinlock *lk);
 void            userinit(void);
 int             waitpid(int cid, uint64 addr, int options);
 void            wakeup(void*);

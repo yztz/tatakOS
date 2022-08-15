@@ -193,6 +193,7 @@ void *buddy_alloc(size_t size) {
   /* 只设置了一个开头的页，所以连续分配的大页不能再分为4k的小页 */
   page_t *page = PATOPAGE(b);
   assert(page_refcnt(page) == 0);
+  assert(page->alloc == 0);
   page->alloc = 1;
   mark_page((uint64_t)b, ALLOC_BUDDY);
 

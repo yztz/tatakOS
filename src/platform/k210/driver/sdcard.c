@@ -6,6 +6,7 @@
 #include "spi.h"
 #include "defs.h"
 #include "gpiohs.h"
+#include "kernel/proc.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 
@@ -164,15 +165,17 @@ static uint8_t sd_get_response(void)
  *         - status 110: Data rejected due to a Write error.
  *         - status 111: Data rejected due to other error.
  */
-static uint8_t (sd_get_dataresponse)(void)
+uint8_t (sd_get_dataresponse)(void)
 {
-	uint8_t response;
+	uint8_t response = sd_get_response();
 	/*!< Read resonse */
-	sd_read_data(&response, 1);
+	// sd_read_data(&response, 1);
+	
+	uint8_t or = response;
 	/*!< Mask unused bits */
 	response &= 0x1F;
 	if (response != 0x05) {
-		printf("status %b", response);
+		printf("status %b", or);
 		return 0xFF;
 	}
 	/*!< Wait null data */
@@ -367,7 +370,9 @@ void io_mux_init(void)
     fpioa_set_function(29, FUNC_SPI0_SS3);
 }
 
-spinlock_t sdlock;
+sleeplock_t sdlock;
+sd_transaction_t *tran;
+
 
 static void sd_error(char *CMD) {
 	char buf[255];
@@ -386,11 +391,11 @@ uint8_t sd_init(void)
 {
 	uint8_t frame[10], index, result;
 
-	initlock(&sdlock, "sdlock");
+	initsleeplock(&sdlock, "sdlock");
 	/* 设置功能管脚 */
 	io_mux_init();
 	/*!< Initialize SD_SPI */
-	// sd_lowlevel_init(); // 拉低HS7电平，设置时钟速率为低速模式
+	sd_lowlevel_init(); // 拉低HS7电平，设置时钟速率为低速模式
 	/*!< SD chip select high */
 	SD_CS_HIGH(); // 拉高HS7电平
 
@@ -449,14 +454,27 @@ uint8_t sd_init(void)
 	if ((frame[0] & 0x40) == 0)
 		sd_error("CMD58 frame");
 
-	// SD_HIGH_SPEED_ENABLE();
+	SD_HIGH_SPEED_ENABLE();
 	return sd_get_cardinfo(&cardinfo);
 }
 
-uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
+uint8_t sd_read_sector_dma(uint8_t *data_buff, bio_vec_t *vec)
 {
 	uint8_t frame[2], flag;
-	acquire(&sdlock);
+	proc_t *p = myproc();
+
+	sector_t sector = vec->bv_start_num;
+	int count = vec->bv_count;
+
+	sd_transaction_t rtran = (sd_transaction_t){
+		.rw = 0,
+		.vec = vec
+	};
+
+	acquiresleep(&sdlock);
+	acquire(&p->lock);
+
+	tran = &rtran;
 
 	if (count == 1) {
 		flag = 0;
@@ -465,7 +483,7 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
 		flag = 1;
 		sd_send_cmd(SD_CMD18, sector, 0);
 	}
-	sd_end_cmd();
+	// sd_end_cmd();
 
 	/*!< Check if the SD acknowledged the read block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
@@ -486,15 +504,21 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
 		data_buff += 512;
 		count--;
 	}
-	
+	sd_end_cmd();
 	if (flag) {
 		sd_send_cmd(SD_CMD12, 0, 0);
 		sd_get_response();
 		sd_end_cmd();
+		sd_end_cmd();
 	}
 
-	sd_end_cmd();
-	release(&sdlock);
+	// sd_end_cmd();
+	// sd_end_cmd();
+
+	tran = NULL;
+
+	release(&p->lock);
+	releasesleep(&sdlock);
 
 	if(count > 0) 
 		panic("read error");
@@ -503,30 +527,42 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count)
 }
 
 // #include "profile.h"
-uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
+uint8_t (sd_write_sector_dma)(uint8_t *data_buff, bio_vec_t *vec)
 {
 	uint8_t frame[2] = {0xFF};
-	int flag = count > 1;
+	// int flag = count > 1;
+	proc_t *p = myproc();
 
-	acquire(&sdlock);
+	sector_t sector = vec->bv_start_num;
+	int count = vec->bv_count;
 
-	if (count == 1) {
-		frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
-		sd_send_cmd(SD_CMD24, sector, 0);
-	} else {
+	sd_transaction_t wtran = (sd_transaction_t){
+		.rw = 1,
+		.vec = vec
+	};
+
+
+	acquiresleep(&sdlock);
+	acquire(&p->lock);
+
+	tran = &wtran;
+
+	// if (count == 1) {
+	// 	frame[1] = SD_START_DATA_SINGLE_BLOCK_WRITE;
+	// 	sd_send_cmd(SD_CMD24, sector, 0);
+	// } else {
 		frame[1] = SD_START_DATA_MULTIPLE_BLOCK_WRITE;
-		sd_send_cmd(SD_ACMD23, count, 0);
+		sd_send_cmd(SD_ACMD23, vec->bv_count, 0);
 		sd_get_response();
 		sd_end_cmd();
 		sd_send_cmd(SD_CMD25, sector, 0);
-	}
+	// }
 	/*!< Check if the SD acknowledged the write block command: R1 response (0x00: no errors) */
 	if (sd_get_response() != 0x00) {
 		sd_end_cmd();
 		sd_error("no response");
 	}
 
-	sd_end_cmd();
 	while (count--) {
 		/*!< Send the data token to signify the start of the data */
 		sd_write_data(frame, 2);
@@ -538,11 +574,12 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
 		/*!< Read data response */
 		if (sd_get_dataresponse() != 0x00) {
 			sd_end_cmd();
+			info("sector %d", sector);
 			sd_error("no data response");
 		}
 	}
 
-	if(flag) {
+	// if(flag) {
 		uint8_t stop = 0xfd;
 		sd_write_data(&stop, 1);
 		if(sd_get_response() == 0xff) {
@@ -552,12 +589,15 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, int count)
 		/*!< Wait null data */
 		while (response == 0)
 			sd_read_data(&response, 1);
-	}
+	// }
 
-	// sd_end_cmd();
+	sd_end_cmd();
 	sd_end_cmd();
 
-	release(&sdlock);
+	tran = &wtran;
+
+	release(&p->lock);
+	releasesleep(&sdlock);
 	/*!< Returns the reponse */
 	return 0;
 }

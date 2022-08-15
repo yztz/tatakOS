@@ -526,7 +526,7 @@ void free_more_memory(void)
 	/* 是否会出现两个线程写回一个页的情况？ */
 	/* 尝试释放所有的pagecache */
   int u1 = atomic_get(&used);
-	writeback_entrys_and_free_mapping(NULL);
+	// writeback_entrys_and_free_mapping(NULL);
 	// wakeup_bdflush(1024);
 	// yield();
 //  extern entry_t pool[NENTRY];

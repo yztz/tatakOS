@@ -25,6 +25,6 @@ void vma_print(vma_t *vma) {
         if(vma->map_file) {
             filename = vma->map_file->ep->name;
         }
-        printf("%#lx vma: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
+        printf("vma@%#lx: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
     }
 }

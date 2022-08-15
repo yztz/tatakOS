@@ -161,6 +161,15 @@ uint64_t sys_times(void) {
 }
 
 
+uint64_t sys_madvice(void) {
+  int UNUSED(advice);
+  
+  // argint(2, &advice);
+
+  return 0;
+}
+
+
 uint64_t sys_halt(void) {
   LOOP();
   return 0;
@@ -223,6 +232,14 @@ uint64_t sys_setitimer(void) {
   // debug("setitimer called");
   return 0;
 } 
+
+uint64_t sys_getrandom(void) {
+  return 0;
+}
+
+uint64_t sys_prctl(void) {
+  return 0;
+}
 
 uint64 sys_clock_gettime(void) {
   // int clockid;

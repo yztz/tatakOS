@@ -1,7 +1,7 @@
 #ifndef _H_PARAM_
 #define _H_PARAM_
 
-#define NPROC        100  // maximum number of processes
+#define NPROC        12  // maximum number of processes
 #define NOFILE       5  // open files per process
 #define NFILE        30  // open files per system
 #define NDEV         10  // maximum major device number

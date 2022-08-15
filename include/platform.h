@@ -80,6 +80,7 @@ extern void platform_plic_init(); // execute once
 extern void platform_plic_init_hart(); // execute by every hart
 /* DIRVER */
 extern void platform_early_init();
+extern void platform_early_init_hart();
 extern void platform_dirver_init();
 /////////////////////////////////////////////////
 //////////// platform interface end /////////////

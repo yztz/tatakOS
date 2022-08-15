@@ -367,6 +367,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   }
 
   if((flags & CLONE_CHILD_SETTID)) {
+    np->set_tid_addr = ctid;
     // panic("not support now");
     // copy_to_user(ctid, &np->pid, sizeof(int));
   }
@@ -397,7 +398,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
   
   np->cwd = edup(p->cwd);
-  if(np->exe)
+  if(p->exe)
     np->exe = edup(p->exe);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
@@ -420,6 +421,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
 
  bad:
+  debug("clone fail");
   freeproc(np);
   release(&np->lock);
   return -1;
@@ -498,6 +500,7 @@ void exit(int status) {
 
 void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
+    if(signum == SIGKILL) p->killed = 1;
     p->sig_pending |= (1L << (signum - 1));
     if(p->state == SLEEPING)
       p->state = RUNNABLE;
@@ -603,7 +606,7 @@ scheduler(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
+      if(!try_acquire(&p->lock)) continue;
       if(p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
@@ -697,6 +700,9 @@ forkret(void)
   // Still holding p->lock from scheduler.
   release(&p->lock);
 
+  if(p->set_tid_addr)
+    copy_to_user(p->set_tid_addr, &p->pid, 4);
+
   if (first) {
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
@@ -723,7 +729,7 @@ forkret(void)
  * if(lk != NULL)
  */
 void
-sleep(void *chan, struct spinlock *lk)
+__sleep(void *chan, struct spinlock *lk, int deep)
 {
   struct proc *p = myproc();
   
@@ -746,7 +752,7 @@ sleep(void *chan, struct spinlock *lk)
   }
 
   p->chan = chan;
-  p->state = SLEEPING;
+  p->state = deep ? DEEP_SLEEPING : SLEEPING;
 
   sched();
 
@@ -766,11 +772,17 @@ sleep(void *chan, struct spinlock *lk)
   }
 }
 
+void sleep(void *chan, struct spinlock *lk) {
+  __sleep(chan, lk, 0);
+}
+
+void sleep_deep(void *chan, struct spinlock *lk) {
+  __sleep(chan, lk, 1);
+}
+
 // Wake up all processes sleeping on chan.
 // Must be called without any p->lock.
-void
-wakeup(void *chan)
-{
+void wakeup(void *chan) {
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -787,7 +799,7 @@ wakeup(void *chan)
 }
 
 void wake_up_process(proc_t *p) {
-  if(p->state != SLEEPING)
+  if(p->state != SLEEPING || p->state != DEEP_SLEEPING)
     ER();
   acquire(&p->lock);
   p->state = RUNNABLE;
@@ -861,11 +873,12 @@ void
 procdump(void)
 {
   static char *states[] = {
-  [UNUSED]    "UNUSED   ",
-  [SLEEPING]  "SLEEPING ",
-  [RUNNABLE]  "RUNNABLE ",
-  [RUNNING]   "RUNNING  ",
-  [ZOMBIE]    "ZOMBIE   ",
+  [UNUSED]          "UNUSED        ",
+  [SLEEPING]        "SLEEPING      ",
+  [DEEP_SLEEPING]   "DEEP_SLEEPING ",
+  [RUNNABLE]        "RUNNABLE      ",
+  [RUNNING]         "RUNNING       ",
+  [ZOMBIE]          "ZOMBIE        ",
   };
   struct proc *p;
   char *state;

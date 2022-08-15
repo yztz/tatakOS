@@ -42,7 +42,7 @@ int main() {
     uint64 test_ret1 = syscall(NR_timetag);
 
     for(int i = 0; i < FILE_SIZE / BUF_SIZE; i++) { // 50MB
-
+        printf("i: %d..\n", i);
         letter = 'A' + i % 26;
         memset(buff, letter, BUF_SIZE);
 

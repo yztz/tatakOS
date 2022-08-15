@@ -26,6 +26,10 @@ void platform_early_init() {
     // set_csr(sstatus, SSTATUS_SUM);
 }
 
+void platform_early_init_hart() {
+    
+}
+
 void platform_plic_init() {
     plic_set_priority(UART_IRQ, 1);
     plic_set_priority(IRQN_DMA0_INTERRUPT, 1);

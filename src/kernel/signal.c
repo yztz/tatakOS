@@ -16,12 +16,13 @@ static void sig_ign(int signum) {
 static void sig_dfl(int signum) {
     proc_t *p = myproc();
     debug("SIG %d default", signum);
+
     if(signum == SIGCHLD) {
         int UNUSED(freed) = freechild();
         debug("%d Child Freed", freed);
         return;
     } 
-
+    
     if(signum == SIGKILL) {
         p->killed = 1;
         return;
@@ -61,13 +62,13 @@ void sig_deref(signal_t *self) {
 void sig_reset(signal_t *self) {
     acquire(&self->siglock);
     memset(self->actions, 0, sizeof(self->actions));
-    self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
+    // self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
     release(&self->siglock);
 }
 
 
 signal_t *sig_new() {
-    signal_t *newsig = kmalloc(sizeof(signal_t));
+    signal_t *newsig = kzalloc(sizeof(signal_t));
     if(newsig == NULL) 
         return NULL;
     initlock(&newsig->siglock, "siglock");
@@ -80,7 +81,7 @@ void sig_free(signal_t **pself) {
         return;
     signal_t *self = *pself;
 
-    if(self->ref == 0)
+    if(self->ref <= 0)
         panic("ref");
     
     sig_deref(self);
@@ -114,6 +115,7 @@ struct start_args {
 static char sigret_code[] = { 0x93, 0x08, 0xB0, 0x08, 0x73, 0x00, 0x00, 0x00 };
 
 static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *act) {
+    debug("SIG %d handled handler is %#lx", signum, (uint64_t)act->handler);
     tf_t *tf = proc_get_tf(p);
 
     tf_backup(tf);
@@ -166,6 +168,16 @@ static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *a
     //     debug("func %#lx param %#lx", args.start_func, args.start_arg);
 }
 
+// C KILL WAITPID
+// A  --->   <-- B
+// 浅度睡眠（Interr） 深度睡眠（）
+// SIGCHLD: 子进程退出时，发送给父进程
+// waitpid/SIGCHLD
+// 用户定义 SIG_IGN SIG_DFL
+// waitpid ----> SLEEP <---- SIGCHILD
+// waitpid
+// SIGCHLD 用户处理函数-->waitpid()
+
 uint64_t sys_rt_sigreturn(void) {
     proc_t *p = myproc();
     tf_t *tf =proc_get_tf(p);
@@ -215,7 +227,7 @@ uint64_t sys_rt_sigreturn(void) {
         tf->epc = context->uc_mcontext.__gregs[0];
     }
 
-    debug("epc is %#lx", tf->epc);
+    debug("return to %#lx", tf->epc);
 
     kfree(context);
 

@@ -72,9 +72,10 @@
 207    recvfrom     sys_recvfrom
 208    setsockopt   sys_setsockopt
 ###############MM###############
-214     brk      sys_brk  
+214     brk       sys_brk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
+233     madvice   sys_madvice
 226     mprotect  sys_mprotect
 227     msync     sys_msync
 ##############Sys###############
@@ -87,8 +88,10 @@
 160     uname           sys_uname
 165     getrusage       sys_getrusage
 166     umask           sys_umask
+167     prctl           sys_prctl
 169     gettimeofday    sys_gettimeofday
 179     sysinfo         sys_sysinfo
+278     getrandom       sys_getrandom
 283     membarrier      sys_membarrier
 #############MISC###############
 175     geteuid     sys_geteuid
@@ -98,5 +101,5 @@
 90     bio_cache      sys_bio_cache
 231    profile        sys_profile
 232    philosophy   sys_philosophy
-233    memuse       sys_memuse
+235    memuse       sys_memuse
 234    halt         sys_halt

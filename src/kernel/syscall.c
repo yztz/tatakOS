@@ -128,7 +128,7 @@ syscall(void)
 
   num = proc_get_tf(p)->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    debug_if(p->pid >= 5, "PID %d syscall " grn("%s") " from %#lx", p->pid, syscall_name(num), r_sepc());
+    // debug_if(p->pid >= 3, "PID %d syscall " grn("%s") " from %#lx", p->pid, syscall_name(num), r_sepc());
     proc_get_tf(p)->a0 = syscalls[num]();
   } else {
     printf("PID %d %s: "rd("unknown sys call %d")" sepc %lx\n",

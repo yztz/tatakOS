@@ -3,9 +3,9 @@ MAKEFLAGS += --no-print-directory
 
 #===========================CONFIG=================================#
 # CPU NUMS(qemu)
-CPUS ?= 4
+CPUS ?= 2
 # platform [qemu|k210]
-platform ?= qemu
+platform ?= k210
 # debug [on|off]
 debug ?= off
 # serial-port
@@ -76,14 +76,14 @@ QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#
-# all: kernel
-# 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
-# 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
-# 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
-# 	mv $(BUILD_ROOT)/k210.bin os.bin
 all: kernel
-	cp $(BUILD_ROOT)/kernel kernel-qemu
-	cp bootloader/sbi-qemu sbi-qemu
+	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
+	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
+	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
+	mv $(BUILD_ROOT)/k210.bin os.bin
+# all: kernel
+# 	cp $(BUILD_ROOT)/kernel kernel-qemu
+# 	cp bootloader/sbi-qemu sbi-qemu
 
 run: kernel
 ifeq ("$(platform)", "k210") # k210
@@ -156,7 +156,7 @@ $(MNT_DIR):
 
 # $(fs.img): user
 $(fs.img): user $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=1M count=256
+	@dd if=/dev/zero of=$@ bs=4M count=64
 	@mkfs.vfat -F 32 -s 8 $@
 	@sudo mount $@ $(MNT_DIR)
 	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
@@ -179,6 +179,9 @@ umnt: $(MNT_DIR)
 
 sdcard: $(fs.img)
 	sudo dd if=$(fs.img) of=/dev/sdb bs=4M
+
+attach:
+	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@

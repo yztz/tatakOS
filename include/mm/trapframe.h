@@ -85,7 +85,7 @@ tf_t *tf_new();
 void tf_free(tf_t **pptf);
 void tf_backup(tf_t *self);
 void tf_restore(tf_t *self);
-
+void tf_reset(tf_t *self, uint64_t pc, uint64_t sp);
 void tf_print(tf_t *tf);
 
 #endif

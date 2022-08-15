@@ -104,38 +104,37 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
 }
 
 int piperead(struct pipe *pi, uint64 addr, int n) {
-  int i;
   struct proc *pr = myproc();
 
   acquire(&pi->lock);
-  while(i < n){
-    if(pi->writeopen == 0 || pr->killed){
-      release(&pi->lock);
-      return -1;
+  while(pi->writeopen && __pipe_empty(pi)) {
+    if(pr->killed) {
+      goto bad;
     }
-    if(__pipe_empty(pi)){ //DOC: pipewrite-full
-      wakeup(&pi->nwrite);
-      sleep(&pi->nread, &pi->lock);
-    } else {
-      // 本次可读数据长度
-      int rest = min(pi->nwrite - pi->nread, n);
-      int cur = pi->nread % PIPESIZE;
-      // 管道数组到尾部的长度
-      int avail = PIPESIZE - cur;
-      if(rest <= avail) {
-        if(copy_to_user(addr, &pi->data[cur], rest) == -1) break;
-      } else {
-        if(copy_to_user(addr, &pi->data[cur], avail) == -1) break;
-        if(copy_to_user(addr + avail, &pi->data[0], rest - avail) == -1) break;
-      }
-      
-      pi->nread+=rest;
-      i+=rest;
-    }
+    sleep(&pi->nread, &pi->lock);
   }
+
+  // 本次可读数据长度
+  int rest = min(pi->nwrite - pi->nread, n);
+  int cur = pi->nread % PIPESIZE;
+  // 管道数组到尾部的长度
+  int avail = PIPESIZE - cur;
+  if(rest <= avail) {
+    if(copy_to_user(addr, &pi->data[cur], rest) == -1) goto bad;
+  } else {
+    if(copy_to_user(addr, &pi->data[cur], avail) == -1) goto bad;
+    if(copy_to_user(addr + avail, &pi->data[0], rest - avail) == -1) goto bad;
+  }
+  pi->nread+=rest;
+  
   wakeup(&pi->nwrite);  //DOC: piperead-wakeup
   release(&pi->lock);
-  return i;
+
+  return rest;
+
+ bad:
+  release(&pi->lock);
+  return -1;
 }
 
 

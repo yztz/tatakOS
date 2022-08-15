@@ -78,11 +78,21 @@ typedef struct {
 
 extern SD_CardInfo cardinfo;
 
+struct bio_vec;
+
+typedef struct __sd_transaction{
+	struct bio_vec *vec;
+	int rw;
+} sd_transaction_t;
+
+extern sd_transaction_t *tran;
+
 uint8_t sd_init(void);
 uint8_t sd_read_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
 uint8_t sd_write_sector(uint8_t *data_buff, uint32_t sector, uint32_t count);
-uint8_t sd_read_sector_dma(uint8_t *data_buff, uint32_t sector, int count);
-uint8_t sd_write_sector_dma(uint8_t *data_buff, uint32_t sector, int count);
+uint8_t sd_read_sector_dma(uint8_t *data_buff, struct bio_vec *vec);
+uint8_t sd_write_sector_dma(uint8_t *data_buff, struct bio_vec *vec);
+uint8_t sd_get_dataresponse(void);
 
 #ifdef __cplusplus
 }
