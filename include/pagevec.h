@@ -11,6 +11,7 @@
  * 可以避免频繁的获取lru lock。提升系统性能。
  * 
  * pagevec是否有必要设置为cpu私有?
+ * 有必要设置为私有，因为非私有会引发bug。
  * 
  */
 
@@ -21,7 +22,7 @@
 #include "types.h"
 #include "mm/page.h"
 
-#define PAGEVEC_SIZE	1
+#define PAGEVEC_SIZE	14
 
 struct page;
 struct address_space;
@@ -34,7 +35,7 @@ struct pagevec {
 
 typedef struct pagevec pagevec_t;
 
-extern pagevec_t lru_add_pvecs, lru_add_active_pvecs;
+// extern pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 
 void pagevec_release(struct pagevec *pvec);
 void __pagevec_release_nonlru(struct pagevec *pvec);

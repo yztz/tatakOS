@@ -91,6 +91,26 @@ myproc(void) {
   return p;
 }
 
+struct pagevec;
+
+struct pagevec*
+my_inactive_pvec(){
+  push_off();
+  struct cpu *c = mycpu();
+  struct pagevec *inactive_pvec = c->inactive_pvec;
+  pop_off();
+  return inactive_pvec;
+}
+
+struct pagevec*
+my_active_pvec(){
+  push_off();
+  struct cpu *c = mycpu();
+  struct pagevec *active_pvec = c->active_pvec;
+  pop_off();
+  return active_pvec;
+}
+
 int allocpid() {
   int pid;
   
@@ -561,7 +581,7 @@ waitpid(int cid, uint64 addr, int options)
           // Found one.
          
           /* 进程退出的时候，有些页还在pagevec中，没有释放，看上去好像内存泄露了，所以这里加上这句。 */
-          lru_add_drain();
+          // lru_add_drain();
           if(addr != 0 && copyout(addr, (char *)&np->xstate,
                                   sizeof(np->xstate)) < 0) {
             release(&np->lock);
