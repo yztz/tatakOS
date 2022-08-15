@@ -96,6 +96,7 @@ void lru_cache_add(page_t *page)
 	get_page(page);
 	if (!pagevec_add(pvec, page))
 		pagevec_lru_add(pvec);
+	pop_off();
 }
 
 /**
@@ -109,6 +110,7 @@ void lru_cache_add_active(page_t *page)
 	get_page(page);
 	if (!pagevec_add(pvec, page))
 		pagevec_lru_add_active(pvec);
+	pop_off();
 }
 
 /**
@@ -193,11 +195,13 @@ void lru_add_drain(void)
 	if (pagevec_count(pvec))
 		pagevec_lru_add(pvec);
 
+	pop_off();
 	// pvec = &(lru_add_active_pvecs);
 	pvec = my_active_pvec();
 
 	if (pagevec_count(pvec))
 		pagevec_lru_add_active(pvec);
+	pop_off();
 }
 
 /*
