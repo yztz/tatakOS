@@ -25,7 +25,7 @@ def read_file():
     return ret
 
 tbl_formatter = "__SYS_CALL({num}, {name}, {sys_func})"
-hdr_formatter = "#define NR_{name:10}{num}"
+hdr_formatter = "#define NR_{name:20}{num}"
 
 formatters = {"hdr": hdr_formatter, "tbl": tbl_formatter}
 def gen_out(li):
