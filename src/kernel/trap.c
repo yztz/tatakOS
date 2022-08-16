@@ -70,14 +70,15 @@ usertrap(void)
   struct proc *p = myproc();
   p->u_time += ticks - p->stub_time;
   // save user program counter.
-  proc_get_tf(p)->epc = read_csr(sepc);
+  p->trapframe->epc = read_csr(sepc);
+  tf_flstore(p->trapframe);
   // if(scause != INTR_TIMER) {
   //   // uint64_t instr;
   //   // copy_from_user(&instr, 0x1000, 8);
   //   printf("scause is %s sepc is %#lx\n", riscv_cause2str(scause), r_sepc());
     
-  //   if(proc_get_tf(p)->epc == 0x1004)
-  //     proc_get_tf(p)->epc += 8;
+  //   if(p->trapframe->epc == 0x1004)
+  //     p->trapframe->epc += 8;
   //   tf_print(p->trapframe);
   // }
 
@@ -87,7 +88,7 @@ usertrap(void)
     }
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
-    proc_get_tf(p)->epc += 4;
+    p->trapframe->epc += 4;
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     p->stub_time = ticks;
@@ -106,7 +107,7 @@ usertrap(void)
   }
 
   if(p->killed) {
-    // tf_print(proc_get_tf(p));
+    // tf_print(p->trapframe);
     exit(-1);
   }
 
@@ -122,8 +123,8 @@ usertrap(void)
   //   copy_from_user(&data, 0x7fffffb0 + 72, 8);
   //   printf("scause is %s sepc is %#lx data is %#lx\n", riscv_cause2str(scause), r_sepc(), data);
     
-  //   // if(proc_get_tf(p)->epc == 0x1004)
-  //   //   proc_get_tf(p)->epc += 8;
+  //   // if(p->trapframe->epc == 0x1004)
+  //   //   p->trapframe->epc += 8;
   //   tf_print(p->trapframe);
   // }
 
@@ -146,14 +147,14 @@ usertrapret(void)
   p->stub_time = ticks;
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec((uint64)uservec);
-  // printf("epc is %#lx\n", proc_get_tf(p)->epc);
+  // printf("epc is %#lx\n", p->trapframe->epc);
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.        // kernel page table
-  proc_get_tf(p)->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
-  proc_get_tf(p)->kernel_trap = (uint64)usertrap;
-  proc_get_tf(p)->kernel_hartid = r_tp();         // hartid for cpuid()
-
+  p->trapframe->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
+  p->trapframe->kernel_trap = (uint64)usertrap;
+  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+  tf_flrestore(p->trapframe);
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
   
@@ -164,14 +165,14 @@ usertrapret(void)
   w_sstatus(x);
 
   // set S Exception Program Counter to the saved user pc.
-  w_sepc(proc_get_tf(p)->epc);
+  w_sepc(p->trapframe->epc);
   // tell trampoline.S the user page table to switch to.
   // uint64 satp = MAKE_SATP(p->pagetable);
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
   // and switches to user mode with sret.
-  userret(proc_get_tf(p));
+  userret(p->trapframe);
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,

@@ -66,13 +66,13 @@ int main() {
     print_cache();
     // syscall(NR_profile);
     
-
+    printf(grn("wating for writing pages to disk...\n"));
     uint64 test_ret3 = syscall(NR_timetag);
     // int test_ret3 = get_time();
     close(fd);
     // int test_ret4 = get_time();
     uint64 test_ret4 = syscall(NR_timetag);
-    printf(rd("wating for writing pages to disk...\n"));
+    
 	if(test_ret3 > 0 && test_ret4 > 0){
 		printf(bl("close file, write pages back to disk\n"));
 		printf(bl("start:%d, end:%d\n"), test_ret3, test_ret4);

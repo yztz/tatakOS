@@ -75,6 +75,41 @@ struct trapframe {
   /* 264 */ uint64 t4;
   /* 272 */ uint64 t5;
   /* 280 */ uint64 t6;
+  char resv[8];
+// 也许我们可以选择性地保存
+  /* 296 */ uint64 f0;
+  /* 304 */ uint64 f1;
+  /* 312 */ uint64 f2;
+  /* 320 */ uint64 f3;
+  /* 328 */ uint64 f4;
+  /* 336 */ uint64 f5;
+  /* 344 */ uint64 f6;
+  /* 352 */ uint64 f7;
+  /* 360 */ uint64 f8;
+  /* 368 */ uint64 f9;
+  /* 376 */ uint64 f10;
+  /* 384 */ uint64 f11;
+  /* 392 */ uint64 f12;
+  /* 400 */ uint64 f13;
+  /* 408 */ uint64 f14;
+  /* 416 */ uint64 f15;
+  /* 424 */ uint64 f16;
+  /* 432 */ uint64 f17;
+  /* 440 */ uint64 f18;
+  /* 448 */ uint64 f19;
+  /* 456 */ uint64 f20;
+  /* 464 */ uint64 f21;
+  /* 472 */ uint64 f22;
+  /* 480 */ uint64 f23;
+  /* 488 */ uint64 f24;
+  /* 496 */ uint64 f25;
+  /* 504 */ uint64 f26;
+  /* 512 */ uint64 f27;
+  /* 520 */ uint64 f28;
+  /* 528 */ uint64 f29;
+  /* 536 */ uint64 f30;
+  /* 544 */ uint64 f31;
+  /* 552 */ uint64 fcsr;
   struct trapframe *sigtf;
 };
 
@@ -87,5 +122,7 @@ void tf_backup(tf_t *self);
 void tf_restore(tf_t *self);
 void tf_reset(tf_t *self, uint64_t pc, uint64_t sp);
 void tf_print(tf_t *tf);
+void tf_flstore(tf_t *self);
+void tf_flrestore(tf_t *self);
 
 #endif

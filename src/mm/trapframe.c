@@ -35,6 +35,90 @@ void tf_free(tf_t **pptf) {
 }
 
 
+void tf_flstore(tf_t *self) {
+    __asm__ __volatile__ (
+        "fsd f0,296(%0)\n\t"
+        "fsd f1,304(%0)\n\t"
+        "fsd f2,312(%0)\n\t"
+        "fsd f3,320(%0)\n\t"
+        "fsd f4,328(%0)\n\t"
+        "fsd f5,336(%0)\n\t"
+        "fsd f6,344(%0)\n\t"
+        "fsd f7,352(%0)\n\t"
+        "fsd f8,360(%0)\n\t"
+        "fsd f9,368(%0)\n\t"
+        "fsd f10,376(%0)\n\t"
+        "fsd f11,384(%0)\n\t"
+        "fsd f12,392(%0)\n\t"
+        "fsd f13,400(%0)\n\t"
+        "fsd f14,408(%0)\n\t"
+        "fsd f15,416(%0)\n\t"
+        "fsd f16,424(%0)\n\t"
+        "fsd f17,432(%0)\n\t"
+        "fsd f18,440(%0)\n\t"
+        "fsd f19,448(%0)\n\t"
+        "fsd f20,456(%0)\n\t"
+        "fsd f21,464(%0)\n\t"
+        "fsd f22,472(%0)\n\t"
+        "fsd f23,480(%0)\n\t"
+        "fsd f24,488(%0)\n\t"
+        "fsd f25,496(%0)\n\t"
+        "fsd f26,504(%0)\n\t"
+        "fsd f27,512(%0)\n\t"
+        "fsd f28,520(%0)\n\t"
+        "fsd f29,528(%0)\n\t"
+        "fsd f30,536(%0)\n\t"
+        "fsd f31,544(%0)\n\t"
+        "frcsr t0\n\t"
+        "sd t0,552(%0)\n\t"
+        :
+        : "r"(self)
+        : "t0"
+    );
+}
+void tf_flrestore(tf_t *self) {
+    __asm__ __volatile__ (
+        "fld f0,296(%0)\n\t"
+        "fld f1,304(%0)\n\t"
+        "fld f2,312(%0)\n\t"
+        "fld f3,320(%0)\n\t"
+        "fld f4,328(%0)\n\t"
+        "fld f5,336(%0)\n\t"
+        "fld f6,344(%0)\n\t"
+        "fld f7,352(%0)\n\t"
+        "fld f8,360(%0)\n\t"
+        "fld f9,368(%0)\n\t"
+        "fld f10,376(%0)\n\t"
+        "fld f11,384(%0)\n\t"
+        "fld f12,392(%0)\n\t"
+        "fld f13,400(%0)\n\t"
+        "fld f14,408(%0)\n\t"
+        "fld f15,416(%0)\n\t"
+        "fld f16,424(%0)\n\t"
+        "fld f17,432(%0)\n\t"
+        "fld f18,440(%0)\n\t"
+        "fld f19,448(%0)\n\t"
+        "fld f20,456(%0)\n\t"
+        "fld f21,464(%0)\n\t"
+        "fld f22,472(%0)\n\t"
+        "fld f23,480(%0)\n\t"
+        "fld f24,488(%0)\n\t"
+        "fld f25,496(%0)\n\t"
+        "fld f26,504(%0)\n\t"
+        "fld f27,512(%0)\n\t"
+        "fld f28,520(%0)\n\t"
+        "fld f29,528(%0)\n\t"
+        "fld f30,536(%0)\n\t"
+        "fld f31,544(%0)\n\t"
+        "ld t0,552(%0)\n\t"
+        "fscsr t0\n\t"
+        :
+        : "r"(self)
+        : "t0"
+    );
+}
+
+
 void tf_print(tf_t *tf) {
     printf("Trapframe {\n");
     printf("    sp: %lx\n", tf->sp);
