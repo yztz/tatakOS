@@ -214,7 +214,7 @@ r_stvec()
 #define SATP_SV39 (8L << 60)
 
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
-#define FETCH_PGTBL() (r_satp() << 12)
+#define FETCH_PGTBL() ((pagetable_t)(r_satp() << 12))
 
 // supervisor address translation and protection;
 // holds the address of the page table.

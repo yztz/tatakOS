@@ -62,9 +62,7 @@ int page_type(uint64_t pa) {
 }
 
 
-pte_t *
-_walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
-{
+pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec) {
   if(va >= MAXVA)
     panic("walk");
 
@@ -85,9 +83,7 @@ _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec)
 // physical addresses starting at pa. va and size might not
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
-int
-_mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec)
-{
+int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec) {
   uint64 start, a, last;
   pte_t *pte;
 
@@ -97,7 +93,7 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, in
   start = a = PGROUNDDOWN_SPEC(va, spec);
   last = PGROUNDDOWN_SPEC(va + size - 1, spec);
   for(;;){
-    if((pte = _walk(pagetable, a, 1, spec)) == 0)
+    if((pte = __walk(pagetable, a, 1, spec)) == 0)
       goto bad;
     if(*pte & PTE_V) {
       pte_print(pte);
@@ -113,26 +109,26 @@ _mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, in
 
   bad:
   debug("mappages fail");
-  _uvmunmap(pagetable, start, (a-start)/PGSIZE_SPEC(spec), 0, spec);
+  __uvmunmap(pagetable, start, (a-start)/PGSIZE_SPEC(spec), 0, spec);
   return -1;
 }
 
 // Remove npages of mappings starting from va. va must be
 // page-aligned. The mappings must exist.
 // Optionally free the physical memory.
-void
-_uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec)
-{
+void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec) {
   uint64 a;
   pte_t *pte;
   int pgsize = PGSIZE_SPEC(spec);
+
+  int need_flush = FETCH_PGTBL() == pagetable;
 
   if((va % pgsize) != 0)
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
     // printf(ylw("a: %p\n"), a);
-    if((pte = _walk(pagetable, a, 0, spec)) == 0){
+    if((pte = __walk(pagetable, a, 0, spec)) == 0){
       continue;
     }
     if((*pte & PTE_V) == 0) {
@@ -145,7 +141,9 @@ _uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec
       kfree((void*)pa);
     }
     *pte = 0;
-    sfence_vma_addr(a);
+
+    if(need_flush)
+      sfence_vma_addr(a);
   }
 }
 

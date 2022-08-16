@@ -129,10 +129,6 @@ static inline void unmark_page(uint64_t pa, int type) {
   pages[PAGE2NUM(pa)].type &= ~type;
 }
 int     page_type(uint64_t pa);
-
-int     _mappages(pagetable_t pagetable, uint64 va, size_t sz, uint64 pa, int perm, int spec);
-pte_t*  _walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
-void    _uvmunmap(pagetable_t, uint64, uint64, int, int);
 void    pte_print(pte_t *pte);
 
 
@@ -164,16 +160,21 @@ void get_lock_page(page_t *page);
 void print_not_freed_pages();
 void reset_page(page_t *page);
 
-/* 出于简洁性与兼容性，我们定义了页面映射函数的默认行为(规格) */
-/* Out of convenient and compatibility, we define the default behavior for the func below */
-#define mappages(pagetable, va, sz, pa, prot) \
-    _mappages(pagetable, va, sz, pa, prot, PGSPEC_NORMAL)
+int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
+void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec);
+pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 
-#define uvmunmap(pagetable, va, npages, do_free) \
-    _uvmunmap(pagetable, va, npages, do_free, PGSPEC_NORMAL)
+static inline int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot) {
+    return __mappages(pagetable, va, size, pa, prot, PGSPEC_NORMAL);
+}
 
-#define walk(pagetable, va, alloc) \
-    _walk(pagetable, va, alloc, PGSPEC_NORMAL)
+static inline void uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free) {
+  __uvmunmap(pagetable, va, npages, do_free, PGSPEC_NORMAL);
+}
+
+static inline pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
+    return __walk(pagetable, va, alloc, PGSPEC_NORMAL);
+}
 
 #define PAGE_CACHE_SHIFT PGSHIFT
 #define PAGE_CACHE_SIZE PGSIZE

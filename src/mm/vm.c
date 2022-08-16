@@ -23,8 +23,6 @@ pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
-// extern char trampoline[]; // trampoline.S
-
 
 // Initialize the one kernel_pagetable
 void
@@ -32,23 +30,6 @@ kvminit(void)
 {
   kernel_pagetable = (pagetable_t)kzalloc(PGSIZE);
   nxt_mapid = 0;
-
-  // uint64 UNUSED(va) = ioremap(0x2000000, 0x10000);
-  // vmprint(kernel_pagetable);
-  // va = ioremap(0xc000000, 0x4000000);
-  // vmprint(kernel_pagetable);
-  // va = ioremap(0x50440000, 0x10000);
-  // vmprint(kernel_pagetable);
-  // va = ioremap(0x502b0000, 0x10000);
-  // vmprint(kernel_pagetable);
-  // va = ioremap(0x52000000U, 0x1000000);
-  // vmprint(kernel_pagetable);
-  // ioremap(0x50000000U, 0x1000);
-  // vmprint(kernel_pagetable);
-  //   uint64 va = 0x1f06000000UL;
-  //   kvmmap(va, 0x52000000U , 0x1000000, PTE_R | PTE_W, PGSPEC_LARGE);
-  //   vmprint(kernel_pagetable);
-  // for(;;);
   // map kernel text executable and read-only.
   kvmmap(KERN_BASE, KERN_BASE, (uint64)etext-KERN_BASE, PROT_READ | PROT_EXEC, PGSPEC_NORMAL);
   // map kernel data and the physical RAM we'll make use of.
@@ -83,7 +64,7 @@ kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
     panic("kvmmap: pgsize");
   if(nxt_mapid == MAX_MAP)
     panic("no map space");
-  if(_mappages(kernel_pagetable, va, sz, pa, riscv_map_prot(perm), spec) != 0)
+  if(__mappages(kernel_pagetable, va, sz, pa, riscv_map_prot(perm), spec) != 0)
     panic("kvmmap");
   
   kmap[nxt_mapid++] = (kmap_t) {.va=va,.pa=pa,.size=sz,.pg_spec=spec,.perm=perm};
@@ -93,28 +74,31 @@ kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int spec)
 int setupkvm(pagetable_t pagetable) {
   if(!pagetable || pagetable == kernel_pagetable) 
     panic("setupkvm");
-  for (int i = 0; i < nxt_mapid; i++) {
-    kmap_t map = kmap[i];
-    // print_map(map);
-    if(_mappages(pagetable, map.va, map.size, map.pa, riscv_map_prot(map.perm), map.pg_spec) == -1) {
-      // 卸载之前成功映射的页面
-      for(int j = 0; j < i; j++) {
-        map = kmap[j];
-        _uvmunmap(pagetable, map.va, ROUND_COUNT_SPEC(map.size, map.pg_spec), 0, map.pg_spec);
-      }
-      return -1;
-    }
+  kmap_t *map;
+  int i;
+  for (i = 0; i < nxt_mapid; i++) {
+    map = &kmap[i];
+    if(__mappages(pagetable, map->va, map->size, map->pa, riscv_map_prot(map->perm), map->pg_spec) == -1)
+      goto bad;
   }
+
   return 0;
+ bad:
+  // 卸载之前成功映射的页面
+  for(int j = 0; j < i; j++) {
+    map = &kmap[j];
+    __uvmunmap(pagetable, map->va, ROUND_COUNT_SPEC(map->size, map->pg_spec), 0, map->pg_spec);
+  }
+  return -1;
 }
 
 void erasekvm(pagetable_t pagetable) {
   if(!pagetable || pagetable == kernel_pagetable)
     panic("erasekvm");
+  kmap_t *map;
   for (int i = 0; i < nxt_mapid; i++) {
-    kmap_t map = kmap[i];
-    // TODO: uvmunmap在这可能存在潜在的效率问题
-    _uvmunmap(pagetable, map.va, ROUND_COUNT_SPEC(map.size, map.pg_spec), 0, map.pg_spec);
+    map = &kmap[i];
+    __uvmunmap(pagetable, map->va, ROUND_COUNT_SPEC(map->size, map->pg_spec), 0, map->pg_spec);
   }
 }
 
@@ -182,12 +166,6 @@ void freewalk(pagetable_t pagetable) {
   /* memset 放在kfree前没事 */
     // memset(pagetable, 0, PGSIZE);
   kfree((void*)pagetable);
-  // printf("pagetable: %p\n", pagetable);
-  // printf("kstack: %p,  sp: %p\n", myproc()->kstack, r_sp());
-  // if((uint64)pagetable == 0x80265000)
-  //   memset(pagetable, 0, PGSIZE);
-  // memcpy(pagetable, (void*)myproc()->kstack, PGSIZE);
-  // memcpy(pagetable, pagetable, PGSIZE);
 }
 
 
