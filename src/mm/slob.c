@@ -114,7 +114,7 @@ static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int ali
 	int delta = 0, units = SLOB_UNITS(size); // 计算需要多少单元（单元对齐）
 	debug("size: %d request units: %d", size, units);
 	debug("before alloc:");
-	print_slob(sp);
+	// print_slob(sp);
     // 遍历slob链表
 	for (prev = NULL, cur = sp->freelist; ; prev = cur, cur = slob_next(cur)) {
 		slobidx_t avail = slob_units(cur);
@@ -159,7 +159,7 @@ static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int ali
 				sp->freelist = NULL;
 			}
 			debug("after alloc:");
-			print_slob(sp);
+			// print_slob(sp);
 			return cur;
 		}
 		// 到末尾了还是找不到，算了

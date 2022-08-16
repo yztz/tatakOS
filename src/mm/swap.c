@@ -33,19 +33,18 @@ zone_t memory_zone = (zone_t){.lru_lock = {.locked=0, .name="zone lock", .cpu=NU
                               .nr_inactive = 0};
 
 /* 2个cpu */
-pagevec_t lru_add_pvecs[2], lru_add_active_pvecs[2];
+pagevec_t lru_add_pvecs[NUM_CORES], lru_add_active_pvecs[NUM_CORES];
 // pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 
 
-void pvec_init(uint64_t cpu_id){
-	if(cpu_id > 1)
-		ER();
+void pvec_init(){
 	push_off();
 	struct cpu *c = mycpu();
-	c->inactive_pvec = &lru_add_pvecs[cpu_id];
-	c->active_pvec = &lru_add_active_pvecs[cpu_id];
-	lru_add_pvecs[cpu_id].nr = 0;
-	lru_add_active_pvecs[cpu_id].nr = 0;
+	int id = cpuid();
+	c->inactive_pvec = &lru_add_pvecs[id];
+	c->active_pvec = &lru_add_active_pvecs[id];
+	lru_add_pvecs[id].nr = 0;
+	lru_add_active_pvecs[id].nr = 0;
 	pop_off();
 }
 /**

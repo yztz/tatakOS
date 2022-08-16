@@ -79,7 +79,7 @@ void buddy_init() {
     buddy_free((void *)p);
     total++;
   }
-  used = INIT_ATOMIC;
+  used = INIT_ATOMIC();
   // buddy_print_free();
 }
 

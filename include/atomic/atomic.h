@@ -28,6 +28,6 @@ static inline int __atomic_add(atomic_t *v, int i) {
 	return ret;					
 }
 
-#define INIT_ATOMIC (atomic_t){.counter=0}
+#define INIT_ATOMIC() (atomic_t){.counter=0}
 
 #endif

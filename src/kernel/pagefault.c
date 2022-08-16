@@ -225,7 +225,7 @@ int handle_pagefault(uint64_t scause) {
     return 0;
 
     kernel_fail:
-    info(rd("[Kernel] %s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));
+    info(rd("[Kernel] %s")" PID %d: epc %#lx va %#lx ra %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval), p->ktf->ra);
     panic("pagefault handle fault");
     user_fail:
     info(rd("[User] %s")" PID %d: epc %#lx va %#lx", riscv_cause2str(scause), p->pid, read_csr(sepc), read_csr(stval));

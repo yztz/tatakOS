@@ -61,12 +61,13 @@ kvminit(void)
 }
 
 
-
+void pvec_init();
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
 kvminithart()
 {
+  pvec_init();
   w_satp(MAKE_SATP(kernel_pagetable));
   sfence_vma();
 }
@@ -112,6 +113,7 @@ void erasekvm(pagetable_t pagetable) {
     panic("erasekvm");
   for (int i = 0; i < nxt_mapid; i++) {
     kmap_t map = kmap[i];
+    // TODO: uvmunmap在这可能存在潜在的效率问题
     _uvmunmap(pagetable, map.va, ROUND_COUNT_SPEC(map.size, map.pg_spec), 0, map.pg_spec);
   }
 }
@@ -173,7 +175,7 @@ void freewalk(pagetable_t pagetable) {
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){ // 叶子节点
-      printf("va: %p pa: %p\n", PTE2PA(pte));
+      printf("pa: %p\n", PTE2PA(pte));
       panic("freewalk: leaf");
     }
   }

@@ -244,13 +244,14 @@ uint64_t sys_prctl(void) {
 uint64 sys_clock_gettime(void) {
   // int clockid;
   uint64_t addr;
-  timespec_t time = TICK2TIMESPEC(ticks);
-
+  // debug("Get Time");
   // time.tv_sec = 0;
   // time.tv_nsec = 0;
   // time_print(&time);
   if(argaddr(1, &addr) < 0) 
     return -1;
+
+  timespec_t time = RT2TIMESPEC(get_time(), CLOCK_FREQ);
 
   if(copy_to_user(addr, &time, sizeof(time)) < 0) {
     debug("copy fail");

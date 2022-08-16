@@ -15,7 +15,7 @@
 #include "fs/fs.h"
 #include "fs/file.h"
 
-#define QUIET
+// #define QUIET
 #define __MODULE_NAME__ PROC
 #include "debug.h"
 
@@ -25,7 +25,7 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
-atomic_t proc_cnt = INIT_ATOMIC;
+atomic_t proc_cnt = INIT_ATOMIC();
 
 int nextpid = 0;
 int nexttid = 1;
@@ -574,7 +574,10 @@ waitpid(int cid, uint64 addr, int options)
         havekids = 1;
 
         pid = np->pid;
-        if(cid != -1 && cid != pid) continue;
+        if(cid != -1 && cid != pid) {
+          release(&np->lock);
+          continue;
+        }
 
         haveckid = 1;
         if(np->state == ZOMBIE){
@@ -682,6 +685,7 @@ sched(void)
 {
   int intena;
   struct proc *p = myproc();
+  struct cpu *cpu = mycpu();
 
   if(!holding(&p->lock))
     panic("sched p->lock");
@@ -692,7 +696,7 @@ sched(void)
   if(intr_get())
     panic("sched interruptible");
 
-  intena = mycpu()->intena;
+  intena = cpu->intena;
 
   swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
@@ -803,10 +807,11 @@ void sleep_deep(void *chan, struct spinlock *lk) {
 // Wake up all processes sleeping on chan.
 // Must be called without any p->lock.
 void wakeup(void *chan) {
+  struct proc *me = myproc();
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
-    if(p != myproc()){ 
+    if(p != me){ 
       int hold = holding(&p->lock);
       
       if(!hold) acquire(&p->lock);

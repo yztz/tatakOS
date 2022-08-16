@@ -19,48 +19,42 @@
 #include "debug.h"
 
 device_t devs[NDEV];
-struct {
-  struct spinlock lock;
-  struct file file[NFILE];
-} ftable;
+// struct {
+//   struct spinlock lock;
+//   struct file file[NFILE];
+// } ftable;
 
 void
 fileinit(void)
 {
-  initlock(&ftable.lock, "ftable");
-  for(int i = 0; i < NFILE; i++) {
-    ftable.file[i].ref = 0;
-    ftable.file[i].ep = NULL;
-  } 
+  // initlock(&ftable.lock, "ftable");
+  // for(int i = 0; i < NFILE; i++) {
+  //   ftable.file[i].ref = 0;
+  //   ftable.file[i].ep = NULL;
+  // } 
 }
 
 // Allocate a file structure.
-struct file*
-filealloc(void)
-{
+file_t *filealloc(void) {
   struct file *f;
+  if((f = kzalloc(sizeof(struct file))) == NULL)
+    return NULL; 
 
-  acquire(&ftable.lock);
-  for(f = ftable.file; f < ftable.file + NFILE; f++){
-    if(f->ref == 0){
-      f->ref = 1;
-      release(&ftable.lock);
-      return f;
-    }
-  }
-  release(&ftable.lock);
-  return 0;
+  f->ref = 1;
+  initlock(&f->f_lock, "flock");
+
+  return f;
 }
 
 // Increment ref count for file f.
 struct file*
 filedup(struct file *f)
 {
-  acquire(&ftable.lock);
+  acquire(&f->f_lock);
   if(f->ref < 1)
     panic("filedup");
   f->ref++;
-  release(&ftable.lock);
+  release(&f->f_lock);
   return f;
 }
 
@@ -68,25 +62,28 @@ filedup(struct file *f)
 void
 fileclose(struct file *f)
 {
-  struct file ff;
-
-  acquire(&ftable.lock);
+  acquire(&f->f_lock);
   if(f->ref < 1)
     panic("fileclose");
   if(--f->ref > 0){
-    release(&ftable.lock);
+    release(&f->f_lock);
     return;
   }
-  ff = *f;
-  f->ref = 0;
-  f->type = FD_NONE;
-  release(&ftable.lock);
+  release(&f->f_lock);
 
-  if(ff.type == FD_PIPE){
-    pipeclose(ff.pipe, ff.writable);
-  } else if(ff.type == FD_ENTRY){
-    eput(ff.ep);
+  switch (f->type) {
+  case FD_PIPE:
+    pipeclose(f->pipe, f->writable);
+    break;
+  case FD_ENTRY:
+    eput(f->ep);
+    break;
+  default:
+    break;
+    // ER();
   }
+
+  kfree(f);
 }
 
 int __filewrite(struct file *f, int user, uint64 addr, int n) {

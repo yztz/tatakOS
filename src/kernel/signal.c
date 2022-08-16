@@ -24,9 +24,12 @@ static void sig_dfl(int signum) {
     } 
     
     if(signum == SIGKILL) {
+        info("PID %d KILLED", p->pid);
         p->killed = 1;
         return;
-    } 
+    } else if(signum == SIGTERM) {
+        ER();
+    }
     debug("DFL EXITED");
     exit(signum);
 }

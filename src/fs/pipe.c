@@ -8,6 +8,8 @@
 #include "fs/pipe.h"
 #include "mm/vm.h"
 
+#define __MODULE_NAME__ PIPE
+#include "debug.h"
 
 static int __pipe_full(struct pipe *pi) {
   return pi->nwrite == pi->nread + PIPESIZE;
@@ -16,6 +18,8 @@ static int __pipe_full(struct pipe *pi) {
 static int __pipe_empty(struct pipe *pi) {
   return pi->nread == pi->nwrite;
 }
+
+static atomic_t pipeid = INIT_ATOMIC();
 
 int pipealloc(struct file **f0, struct file **f1) {
   struct pipe *pi;
@@ -30,6 +34,7 @@ int pipealloc(struct file **f0, struct file **f1) {
   pi->writeopen = 1;
   pi->nwrite = 0;
   pi->nread = 0;
+  pi->id = atomic_inc(&pipeid);
   initlock(&pi->lock, "pipe");
   (*f0)->type = FD_PIPE;
   (*f0)->readable = 1;
@@ -98,6 +103,9 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
     }
   }
   wakeup(&pi->nread);
+
+  debug_if(pi->id > 3, "PID %d ---> PIPE %d : %d", pr->pid, pi->id, i);
+
   release(&pi->lock);
 
   return i;
@@ -128,8 +136,11 @@ int piperead(struct pipe *pi, uint64 addr, int n) {
   pi->nread+=rest;
   
   wakeup(&pi->nwrite);  //DOC: piperead-wakeup
-  release(&pi->lock);
 
+  debug_if(pi->id > 3, "PID %d <--- PIPE %d : %d", pr->pid, pi->id, rest);
+
+  release(&pi->lock);
+  
   return rest;
 
  bad:

@@ -115,7 +115,9 @@ uint64 sys_write(void) {
     if (argfd(0, 0, &f) < 0 || argaddr(1, &p) < 0 || argint(2, &n) < 0)
         return -1;
 
-    return filewrite(f, p, n);
+    int ret = filewrite(f, p, n);
+    // assert(ret == n);
+    return ret;
 }
 
 uint64 sys_writev(void) {

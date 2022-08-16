@@ -5,6 +5,7 @@
 
 
 struct pipe {
+  uint id;
   struct spinlock lock;
   uint nread;     // number of bytes read
   uint nwrite;    // number of bytes written
@@ -13,7 +14,7 @@ struct pipe {
   char data[];
 };
 
-#define PIPEPAGE (16 * PGSIZE)
+#define PIPEPAGE (PGSIZE)
 #define PIPESIZE (PIPEPAGE - sizeof(struct pipe))
 
 struct file;

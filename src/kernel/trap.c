@@ -194,6 +194,8 @@ kerneltrap(ktf_t *context)
     panic("kerneltrap: interrupts enabled");
   }
 
+  if(p) p->ktf = context;
+
   if(devintr(scause) == 0) {
     // ok
   } else if(handle_pagefault(scause) == 0) {

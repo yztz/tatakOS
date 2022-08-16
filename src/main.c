@@ -25,7 +25,6 @@ static inline void clear_bss() {
 
 // TODO:
 extern int pdflush_init(void);
-void pvec_init(uint64_t cpu_id);
 
 extern void scavenger_routine();
 extern char *logo;
@@ -82,7 +81,6 @@ void main() {
     __sync_synchronize();
     started = 1;
 
-    pvec_init(0);
   } else {
     while(started == 0)
       ;
@@ -93,8 +91,6 @@ void main() {
     trapinithart();   // install kernel trap vector
     plic_init_hart();   // ask PLIC for device interrupts
     platform_plic_init_hart();
-
-    pvec_init(1);
   }
   printf("hart %d start\n", cpuid());
   scheduler();        

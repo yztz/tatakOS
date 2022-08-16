@@ -2,7 +2,7 @@
 #include "stdarg.h"
 
 void printf(const char *fmt, ...);
-
+void*memcpy(void* dst, const void* src, uint n);
 void __run(char *argv[]);
 
 #define run(...) {char *__cmd[] = {##__VA_ARGS__, 0};__run(__cmd);}
@@ -48,6 +48,7 @@ void main() {
     lmbench("bw_mmap_rd", "-P", "1", "512k", "mmap_only", "/var/tmp/XXX");
     lmbench("bw_mmap_rd", "-P", "1", "512k", "open2close", "/var/tmp/XXX");
     lmbench("bw_mmap_rd", "-P", "1", "512k", "open2close", "/var/tmp/XXX");
+    lmbench("lat_ctx", "-P", "1", "-s", "32", "2", "4", "8", "16", "24", "32");
     // lmbench("lat_ctx", "-P", "1", "-s", "32", "2", "4", "8", "16", "24", "32", "64", "96");
 
 
@@ -170,6 +171,27 @@ void __run(char *argv[]) {
 
 
 ///////////utils/////////////
+
+void*memcpy(void *dst, const void *src, uint n) {
+  const char *s;
+  char *d;
+
+  if(n == 0)
+    return dst;
+  
+  s = src;
+  d = dst;
+  if(s < d && s + n > d){
+    s += n;
+    d += n;
+    while(n-- > 0)
+      *--d = *--s;
+  } else
+    while(n-- > 0)
+      *d++ = *s++;
+
+  return dst;
+}
 
 static char digits[] = "0123456789ABCDEF";
 

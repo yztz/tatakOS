@@ -103,6 +103,7 @@ struct proc {
   mm_t *mm;
   uint64 kstack;
   tf_t *trapframe;
+  ktf_t *ktf;
 
   struct context context;      // swtch() here to run process
   

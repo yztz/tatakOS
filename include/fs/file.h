@@ -13,6 +13,7 @@ struct file {
   
   char readable;
   char writable;
+  spinlock_t f_lock;
   union {
     struct pipe *pipe; // FD_PIPE
     entry_t *ep; // FD_ENTRY
