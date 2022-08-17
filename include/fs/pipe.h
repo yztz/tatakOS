@@ -14,7 +14,7 @@ struct pipe {
   char data[];
 };
 
-#define PIPEPAGE (PGSIZE)
+#define PIPEPAGE (4 * PGSIZE)
 #define PIPESIZE (PIPEPAGE - sizeof(struct pipe))
 
 struct file;

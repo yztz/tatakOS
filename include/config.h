@@ -11,7 +11,7 @@
 /**
  * 共享相同程序的可执行页，别忘了get_page
  */
-// #define SHARE_LOAD
+#define SHARE_LOAD
 
 /***************参数****************/
 /* 最大readahead页数占当前空余内存的页数 */

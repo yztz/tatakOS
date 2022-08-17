@@ -4,6 +4,7 @@
 #include "riscv.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
+#include "kernel/waitqueue.h"
 #include "utils.h"
 #include "defs.h"
 #include "mm/vm.h"
@@ -15,7 +16,7 @@
 #include "fs/fs.h"
 #include "fs/file.h"
 
-// #define QUIET
+#define QUIET
 #define __MODULE_NAME__ PROC
 #include "debug.h"
 
@@ -27,13 +28,14 @@ struct proc *initproc;
 
 atomic_t proc_cnt = INIT_ATOMIC();
 
-int nextpid = 0;
-int nexttid = 1;
-struct spinlock pid_lock;
-struct spinlock tid_lock;
+static atomic_t nextpid = INIT_ATOMIC();
+
+// int nexttid = 1;
+// struct spinlock tid_lock;
 
 extern void forkret(void);
 
+#define get_next_pid() (atomic_inc(&nextpid))
 
 #define IS_MAIN_THREAD(p) ((p)->tg->master_pid==p->pid)
 
@@ -44,27 +46,87 @@ extern void forkret(void);
 struct spinlock wait_lock;
 
 
-int get_proc_cnt() {
-  return atomic_get(&proc_cnt);
+// LIST_HEAD(unused_queue);
+// LIST_HEAD(used_queue);
+// LIST_HEAD(runnable_queue);
+// // LIST_HEAD(running_queue);
+// LIST_HEAD(sleep_queue);
+// LIST_HEAD(zombie_queue);
+
+// SPINLOCK_INIT(unused_queue_lock);
+// SPINLOCK_INIT(used_queue_lock);
+// SPINLOCK_INIT(runnable_queue_lock);
+// // SPINLOCK_INIT(running_queue_lock);
+// SPINLOCK_INIT(sleep_queue_lock);
+// SPINLOCK_INIT(zombie_queue_lock);
+
+// spinlock_t *pstatelocks[MAXPSTATE] = {
+//   [UNUSED] &unused_queue_lock, 
+//   [USED] &used_queue_lock, 
+//   [SLEEPING] &sleep_queue_lock, 
+//   [RUNNABLE] &runnable_queue_lock,
+//   // [RUNNING] &running_queue_lock,
+//   [ZOMBIE] &zombie_queue_lock,
+// };
+
+WQ_INIT(unused_queue);
+WQ_INIT(used_queue);
+WQ_INIT(runnable_queue);
+WQ_INIT(sleep_queue);
+WQ_INIT(zombie_queue);
+
+wq_t *pstatelist[MAXPSTATE] = {
+  [UNUSED] &unused_queue, 
+  [USED] &used_queue, 
+  [SLEEPING] &sleep_queue, 
+  [RUNNABLE] &runnable_queue,
+  // [RUNNING] &running_queue,
+  [ZOMBIE] &zombie_queue,
+};
+
+#define pstate_list_lock(state) wq_lock(pstatelist[state])
+#define pstate_list_unlock(state) wq_unlock(pstatelist[state])
+#define pstate_list_poll(state) wq_poll(pstatelist[state])
+#define pstate_list_offer(state, proc) wq_offer(pstatelist[state], proc)
+#define pstate_list_delete(state, proc) wq_remove(pstatelist[state], proc)
+
+// p->lock hold
+static inline void pstate_set(proc_t *p, int newstate) {
+  pstate_list_lock(newstate);
+  pstate_list_offer(newstate, p);
+  pstate_list_unlock(newstate);
+
+  p->__state = newstate;
 }
 
 
-// initialize the proc table at boot time.
-void
-procinit(void)
-{
-  struct proc *p;
-  nextpid = 0;
-  initlock(&pid_lock, "nextpid");
-  initlock(&tid_lock, "tid");
-  initlock(&wait_lock, "wait_lock");
-  for(p = proc; p < &proc[NPROC]; p++) {
+// p->lock hold
+void pstate_migrate(proc_t *p, int newstate) {
+  int oldstate = p->state;
+  assert(oldstate != newstate && pstatelist[newstate]);
+
+  if(p->state != RUNNING) {
+    pstate_list_lock(oldstate);
+    pstate_list_delete(oldstate, p);
+    pstate_list_unlock(oldstate);
+  }
+
+  pstate_set(p, newstate);
+}
+
+
+static inline void procstate_init() {
+  for(struct proc *p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
-      p->state = UNUSED;
+      p->__state = UNUSED;
       p->mm = NULL;
       p->kstack = 0;
       p->trapframe = NULL;
+      pstate_list_offer(UNUSED, p);
   }
+}
+
+static inline void cpustate_init() {
   for(int i = 0; i < NUM_CORES; i++) {
     cpus[i].intena = 0;
     cpus[i].noff = 0;
@@ -72,18 +134,23 @@ procinit(void)
   }
 }
 
+// initialize the proc table at boot time.
+void procinit(void) {
+  initlock(&wait_lock, "wait_lock");
+  procstate_init();
+  cpustate_init();
+}
+
 // Return this CPU's cpu struct.
 // Interrupts must be disabled.
-struct cpu*
-mycpu(void) {
+struct cpu *mycpu(void) {
   int id = cpuid();
   struct cpu *c = &cpus[id];
   return c;
 }
 
 // Return the current struct proc *, or zero if none.
-struct proc*
-myproc(void) {
+struct proc *myproc(void) {
   push_off();
   struct cpu *c = mycpu();
   struct proc *p = c->proc;
@@ -93,8 +160,7 @@ myproc(void) {
 
 struct pagevec;
 
-struct pagevec*
-my_inactive_pvec(){
+struct pagevec *my_inactive_pvec(){
   push_off();
   struct cpu *c = mycpu();
   struct pagevec *inactive_pvec = c->inactive_pvec;
@@ -102,8 +168,7 @@ my_inactive_pvec(){
   return inactive_pvec;
 }
 
-struct pagevec*
-my_active_pvec(){
+struct pagevec *my_active_pvec(){
   push_off();
   struct cpu *c = mycpu();
   struct pagevec *active_pvec = c->active_pvec;
@@ -111,26 +176,9 @@ my_active_pvec(){
   return active_pvec;
 }
 
-int allocpid() {
-  int pid;
-  
-  acquire(&pid_lock);
-  pid = nextpid;
-  nextpid = nextpid + 1;
-  release(&pid_lock);
-
-  return pid;
+int get_proc_cnt() {
+  return atomic_get(&proc_cnt);
 }
-
-// int alloctid() {
-//   int tid;
-//   acquire(&tid_lock);
-//   tid = nexttid;
-//   nexttid = nexttid + 1;
-//   release(&tid_lock);
-
-//   return tid;
-// }
 
 proc_t *proc_new(int is_kthread) {
   struct proc *p;
@@ -147,7 +195,7 @@ proc_t *proc_new(int is_kthread) {
 
 found:
   // printf("kill is %d and kill addr is %#lx\n", p->killed, &p->killed);
-  p->pid = allocpid();
+  p->pid = get_next_pid();
   // p->tid = alloctid();
   p->killed = 0;
   p->sig_pending = 0;
@@ -155,7 +203,6 @@ found:
   p->signaling = 0;
   p->set_tid_addr = 0;
   p->clear_tid_addr = 0;
-  p->state = USED;
   p->u_time = 0;
   p->s_time = 0;
   p->stub_time = ticks;
@@ -181,6 +228,8 @@ found:
   p->context.sp = p->kstack + KSTACK_SZ;
 
   atomic_inc(&proc_cnt);
+
+  pstate_migrate(p, USED);
   
   return p;
 
@@ -204,17 +253,17 @@ void freeproc(struct proc *p) {
   if(p->kstack) kfree_safe(&p->kstack);
   if(p->exe) eput(p->exe);
 
+  pstate_migrate(p, UNUSED);
 
   // memset(p->ofile, 0, NOFILE * sizeof(struct file *));
   p->exe = NULL;
-  p->pid = 0;
+  p->pid = -1;
   p->parent = 0;
   p->name[0] = 0;
   p->chan = 0;
   p->futex_chan = 0;
   p->killed = 0;
   p->xstate = 0;
-  p->state = UNUSED;
 
   atomic_dec(&proc_cnt);
 }
@@ -270,10 +319,10 @@ userinit(void)
   proc_setsig(p, sig);
   proc_settg(p, tg);
 
-  const int USER_SIZE = 2 * PGSIZE;
+  const int USER_SIZE = 4 * PGSIZE;
 
   if(sizeof(initcode) >= USER_SIZE)
-    panic("inituvm: more than a page");
+    panic("inituvm: too large");
   
   // debug("initcode size: %d", sizeof(initcode));
 
@@ -300,7 +349,7 @@ userinit(void)
 
   init_std(p);
 
-  p->state = RUNNABLE;
+  pstate_migrate(p, RUNNABLE);
 
   release(&p->lock);
 }
@@ -332,7 +381,7 @@ int kthread_create(char *name, void (*entry)()) {
 
   strncpy(np->name, name, 20);
 
-  np->state = RUNNABLE;
+  pstate_migrate(np, RUNNABLE);
 
   release(&np->lock);
 
@@ -432,7 +481,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   release(&wait_lock);
 
   acquire(&np->lock);
-  np->state = RUNNABLE;
+  pstate_migrate(np, RUNNABLE);
   release(&np->lock);
 
 
@@ -441,6 +490,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
 
  bad:
+  ER();
   debug("clone fail");
   freeproc(np);
   release(&np->lock);
@@ -502,7 +552,7 @@ void exit(int status) {
   acquire(&p->lock);
 
   p->xstate = status;
-  p->state = ZOMBIE;
+  pstate_migrate(p, ZOMBIE);
 
   release(&wait_lock);
 
@@ -522,8 +572,7 @@ void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
     if(signum == SIGKILL) p->killed = 1;
     p->sig_pending |= (1L << (signum - 1));
-    if(p->state == SLEEPING)
-      p->state = RUNNABLE;
+    if(p->state == SLEEPING) pstate_migrate(p, RUNNABLE);
     release(&p->lock);
 }
 
@@ -624,27 +673,29 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   
+  wq_t *rq = &runnable_queue;
+
   c->proc = 0;
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-    for(p = proc; p < &proc[NPROC]; p++) {
-      if(!try_acquire(&p->lock)) continue;
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        switchuvm(p->mm);
-        swtch(&c->context, &p->context);
-        switchkvm();
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&p->lock);
+    
+    wq_lock(rq);
+    if((p = wq_poll(rq)) == NULL) {
+      // info("NO AVAILABLE PROC");
+      wq_unlock(rq);
+      continue;
     }
+    acquire(&p->lock);
+    wq_unlock(rq);
+
+    p->__state = RUNNING;
+    c->proc = p;
+    switchuvm(p->mm);
+    swtch(&c->context, &p->context);
+    switchkvm();
+    c->proc = 0;
+    release(&p->lock);
   }
 }
 
@@ -708,7 +759,7 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
-  p->state = RUNNABLE;
+  pstate_migrate(p, RUNNABLE);
   sched();
   release(&p->lock);
 }
@@ -753,7 +804,7 @@ forkret(void)
  * if(lk != NULL)
  */
 void
-__sleep(void *chan, struct spinlock *lk, int deep)
+__sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
   
@@ -776,7 +827,7 @@ __sleep(void *chan, struct spinlock *lk, int deep)
   }
 
   p->chan = chan;
-  p->state = deep ? DEEP_SLEEPING : SLEEPING;
+  pstate_migrate(p, SLEEPING);
 
   sched();
 
@@ -797,63 +848,40 @@ __sleep(void *chan, struct spinlock *lk, int deep)
 }
 
 void sleep(void *chan, struct spinlock *lk) {
-  __sleep(chan, lk, 0);
+  __sleep(chan, lk);
 }
 
-void sleep_deep(void *chan, struct spinlock *lk) {
-  __sleep(chan, lk, 1);
-}
 
 // Wake up all processes sleeping on chan.
 // Must be called without any p->lock.
 void wakeup(void *chan) {
   struct proc *me = myproc();
-  struct proc *p;
+  struct proc *p, *tmp;
 
-  for(p = proc; p < &proc[NPROC]; p++) {
-    if(p != me){ 
+  pstate_list_lock(SLEEPING);
+  list_for_each_entry_safe(p, tmp, &sleep_queue.head, state_head) {
+    if(p != me){
       int hold = holding(&p->lock);
       
       if(!hold) acquire(&p->lock);
-      if(p->state == SLEEPING && p->chan == chan) {
-        p->state = RUNNABLE;
+      if(p->chan == chan) {
+        pstate_list_delete(SLEEPING, p);
+        pstate_set(p, RUNNABLE);
       }
       if(!hold) release(&p->lock);
     }
   }
+  pstate_list_unlock(SLEEPING);
 }
 
 void wake_up_process(proc_t *p) {
-  if(p->state != SLEEPING || p->state != DEEP_SLEEPING)
+  if(p->state != SLEEPING)
     ER();
   acquire(&p->lock);
-  p->state = RUNNABLE;
+  pstate_migrate(p, RUNNABLE);
   release(&p->lock);
 }
 
-// Kill the process with the given pid.
-// The victim won't exit until it tries to return
-// to user space (see usertrap() in trap.c).
-int
-kill(int pid)
-{
-  struct proc *p;
-
-  for(p = proc; p < &proc[NPROC]; p++){
-    acquire(&p->lock);
-    if(p->pid == pid){
-      p->killed = 1;
-      if(p->state == SLEEPING){
-        // Wake process from sleep().
-        p->state = RUNNABLE;
-      }
-      release(&p->lock);
-      return 0;
-    }
-    release(&p->lock);
-  }
-  return -1;
-}
 
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
@@ -900,7 +928,6 @@ procdump(void)
   static char *states[] = {
   [UNUSED]          "UNUSED        ",
   [SLEEPING]        "SLEEPING      ",
-  [DEEP_SLEEPING]   "DEEP_SLEEPING ",
   [RUNNABLE]        "RUNNABLE      ",
   [RUNNING]         "RUNNING       ",
   [ZOMBIE]          "ZOMBIE        ",

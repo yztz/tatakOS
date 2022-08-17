@@ -225,20 +225,9 @@ kerneltrap(ktf_t *context)
 
 #include "kernel/time.h"
 
-void
-clockintr()
-{
-  acquire(&tickslock);
-  ticks++;
-  // timespec_t time = TICK2TIMESPEC(ticks);
-  // time_print(&time);
-  // printf("%ld\n", ticks);
-  wakeup(&ticks);
-  release(&tickslock);
-}
-
 // for ext
 extern int handle_ext_irq();
+extern void clockintr();
 
 int devintr(uint64 scause) {
   if (scause == INTR_SOFT) { // k210 ext passby soft

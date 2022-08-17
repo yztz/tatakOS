@@ -469,11 +469,8 @@ void switchuvm(mm_t *mm) {
 extern pagetable_t kernel_pagetable;
 void switchkvm() {
   write_csr(satp, MAKE_SATP(kernel_pagetable));
-  sfence_vma();
+//   sfence_vma();
 }
-
-
-
 
 
 static void _vmprint(pagetable_t pagetable, int level, int ignore_level) {

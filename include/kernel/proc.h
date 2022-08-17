@@ -78,7 +78,7 @@ struct cpu {
 extern struct cpu cpus[NUM_CORES];
 
 
-enum procstate { UNUSED, USED, SLEEPING, DEEP_SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE, MAXPSTATE };
 
 struct fat_entry;
 // Per-process state
@@ -86,7 +86,13 @@ struct proc {
   struct spinlock lock;
 
   // p->lock must be held when using these:
-  enum procstate state;        // Process state
+
+  // readonly
+  union {
+    const enum procstate state;        // Process state
+    enum procstate __state;
+  };
+  
   void *chan;                  // If non-zero, sleeping on chan
   void *futex_chan;             
   int killed;                  // If non-zero, have been killed
@@ -115,6 +121,7 @@ struct proc {
   sigset_t sig_mask;
   int signaling;
 
+  list_head_t state_head; // for state
   list_head_t head; // for thread group
 
   uint64_t set_tid_addr;
@@ -164,6 +171,7 @@ int             get_proc_cnt();
 void            wake_up_process(proc_t *p);
 void            sig_send(proc_t *p, int signum);
 int             freechild();
+void            pstate_migrate(proc_t *p, int newstate);
 
 struct pagevec* my_inactive_pvec();
 struct pagevec* my_active_pvec();

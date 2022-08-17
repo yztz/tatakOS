@@ -11,6 +11,9 @@
 extern proc_t proc[];
 
 
+// TODO: 为futex设置单独的等待队列
+
+
 uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     uint64_t res = -110;
     struct proc *p = myproc();
@@ -33,7 +36,7 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     p->futex_chan = chan;
 
     do {
-        p->state = SLEEPING;
+        pstate_migrate(p, SLEEPING);
         sched();
         if(p->futex_chan == 0) {
             res = 0;
@@ -76,7 +79,7 @@ int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim)
             // if(p->state == SLEEPING && p->futex_chan == chan) {
             if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
                 p->futex_chan = 0;
-                p->state = RUNNABLE;
+                pstate_migrate(p, RUNNABLE);
                 i++;
                 debug("PID %d woken", p->pid);
             }

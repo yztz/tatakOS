@@ -20,16 +20,11 @@ obj-y += device.o
 obj-y += main.o
 obj-y += panic.o
 obj-y += printf.o
-obj-y += profile.o
 obj-y += riscv.o
 obj-y += string.o
 obj-y += utils.o
-
-
-
-
 obj-y += futex.o
-obj-y += fdtable.o
+
 
 #================GEN kernel=================#
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))

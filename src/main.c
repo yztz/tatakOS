@@ -85,7 +85,7 @@ void main() {
     while(started == 0)
       ;
     __sync_synchronize();
-    // while(1);
+    while(1);
     platform_early_init_hart();
     kvminithart();    // turn on paging
     trapinithart();   // install kernel trap vector

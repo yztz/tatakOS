@@ -1057,15 +1057,15 @@ sys_rename(void){
 }
 
 uint64_t sys_fsync(void){
-    int fd;
-    entry_t *ep;
+    // int fd;
+    // entry_t *ep;
 
-    if(argint(0, &fd) < 0)
-        return -1;
+    // if(argint(0, &fd) < 0)
+    //     return -1;
 
-    ep = getep(myproc(), fd);    
+    // ep = getep(myproc(), fd);    
 
-    sych_entry_in_disk(ep);
+    // sych_entry_in_disk(ep);
     return 0;
 }
 
@@ -1076,15 +1076,15 @@ extern void msync(uint64_t addr, uint64_t length, int flags);
  */
 uint64_t
 sys_msync(void){
-    uint64_t addr, length;
-    int flags;
+    // uint64_t addr, length;
+    // int flags;
 
-    if(argaddr(0, &addr) < 0 ||
-        argaddr(1, &length) < 0 ||
-        argint(2, &flags) < 0)
-        return -1;
+    // if(argaddr(0, &addr) < 0 ||
+    //     argaddr(1, &length) < 0 ||
+    //     argint(2, &flags) < 0)
+    //     return -1;
 
-    msync(addr, length, flags);
+    // msync(addr, length, flags);
     
     return 0;
 }
