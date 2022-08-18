@@ -19,13 +19,13 @@ void main() {
     mkdirat(-100, "proc/mounts");
 
     memuse();
-    // shell();
+    shell();
     shell("./busybox_testcode.sh");
     shell("./lua_testcode.sh");
     lmbench("lat_syscall", "-P", "1", "null");
     lmbench("lat_syscall", "-P", "1", "read");
     lmbench("lat_syscall", "-P", "1", "write");
-    close(openat(-100, "/var/tmp/lmbench", 00000100));
+    close(openat(-100, "/var/tmp/lmbench", 0100));
     lmbench("lat_syscall", "-P", "1", "stat", "/var/tmp/lmbench");
     lmbench("lat_syscall", "-P", "1", "fstat", "/var/tmp/lmbench");
     lmbench("lat_syscall", "-P", "1", "open", "/var/tmp/lmbench");

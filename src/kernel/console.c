@@ -23,9 +23,22 @@
 #include "platform.h"
 #include "driver/plic.h"
 #include "mm/vm.h"
+#include "sys/termios.h"
 
 #define __MODULE_NAME__ CONSOLE
 #include "debug.h"
+
+struct termios term = {
+    .c_iflag = ICRNL,
+    .c_oflag = OPOST,
+    .c_cflag = 0,
+    .c_lflag = ECHO,
+    .c_line = 0,
+    .c_cc = {0},
+};
+
+
+
 
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x
@@ -182,15 +195,12 @@ consoleintr(char c)
     break;
   default:
     if(c != 0 && cons.e-cons.r < INPUT_BUF){
-      #ifndef QEMU // refer xv6-k210
-			if (c == '\r') break;
-			#else
-			c = (c == '\r') ? '\n' : c;
-			#endif
+			if(term.c_iflag & ICRNL) 
+        c = (c == '\r') ? '\n' : c; // 回车转换行
 
 
       // echo back to the user.
-      consputc(c);
+      if(term.c_lflag & ECHO) consputc(c);
 
       // store for consumption by consoleread().
       cons.buf[cons.e++ % INPUT_BUF] = c;

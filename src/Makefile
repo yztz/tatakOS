@@ -17,6 +17,7 @@ obj-y+=lib/
 obj-y+=tests/
 
 obj-y += device.o
+obj-y += ioctl.o
 obj-y += main.o
 obj-y += panic.o
 obj-y += printf.o

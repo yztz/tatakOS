@@ -50,13 +50,7 @@ struct winsize {
     uint16 ws_ypixel;	/* vertical size, pixels (unused) */
 };
 
-struct termios {
-    uint16 c_iflag; /* 输入模式标志*/
-    uint16 c_oflag; /* 输出模式标志*/
-    uint16 c_cflag; /* 控制模式标志*/
-    uint16 c_lflag; /*区域模式标志或本地模式标志或局部模式*/
-    uint8 c_line; /*行控制line discipline */
-    uint8 c_cc[8]; /* 控制字符特性*/
-};
+
+int ioctl(file_t *fp, uint64_t request, uint64_t arg0);
 
 #endif

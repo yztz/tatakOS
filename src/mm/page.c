@@ -116,6 +116,7 @@ int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int pro
 // Remove npages of mappings starting from va. va must be
 // page-aligned. The mappings must exist.
 // Optionally free the physical memory.
+// IMPROVE ME: ASID
 void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec) {
   uint64 a;
   pte_t *pte;
