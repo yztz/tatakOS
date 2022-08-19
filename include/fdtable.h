@@ -45,6 +45,12 @@ struct fdset {
     unsigned long fds_bits[FD_SETSIZE / (8 * sizeof(long))];
 };
 
+struct pollfd {
+    int   fd;         /* file descriptor */
+    short events;     /* requested events */
+    short revents;    /* returned events */
+};
+
 #include "bitops.h"
 
 static inline void fdset_set(struct fdset* set, int nr) {

@@ -180,20 +180,23 @@ int get_proc_cnt() {
   return atomic_get(&proc_cnt);
 }
 
+void pstate() {
+  for(struct proc *p = proc; p < &proc[NPROC]; p++) {
+      if(p->state_head.next == NULL) ER();
+  }
+}
+
 proc_t *proc_new(int is_kthread) {
   struct proc *p;
 
-  for(p = proc; p < &proc[NPROC]; p++) {
-    acquire(&p->lock);
-    if(p->state == UNUSED) {
-      goto found;
-    } else {
-      release(&p->lock);
-    }
+  pstate_list_lock(UNUSED);
+  if((p = pstate_list_poll(UNUSED)) == NULL) {
+    pstate_list_unlock(UNUSED);
+    return NULL;
   }
-  return 0;
+  acquire(&p->lock);
+  pstate_list_unlock(UNUSED);
 
-found:
   // printf("kill is %d and kill addr is %#lx\n", p->killed, &p->killed);
   p->pid = get_next_pid();
   // p->tid = alloctid();

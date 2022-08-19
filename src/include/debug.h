@@ -23,7 +23,8 @@
 
 #endif // DEBUG
 
-#define info(fmt, ...) printf("[INFO]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
+// #define info(fmt, ...) printf("[INFO]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
+#define info(fmt, ...) printf("[INFO] "fmt"\n", ##__VA_ARGS__);
 #define ERROR(str)    error(str, __FILE__, __func__, __LINE__)
 #define ER()    ERROR("")
 

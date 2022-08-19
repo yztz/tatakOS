@@ -483,9 +483,10 @@ uint64 sys_openat(void) {
         f->off = E_FILESIZE(ep);
     else
         f->off = 0;
-    // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
-    //   etrunc(ep);
-    // }
+
+    assert((omode & O_TRUNC )== 0);
+    // if((omode & O_TRUNC) && E_ISFILE(ep))
+
 
     eunlock(ep);
     return fd;
@@ -683,7 +684,7 @@ uint64 sys_exec(void) {
                     "LOGNAME=root",
                     pwd,
                     "PS1=\\u"grn("\\w")"\\$ ",
-                    "PATH=/",
+                    "PATH=/:/bin",
                     "ENOUGH=3000", 
                     "TIMING_O=7", 
                     "LOOP_O=0",
@@ -802,10 +803,6 @@ uint64 sys_ioctl(void) {
         return -1;
     
     return ioctl(NULL, request, arg0);
-}
-
-uint64 sys_ppoll(void) {
-    return 1;
 }
 
 uint64 sys_lseek(void) {
@@ -1043,5 +1040,27 @@ sys_msync(void){
 
     // msync(addr, length, flags);
     
+    return 0;
+}
+
+uint64_t sys_ftruncate() {
+    int fd;
+    off_t length;
+    proc_t *p = myproc();
+
+    argint(0, &fd);
+    argaddr(1, (uint64_t *)&length);
+
+    file_t *fp = fdtbl_getfile(p->fdtable, fd);
+
+    if(!fp || !fp->writable || fp->type != FD_ENTRY)
+        return -1;
+    
+    entry_t *entry = fp->ep;
+
+    elock(entry);
+    etrunc(entry, length);
+    eunlock(entry);
+
     return 0;
 }

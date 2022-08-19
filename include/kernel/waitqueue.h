@@ -22,7 +22,7 @@ static inline int wq_is_empty(wq_t *self) {
 static inline list_head_t *__wq_poll(wq_t *self) {
     if(wq_is_empty(self)) return NULL;
     list_head_t *entry = self->head.next;
-    list_del(entry);
+    list_del_init(entry);
     return entry;
 }
 
@@ -40,7 +40,7 @@ static inline void wq_offer(wq_t *self, proc_t *p) {
 
 static inline void wq_remove(wq_t *self, proc_t *p) {
     // self并不是必要的
-    list_del(&p->state_head);
+    list_del_init(&p->state_head);
 }
 
 static inline void wq_lock(wq_t *self) {

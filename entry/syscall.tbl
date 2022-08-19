@@ -40,6 +40,7 @@
 #37    linkat    sys_linkat  [doesn't impl]
 39     umount2   sys_umount
 40     mount     sys_mount
+46     ftruncate sys_ftruncate
 48     faccessat sys_faccessat
 49     chdir     sys_chdir  
 56     openat    sys_openat

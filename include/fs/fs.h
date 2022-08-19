@@ -75,7 +75,7 @@ typedef struct fat_entry entry_t;
 void fs_init();
 entry_t *namee(entry_t *from, char *path);
 entry_t *nameeparent(entry_t *from, char *path, char *name);
-void etrunc(entry_t *entry);
+void etrunc(entry_t *entry, off_t size);
 void elock(entry_t *entry);
 void eunlock(entry_t *entry);
 void eunlockput(entry_t *entry);

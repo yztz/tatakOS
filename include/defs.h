@@ -17,6 +17,7 @@ struct superblock;
 void            consoleinit(void);
 void            devnull_init(void);
 void            devzero_init(void);
+int             consoleready(void);
 
 
 // pipe.c

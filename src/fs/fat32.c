@@ -48,6 +48,8 @@
 #define clus2offset(fat, clus) (((clus)*4)%BPS(fat))
 // 簇号对应在数据区内的扇区号
 #define clus2datsec(fat, clus) (((clus)-2)*SPC(fat)+FAT_SEC(fat)+FAT_NUMS(fat)*SPFAT(fat))
+// 下一个空闲簇所在的fat扇区
+#define nextclussec(fat) clus2fatsec(fat, (fat)->fsinfo.next_free_cluster)
 
 typedef struct buf buf_t;
 
@@ -109,14 +111,22 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
 
     fat->root_cluster = dbr->fat32.root_cluster;
 
-    debug("start sector   is %d", fat->fat_start_sector);
-    debug("fat sectors    is %d", fat->fat_tbl_sectors);
-    debug("sec per clus   is %d", fat->sec_per_cluster);
-    debug("bytes per sec  is %d", fat->bytes_per_sec);
-    debug("bytes per cluster is %d", fat->bytes_per_cluster);
-    debug("fat table num  is %d", fat->fat_tbl_num);
-    debug("root cluster   is %d", fat->root_cluster);
+    info("start sector   is %d", fat->fat_start_sector);
+    info("fat sectors    is %d", fat->fat_tbl_sectors);
+    info("sec per clus   is %d", fat->sec_per_cluster);
+    info("bytes per sec  is %d", fat->bytes_per_sec);
+    info("bytes per cluster is %d", fat->bytes_per_cluster);
+    info("fat table num  is %d", fat->fat_tbl_num);
+    info("root cluster   is %d", fat->root_cluster);
 
+    uint16_t infosector = dbr->fat32.info_sector;
+    assert(infosector == 1);
+    // buf_t *b = bread(fat->dev, infosector);
+    // fat->fsinfo = *(struct fat_fsinfo *)(b->data + 484);
+    // brelse(b);
+    fat->fsinfo.next_free_cluster = -1;
+    // info("free clus num  is %d", fat->fsinfo.free_clusters);
+    // info("next free clus is %d", fat->fsinfo.next_free_cluster);
     assert(fat->bytes_per_sec == 512);
 }
 
@@ -152,6 +162,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     // 常规字段初始化
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
+    fat->lock = INIT_SPINLOCK(fat_lock);
     buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
@@ -342,44 +353,50 @@ FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
     return FR_ERR;
 }
 
+static inline void update_next_freeclus(fat32_t *fat, uint32_t freeclus) {
+    acquire(&fat->lock);
+    fat->fsinfo.next_free_cluster = freeclus;
+    release(&fat->lock); 
+}
+
 FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
     assert(n > 0);
     const int entry_per_sect = BPS(fat) / 4;
-    uint32_t sect = fat->fat_start_sector;
+    // 将下个空闲簇号作为参考值来减少遍历时间
+    uint32_t sect = fat->fsinfo.next_free_cluster == -1 ? fat->fat_start_sector : nextclussec(fat);
+    uint32_t i = sect - fat->fat_start_sector;
 
     int cnt = n;
-    // uint32_t next = 0;
-    // uint32_t first = 0;
-    /* 存放当前簇号的前一个簇entry的地址 */
-    // uint32_t *pre = NULL;
 
     buf_t *pb = NULL;
     uint32_t *pe = NULL;
 
-    for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
+    //  info("i %d sect %d nextfreeclus %d", i, sect, fat->fsinfo.next_free_cluster);
+
+    for(; i < fat->fat_tbl_sectors; i++, sect++) {
         buf_t *b = bread(fat->dev, sect);
         uint32_t *entry = (uint32_t *)b->data;
         for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
             if(i == 0 && j < 2) continue; // 跳过第0,1号簇
-
             if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
-                uint32_t clus_num = i * entry_per_sect + j;
+                uint32_t clus_no = i * entry_per_sect + j;
                 if(pe) {
-                    *pe = clus_num;
+                    *pe = clus_no;
                     if(pb) { // 如果存在pb，那么pe必定指向上个pb的内容，所以接下来写回释放即可
                         bwrite(pb);
                         brelse(pb);
                         pb = NULL;
                     }
                 } else {
-                    *news = clus_num;
+                    *news = clus_no;
                 }
 
                 if(--cnt == 0) {
-                    debug("mark clus %d[sect: %d] as end", clus_num, clus2datsec(fat, clus_num));
+                    debug("mark clus %d[sect: %d] as end", clus_no, clus2datsec(fat, clus_no));
                     *(entry + j) = FAT_CLUS_END;
                     bwrite(b);
                     brelse(b);
+                    update_next_freeclus(fat, clus_no + 1);
                     return FR_OK;
                 }
                 pe = entry + j;

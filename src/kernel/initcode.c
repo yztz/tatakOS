@@ -17,6 +17,7 @@ void main() {
     mkdirat(-100, "tmp");
     mkdirat(-100, "proc");
     mkdirat(-100, "proc/mounts");
+    close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
     shell();
@@ -25,7 +26,6 @@ void main() {
     lmbench("lat_syscall", "-P", "1", "null");
     lmbench("lat_syscall", "-P", "1", "read");
     lmbench("lat_syscall", "-P", "1", "write");
-    close(openat(-100, "/var/tmp/lmbench", 0100));
     lmbench("lat_syscall", "-P", "1", "stat", "/var/tmp/lmbench");
     lmbench("lat_syscall", "-P", "1", "fstat", "/var/tmp/lmbench");
     lmbench("lat_syscall", "-P", "1", "open", "/var/tmp/lmbench");

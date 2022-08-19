@@ -32,12 +32,10 @@ struct termios term = {
     .c_iflag = ICRNL,
     .c_oflag = OPOST,
     .c_cflag = 0,
-    .c_lflag = ECHO,
+    .c_lflag = ECHO | ICANON,
     .c_line = 0,
     .c_cc = {0},
 };
-
-
 
 
 #define BACKSPACE 0x100
@@ -65,7 +63,7 @@ consputc(int c)
   }
 }
 
-struct {
+struct console{
   struct spinlock lock;
   
   // input
@@ -106,6 +104,14 @@ consolewrite(int user_src, uint64 src, int n)
   return i;
 }
 
+
+int consoleready() {
+  acquire(&cons.lock);
+  int ready = cons.w - cons.r;
+  release(&cons.lock);
+  return ready;
+}
+
 //
 // user read()s from the console go here.
 // copy (up to) a whole input line to dst.
@@ -116,8 +122,9 @@ int
 consoleread(int user_dst, uint64 dst, int n)
 {
   uint target;
-  int c;
-  char cbuf;
+  char c;
+
+  uint lflag = term.c_lflag;
 
   target = n;
   acquire(&cons.lock);
@@ -134,6 +141,14 @@ consoleread(int user_dst, uint64 dst, int n)
 
     c = cons.buf[cons.r++ % INPUT_BUF];
 
+    if ((lflag & ICANON) == 0) {
+      if(either_copyout(user_dst, dst, &c, 1) == -1)
+        break;
+      dst++;--n;
+      continue;
+    }
+    
+
     if(c == C('D')){  // end-of-file
       if(n < target){
         // Save ^D for next time, to make sure
@@ -144,8 +159,8 @@ consoleread(int user_dst, uint64 dst, int n)
     }
 
     // copy the input byte to the user-space buffer.
-    cbuf = c;
-    if(either_copyout(user_dst, dst, &cbuf, 1) == -1)
+
+    if(either_copyout(user_dst, dst, &c, 1) == -1)
       break;
 
     dst++;
@@ -173,7 +188,26 @@ extern void buddy_print_free();
 void
 consoleintr(char c)
 {
+  uint16_t iflag = term.c_iflag;
+  uint16_t lflag = term.c_lflag;
   acquire(&cons.lock);
+
+  // not cookmode
+  if((lflag & ICANON) == 0) {
+    if(c != 0 && cons.e-cons.r < INPUT_BUF){
+      
+      // echo back to the user.
+      if(lflag & ECHO) consputc(c);
+
+      // store for consumption by consoleread().
+      cons.buf[cons.e++ % INPUT_BUF] = c;
+      cons.w = cons.e;
+      wakeup(&cons.r);
+    }
+    release(&cons.lock);
+    return;
+  }
+
   switch(c){
   case C('N'):  // Print process list.
     procdump();
@@ -195,12 +229,13 @@ consoleintr(char c)
     break;
   default:
     if(c != 0 && cons.e-cons.r < INPUT_BUF){
-			if(term.c_iflag & ICRNL) 
+      
+			if(iflag & ICRNL) 
         c = (c == '\r') ? '\n' : c; // 回车转换行
 
 
       // echo back to the user.
-      if(term.c_lflag & ECHO) consputc(c);
+      if(lflag & ECHO) consputc(c);
 
       // store for consumption by consoleread().
       cons.buf[cons.e++ % INPUT_BUF] = c;

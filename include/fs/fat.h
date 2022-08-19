@@ -75,6 +75,13 @@ struct fat_boot_sector {
 } __attribute__ ((packed));
 
 
+struct fat_fsinfo {
+	char signature[4];
+	uint32_t free_clusters;
+	uint32_t next_free_cluster;
+};
+
+
 typedef struct _entry_date_t {
     uint16_t day : 5;                  // 日
     uint16_t month : 4;                // 月
@@ -124,6 +131,7 @@ struct fat_entry;
 typedef struct _fat32_t {
 	uint dev;	/* 设备号 */
 	struct fat_entry *root;		/* 根目录 */
+	spinlock_t lock; /* 保护字段 */
 
 	uint32_t fat_start_sector; 	/* FAT起始扇区号 */
 	uint32_t fat_tbl_sectors; 	/* FAT表扇区数 */
@@ -136,6 +144,8 @@ typedef struct _fat32_t {
 	uint32_t root_cluster;		/* 根目录扇区号 */
 
 	spinlock_t cache_lock;		/* 保护缓存 */
+
+	struct fat_fsinfo fsinfo;
 
 	/* added for entry write back to disk */
 	list_head_t fat_dirty;   	/* 所有dirty的entry的链表 */

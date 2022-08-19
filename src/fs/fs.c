@@ -158,7 +158,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
 extern uint64 ticks;
 // caller holds lock
 void estat(entry_t *entry, struct kstat *stat) {
-  dir_item_t *item = &entry->raw;
+
   int blksize = entry->fat->bytes_per_sec;
   stat->st_ino = (uint64_t)entry->clus_offset << 32 | entry->clus_start;
   stat->st_gid = 0;
@@ -181,10 +181,10 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_ctime_nsec = 0;
   stat->st_nlink = entry->nlink;
 
-  if(item->adate.year_from_1980 == 65) {
-    stat->st_atime_sec = 1LL << 32;
-    stat->st_mtime_sec = 1LL << 32;
-  }
+  // if(item->adate.year_from_1980 == 65) {
+  //   stat->st_atime_sec = 1LL << 32;
+  //   stat->st_mtime_sec = 1LL << 32;
+  // }
 }
 
 entry_t *edup(entry_t *entry) {
@@ -411,13 +411,25 @@ char *skipelem(char *path, char *name) {
 
 
 /* caller holds entry lock */
-void etrunc(entry_t *entry) {
+void etrunc(entry_t *entry, off_t size) {
   if(E_ISDIR(entry)) {
     debug("try trunc dir?");
     return;
   }
-  
-  fat_trunc(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+  if(size < entry->size_in_mem)
+    fat_trunc(entry->fat, entry->parent->clus_start, entry->clus_offset, &entry->raw);
+  else {
+    char *zero = kzalloc(512);
+    int more = size - entry->size_in_mem;
+    off_t off = entry->size_in_mem;
+    while(more) {
+      int n = min(512, more);
+      writee(entry, 0, (uint64_t)zero, off, n);
+      more -= n;
+      off += n;
+    }
+    kfree(zero);
+  }
 }
 
 
@@ -504,20 +516,7 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
 // caller holds lock
 int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   int ret;
-  // if(off >= E_FILESIZE(entry)) 
-  //   return 0;
-  // if(strncmp(entry->name, "entry-static.exe", 16) == 0) {
-  //   if(!f1) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf1, 0, E_FILESIZE(entry));
-  //   either_copyout(user, buff, filebuf1 + off, min(n, E_FILESIZE(entry) - off));
-  //   f1 = 1;
-  //   return min(n, E_FILESIZE(entry) - off);
-  // } else if(strncmp(entry->name, "entry-dynamic.exe", 17) == 0) {
-  //   if(!f2) fat_read(entry->fat, entry->clus_start, 0, (uint64)filebuf2, 0, E_FILESIZE(entry));
-  //   either_copyout(user, buff, filebuf2 + off, min(n, E_FILESIZE(entry) - off));
-  //   f2 = 1;
-  //   return min(n, E_FILESIZE(entry) - off);
-  // }
-  // ret = fat_read(entry->fat, entry->clus_start, user, buff, off, min(n, E_FILESIZE(entry) - off));
+
   if(off >= entry->size_in_mem)
     return 0;
   n = min(n, entry->size_in_mem - off);

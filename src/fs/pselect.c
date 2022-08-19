@@ -101,3 +101,68 @@ uint64_t sys_pselect(void) {
     
     return ans;
 }
+
+#include "poll.h"
+uint64 sys_ppoll(void) {
+    uint64_t pfdaddr;
+    int nfds;
+    uint64_t tsaddr;
+    uint64_t sigmaskaddr;
+    proc_t *p = myproc();
+
+    argaddr(0, &pfdaddr);
+    argint(1, &nfds);
+    argaddr(2, &tsaddr);
+    argaddr(3, &sigmaskaddr);
+
+    assert(nfds == 1);
+    // printf("ts addr is %#lx\n", tsaddr);
+
+    struct pollfd pfd;
+
+    if(copy_from_user(&pfd, pfdaddr, sizeof(pfd)) < 0)
+        return -1;
+    
+    assert(pfd.events == POLLIN);
+    assert(pfd.fd == 0);
+
+    file_t *f = fdtbl_getfile(p->fdtable, pfd.fd);
+
+    timespec_t ts;
+    if(tsaddr && copy_from_user(&ts, tsaddr, sizeof(timespec_t)) < 0)
+        return -1;
+    
+   
+    uint64_t timeout = tsaddr ? ts2ticks(&ts) : -1;
+
+    while(1) {
+        switch(f->type) {
+            case FD_DEVICE:
+                assert(f->dev == &devs[CONSOLE]);
+                if(consoleready()) goto ret;
+                break;
+            case FD_PIPE:
+                return 1;
+            default:
+                ER();
+        }
+
+        if(timeout == -1) continue;
+        if(timeout) {
+            acquire(&p->lock);
+            sleep(&ticks, &p->lock);
+            release(&p->lock);
+            timeout--;
+        } else {
+            break;
+        }
+    }
+  ret:
+    if(timeout == 0) return 0;
+
+    pfd.revents = pfd.events;
+    if(copy_to_user(pfdaddr, &pfd, sizeof(pfd)) < 0)
+        return -1;
+
+    return 1;
+}
