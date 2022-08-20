@@ -1,1 +1,4 @@
-nonvoid sd_write_sector_dma
+nonvoid bread
+void bwrite
+void brelse
+nonvoid fat_alloc_cluster

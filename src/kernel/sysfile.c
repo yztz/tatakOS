@@ -484,7 +484,7 @@ uint64 sys_openat(void) {
     else
         f->off = 0;
 
-    assert((omode & O_TRUNC )== 0);
+    // assert((omode & O_TRUNC )== 0);
     // if((omode & O_TRUNC) && E_ISFILE(ep))
 
 

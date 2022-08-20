@@ -14,10 +14,10 @@
 #undef profile_void
 #endif
 
-
+#include "kernel/time.h"
 uint64_t sys_profile(void) {
     #ifdef DEBUG
-    #define print_profile(func) printf("%-11s used %10ld\n", #func, counter_##func);
+    #define print_profile(func) printf("%-11s used %10ldus\n", #func, RT2US(counter_##func, CLOCK_FREQ));
     #define profile(func, ...) print_profile(func)
     #define profile_void(func, ...) print_profile(func)
     printf("-----------Profiler start-----------\n");

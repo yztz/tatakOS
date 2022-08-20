@@ -30,5 +30,6 @@ uint64 timetag(void);
 int memuse(void);
 int halt(void);
 int philosophy(void);
+void profile();
 
 #endif

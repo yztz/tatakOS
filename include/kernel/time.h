@@ -32,6 +32,9 @@ typedef struct timeval timeval_t;
 #define TICK2TIMEVAL(tick) \
 	(timeval_t){.tv_sec=TICK2SEC(tick), .tv_usec=TICK2US(tick) % (1000 * 1000)}
 
+#define RT2MS(rt, freq) (rt * 1000/freq)
+#define RT2US(rt, freq) (rt * 1000 * 1000/freq)
+
 #define RT2TIMESPEC(rt, freq) {\
 	.ts_sec=rt/freq, .ts_nsec=(rt * (1000 * 1000 * 1000)/freq) % (1000 * 1000 * 1000)\
 }

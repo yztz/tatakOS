@@ -256,6 +256,7 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
     return FR_OK;
 }
 
+#include "profile.h"
 int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
@@ -305,6 +306,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
 
     return n - rest;
 }
+#include "profile.h"
 
 /* 申请指定数量的簇并将它们串在一起 */
 FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
