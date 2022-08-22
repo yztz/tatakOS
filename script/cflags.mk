@@ -7,6 +7,7 @@ CFLAGS += -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb
 CFLAGS += -mcmodel=medany -march=rv64g
 # 独立程序，不会额外链接其他标准库
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
+CFLAGS += -fstrict-volatile-bitfields
 # 关闭栈保护措施 主要是为了防止栈溢出攻击，比如金丝雀之类的机制
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 

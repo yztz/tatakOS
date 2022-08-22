@@ -560,7 +560,8 @@ int sysctl_clock_get_threshold(sysctl_threshold_t which)
             threshold = (int)sysctl->clk_th0.rom_gclk_threshold;
             break;
         case SYSCTL_THRESHOLD_SPI0:
-            threshold = (*(uint32_t *)(&(sysctl->clk_th1))) & 0xff;
+            // threshold = (*(uint32_t *)(&(sysctl->clk_th1))) & 0xff;
+            threshold = (int)sysctl->clk_th1.spi0_clk_threshold;
             break;
         case SYSCTL_THRESHOLD_SPI1:
             threshold = (int)sysctl->clk_th1.spi1_clk_threshold;
@@ -608,8 +609,8 @@ int sysctl_clock_get_threshold(sysctl_threshold_t which)
             threshold = (int)sysctl->clk_th5.i2c2_clk_threshold;
             break;
         case SYSCTL_THRESHOLD_WDT0:
-            // threshold = (int)sysctl->clk_th6.wdt0_clk_threshold;
-            threshold = (*(uint32_t *)(&(sysctl->clk_th6))) & 0xff;
+            threshold = (int)sysctl->clk_th6.wdt0_clk_threshold;
+            // threshold = (*(uint32_t *)(&(sysctl->clk_th6))) & 0xff;
             break;
         case SYSCTL_THRESHOLD_WDT1:
             threshold = (int)sysctl->clk_th6.wdt1_clk_threshold;

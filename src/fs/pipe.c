@@ -28,7 +28,7 @@ int pipealloc(struct file **f0, struct file **f1) {
   *f0 = *f1 = 0;
   if((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
     goto bad;
-  if((pi = (struct pipe*)kmalloc(PIPEPAGE)) == 0)
+  if((pi = (struct pipe*)kmalloc(RPIPESIZE)) == 0)
     goto bad;
   pi->readopen = 1;
   pi->writeopen = 1;

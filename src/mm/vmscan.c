@@ -309,7 +309,7 @@ done:
  */
 static void
 refill_inactive_list(zone_t *zone, struct scan_control *sc){
-  int pgmoved;
+  	int pgmoved = 0;
 	int pgdeactivate = 0;
 	int pgscanned = 0;
 	int nr_pages = sc->nr_to_scan;

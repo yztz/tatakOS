@@ -29,10 +29,10 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     if(time) {
         // printf("timeout is:\n");
         // time_print(time);
-        cur_time = TICK2TIMESPEC(ticks);
         p->chan = &ticks;
     }
-    
+
+    cur_time = TICK2TIMESPEC(ticks);
     p->futex_chan = chan;
 
     do {
@@ -46,8 +46,6 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
         }
         // only time intr
         wake_time = TICK2TIMESPEC(ticks);
-        // printf("current time:\n");
-        // time_print(&wake_time);
         uint64_t ds = wake_time.ts_sec - cur_time.ts_sec;
         // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
         // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {

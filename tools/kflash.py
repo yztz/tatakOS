@@ -1102,7 +1102,7 @@ class KFlash:
             import serial.tools.miniterm
             # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
             # because some control characters are emited
-            sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
+            sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--eol=LF' ,'--rts='+control_signal,  '--filter=direct']
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
 
