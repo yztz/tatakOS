@@ -21,7 +21,7 @@
 #define IS_FAT_CLUS_END(clus) ((clus) >= 0x0FFFFFF8) // 簇结束标识
 #define FAT_CLUS_END 0x0FFFFFFF // 簇结束标识
 #define FAT_CLUS_FREE 0x0       // 空闲簇
-#define __FAT_LFN_ATTR 0xF    // 长文件名标识
+#define __FAT_LFN_ATTR 0xF      // 长文件名标识
 #define FAT_IS_LFN(attr) ((attr) == __FAT_LFN_ATTR)
 
 #define FAT_NAME_END 0x0
@@ -73,13 +73,13 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus,
 
 /* 用于目录项查找的辅助结构状态信息 */
 typedef struct lookup_param {
-    char *longname; // 长文件名
-    char *top; // 栈顶
-    char *p; // 名称栈指针（满栈）
-    uint8_t checksum; // 当前校验和
-    int next; // 下一个序号
+    char *longname;     // 长文件名
+    char *top;          // 栈顶
+    char *p;            // 名称栈指针（满栈）
+    uint8_t checksum;   // 当前校验和
+    int next;           // 下一个序号
 
-    void *state; // 其他状态信息
+    void *state;        // 其他状态信息
 } lp_t;
 
 typedef struct alloc_param {
@@ -119,14 +119,7 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
     info("fat table num  is %d", fat->fat_tbl_num);
     info("root cluster   is %d", fat->root_cluster);
 
-    uint16_t infosector = dbr->fat32.info_sector;
-    assert(infosector == 1);
-    // buf_t *b = bread(fat->dev, infosector);
-    // fat->fsinfo = *(struct fat_fsinfo *)(b->data + 484);
-    // brelse(b);
     fat->fsinfo.next_free_cluster = -1;
-    // info("free clus num  is %d", fat->fsinfo.free_clusters);
-    // info("next free clus is %d", fat->fsinfo.next_free_cluster);
     assert(fat->bytes_per_sec == 512);
 }
 
@@ -142,11 +135,9 @@ static entry_t *get_root(fat32_t *fat) {
     root->raw.attr = FAT_ATTR_DIR;
     root->name[0] = '/';
     root->clus_start = fat->root_cluster;
-    // printf("root clus is %d\n", root->clus_start);
+
     address_space_t *tmp = kzalloc(sizeof(address_space_t));
-    // printf("i_mapping addr is %x\n", tmp);
     root->i_mapping = tmp;
-    // printf("root clus is %d\n", root->clus_start);
     
     initsleeplock(&root->lock, "root_lock");
     return root;
@@ -241,7 +232,6 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
       next_clus:
         cclus = fat_next_cluster(fat, cclus);
     }
-    printf(ylw("==============\n"));
 
     return n - rest;
 }
@@ -256,7 +246,6 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
     return FR_OK;
 }
 
-#include "profile.h"
 int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
     if(cclus == 0 || n == 0) ///todo:空文件怎么办？
         return 0;
@@ -306,7 +295,6 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
 
     return n - rest;
 }
-#include "profile.h"
 
 /* 申请指定数量的簇并将它们串在一起 */
 FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
@@ -373,7 +361,7 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
     buf_t *pb = NULL;
     uint32_t *pe = NULL;
 
-    //  info("i %d sect %d nextfreeclus %d", i, sect, fat->fsinfo.next_free_cluster);
+    // debug("i %d sect %d next freeclus %d", i, sect, fat->fsinfo.next_free_cluster);
 
     for(; i < fat->fat_tbl_sectors; i++, sect++) {
         buf_t *b = bread(fat->dev, sect);
@@ -413,9 +401,6 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
 
     return FR_ERR;
 }
-
-
-
 
 /* 释放cclus簇以及接下来的簇 置位keepfirst将会保留首节点置为END*/
 FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
@@ -497,6 +482,7 @@ int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *n
         strncpy(shortname, name, 6);
         *(shortname + 6) = '~';
         fat_travs_dir(fat, dir_clus, 0, get_next_shortname_order, 0 , NULL, shortname, &id);
+        // 目前还没有设计好后续ID生成策略
         if(id > 5)
             panic("sn: id > 5");
         *(shortname + 7) = '0' + id;
@@ -509,14 +495,8 @@ int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *n
         strncpy(shortname + 8, ext, min(strlen(ext), 3));
     }
 
-    // shortname[FAT_SFN_LENGTH] = '\0';
-
     return ret;
 }
-
-
-
-
 
 
 static uint8_t cal_checksum(char* shortname) {
@@ -526,9 +506,6 @@ static uint8_t cal_checksum(char* shortname) {
     }
     return sum;
 }
-
-
-
 
 
 /**
@@ -905,10 +882,8 @@ static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, vo
                 return FR_CONTINUE;
             }
            
-            // print_slot_name(slot);
             // debug("slot id: %d eof: %d checksum: %d", FAT_LFN_ID(slot->id), FAT_LFN_END(slot->id), slot->alias_checksum);
         } else { // 短文件
-            // print_dir_item(item);
             // debug("lpcheckis: %d, mychecksum is: %d", lp->checksum,cal_checksum((char *)item->name));
             if(lp->next != 0) { // 短文件名没有紧随？文件系统错误了
                 debug("error: long entry not continous current next is %d", lp->next);
@@ -1020,23 +995,7 @@ FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, trav
 
 
 
-
-/**
- * @brief 根据文件的偏移和长度找到对应的磁盘块号(sector)，并且分段，每段包含一组连续的sectors，
- * 使用一个bio_vec结构体表示。
- * 以簇cluster为单位进行查找，因为一个簇内的扇区sector是连续的。
- * 
- * 给出一段文件在内存空间中连续的地址，长度为n，找到对应的sectors，尽量使其连续。
- * 要注意没有给disk上的entry alloc and append足够的cluster的情况！
- * @param fat 
- * @param cclus 
- * @param off 
- * @param n
- * @return int 
- */
 struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
-    // struct bio_vec *first_bio_vec = kzalloc(sizeof(struct bio_vec));
-    // struct bio_vec *cur_bio_vec = first_bio_vec;
     bio_vec_t *first_bio_vec = NULL, *cur_bio_vec = NULL;
     /* sector counts in a cluster */
     uint32 spc = SPC(fat);
@@ -1046,15 +1005,11 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     uint32 sect;
 
 
-    // printf(rd("sec_total_num: %d\n"), sec_total_num);
-
     if(off & ~PGMASK)
         panic("fat_readpage: offset not page aligned!");
     
-    // debug("read cluster %d", cclus);
     if(cclus == 0 || n == 0)
         return 0;
-    // debug("now off is %d", off)
     // 计算起始簇
     while(off >= BPC(fat)) {
         cclus = fat_next_cluster(fat, cclus);
@@ -1064,31 +1019,24 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             ER();
         }
     }
-
-    // printf(rd("cclus: %d\n"), cclus);
     
     /* the initial offset number of a sector in a cluster */
     sec_off_num = off / BPS(fat);
     // 计算簇内起始扇区号
     sect = clus2datsec(fat, cclus) + sec_off_num % spc;
-    // printf(rd("sect: %d\n"), sect);
 
     while(!IS_FAT_CLUS_END(cclus) && sec_total_num > 0){
-        // printf(grn("sect: %d\n"), sect);
-        /* bug了！无语句可以改变cur_bio_vec */
         if(cur_bio_vec == NULL){
             cur_bio_vec = kzalloc(sizeof(bio_vec_t));
             first_bio_vec = cur_bio_vec;
-        }
-        // if(cur_bio_vec != first_bio_vec){
+        } else if(cur_bio_vec->bv_start_num + cur_bio_vec->bv_count != sect) {
             /** 
              * 新的簇的第一个扇区号和上一个簇的最后一个扇区号不连续，新建一个结构体存放这个段，这里的链表
              * 操作是进程私有的，似乎不用加锁。
             */
-        else if(cur_bio_vec->bv_start_num + cur_bio_vec->bv_count != sect){
-                struct bio_vec *new_bio_vec = kzalloc(sizeof(struct bio_vec));
-                cur_bio_vec->bv_next = new_bio_vec;
-                cur_bio_vec = new_bio_vec;
+            struct bio_vec *new_bio_vec = kzalloc(sizeof(struct bio_vec));
+            cur_bio_vec->bv_next = new_bio_vec;
+            cur_bio_vec = new_bio_vec;
         }
         // }
 
@@ -1103,12 +1051,9 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             cur_bio_vec->bv_count += min(spc - sec_off_num, sec_total_num);
         }
 
-        // sec_off_num = (sec_off_num + cur_bio_vec->bv_count) % spc;
-        // sec_total_num -= cur_bio_vec->bv_count;
         sec_off_num = (sec_off_num + sect_nums) % spc;
         sec_total_num -= sect_nums;
 
-        // printf(rd("cclus: %d\tsect: %d\n"), cclus, sect);
         cclus = fat_next_cluster(fat, cclus);
 
         /* 如果簇没了，但是还没有写完，error */
@@ -1116,20 +1061,10 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             ER();
         sect = clus2datsec(fat, cclus);
     }
-    // printf(ylw("==============\n"));
-    
 
     return first_bio_vec;
 }
 
-
-
-
-/**
- * @brief return the last cluster of a file
- * 
- * @return uint32_t 
- */
 uint32_t get_clus_end(fat32_t *fat, uint32_t cur_clus){
    uint32_t next_clus;
 
@@ -1154,47 +1089,9 @@ uint32_t get_clus_cnt(fat32_t *fat, uint32_t cur_clus){
     return clus_cnt;
 }
 
-// int fat_enlarge_file(fat32_t *fat, uint32_t *clus_end, uint64_t *clus_cnt, int off, int n){
-//     if(*clus_end == 0 || *clus_cnt == 0)
-//         panic("fat enlarge file 1");
-    
-//     uint32_t bpc = BPC(fat);
-//     uint64_t size = ROUNDUP((off+n), bpc);
-//     int alloc_num;
-//     uint32_t new_clus;
-
-//     alloc_num = size/bpc - *clus_cnt;
-    
-//     if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
-//         panic("fat enlarge file 2");
-//     fat_append_cluster(fat, *clus_end, new_clus);
-
-//     if(alloc_num == 1)
-//         *clus_end = new_clus; 
-//     else
-//         *clus_end = get_clus_end(fat, *clus_end);
-
-//     *clus_cnt += alloc_num;
-
-//     return 0; 
-// }
-
-
-
-/**
- * @brief given an entry in mem, allocate and append enough clusters in disk.
- * 文件扩大了，在写回磁盘之前，预先分配新的簇。
- * 
- * @param fat 
- * @param clus_start 
- * @param clus_end 
- * @param clus_cnt 
- * @param size_in_mem 
- * @return int 
- */
 FR_t fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem){
     /**
-     * @brief 在eget中将这两个值赋为0，如果这两个值都为0，说明这个entry对应的file自从
+     * 在eget中将这两个值赋为0，如果这两个值都为0，说明这个entry对应的file自从
      * 读入打开以来，还没有调用过此函数。
      * 
      */
@@ -1214,22 +1111,10 @@ FR_t fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus
     if(alloc_num == 0)
         return FR_OK;
 
-
-    /* 连续逆序分配 */
+    // 分配簇
     if(fat_alloc_cluster(fat, &new_clus, alloc_num) == FR_ERR)
         panic("fat enlarge file 2");
     fat_append_cluster(fat, *clus_end, new_clus);
-
-    // for(;;);
-
-    /* 一个一个正序分配 */
-    // for(int i = 0; i < alloc_num; i++){
-    //     if(fat_alloc_cluster(fat, &new_clus, 1) == FR_ERR){
-    //         panic("fat alloc append culsters");
-    //     }
-    //     fat_append_cluster(fat, *clus_end, new_clus);
-    //     *clus_end = new_clus;
-    // }
 
     /* update clus_end and clus_cnt */
     if(alloc_num == 1)

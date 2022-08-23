@@ -1,19 +1,3 @@
-// Buffer cache.
-//
-// The buffer cache is a linked list of buf structures holding
-// cached copies of disk block contents.  Caching disk blocks
-// in memory reduces the number of disk reads and also provides
-// a synchronization point for disk blocks used by multiple processes.
-//
-// Interface:
-// * To get a buffer for a particular disk block, call bread.
-// * After changing buffer data, call bwrite to write it to disk.
-// * When done with the buffer, call brelse.
-// * Do not use the buffer after calling brelse.
-// * Only one process at a time can use a buffer,
-//     so do not keep them longer than necessary.
-
-
 #include "common.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
@@ -207,8 +191,6 @@ bunpin(struct buf *b) {
 }
 
 
-
-/*************************new add func**************************/
 void free_bio(bio_t *bio) {
   bio_vec_t **cur_bio_vec = &bio->bi_io_vec;
   while(*cur_bio_vec){
@@ -222,43 +204,13 @@ void free_bio(bio_t *bio) {
 // request_queue_t rq = {.rq_head = NULL, .rq_tail = NULL, .rq_lock = {0, 0, 0, 0}};
 
 void submit_bio(bio_t *bio) {
-  /* 如果持有这个锁，然后都磁盘，进程切换，会报错 */
-  // acquire(&rq.rq_lock);
-  // // bio->bi_next = rq.rq_head;
-  // // rq.rq_head = bio;  
-  // if(rq.rq_tail == NULL){
-  //   rq.rq_head = bio;
-  //   rq.rq_tail = bio;
-  // }
-  // else {
-  //   rq.rq_tail->bi_next = bio;
-  //   rq.rq_tail = bio;
-  // }
-  // wakeup((void*) &rq);
-  // sleep((void *)bio, &rq.rq_lock);
-  // release(&rq.rq_lock);
-  // make_request();
-  bio_vec_t *cur_bio_vec;
-  cur_bio_vec = bio->bi_io_vec;
-  while(cur_bio_vec){
-    // for(int i = 0; i < cur_bio_vec->bv_count; i++){
-    //   struct buf *b = bread(bio->bi_dev, cur_bio_vec->bv_start_num+i);
-    //   if (bio->bi_rw == READ){
-    //     memmove((void*)cur_bio_vec->bv_buff, (void*)b->data, BSIZE);
-    //   }
-    //   else if (bio->bi_rw == WRITE) {
-    //     memmove((void*)b->data, (void*)cur_bio_vec->bv_buff, BSIZE);
-    //     bwrite(b);
-    //   }
-    //   else
-    //     panic("submit bio");
-    //   brelse(b);
-    //   cur_bio_vec->bv_buff += BSIZE;
-    // } 
-    disk_io(cur_bio_vec, bio->bi_rw);
-    cur_bio_vec = cur_bio_vec->bv_next;
-  }
-  free_bio(bio);
+    bio_vec_t *cur_bio_vec;
+    cur_bio_vec = bio->bi_io_vec;
+    while(cur_bio_vec){
+        disk_io(cur_bio_vec, bio->bi_rw);
+        cur_bio_vec = cur_bio_vec->bv_next;
+    }
+    free_bio(bio);
 }
 
 

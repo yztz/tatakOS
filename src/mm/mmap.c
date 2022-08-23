@@ -129,7 +129,6 @@ void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t le
     /* 存储的是page index */
     vma->offset = foff >> PGSHIFT;
     vma_insert(mm, vma);
-    // printf(rd("%x\n"),vma->len);
 
 //   merge:
 //     // 经过上述处理完，找到的vma布局如下所示：

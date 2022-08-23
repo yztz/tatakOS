@@ -59,8 +59,7 @@ static pagefault_t get_pagefault(uint64 scause) {
     // 而对于PMP(Physical Memory Protection)相关的错误，都将触发xx_access_fault。
     // 在特权级1.9下，由于没有pagefault(ref: p51)，因此SBI帮我在底层做了一下转换
     // 对于缺页的错误，它将非缺页以及非PMP访问的异常都归结到了xx_access_fault中，因此这里需要加一层宏判断
-    // 这似乎违背了SBI的宗旨
-    // printf("%s\n", riscv_cause2str(scause));
+    // debug("%s\n", riscv_cause2str(scause));
     switch (scause)
     {
         // #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
@@ -197,12 +196,6 @@ int handle_pagefault(uint64_t scause) {
             goto kernel_fail;
         }
     } else {
-        // debug("u");
-        // if(rva == 0xF00022000) {
-        //     tf_print(p->trapframe);
-        //     debug("MAP HERE pc is %#lx pid %d va %#lx", epc, p->pid, r_stval());
-        // }
-        
         vma = __vma_find_strict(p->mm, rva);
 
         if(vma == NULL) {
@@ -235,20 +228,3 @@ int handle_pagefault(uint64_t scause) {
     // ER();
     return 0;
 }
-
-// int is_pagefault(uint64_t scause){
-//     #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-//     if(scause == EXCP_STORE_PAGE_FAULT || scause == EXCP_LOAD_PAGE_FAULT)
-//     #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9 
-//     /* 1.9 的pagefault触发的错误号是否有遗漏？ */
-//     if(scause == EXCP_STORE_FAULT)
-//     #else
-//     ER();
-//     #endif
-//     {
-//         return 1;
-//     }
-
-//     return 0;
-
-// }

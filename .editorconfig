@@ -9,7 +9,8 @@ indent_style = space
 indent_size = 4
 
 [*.{c,h}]
-indent_size = 2
+indent_size = 4
+spaces_around_operators = true
 
 [*.S]
 indent_size = 8

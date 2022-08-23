@@ -97,21 +97,6 @@ char *vma_type_string[10] =  { "NONE", "LOAD", "TEXT", "DATA", "BSS", "HEAP", "M
 void
 print_pa(pagetable_t pagetable, uint64_t start, uint64_t end);
 
-// void
-// print_all_vma(mm_struct_t *mm){
-//   struct vm_area_struct *vma;
-//   int i = 0;
-
-//   vma = mm->mmap;
-//   printf(ylw("number of vmas: %d\n"), mm->map_count);
-//   while(vma != NULL){
-//    printf(grn("no.%d start: %p end: %p type: %s\n"), i++, vma->vm_start, vma->vm_end, vma_type_string[vma->type]); 
-//    print_pa(mm->pagetable, vma->vm_start, vma->vm_end);
-//    vma = vma->vm_next;
-//   }
-//   printf("\n");
-// }
-
 /**
  * @brief 给出一段连续的va，打印出pa
  * 

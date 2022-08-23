@@ -14,9 +14,7 @@
 
 extern int handle_pagefault(uint64_t scause);
 
-// in kernelvec.S, calls kerneltrap().
 void kernelvec();
-
 int devintr();
 
 extern pagetable_t kernel_pagetable;
@@ -32,10 +30,8 @@ trapinithart(void)
 {
   // 设置中断向量
   write_csr(stvec, (uint64)kernelvec);
-  // w_stvec();
   // 使能中断
   write_csr(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
-  // w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
   // 重置计时器
   reset_timer();
 }
@@ -72,15 +68,6 @@ usertrap(void)
   // save user program counter.
   p->trapframe->epc = read_csr(sepc);
   tf_flstore(p->trapframe);
-  // if(scause != INTR_TIMER) {
-  //   // uint64_t instr;
-  //   // copy_from_user(&instr, 0x1000, 8);
-  //   printf("scause is %s sepc is %#lx\n", riscv_cause2str(scause), r_sepc());
-    
-  //   if(p->trapframe->epc == 0x1004)
-  //     p->trapframe->epc += 8;
-  //   tf_print(p->trapframe);
-  // }
 
   if (scause == EXCP_SYSCALL) {
     if(p->killed) {
@@ -107,7 +94,6 @@ usertrap(void)
   }
 
   if(p->killed) {
-    // tf_print(p->trapframe);
     exit(-1);
   }
 
@@ -117,21 +103,10 @@ usertrap(void)
 
   sig_handle(p->signal);
 
-  // if(scause != INTR_TIMER) {
-  //   uint64_t data;
-
-  //   copy_from_user(&data, 0x7fffffb0 + 72, 8);
-  //   printf("scause is %s sepc is %#lx data is %#lx\n", riscv_cause2str(scause), r_sepc(), data);
-    
-  //   // if(p->trapframe->epc == 0x1004)
-  //   //   p->trapframe->epc += 8;
-  //   tf_print(p->trapframe);
-  // }
-
   usertrapret();
 }
 
-//
+// 保留了xv6的注释
 // return to user space
 //
 void userret(tf_t *trapfram);
@@ -147,7 +122,6 @@ usertrapret(void)
   p->stub_time = ticks;
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec((uint64)uservec);
-  // printf("epc is %#lx\n", p->trapframe->epc);
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.        // kernel page table
@@ -167,7 +141,6 @@ usertrapret(void)
   // set S Exception Program Counter to the saved user pc.
   w_sepc(p->trapframe->epc);
   // tell trampoline.S the user page table to switch to.
-  // uint64 satp = MAKE_SATP(p->pagetable);
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
@@ -201,7 +174,6 @@ kerneltrap(ktf_t *context)
     // ok
   } else if(handle_pagefault(scause) == 0) {
     // ok
-    // debug("lazy addr %#lx", r_stval());
   } else{
     printf("scause %s\n", riscv_cause2str(scause));
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
@@ -211,9 +183,7 @@ kerneltrap(ktf_t *context)
   if(scause == INTR_TIMER) {
     // give up the CPU if this is a timer interrupt.
     if(p && p->state == RUNNING) {
-      // p->s_time += ticks - p->stub_time;
       yield();
-      // p->stub_time = ticks;
     }
   }
 
@@ -232,7 +202,6 @@ extern void clockintr();
 int devintr(uint64 scause) {
   if (scause == INTR_SOFT) { // k210 ext passby soft
     #ifdef K210
-    // printf("caught software intr!\n");
     if(r_stval() == 9) {
       int ret;
       ret = handle_ext_irq();
@@ -249,13 +218,10 @@ int devintr(uint64 scause) {
   } else if (scause == INTR_TIMER) {
 
     if(cpuid() == 0){
-      // printf("clock...\n");
-      // printf("time is: %X\n", READ_TIME());
+      // debug("clock...\n");
       clockintr();
     }
-    // printf("timer...%d\n", ticks);
     reset_timer();
-    // w_sip(r_sip() & ~0x10000);
   } else { // unknow
     return -1;
   }

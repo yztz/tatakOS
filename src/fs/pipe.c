@@ -82,7 +82,7 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
       release(&pi->lock);
       return -1;
     }
-    if(__pipe_full(pi)){ //DOC: pipewrite-full
+    if(__pipe_full(pi)) {
       wakeup(&pi->nread);
       sleep(&pi->nwrite, &pi->lock);
     } else {
@@ -135,7 +135,7 @@ int piperead(struct pipe *pi, uint64 addr, int n) {
   }
   pi->nread+=rest;
   
-  wakeup(&pi->nwrite);  //DOC: piperead-wakeup
+  wakeup(&pi->nwrite);
 
   debug_if(pi->id > 3, "PID %d <--- PIPE %d : %d", pr->pid, pi->id, rest);
 

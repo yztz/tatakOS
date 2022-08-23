@@ -1,7 +1,5 @@
-obj-y += console.o
 obj-y += exec.o
 obj-y += kthread.o
-obj-y += nulldev.o
 obj-y += pagefault.o
 obj-y += proc.o
 obj-y += scavenger.o
@@ -12,7 +10,6 @@ obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += thread_group.o
 obj-y += trap.o
-obj-y += zerodev.o
 
 obj-y += asm/
 

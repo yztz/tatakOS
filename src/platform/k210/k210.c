@@ -15,7 +15,6 @@
 #define __MODULE_NAME__ k210
 #include "debug.h"
 
-// extern void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode);
 
 void platform_early_init() {
     /* 开启8M内存 */
@@ -60,13 +59,8 @@ void platform_dirver_init() {
     /* FPIOA */
     fpioa_init();
 
-    // fpioa_set_function(27, FUNC_SPI0_SCLK);
-    // fpioa_set_function(28, FUNC_SPI0_D0);
-    // fpioa_set_function(26, FUNC_SPI0_D1);
-	// fpioa_set_function(32, FUNC_GPIOHS7);
-    // fpioa_set_function(29, FUNC_SPI0_SS3);
-    debug("fpioa init success!");
-    // sysctl_get_reset_status();   
+
+    debug("fpioa init success!"); 
     /* GPIOHS */
     // gpiohs_init();
     /* SPI */
@@ -81,7 +75,7 @@ void platform_dirver_init() {
     if(sd_init() != 0) 
         panic("sd init fail");
     debug("sdcard init success!");
-    
+    /* Watch Dog */
     // int delay = wdt_init(10000);
     // debug("WDT timeout: %d", delay);
     

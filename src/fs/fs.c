@@ -85,7 +85,6 @@ FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
   dirent->d_type = FAT_IS_DIR(item->attr) ? T_DIR : T_FILE; 
 
   strncpy(dirent->d_name, name, namelen);
-  // printf("name: %s totalsize: %d offset: %d\n", name, total_size, offset);
   state->desc.buf += total_size;
   state->desc.size -= total_size;
   *(state->offset) = offset + sizeof(*item);
@@ -179,16 +178,9 @@ void estat(entry_t *entry, struct kstat *stat) {
   stat->st_ctime_sec = 0;
   stat->st_ctime_nsec = 0;
   stat->st_nlink = entry->nlink;
-
-  // if(item->adate.year_from_1980 == 65) {
-  //   stat->st_atime_sec = 1LL << 32;
-  //   stat->st_mtime_sec = 1LL << 32;
-  // }
 }
 
 entry_t *edup(entry_t *entry) {
-    // printf("lock state: %d\n", entry->fat->cache_lock.locked);
-  // printf("%d\n", entry->clus_start);
   acquire(&entry->fat->cache_lock);
   entry->ref++;
   release(&entry->fat->cache_lock);
@@ -221,8 +213,6 @@ static void __eput(entry_t *entry) {
   // 所以在删除的时候无需考虑子目录的并发访问问题
   if(entry->ref == 0) { 
 
-    // buddy_print_free();
-
     if(entry == entry->fat->root) 
       panic("eput: root?");
 
@@ -243,7 +233,7 @@ static void __eput(entry_t *entry) {
     /* 可以把entry和immaping解除，entry回收利用，imapping写回后释放，或者动态分配
     一个新的entry，用来保留信息，原entry回收 */
 
-    // /* 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免 */
+    // 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免
     // #ifdef TODO
     // todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
     // #endif
@@ -437,8 +427,6 @@ void etrunc(entry_t *entry, off_t size) {
 static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
 {
   entry_t*ep, *next;
-  // printf("lock state: %d\n", fat->cache_lock.locked);
-  // printf("fat clus %d\n", fat->fat_tbl_num);
   if(*path == '/') 
     ep = edup(fat->root); // use global fat now
   else if(parent) {
@@ -472,17 +460,7 @@ static entry_t *namex(entry_t *parent, char *path, int nameiparent, char *name)
   return ep;
 }
 
-// extern void print_chars(char *c, int n);
-/**
- * @brief int 类型最大表示的整数为1<<31-1,折合2G-1个字节。不知是否会有溢出的危险。
- * 
- * @param entry 
- * @param user 
- * @param buff 
- * @param off 
- * @param n 
- * @return int 
- */
+
 int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
   /* maybe overflow */
   if(off < 0 || n < 0)
@@ -508,9 +486,6 @@ int writee(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
 
 }
 
-// int f1 = 0, f2 = 0;
-// char filebuf1[1 * 1024 * 1024];
-// char filebuf2[1 * 1024 * 1024];
 
 // caller holds lock
 int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
@@ -520,7 +495,6 @@ int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
     return 0;
   n = min(n, entry->size_in_mem - off);
   ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
-  // printf(rd("ret: %d\toff: %d\tn: %d\n"), ret, off, n);
   return ret;
 }
 

@@ -266,10 +266,6 @@ fdtable_t *fdtbl_clone(fdtable_t *self) {
     if(newtbl == NULL) 
         return NULL;
 
-    // if(fdtbl_dup(self, newtbl) == -1) {
-    //     fdtbl_free(&newtbl);
-    //     return NULL;
-    // }
     fdtbl_dup(self, newtbl);
     
     return newtbl;

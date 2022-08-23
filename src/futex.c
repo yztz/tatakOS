@@ -27,8 +27,6 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     // Go to sleep.
     // p->chan = 0;
     if(time) {
-        // printf("timeout is:\n");
-        // time_print(time);
         p->chan = &ticks;
     }
 

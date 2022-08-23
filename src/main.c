@@ -33,6 +33,7 @@ void main() {
   if(cpuid() == 0){
     clear_bss();
     printf("\n%s\n", logo);
+    
     platform_early_init();
     platform_early_init_hart();
     /* PRCO && CPU */
@@ -63,7 +64,6 @@ void main() {
     // #endif
     /* FILE SYSTEM */
     binit();         // buffer cache
-    fileinit();      // file table 
     fs_init();
 
     userinit();      // first user process

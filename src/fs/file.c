@@ -19,20 +19,6 @@
 #include "debug.h"
 
 device_t devs[NDEV];
-// struct {
-//   struct spinlock lock;
-//   struct file file[NFILE];
-// } ftable;
-
-void
-fileinit(void)
-{
-  // initlock(&ftable.lock, "ftable");
-  // for(int i = 0; i < NFILE; i++) {
-  //   ftable.file[i].ref = 0;
-  //   ftable.file[i].ep = NULL;
-  // } 
-}
 
 // Allocate a file structure.
 file_t *filealloc(void) {

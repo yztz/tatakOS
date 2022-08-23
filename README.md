@@ -6,7 +6,7 @@
 
 ## 特性
 
-- 支持页缓存&快缓存
+- 支持页缓存&块缓存
 - 支持多线程（用户线程&内核线程）
 - 高效IO（支持SD卡多块读写）
 - Buddy&Slob实现
@@ -39,6 +39,30 @@ $ make sdcard # 注意：默认ttyUSB0
 - 测试日志
 - 变更日志
 
+## 调试
+
+### 用户程序
+
+在`user/src`下添加需要编译的源文件，在`user/CMakeLists.txt:52`添加需要编译的用户程序(为了加快编译速度)
+
+在`user/raw`下添加需要直接制作进文件系统的文件
+
+### 添加系统调用
+
+只需要在[entry/syscall.tbl](./entry/syscall.tbl)中添加声明，并在内核中添加对应的系统调用接口函数即可，详见[系统调用](doc/系统调用.md)
+
+### 添加源文件
+
+请参考[src/kernel/Makefile](src/kernel/Makefile)，实现细节请参考[使用Makefile构建](doc/使用Makefile构建.md)
+
+### 使用gdb调试
+
+1. 安装gdb-multiarch
+2. `$ ./run-gdb.sh`
+3. 使用vscode自带的调试工具运行kernel调试选项即可
+
+gdb调试端口默认`26000`
+
 
 ## 目录
 ```
@@ -63,7 +87,7 @@ $ make sdcard # 注意：默认ttyUSB0
 
 ## 拓展内容
 
-支持vi编辑器，JavaScript引擎qjs以及c语言解释器xc
+支持vi(busybox)编辑器，JavaScript引擎qjs以及c语言解释器xc
 
 ## K210八大坑点
 

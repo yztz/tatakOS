@@ -165,7 +165,7 @@ int handle_ext_irq() {
     uint32_t int_num = plic_claim();
     if (int_num == 0) return 0;
 
-    // printf("IRQ: %d\n", int_num);
+    // debug("IRQ: %d\n", int_num);
     if (plic_instances[int_num].callback) {
         ret = plic_instances[int_num].callback(plic_instances[int_num].ctx);
     } else {

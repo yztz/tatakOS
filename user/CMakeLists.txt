@@ -39,7 +39,7 @@ set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib -T ${CMAKE_CURRENT_SOURCE_D
 # Library
 aux_source_directory(lib LIBS)
 #set(LIBS ${ARCH_DIR}/crt.S ${LIBS})
-set(LIBS ${ARCH_DIR}/crt.S src/oscomp/clone.s ${LIBS})
+set(LIBS ${ARCH_DIR}/crt.S src/clone.s ${LIBS})
 add_library(ulib ${LIBS} syscall_ids)
 include_directories(include/)
 include_directories(../include/)
@@ -47,16 +47,16 @@ target_include_directories(ulib PRIVATE ${ARCH_DIR})
 
 # Execuatble
 set(ENTRY "0x1000")
-#aux_source_directory(src SRCS)
 
+# 编译全部
+#aux_source_directory(src SRCS)
 # 只编译要测试的文件
-# aux_source_directory(src/oscomp SRCS)
-# set(SRCS src/oscomp/openat.c)
-set(SRCS src/oscomp/bigwrite.c)
-# set(SRCS src/oscomp/ls.c)
-# set(SRCS src/oscomp/waitpid.c)
-# set(SRCS src/oscomp/brk.c)
-# set(SRCS src/oscomp/mmap.c)
+# set(SRCS src/openat.c ${SRCS})
+set(SRCS src/bigwrite.c ${SRCS})
+# set(SRCS src/ls.c ${SRCS})
+# set(SRCS src/waitpid.c ${SRCS})
+# set(SRCS src/brk.c ${SRCS})
+# set(SRCS src/mmap.c ${SRCS})
 
 set(EXECUTABLE_OUTPUT_PATH ${ARCH})
 foreach(PATH ${SRCS})

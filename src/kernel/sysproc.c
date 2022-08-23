@@ -161,8 +161,6 @@ sys_wait4(void)
     return -1;
 
   // debug("option is %x", options);
-  // if(options > 0) 
-  //   panic("not support");
 
   return waitpid(pid, status, options);
 
@@ -176,11 +174,7 @@ sys_brk(void)
   if(argaddr(0, &brkaddr) < 0)
     return -1;
   // debug("brk addr is %#lx", brkaddr);
-  // if(growproc(brkaddr) == -1) {
-  //   return -1;
-  // } else {
-  //   return 0;
-  // }
+
   return growproc(brkaddr);
 }
 
@@ -217,15 +211,6 @@ sys_sched_yield(void)
   return 0;
 }
 
-// uint64
-// sys_kill(void)
-// {
-//   int pid;
-
-//   if(argint(0, &pid) < 0)
-//     return -1;
-//   return kill(pid);
-// }
 
 // return how many clock tick interrupts have occurred
 // since start.

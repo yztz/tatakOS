@@ -116,7 +116,6 @@ uint64 sys_ppoll(void) {
     argaddr(3, &sigmaskaddr);
 
     assert(nfds == 1);
-    // printf("ts addr is %#lx\n", tsaddr);
 
     struct pollfd pfd;
 

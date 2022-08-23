@@ -407,20 +407,6 @@ uint64 sys_openat(void) {
         argint(2, &omode) < 0)
         return -1;
 
-    // int len = strlen(path);
-    // add 'lib' prefix
-    // if(path[len - 2] == 's' && path[len - 1] == 'o') {
-    //     char name[MAX_FILE_NAME];
-    //     char *mypath = path;
-    //     while((mypath = skipelem(mypath, name)));
-    //     if(strncmp(name, "lib", 3) != 0) {
-    //         memmove(path, "lib", 3);
-    //         memmove(path + 3, name, strlen(name) + 1);
-    //     } else {
-    //         memmove(path, name, strlen(name) + 1);
-    //     }
-    // }
-
     debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
 
     // not support shm now
@@ -485,8 +471,6 @@ uint64 sys_openat(void) {
         f->off = 0;
 
     // assert((omode & O_TRUNC )== 0);
-    // if((omode & O_TRUNC) && E_ISFILE(ep))
-
 
     eunlock(ep);
     return fd;
@@ -611,7 +595,6 @@ uint64 sys_chdir(void) {
     char path[MAXPATH];
     entry_t* ep;
     struct proc* p = myproc();
-    // debug("enter");
     if (argstr(0, path, MAXPATH) < 0 || (ep = namee(NULL, path)) == 0) {
         return -1;
     }
@@ -623,7 +606,6 @@ uint64 sys_chdir(void) {
     eunlock(ep);
     eput(p->cwd);
     p->cwd = ep;
-    // debug("quit");
     return 0;
 }
 
@@ -742,7 +724,6 @@ uint64_t sys_renameat2(void) {
     // 重命名
     if(dirnew == dirold) {
         char *newname;
-        // if(epnew) __ukn();
         newname = getlastname(newpath);
         if(*newname == '\0') __ukn();
         return entry_rename(epold, newname);
@@ -847,8 +828,6 @@ uint64 sys_mmap(void) {
 
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
 
-    // if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1)  {
-    
     if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
         debug("mmap failure");
         return -1;
@@ -877,27 +856,6 @@ uint64 sys_munmap(void) {
 
 #include "kernel/time.h"
 
-// uint64 sys_utimensat(void) {
-//     timespec_t ts[2];
-//     uint64 addr;
-//     proc_t *p = myproc();
-//     int fd;
-
-//     if(argint(0, &fd) < 0 || argaddr(2, &addr) < 0) 
-//         return -1;
-
-//     printf(rd("fd: %d\taddr: %p\n"), fd, addr);
-//     if(copy_from_user(ts, addr, sizeof(ts)) < 0) {
-//         return -1;
-//     }
-    
-//     if(fd >= 0 && ts[0].tv_sec == 1LL << 32) {
-        // fdtbl_getfile(p->fdtable, fd)->ep->raw.adate.year_from_1980 = 65;
-//     }
-
-//     return 0;
-// }
-
 uint64_t sys_utimensat(void){
     /* times[0]: last access time
         times[1]: last modificatin time */
@@ -919,34 +877,7 @@ uint64_t sys_utimensat(void){
 
     /* 文件不存在 */
     if((ep = namee(from, path)) == NULL){
-        /* 在这创建文件不太好，为了过样例 */
         return -ENOENT;
-        // ER();
-        // if ((ep = create(from, path, T_FILE)) == 0)
-        //     return 0;
-
-        // fdtable_t *tbl = p->fdtable;
-        // struct file *f;
-        // int omode = 0101101;
-        // if ((f = filealloc()) == 0 || (fd = fdtbl_fdalloc(tbl, f, -1, omode)) < 0) {
-        //     if (f)
-        //         fileclose(f);
-        //     eunlockput(ep);
-        //     return -EMFILE;
-        // }
-
-        // f->ep = ep;
-        // f->readable = !(omode & O_WRONLY);
-        // f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-        // f->type = FD_ENTRY;
-        // f->off = 0;
-        // // if((omode & O_TRUNC) && E_ISFILE(ep)){ // todo:
-        // //   etrunc(ep);
-        // // }
-
-        // eunlock(ep);
-        // return fd;
-        // return ENOENT;
     }
 
     /* 根据手册，如果为null，把两个timestamps都设置为当前时间 */
@@ -982,32 +913,6 @@ uint64_t sys_utimensat(void){
         }
     }
     return 0; 
-}
-
-uint64_t
-sys_rename(void){
-    proc_t *p = myproc();
-    char old[MAXPATH], new[MAXPATH];
-    entry_t *new_entry, *old_entry, *from;
-
-    if (argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0) {
-      return -1;
-    }
-
-    from = p->cwd;
-
-    if((old_entry = namee(from, old)) == 0)
-        ER();
-
-    /* 改一下名字即可 */
-    if((new_entry = namee(from, new)) == 0){
-        /* 访问父目录，改写其中的name数据 */
-    }
-    else{
-
-    }
-
-    return 0;
 }
 
 uint64_t sys_fsync(void){

@@ -65,7 +65,6 @@ void sig_deref(signal_t *self) {
 void sig_reset(signal_t *self) {
     acquire(&self->siglock);
     memset(self->actions, 0, sizeof(self->actions));
-    // self->actions[SIGCHLD] = (sigaction_t){.handler=SIG_IGN};
     release(&self->siglock);
 }
 

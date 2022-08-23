@@ -29,9 +29,6 @@ void reset_timer() {
 void clockintr() {
   acquire(&tickslock);
   ticks++;
-  // timespec_t time = TICK2TIMESPEC(ticks);
-  // time_print(&time);
-  // printf("%ld\n", ticks);
   wakeup(&ticks);
   release(&tickslock);
 }

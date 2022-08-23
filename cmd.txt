@@ -1,12 +1,10 @@
+################################
+这个文件主要存放一些常用的测试指令
+################################
+
 sudo tools/kflash.py  -p /dev/ttyUSB0 -t -b 1500000 -B dan os.bin
 make static && riscv64-unknown-elf-objdump -S entry-static.exe > ../entry-static.asm  && mv entry-static.exe ../user/src/raw/
 make static && cp entry-static.exe ../tatakOS/user/raw/entry-test && riscv64-unknown-elf-objdump -S entry-static.exe > ../tatakOS/static.asm
-
-0 initcode 
-1 pdflush-0
-2 pdflush-1
-3 scavenger
-4 busybox sh
 
 
 ./busybox_testcode.sh
