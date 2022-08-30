@@ -1,3 +1,5 @@
+// 未来这个文件将被计划性去除
+
 #ifndef _H_DEFS_
 #define _H_DEFS_
 

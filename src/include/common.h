@@ -1,10 +1,10 @@
 #ifndef _H_COMMON_
 #define _H_COMMON_
 
-#include "types.h"
 #include "param.h"
+#include "sys/error.h"
+#include "types.h"
 #include "utils.h"
-#include "errno.h"
 
 #define __STR(name) #name
 #define STR(name) __STR(name)

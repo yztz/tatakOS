@@ -2,7 +2,6 @@
 #include "fs/file.h"
 #include "ioctl.h"
 #include "mm/vm.h"
-#include "sys/termios.h"
 
 extern struct termios term;
 

@@ -4,7 +4,7 @@
 #include "riscv.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
-#include "kernel/elf.h"
+#include "elf.h"
 #include "defs.h"
 #include "common.h"
 #include "mm/vm.h"

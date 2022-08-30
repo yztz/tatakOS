@@ -23,7 +23,7 @@
 #include "platform.h"
 #include "driver/plic.h"
 #include "mm/vm.h"
-#include "sys/termios.h"
+#include "termios.h"
 
 #define __MODULE_NAME__ CONSOLE
 #include "debug.h"

@@ -20,6 +20,13 @@
 
 ### 内核构建
 
+构建依赖：
+```shell
+$ sudo apt install gcc-riscv64-unknown-elf
+$ sudo apt install make cmake
+$ sudo apt install qemu-system-misc
+```
+
 在项目根目录下输入:
 ```shell
 $ ./run-qemu.sh # qemu
