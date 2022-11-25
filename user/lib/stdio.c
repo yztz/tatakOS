@@ -76,8 +76,8 @@ static void printptr(uint64 x)
 void printf(const char *fmt, ...)
 {
     va_list ap;
-    int cnt = 0, l = 0;
-    char *a, *z, *s = (char *)fmt, str;
+    int l = 0;
+    char *a, *z, *s = (char *)fmt;
     int f = stdout;
 
     va_start(ap, fmt);

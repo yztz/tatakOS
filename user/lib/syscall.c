@@ -119,7 +119,7 @@ int set_priority(int prio)
 
 void *mmap(void *start, size_t len, int prot, int flags, int fd, off_t off)
 {
-    return syscall(SYS_mmap, start, len, prot, flags, fd, off);
+    return (void *)syscall(SYS_mmap, start, len, prot, flags, fd, off);
 }
 
 int munmap(void *start, size_t len)
@@ -183,7 +183,7 @@ int brk(void *addr)
 }
 
 char *getcwd(char *buf, size_t size){
-    return syscall(SYS_getcwd, buf, size);
+    return (char *)syscall(SYS_getcwd, buf, size);
 }
 
 int chdir(const char *path){
