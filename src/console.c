@@ -125,6 +125,10 @@ consoleread(int user_dst, uint64 dst, int n)
   char c;
 
   uint lflag = term.c_lflag;
+  uint8 vmin = term.c_cc[VMIN];
+
+  // debug("reading %d bytes", n);
+  // debug("lflag is %d", lflag);
 
   target = n;
   acquire(&cons.lock);
@@ -132,6 +136,7 @@ consoleread(int user_dst, uint64 dst, int n)
     // wait until interrupt handler has put some
     // input into cons.buffer.
     while(cons.r == cons.w){
+      if((lflag & ICANON) == 0 && vmin == 0) break;
       if(myproc()->killed){
         release(&cons.lock);
         return -1;
@@ -145,37 +150,47 @@ consoleread(int user_dst, uint64 dst, int n)
       if(either_copyout(user_dst, dst, &c, 1) == -1)
         break;
       dst++;--n;
-      continue;
-    }
-    
-
-    if(c == C('D')){  // end-of-file
-      if(n < target){
-        // Save ^D for next time, to make sure
-        // caller gets a 0-byte result.
-        cons.r--;
+      if(target - n == vmin) break;
+    } else {
+      if(c == C('D')){  // end-of-file
+        if(n < target){
+          // Save ^D for next time, to make sure
+          // caller gets a 0-byte result.
+          cons.r--;
+        }
+        break;
       }
-      break;
+
+      // copy the input byte to the user-space buffer.
+      if(either_copyout(user_dst, dst, &c, 1) == -1)
+        break;
+      dst++;--n;
+
+      if(c == '\n'){
+        // a whole line has arrived, return to
+        // the user-level read().
+        break;
+      }
     }
 
-    // copy the input byte to the user-space buffer.
-
-    if(either_copyout(user_dst, dst, &c, 1) == -1)
-      break;
-
-    dst++;
-    --n;
-
-    if(c == '\n'){
-      // a whole line has arrived, return to
-      // the user-level read().
-      break;
-    }
   }
   release(&cons.lock);
 
   return target - n;
 }
+
+extern void buddy_print_free();
+
+static void interactive_debug_info(char c) {
+  // printf("%d\n", c);
+  switch(c) {
+    case C('P'):  // Print process list.
+      procdump();
+      buddy_print_free();
+      break;
+  }
+}
+
 
 //
 // the console input interrupt handler.
@@ -184,13 +199,16 @@ consoleread(int user_dst, uint64 dst, int n)
 // wake up consoleread() if a whole line has arrived.
 // 基于中断，用于字符回显，以及存储字符到缓存
 //
-extern void buddy_print_free();
 void
 consoleintr(char c)
 {
   uint16_t iflag = term.c_iflag;
   uint16_t lflag = term.c_lflag;
   acquire(&cons.lock);
+  
+  #ifdef DEBUG
+  interactive_debug_info(c);
+  #endif
 
   // not cookmode
   if((lflag & ICANON) == 0) {
@@ -209,10 +227,6 @@ consoleintr(char c)
   }
 
   switch(c){
-  case C('N'):  // Print process list.
-    procdump();
-    buddy_print_free();
-    break;
   case C('U'):  // Kill line.
     while(cons.e != cons.w &&
           cons.buf[(cons.e-1) % INPUT_BUF] != '\n'){

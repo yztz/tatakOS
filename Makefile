@@ -86,6 +86,9 @@ all: kernel
 # 	cp bootloader/sbi-qemu sbi-qemu
 
 run: kernel
+ifeq ("$(debug)", "on")
+	@echo -e "\n\033[43;1mNotice: Run In Debug Mode\033[0m\n"
+endif
 ifeq ("$(platform)", "k210") # k210
 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin

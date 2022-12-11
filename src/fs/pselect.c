@@ -8,6 +8,7 @@
 #include "kernel/time.h"
 #include "mm/vm.h"
 
+#define QUIET
 #define __MODULE_NAME__ PSELECT
 #include "debug.h"
 
@@ -37,6 +38,9 @@ uint64_t sys_pselect(void) {
     if(taddr && copy_from_user(&ts, taddr, sizeof(struct timespec)) < 0) return -1;
 
     timeout = taddr ? ts2ticks(&ts) : -1;
+
+    // debug("timeout is %d", timeout);
+    // debug("nfds is %d", nfds);
 
     int ans = 0;
 

@@ -1,3 +1,4 @@
+/* reference https://www.softool.cn/blog-158.html */
 #ifndef _H_TERMIOS_
 #define _H_TERMIOS_
 

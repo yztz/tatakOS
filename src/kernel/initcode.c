@@ -5,7 +5,7 @@ void printf(const char *fmt, ...);
 void*memcpy(void* dst, const void* src, uint n);
 void __run(char *argv[]);
 
-#define run(...) {char *__cmd[] = {##__VA_ARGS__, 0};__run(__cmd);}
+#define run(name, ...) {char *__cmd[] = {name, ##__VA_ARGS__, 0};__run(__cmd);}
 #define shell(...) {char *__cmd[] = {"busybox", "sh", ##__VA_ARGS__, 0};__run(__cmd);}
 #define lua(...) {char *__cmd[] = {"lua", ##__VA_ARGS__, 0};__run(__cmd);}
 #define lmbench(...) {char *__cmd[] = {"lmbench_all", ##__VA_ARGS__, 0};__run(__cmd);}
@@ -21,6 +21,7 @@ void main() {
 
     memuse();
     shell();
+    // run("qjs");
     memuse();
     halt();
     for(;;);

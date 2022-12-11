@@ -3,6 +3,12 @@
 #include "ioctl.h"
 #include "mm/vm.h"
 
+
+#define __MODULE_NAME__ IOCTL
+#define QUIET
+
+#include "debug.h"
+
 extern struct termios term;
 
 
@@ -17,6 +23,7 @@ int ioctl(file_t *fp, uint64_t request, uint64_t arg0) {
         case TCSETS:
             if(copy_from_user(&newterm, arg0, sizeof(newterm)) < 0)
                 return -1;
+            debug("TCSETS iflag is %b", newterm.c_cflag);
             term = newterm;
             break;
         case TIOCGPGRP:
