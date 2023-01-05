@@ -1,14 +1,11 @@
-#include "types.h"
-#include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "atomic/spinlock.h"
+#include "common.h"
 #include "kernel/proc.h"
-#include "kernel/waitqueue.h"
-#include "utils.h"
+#include "kernel/taskqueue.h"
 #include "defs.h"
 #include "mm/vm.h"
-#include "mm/mm.h"
+#include "driver/timer.h"
 
 
 #include "fs/fcntl.h"
@@ -46,36 +43,13 @@ extern void forkret(void);
 struct spinlock wait_lock;
 
 
-// LIST_HEAD(unused_queue);
-// LIST_HEAD(used_queue);
-// LIST_HEAD(runnable_queue);
-// // LIST_HEAD(running_queue);
-// LIST_HEAD(sleep_queue);
-// LIST_HEAD(zombie_queue);
+TASK_QUEUE_INIT(unused_queue);
+TASK_QUEUE_INIT(used_queue);
+TASK_QUEUE_INIT(runnable_queue);
+TASK_QUEUE_INIT(sleep_queue);
+TASK_QUEUE_INIT(zombie_queue);
 
-// SPINLOCK_INIT(unused_queue_lock);
-// SPINLOCK_INIT(used_queue_lock);
-// SPINLOCK_INIT(runnable_queue_lock);
-// // SPINLOCK_INIT(running_queue_lock);
-// SPINLOCK_INIT(sleep_queue_lock);
-// SPINLOCK_INIT(zombie_queue_lock);
-
-// spinlock_t *pstatelocks[MAXPSTATE] = {
-//   [UNUSED] &unused_queue_lock, 
-//   [USED] &used_queue_lock, 
-//   [SLEEPING] &sleep_queue_lock, 
-//   [RUNNABLE] &runnable_queue_lock,
-//   // [RUNNING] &running_queue_lock,
-//   [ZOMBIE] &zombie_queue_lock,
-// };
-
-WQ_INIT(unused_queue);
-WQ_INIT(used_queue);
-WQ_INIT(runnable_queue);
-WQ_INIT(sleep_queue);
-WQ_INIT(zombie_queue);
-
-wq_t *pstatelist[MAXPSTATE] = {
+tq_t *pstatelist[MAXPSTATE] = {
   [UNUSED] &unused_queue, 
   [USED] &used_queue, 
   [SLEEPING] &sleep_queue, 
@@ -84,11 +58,11 @@ wq_t *pstatelist[MAXPSTATE] = {
   [ZOMBIE] &zombie_queue,
 };
 
-#define pstate_list_lock(state) wq_lock(pstatelist[state])
-#define pstate_list_unlock(state) wq_unlock(pstatelist[state])
-#define pstate_list_poll(state) wq_poll(pstatelist[state])
-#define pstate_list_offer(state, proc) wq_offer(pstatelist[state], proc)
-#define pstate_list_delete(state, proc) wq_remove(pstatelist[state], proc)
+#define pstate_list_lock(state) tq_lock(pstatelist[state])
+#define pstate_list_unlock(state) tq_unlock(pstatelist[state])
+#define pstate_list_poll(state) tq_poll(pstatelist[state])
+#define pstate_list_offer(state, proc) tq_offer(pstatelist[state], proc)
+#define pstate_list_delete(state, proc) tq_remove(pstatelist[state], proc)
 
 // p->lock hold
 static inline void pstate_set(proc_t *p, int newstate) {
@@ -100,10 +74,11 @@ static inline void pstate_set(proc_t *p, int newstate) {
 }
 
 
-// p->lock hold
+// p->lock held
 void pstate_migrate(proc_t *p, int newstate) {
   int oldstate = p->state;
-  assert(oldstate != newstate && pstatelist[newstate]);
+  if(oldstate == newstate) return;
+  assert(pstatelist[newstate]);
 
   if(p->state != RUNNING) {
     pstate_list_lock(oldstate);
@@ -119,6 +94,7 @@ static inline void procstate_init() {
   for(struct proc *p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->__state = UNUSED;
+      p->wait_channel = NULL;
       p->mm = NULL;
       p->kstack = 0;
       p->trapframe = NULL;
@@ -573,7 +549,9 @@ void exit(int status) {
 
 void sig_send(proc_t *p, int signum) {
     acquire(&p->lock);
-    if(signum == SIGKILL) p->killed = 1;
+    if(signum == SIGKILL) {
+      p->killed = 1;
+    }
     p->sig_pending |= (1L << (signum - 1));
     if(p->state == SLEEPING) pstate_migrate(p, RUNNABLE);
     release(&p->lock);
@@ -676,21 +654,21 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   
-  wq_t *rq = &runnable_queue;
+  tq_t *rq = &runnable_queue;
 
   c->proc = 0;
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     
-    wq_lock(rq);
-    if((p = wq_poll(rq)) == NULL) {
+    tq_lock(rq);
+    if((p = tq_poll(rq)) == NULL) {
       // info("NO AVAILABLE PROC");
-      wq_unlock(rq);
+      tq_unlock(rq);
       continue;
     }
     acquire(&p->lock);
-    wq_unlock(rq);
+    tq_unlock(rq);
 
     p->__state = RUNNING;
     c->proc = p;
@@ -734,9 +712,7 @@ tf_t *proc_get_tf(proc_t *p) {
 // be proc->intena and proc->noff, but that would
 // break in the few places where a lock is held but
 // there's no process.
-void
-sched(void)
-{
+void sched(void) {
   int intena;
   struct proc *p = myproc();
   struct cpu *cpu = mycpu();
@@ -754,6 +730,21 @@ sched(void)
 
   swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
+}
+
+static void process_timeout(void *p) {
+  proc_t *current = (proc_t *)p;
+  wake_up_process(current);
+}
+
+int sched_timeout(int timeout) {
+  timer_t timer;
+  set_timer(&timer, process_timeout, timeout, myproc());
+  sched();
+  // May not be woken because of timeout, so we need clear the timer
+  remove_timer(&timer);
+
+  return timer.expires == 0;
 }
 
 // Give up the CPU for one scheduling round.
@@ -878,8 +869,8 @@ void wakeup(void *chan) {
 }
 
 void wake_up_process(proc_t *p) {
-  if(p->state != SLEEPING)
-    ER();
+  // if(p->state != SLEEPING)
+  //   ER();
   acquire(&p->lock);
   pstate_migrate(p, RUNNABLE);
   release(&p->lock);

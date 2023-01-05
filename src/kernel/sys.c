@@ -4,7 +4,7 @@
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "sys/resource.h"
-#include "profile.h"
+#include "driver/timer.h"
 
 #define __MODULE_NAME__ SYS
 #include "debug.h"
@@ -23,16 +23,6 @@ utsname_t sysname = {
   .version = "0.0.0",
 };
 
-uint64_t sys_syslog(void) {
-  int type;
-  uint64_t bufaddr;
-  int len;
-
-  if(argint(0, &type) < 0 || argaddr(1, &bufaddr) < 0 || argint(2, &len) < 0)
-    return -1;
-
-  return 0;
-}
 
 uint64_t sys_sysinfo(void) {
   uint64_t addr;
@@ -161,14 +151,6 @@ uint64_t sys_times(void) {
 }
 
 
-uint64_t sys_madvice(void) {
-  int UNUSED(advice);
-  
-  // argint(2, &advice);
-
-  return 0;
-}
-
 
 uint64_t sys_halt(void) {
   LOOP();
@@ -233,9 +215,6 @@ uint64_t sys_setitimer(void) {
   return 0;
 } 
 
-uint64_t sys_getrandom(void) {
-  return 0;
-}
 
 uint64_t sys_prctl(void) {
   return 0;
@@ -292,8 +271,4 @@ uint64 sys_statfs64(void) {
 
   return 0;
 
-}
-
-uint64_t sys_membarrier(void) {
-  return 0;
 }

@@ -53,15 +53,12 @@ void main() {
     plic_init_hart();  // disable all interrupts and set ctx threshould to 0 for hart
     platform_plic_init_hart(); // enable for current hart as required
     /* DRIVER */
-    platform_dirver_init(); // platform driver init
+    platform_dirver_init();
     /* CONSOLE */
-    consoleinit(); // console
+    consoleinit();
     /* DEV */
     devnull_init();
     devzero_init();
-    // #ifdef K210
-    // for(;;); // we haven't impl fs for K210, so spin here to avoid panic.
-    // #endif
     /* FILE SYSTEM */
     binit();         // buffer cache
     fs_init();
@@ -69,7 +66,7 @@ void main() {
     userinit();      // first user process
 
     pdflush_init();
-    // kthread_create("scavenger", scavenger_routine);
+    kthread_create("scavenger", scavenger_routine);
 
     #ifdef K210
     for (int i = 1; i < NUM_CORES; i++) {
@@ -85,7 +82,6 @@ void main() {
     while(started == 0)
       ;
     __sync_synchronize();
-    while(1);
     platform_early_init_hart();
     kvminithart();    // turn on paging
     trapinithart();   // install kernel trap vector

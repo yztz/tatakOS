@@ -12,91 +12,96 @@ extern proc_t proc[];
 
 
 // TODO: 为futex设置单独的等待队列
+WAIT_QUEUE_INIT(futex_queue);
 
 
 uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
-    uint64_t res = -110;
+    uint64_t res = 0;
     struct proc *p = myproc();
-    timespec_t cur_time, wake_time;
     sig_handle(p->signal);
     // p->fuext_waiting = 1;
     
-    acquire(&p->lock);
+    DECLARE_WQ_ENTRY(entry);
+    wq_prepare(&futex_queue);
     release(futex_lock);
-
-    // Go to sleep.
-    // p->chan = 0;
-    if(time) {
-        p->chan = &ticks;
-    }
-
-    cur_time = TICK2TIMESPEC(ticks);
     p->futex_chan = chan;
 
-    do {
-        pstate_migrate(p, SLEEPING);
-        sched();
-        if(p->futex_chan == 0) {
-            res = 0;
-            break;
-        } else if(time == NULL) {
-            panic("bad wake up");
+    if(time) {
+        int timeout = time->ts_sec * 1000 + time->ts_nsec / 1000000;
+        if(wq_sleep_timeout(&futex_queue, &entry, timeout)) {
+            printf("Futex end beacause of TIMEOUT\n");
+            res = -ETIMEDOUT;
         }
-        // only time intr
-        wake_time = TICK2TIMESPEC(ticks);
-        uint64_t ds = wake_time.ts_sec - cur_time.ts_sec;
-        // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
-        // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {
-        if(ds > 2) { // FIXME: 超时时间不准确可能导致错误的超时行为
-            debug("PID %d futex timeout", p->pid);
-            break;
-        }
-    } while(1);
+    } else {
+        wq_sleep(&futex_queue, &entry);  
+    }
+    // pstate_migrate(p, SLEEPING);
+    // sched();
+    // if(p->futex_chan == 0) {
+    //     res = 0;
+    // } else if(time == NULL) {
+    //     panic("bad wake up");
+    // }
+    // only time intr
+    // wake_time = TICK2TIMESPEC(ticks);
+    // uint64_t ds = wake_time.ts_sec - cur_time.ts_sec;
+    // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
+    // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {
+    // if(ds > 2) { // FIXME: 超时时间不准确可能导致错误的超时行为
+    //     debug("PID %d futex timeout", p->pid);
+    //     break;
+    // }
+
 
     // Tidy up.
     // p->futex_chan = 0;
-    p->chan = 0;
+    // p->chan = 0;
 
     // Reacquire original lock.
     acquire(futex_lock);
-    release(&p->lock);
+    // release(&p->lock);
 
     return res;
 }
 
 int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim) {
-    proc_t *me = myproc();
+    proc_t *UNUSED(me) = myproc();
     struct proc *p;
+    wq_entry_t *entry;
     int i = 0;
     debug("PID %d start wake %#lx", me->pid, chan);
-    for(p = proc; p < &proc[NPROC] && i < n; p++) {
-        if(p != me) {
-            acquire(&p->lock);
-            // if(p->state == SLEEPING && p->futex_chan == chan) {
-            if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
-                p->futex_chan = 0;
-                pstate_migrate(p, RUNNABLE);
-                i++;
-                debug("PID %d woken", p->pid);
-            }
-            release(&p->lock);
+    acquire(&futex_queue.wq_lock);
+    list_for_each_entry_condition(entry, &futex_queue.head, head, i < n) {
+        p = entry->private;
+        // if(p->state == SLEEPING && p->futex_chan == chan) {
+        // if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
+        if(p->futex_chan == chan) {
+            p->futex_chan = 0;
+            wake_up_process(p);
+            i++;
+            debug("PID %d woken", p->pid);
         }
     }
+    release(&futex_queue.wq_lock);
     debug("PID %d wake end", me->pid);
     if(requeue) {
         debug("PID %d start requeue", me->pid);
         int num = 0;
-        for(p = proc; p < &proc[NPROC] && num < requeue_lim; p++) {
-            if(p != myproc()) {
-                acquire(&p->lock);
-                if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
+        
+        acquire(&futex_queue.wq_lock);
+        list_for_each_entry_condition(entry, &futex_queue.head, head, num < requeue_lim) {
+            p = entry->private;
+            acquire(&p->lock);
+            if(p->futex_chan == chan) {
+                if(p->futex_chan == chan) {
                     p->futex_chan = newaddr;
                     num++;
                     debug("PID %d requeued to %#lx", p->pid, newaddr);
                 }
-                release(&p->lock);
             }
+            release(&p->lock);
         }
+        release(&futex_queue.wq_lock);
         debug("PID %d requeue end", me->pid);
     }
     
@@ -168,14 +173,4 @@ uint64_t sys_futex(void) {
     }
 
     return -1;
-}
-
-uint64_t sys_set_robust_list(void) {
-    debug("set robust called");
-    return 0;
-}
-
-uint64_t sys_get_robust_list(void) {
-    debug("get robust called");
-    return 0;
 }

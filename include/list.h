@@ -264,6 +264,11 @@ static inline void list_move(struct list_head *list, struct list_head *head)
 	     !list_entry_is_head(pos, head, member);			\
 	     pos = list_next_entry(pos, member))
 
+#define list_for_each_entry_condition(pos, head, member, condition)				\
+	for (pos = list_first_entry(head, typeof(*pos), member);	\
+	     (condition) && !list_entry_is_head(pos, head, member);			\
+	     pos = list_next_entry(pos, member))
+
 /**
  * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
  * @pos:	the type * to use as a loop cursor.

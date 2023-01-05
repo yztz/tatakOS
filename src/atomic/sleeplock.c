@@ -13,6 +13,7 @@ void
 initsleeplock(struct sleeplock *lk, char *name)
 {
   initlock(&lk->lk, "sleep lock");
+  lk->waitqueue = INIT_WAIT_QUEUE(lk->waitqueue);
   lk->name = name;
   lk->locked = 0;
   lk->pid = 0;
@@ -25,31 +26,66 @@ initsleeplock(struct sleeplock *lk, char *name)
  * 
  * @param lk 
  */
-void
-acquiresleep(struct sleeplock *lk)
-{
+// void
+// acquiresleep(struct sleeplock *lk)
+// {
+//   acquire(&lk->lk);
+//   while (lk->locked) {
+//     sleep(lk, &lk->lk);
+//   }
+//   lk->locked = 1;
+//   lk->pid = myproc()->pid;
+//   release(&lk->lk);
+// }
+
+// void
+// releasesleep(struct sleeplock *lk)
+// {
+//   acquire(&lk->lk);
+//   lk->locked = 0;
+//   lk->pid = 0;
+//   wakeup(lk);
+//   release(&lk->lk);
+// }
+
+// int
+// holdingsleep(struct sleeplock *lk)
+// {
+//   int r;
+  
+//   acquire(&lk->lk);
+//   r = lk->locked && (lk->pid == myproc()->pid);
+//   release(&lk->lk);
+//   return r;
+// }
+
+
+void acquiresleep(struct sleeplock *lk) {
+  DECLARE_WQ_ENTRY(entry);
   acquire(&lk->lk);
-  while (lk->locked) {
-    sleep(lk, &lk->lk);
+  for(;;) {
+    if(!lk->locked)
+      break;
+    wq_prepare(&lk->waitqueue);
+    release(&lk->lk);
+    wq_sleep(&lk->waitqueue, &entry);
+    acquire(&lk->lk);
   }
+
   lk->locked = 1;
   lk->pid = myproc()->pid;
   release(&lk->lk);
 }
 
-void
-releasesleep(struct sleeplock *lk)
-{
+void releasesleep(struct sleeplock *lk) {
   acquire(&lk->lk);
   lk->locked = 0;
   lk->pid = 0;
-  wakeup(lk);
+  wq_wakeup(&lk->waitqueue);
   release(&lk->lk);
 }
 
-int
-holdingsleep(struct sleeplock *lk)
-{
+int holdingsleep(struct sleeplock *lk) {
   int r;
   
   acquire(&lk->lk);

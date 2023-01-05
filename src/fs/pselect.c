@@ -7,6 +7,7 @@
 #include "kernel/signal.h"
 #include "kernel/time.h"
 #include "mm/vm.h"
+#include "driver/timer.h"
 
 #define QUIET
 #define __MODULE_NAME__ PSELECT
@@ -87,9 +88,10 @@ uint64_t sys_pselect(void) {
 
         if(timeout) {
             // debug("sleep");
-            acquire(&p->lock);
-            sleep(&ticks, &p->lock);
-            release(&p->lock);
+            // acquire(&p->lock);
+            // sleep(&ticks, &p->lock);
+            // release(&p->lock);
+            wait_timer();
             timeout--;
         } else {
             break;
@@ -152,9 +154,10 @@ uint64 sys_ppoll(void) {
 
         if(timeout == -1) continue;
         if(timeout) {
-            acquire(&p->lock);
-            sleep(&ticks, &p->lock);
-            release(&p->lock);
+            // acquire(&p->lock);
+            // sleep(&ticks, &p->lock);
+            // release(&p->lock);
+            wait_timer();
             timeout--;
         } else {
             break;

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "math.h"
+// #include "math.h"
 #include "platform.h"
 #include "driver/plic.h"
 #include "stddef.h"

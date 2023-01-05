@@ -9,8 +9,8 @@
 93     exit      sys_exit  
 94     exit_group sys_exit_group
 98     futex     sys_futex
-99     set_robust_list  sys_set_robust_list
-100    get_robust_list  sys_get_robust_list
+#99     set_robust_list  sys_set_robust_list
+#100    get_robust_list  sys_get_robust_list
 101    nanosleep sys_nanosleep
 124    yield     sys_sched_yield
 129    kill      sys_kill
@@ -42,8 +42,8 @@
 34     mkdirat   sys_mkdirat
 35     unlinkat  sys_unlinkat
 #37    linkat    sys_linkat  [doesn't impl]
-39     umount2   sys_umount
-40     mount     sys_mount
+#39     umount2   sys_umount
+#40     mount     sys_mount
 46     ftruncate sys_ftruncate
 48     faccessat sys_faccessat
 49     chdir     sys_chdir  
@@ -63,7 +63,7 @@
 78     readlinkat  sys_readlinkat
 79     fstatat   sys_fstatat
 80     fstat     sys_fstat  
-82     fsync     sys_fsync
+#82     fsync     sys_fsync
 88     utimensat sys_utimensat
 276    renameat2 sys_renameat2
 ###############SOCK#############
@@ -80,15 +80,15 @@
 214     brk       sys_brk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
-233     madvice   sys_madvice
+#233     madvice   sys_madvice
 226     mprotect  sys_mprotect
-227     msync     sys_msync
+#227     msync     sys_msync
 ##############Sys###############
 43      statfs64  sys_statfs64
 96      set_tid_address sys_set_tid_address
 103     setitimer       sys_setitimer
 113     clock_gettime   sys_clock_gettime
-116     syslog          sys_syslog
+#116     syslog          sys_syslog
 153     times           sys_times
 160     uname           sys_uname
 165     getrusage       sys_getrusage
@@ -96,8 +96,8 @@
 167     prctl           sys_prctl
 169     gettimeofday    sys_gettimeofday
 179     sysinfo         sys_sysinfo
-278     getrandom       sys_getrandom
-283     membarrier      sys_membarrier
+#278     getrandom       sys_getrandom
+#283     membarrier      sys_membarrier
 #############MISC###############
 175     geteuid     sys_geteuid
 177     getegid     sys_getegid

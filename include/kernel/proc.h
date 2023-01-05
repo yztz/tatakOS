@@ -95,6 +95,7 @@ struct proc {
   
   void *chan;                  // If non-zero, sleeping on chan
   void *futex_chan;             
+  wq_t *wait_channel;
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
@@ -152,6 +153,7 @@ struct proc*    myproc();
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
+int             sched_timeout(int timeout);
 void            sleep(void*, struct spinlock*);
 void            sleep_deep(void *chan, struct spinlock *lk);
 void            userinit(void);

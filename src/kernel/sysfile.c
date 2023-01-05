@@ -332,15 +332,6 @@ uint64_t sys_faccessat(void) {
     return 0;
 }
 
-uint64_t sys_mount(void) {
-    debug("mount");
-    return 0;
-}
-
-uint64 sys_umount(void) {
-    debug("umount");
-    return 0;
-}
 
 uint64 sys_unlinkat(void) {
     entry_t *entry, *from;
@@ -828,7 +819,9 @@ uint64 sys_mmap(void) {
 
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
 
-    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
+    // 由于我们并没有实现mproctect所以如果按照它给的flag来设置会有后续访存问题
+    // if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
+    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) {
         debug("mmap failure");
         return -1;
     }
@@ -913,39 +906,6 @@ uint64_t sys_utimensat(void){
         }
     }
     return 0; 
-}
-
-uint64_t sys_fsync(void){
-    // int fd;
-    // entry_t *ep;
-
-    // if(argint(0, &fd) < 0)
-    //     return -1;
-
-    // ep = getep(myproc(), fd);    
-
-    // sych_entry_in_disk(ep);
-    return 0;
-}
-
-extern void msync(uint64_t addr, uint64_t length, int flags);
-
-/**
- * addr 和length需要是PGSIZE的倍数吗？
- */
-uint64_t
-sys_msync(void){
-    // uint64_t addr, length;
-    // int flags;
-
-    // if(argaddr(0, &addr) < 0 ||
-    //     argaddr(1, &length) < 0 ||
-    //     argint(2, &flags) < 0)
-    //     return -1;
-
-    // msync(addr, length, flags);
-    
-    return 0;
 }
 
 uint64_t sys_ftruncate() {
