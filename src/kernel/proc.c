@@ -30,7 +30,7 @@ static atomic_t nextpid = INIT_ATOMIC();
 // int nexttid = 1;
 // struct spinlock tid_lock;
 
-extern void forkret(void);
+extern void forkret(proc_t *);
 
 #define get_next_pid() (atomic_inc(&nextpid))
 
@@ -43,6 +43,7 @@ extern void forkret(void);
 struct spinlock wait_lock;
 
 
+// We set queues for the process' states respectively
 TASK_QUEUE_INIT(unused_queue);
 TASK_QUEUE_INIT(used_queue);
 TASK_QUEUE_INIT(runnable_queue);
@@ -75,6 +76,7 @@ static inline void pstate_set(proc_t *p, int newstate) {
 
 
 // p->lock held
+// This general API is used to migrate state of process
 void pstate_migrate(proc_t *p, int newstate) {
   int oldstate = p->state;
   if(oldstate == newstate) return;
@@ -162,7 +164,18 @@ void pstate() {
   }
 }
 
-proc_t *proc_new(int is_kthread) {
+void newproc_callback_stage1(kthread_callback callback) {
+  proc_t *p = myproc();
+  release(&p->lock);
+
+  callback(p);
+
+  panic("bad ret");
+}
+
+extern void newproc_callback_stage0();
+
+proc_t *proc_new(kthread_callback callback) {
   struct proc *p;
 
   pstate_list_lock(UNUSED);
@@ -193,17 +206,16 @@ proc_t *proc_new(int is_kthread) {
     goto bad;
   }
 
-  if(!is_kthread) {
-    if((p->trapframe = tf_new()) == 0) {
-      debug("trapframe alloc failure");
-      goto bad;
-    }
-  }
-
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
-  p->context.ra = (uint64)forkret;
+  // We want to release the proc lock automatically, 
+  // so a middle stage(newproc_callback_stage1) need to be called
+  // and the real callback should be passed as a param.
+  // Out of a0 is not a callee-saved register, so we do it with the help of s1.
+  // An asm routine(newproc_callback_stage0 in Swtch.S) is written to help us pass the param
+  p->context.ra = (uint64)newproc_callback_stage0;
+  p->context.s1 = (uint64)callback;
   p->context.sp = p->kstack + KSTACK_SZ;
 
   atomic_inc(&proc_cnt);
@@ -234,7 +246,6 @@ void freeproc(struct proc *p) {
 
   pstate_migrate(p, UNUSED);
 
-  // memset(p->ofile, 0, NOFILE * sizeof(struct file *));
   p->exe = NULL;
   p->pid = -1;
   p->parent = 0;
@@ -272,31 +283,47 @@ static void init_std(proc_t *p) {
   stdout->dev = &devs[CONSOLE];
 }
 
+static void __userinit(proc_t *p) {
+    // File system initialization must be run in the context of a
+    // regular process (e.g., because it calls sleep), and thus cannot
+    // be run from main().
+    extern fat32_t *fat;
+    fat_mount(ROOTDEV, &fat);
+    p->cwd = namee(NULL, "/");
+    forkret(p);
+}
+
 // Set up first user process.
-void
-userinit(void)
-{
+void userinit(void) {
   struct proc *p;
   mm_t *mm;
   fdtable_t *fdtable;
   signal_t *sig;
   tg_t *tg;
+  tf_t *tf;
 
-  p = proc_new(0);
+  p = proc_new(__userinit);
   initproc = p;
 
   if(p == NULL) {
     panic("alloc");
   }
 
-  if((mm = mmap_new()) == NULL || (fdtable = fdtbl_new()) == NULL || 
-    (sig = sig_new()) == NULL || (tg = tg_new(p)) == NULL) 
+
+  if( (mm = mmap_new()) == NULL       || 
+      (fdtable = fdtbl_new()) == NULL || 
+      (sig = sig_new()) == NULL       || 
+      (tg = tg_new(p)) == NULL        || 
+      (tf = tf_new()) == NULL)
+  {
     panic("alloc");
+  }
   
   proc_switchmm(p, mm);
   proc_setfdtbl(p, fdtable);
   proc_setsig(p, sig);
   proc_settg(p, tg);
+  proc_settf(p, tf);
 
   const int USER_SIZE = 4 * PGSIZE;
 
@@ -320,7 +347,6 @@ userinit(void)
   disable_sum();
 
   // prepare for the very first "return" from kernel to user.
-  // proc_get_tf(p)->epc = 0;      // user program counter
   proc_get_tf(p)->epc = PGSIZE;      // user program counter
   proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
 
@@ -346,17 +372,16 @@ uint64 growproc(uint64_t newbreak) {
 }
 
 
-int kthread_create(char *name, void (*entry)()) {
+int kthread_create(char *name, kthread_callback callback) {
   if(initproc == NULL)
     panic("initproc required");
 
-  struct proc *np = proc_new(1);
+  struct proc *np = proc_new(callback);
 
   if(np == NULL)
     return -1;
 
   proc_setmm(np, initproc->mm);
-  np->context.ra = (uint64_t)entry;
 
   strncpy(np->name, name, 20);
 
@@ -374,10 +399,16 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   fdtable_t *newfdtbl;
   signal_t *newsig;
   tg_t *newtg;
+  tf_t *newtf;
 
   // Allocate process.
-  if((np = proc_new(0)) == NULL){
+  if((np = proc_new(forkret)) == NULL){
     return -1;
+  }
+
+  if((newtf = tf_new()) == NULL) {
+    debug("trapframe alloc failure");
+    goto bad;
   }
 
   if((flags & CLONE_VM)) {
@@ -428,6 +459,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   proc_setfdtbl(np, newfdtbl);
   proc_setsig(np, newsig);
   proc_settg(np, newtg);
+  proc_settf(np, newtf);
 
   // 拷贝trapframe
   memcpy(proc_get_tf(np), proc_get_tf(p), sizeof(tf_t));
@@ -463,8 +495,6 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
   pstate_migrate(np, RUNNABLE);
   release(&np->lock);
 
-
-  // np->cur_mmap_sz = p->cur_mmap_sz;
   return pid;
 
 
@@ -513,9 +543,6 @@ void exit(int status) {
   eput(p->cwd);
   p->cwd = 0;
 
-  /* free the mm field of the process 
-  释放页表和结构体，在waitpid中释放*/
-  // exit_mm(p);
 
   acquire(&wait_lock);
 
@@ -598,7 +625,7 @@ waitpid(int cid, uint64 addr, int options)
     haveckid = 0; // 表示指定的cid存在
     for(np = proc; np < &proc[NPROC]; np++){
       if(np->parent == p){
-        // make sure the child isn't still in exit() or swtch().
+        // Make sure the child isn't still in exit() or swtch().
         acquire(&np->lock);
 
         havekids = 1;
@@ -637,7 +664,7 @@ waitpid(int cid, uint64 addr, int options)
     }
     
     // Wait for a child to exit.
-    sleep(p, &wait_lock);  //DOC: wait-sleep
+    sleep(p, &wait_lock);
   }
 }
 
@@ -693,6 +720,10 @@ void proc_setsig(proc_t *p, signal_t *newsig) {
 void proc_settg(proc_t *p, tg_t *tg) {
   tg_ref(tg);
   p->tg = tg;
+}
+
+void proc_settf(proc_t *p, tf_t *tf) {
+  p->trapframe = tf;
 }
 
 void proc_setfdtbl(proc_t *p, fdtable_t *fdtbl) {
@@ -761,31 +792,10 @@ yield(void)
 #include "fs/fat.h"
 // A fork child's very first scheduling by scheduler()
 // will swtch to forkret.
-void
-forkret(void)
-{
-  static int first = 1;
-  proc_t *p = myproc();
-  // Still holding p->lock from scheduler.
-  release(&p->lock);
+void forkret(proc_t *p) {
 
   if(p->set_tid_addr)
     copy_to_user(p->set_tid_addr, &p->pid, 4);
-
-  if (first) {
-    // File system initialization must be run in the context of a
-    // regular process (e.g., because it calls sleep), and thus cannot
-    // be run from main().
-    first = 0;
-
-    extern fat32_t *fat;
-    fat_mount(ROOTDEV, &fat);
-    p->cwd = namee(NULL, "/");
-    // // init dir...
-    // entry_t *tmp = create(fat->root, "/tmp", T_DIR);
-    // if(tmp)
-    //   eunlockput(tmp);
-  }
 
   usertrapret();
 }
@@ -916,9 +926,7 @@ void proc_switchmm(proc_t *p, mm_t *newmm) {
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
-void
-procdump(void)
-{
+void procdump(void) {
   static char *states[] = {
   [UNUSED]          "UNUSED        ",
   [SLEEPING]        "SLEEPING      ",

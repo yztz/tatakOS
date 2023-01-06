@@ -29,7 +29,7 @@ $(initcode_bin): initcode.c $(ROOT)/entry/syscall.tbl $(BUILD_DIR)/usys.o
 	@$(OBJCOPY) -S -O binary $(BUILD_DIR)/initcode.out $(BUILD_DIR)/initcode
 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_ROOT)/initcode.asm
 	@mkdir -p $(kernel_include_dir)
-	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 7 -O $@
+	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 16 -O $@
 	@echo -e "GEN\t\tinit_code"
 
 proc.c : $(initcode_bin)

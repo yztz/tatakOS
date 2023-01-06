@@ -40,3 +40,8 @@ swtch:
         ret
 
 	
+.globl newproc_callback_stage0
+newproc_callback_stage0:
+        mv a0, s1
+        li s1, 0
+        call newproc_callback_stage1

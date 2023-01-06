@@ -39,7 +39,7 @@ DEFINE_SPINLOCK(pdflush_lock, "pdflush lock");
 LIST_HEAD(pdflush_list);
 
 /* 这里定义pdflush的数量 */
-#define PDFLUSH_THREADS_CNTS 2
+#define PDFLUSH_THREADS_CNTS 1
 
 /*
  * A structure for passing work to a pdflush thread.  Also for passing
@@ -105,11 +105,8 @@ static int __pdflush(pdflush_work_t *my_work) {
  * these are visible to other tasks and CPUs.  (No problem has actually
  * been observed.  This is just paranoia).
  */
-static void pdflush()
+static void pdflush(proc_t *p)
 {
-  /* 重要！同forkret */
-  // Still holding p->lock from scheduler.
-  release(&myproc()->lock);
   /* 注释里说my_work被设置为了一个局部变量，my_work对于每个pdflush thread是私有的，
   确实没有设置为全局变量的必要 */
 	struct pdflush_work my_work;

@@ -107,4 +107,5 @@
 231    profile        sys_profile
 232    philosophy   sys_philosophy
 235    memuse       sys_memuse
+236    procdump       sys_procdump
 234    halt         sys_halt

@@ -141,6 +141,7 @@ struct proc {
 };
 
 typedef struct proc proc_t;
+typedef void (*kthread_callback)(proc_t *);
 
 void            exit(int);
 int             do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid);
@@ -161,10 +162,13 @@ int             waitpid(int cid, uint64 addr, int options);
 void            wakeup(void*);
 void            yield(void);
 void            procdump(void);
+
 void            proc_setmm(proc_t *p, mm_t *mm);
 void            proc_setsig(proc_t *p, signal_t *sig);
 void            proc_settg(proc_t *p, tg_t *tg);
 void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
+void            proc_settf(proc_t *p, tf_t *tf);
+
 void            proc_switchmm(proc_t *p, mm_t *newmm);
 tf_t           *proc_get_tf(proc_t *p);
 int             kthread_create(char *name, void (*entry)());

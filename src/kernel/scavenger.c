@@ -6,10 +6,8 @@
 
 extern proc_t proc[];
 
-void scavenger_routine() {
-    proc_t *me = myproc();
+void scavenger_routine(proc_t *me) {
     proc_t *p;
-    release(&me->lock);
     for(;;) {
         for(p = proc; p < &proc[NPROC]; p++) {
             if(p == me) continue;
@@ -19,9 +17,8 @@ void scavenger_routine() {
                     continue;
                 }
 
-                #ifdef DEBUG
-                printf(grn("SCAVENGER: PID %d freed\n"), p->pid);
-                #endif
+                debug(grn("SCAVENGER: PID %d freed\n"), p->pid);
+
                 freeproc(p);
                 release(&p->lock);
             }
