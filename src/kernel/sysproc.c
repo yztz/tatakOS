@@ -9,6 +9,7 @@
 #include "common.h"
 #include "kernel/time.h"
 #include "mm/vm.h"
+#include "driver/timer.h"
 
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
@@ -183,24 +184,18 @@ sys_nanosleep(void)
 {
   timespec_t time;
   uint64_t addr;
-  uint ticks0;
+  proc_t *p = myproc();
 
   if(argaddr(0, &addr) < 0)
     return -1;
   if(copy_from_user(&time, addr, sizeof(timespec_t)) == -1)
     return -1;
 
-  uint64_t timeout = SEC2TICK(time.ts_sec);
-  acquire(&tickslock);
-  ticks0 = ticks;
-  while(ticks - ticks0 < timeout){
-    if(myproc()->killed){
-      release(&tickslock);
-      return -1;
-    }
-    sleep(&ticks, &tickslock);
-  }
-  release(&tickslock);
+  uint64_t timeout = time.ts_sec * 1000 + time.ts_nsec / 1000000;
+  acquire(&p->lock);
+  pstate_migrate(p, SLEEPING);
+  sched_timeout(timeout);
+  release(&p->lock);
   return 0;
 }
 
