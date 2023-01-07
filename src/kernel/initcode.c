@@ -13,14 +13,14 @@ void __run(char *argv[]);
 
 char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-                      "mount", "umount", "test_echo"};
+                       "test_echo"};
 char *proc_testcase[] = { "getppid", "getpid",
                        "clone", "wait", "waitpid",
                       "yield", "fork",  "execve", "exit", "sleep"};
 char *mm_testcase[] = {"brk", "mmap", "munmap"};
 char *other_testcase[] = {"gettimeofday", "times", "uname"};
 //  单项测试
-char* prog_name[] = {"getpid"};
+char* prog_name[] = {"munmap"};
 
 
 
@@ -41,10 +41,11 @@ void main() {
     // close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
-    run_testcases(fs_testcase);
-    run_testcases(proc_testcase);
-    run_testcases(mm_testcase);
-    run_testcases(other_testcase);
+    // run_testcases(fs_testcase);
+    // run_testcases(proc_testcase);
+    // run_testcases(mm_testcase);
+    // run_testcases(other_testcase);
+    run_testcases(prog_name);
     memuse();
     halt();
     for(;;);
