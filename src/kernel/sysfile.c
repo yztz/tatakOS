@@ -839,7 +839,7 @@ uint64 sys_munmap(void) {
     }
     /* 现在没有支持vma的分裂和合并，这里先判断一下，以防bug */
     vma_t *vma = __vma_find_strict(p->mm, addr);
-    if(vma->len != len)
+    if(vma->rlen != len)
         ER();
     // debug("UNMAP addr is %#lx len is %#lx", addr, len);
     // mmap_print(p->mm);
