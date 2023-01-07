@@ -95,7 +95,8 @@ int fdtbl_setfile(fdtable_t *self, int fd, file_t *file, int flag) {
         return -1;
     acquire(&self->fdlock);
     if(fd >= self->nfd) {
-        if(self->nfd == self->max_nfd || fdrealloc(self, min(self->nfd + 10, self->max_nfd)) < 0) {
+        if(fd >= self->max_nfd) return -1;
+        if(self->nfd == self->max_nfd || fdrealloc(self, fd + 1) < 0) {
             release(&self->fdlock);
             return -1;
         }

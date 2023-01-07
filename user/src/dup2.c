@@ -11,9 +11,7 @@
  */
 void test_dup2(){
 	TEST_START(__func__);
-	syscall(NR_memuse);
 	int fd = dup2(STDOUT, 100);
-	syscall(NR_memuse);
 	assert(fd != -1);
 	const char *str = "  from fd 100\n";
 	write(100, str, strlen(str));
