@@ -123,6 +123,7 @@ void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t le
     vma->addr = PGROUNDDOWN(addr);
     // vma->len = end - vma->addr;
     vma->len = PGROUNDUP(end - vma->addr);
+    vma->rlen = len;
     vma->flags = flags;
     vma->map_file = fp;
     vma->prot = prot;
@@ -131,8 +132,8 @@ void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t le
     vma_insert(mm, vma);
 
 //   merge:
-//     // 经过上述处理完，找到的vma布局如下所示：
-//     // (addr) vma0] [vma1] [vma2 (end)
+//     经过上述处理完，找到的vma布局如下所示：
+//     (addr) vma0] [vma1] [vma2 (end)
 //     debug("merge..");
 //     if(check_flags(vma->flags, flags) == 0 || check_prot(vma->prot, prot) == 0) return -1;
 //     if(__vmaS_merge(mm, vma, vma_end) == -1) return -1;
