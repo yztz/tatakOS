@@ -5,10 +5,9 @@
 #include "fs/fs.h"
 #include "fs/fcntl.h"
 #include "fs/pipe.h"
-#include "net/socket.h"
 
 struct file {
-  enum { FD_NONE, FD_PIPE, FD_ENTRY, FD_DEVICE, FD_SOCKET } type;
+  enum { FD_NONE, FD_PIPE, FD_ENTRY, FD_DEVICE } type;
   int ref; // reference count
   
   char readable;
@@ -18,7 +17,6 @@ struct file {
     struct pipe *pipe; // FD_PIPE
     entry_t *ep; // FD_ENTRY
     device_t *dev;
-    socket_t *socket;
   };
   off_t off;
 };

@@ -10,7 +10,6 @@ obj-y+=fs/
 obj-y+=kernel/
 obj-y+=misc/
 obj-y+=mm/
-obj-y+=net/
 obj-y+=platform/
 obj-y+=lib/
 obj-y+=tests/

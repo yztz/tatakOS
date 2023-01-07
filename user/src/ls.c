@@ -1,6 +1,8 @@
-#include "stddef.h"
+#include "unistd.h"
+#include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+
 #pragma GCC optimize ("O0")
 
 #define NUM (17 * 4096)
@@ -10,9 +12,9 @@ void
 ls(char *path)
 {
 
-  char buf[512], *p;
+  char buf[512];
   int fd;
-  struct linux_dirent64 *de = buf;
+  struct linux_dirent64 *de = (struct linux_dirent64 *)buf;
 
   if((fd = open(path, 0)) < 0){
     printf("ls: cannot open %s\n", path);
@@ -21,7 +23,7 @@ ls(char *path)
   int nread;
 
   while(1) {
-    if((nread = getdents(fd, buf, 512)) == -1) {
+    if((nread = getdents(fd, (struct linux_dirent64 *)buf, 512)) == -1) {
       printf("ls: getdentes fail\n");
       break;
     }
@@ -31,7 +33,7 @@ ls(char *path)
     int pos = 0;
 
     while(pos < nread) {
-      de = &buf[pos];
+      de = (struct linux_dirent64 *)&buf[pos];
       printf("%s\n", de->d_name);
       pos += de->d_reclen;
     }

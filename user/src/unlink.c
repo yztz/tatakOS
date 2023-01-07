@@ -11,7 +11,7 @@
  * "  unlink error!"
  */
 
-int test_unlink()
+void test_unlink()
 {
     TEST_START(__func__);
 

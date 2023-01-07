@@ -5,7 +5,7 @@
 理想结果：三个子进程交替输出
 */
 
-int test_yield(){
+void test_yield(){
     TEST_START(__func__);
 
     for (int i = 0; i < 3; ++i){

@@ -5,7 +5,7 @@
 size_t stack[1024] = {0};
 static int child_pid;
 
-static int child_func(void){
+static int child_func(void *arg){
     printf("  Child says successfully!\n");
     return 0;
 }

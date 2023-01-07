@@ -47,7 +47,7 @@ project(user)
 aux_source_directory(lib LIBS)
 #set(LIBS ${ARCH_DIR}/crt.S ${LIBS})
 set(LIBS ${ARCH_DIR}/crt.S src/clone.s ${LIBS})
-add_library(ulib ${LIBS} syscall_ids)
+add_library(ulib ${LIBS} ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h)
 include_directories(include/)
 include_directories(../include/)
 target_include_directories(ulib PRIVATE ${ARCH_DIR})
@@ -59,54 +59,43 @@ set(ENTRY "0x1000")
 aux_source_directory(src SRCS)
 # 只编译要测试的文件
 # set(SRCS src/openat.c ${SRCS})
-# set(SRCS src/bigwrite.c ${SRCS})
-# set(SRCS src/getfree.c ${SRCS})
+# # set(SRCS src/bigwrite.c ${SRCS})
+# # set(SRCS src/getfree.c ${SRCS})
+# set(SRCS src/dup2.c ${SRCS})
+# set(SRCS src/sleep.c ${SRCS})
+# set(SRCS src/munmap.c ${SRCS})
 # set(SRCS src/ls.c ${SRCS})
 # set(SRCS src/waitpid.c ${SRCS})
 # set(SRCS src/brk.c ${SRCS})
 # set(SRCS src/mmap.c ${SRCS})
+# set(SRCS src/mount.c ${SRCS})
 
 set(EXECUTABLE_OUTPUT_PATH ${ARCH})
 foreach(PATH ${SRCS})
     get_filename_component(NAME ${PATH} NAME_WE)
 
-    if ("${CHAPTER}" STREQUAL 2)
-        math(EXPR ENTRY "0x80400000" OUTPUT_FORMAT HEXADECIMAL)
-    endif ()
-
-    if ("${CHAPTER}" MATCHES 3_*)
-        if(${NAME} STREQUAL ch4_mmap0)
-            break ()
-        elseif (${NAME} STREQUAL ch2_exit OR ${NAME} STREQUAL ch3_1_yield0 OR ${NAME} STREQUAL ch3_2_stride0)
-            math(EXPR ENTRY "0x80400000" OUTPUT_FORMAT HEXADECIMAL)
-        elseif (${NAME} STREQUAL ch3t_deadloop)
-            math(EXPR ENTRY "0x80500000" OUTPUT_FORMAT HEXADECIMAL)
-        else ()
-            math(EXPR ENTRY "${ENTRY} + 0x20000" OUTPUT_FORMAT HEXADECIMAL)
-        endif ()
-    endif ()
-
     add_executable(${NAME} ${PATH})
     target_link_libraries(${NAME} ulib)
     target_link_options(${NAME} PRIVATE -Ttext ${ENTRY})
 
-    add_custom_command(
-            TARGET ${NAME}
-            POST_BUILD
-            COMMAND mkdir -p ${ASM_DIR}
-            COMMAND ${CMAKE_OBJDUMP} ARGS -d -S $<TARGET_FILE:${NAME}> > ${ASM_DIR}/${NAME}.asm
-    )
-    add_custom_command(
-            TARGET ${NAME}
-            POST_BUILD
-            COMMAND mkdir -p ${BIN_DIR}
-            COMMAND ${CMAKE_OBJCOPY} ARGS -O binary $<TARGET_FILE:${NAME}> ${BIN_DIR}/${NAME}.bin --set-section-flags .bss=alloc,load,contents
-    )
+    # add_custom_command(
+    #         TARGET ${NAME}
+    #         POST_BUILD
+    #         COMMAND mkdir -p ${ASM_DIR}
+    #         COMMAND ${CMAKE_OBJDUMP} ARGS -d -S $<TARGET_FILE:${NAME}> > ${ASM_DIR}/${NAME}.asm
+    # )
+    # add_custom_command(
+    #         TARGET ${NAME}
+    #         POST_BUILD
+    #         COMMAND mkdir -p ${BIN_DIR}
+    #         COMMAND ${CMAKE_OBJCOPY} ARGS -O binary $<TARGET_FILE:${NAME}> ${BIN_DIR}/${NAME}.bin --set-section-flags .bss=alloc,load,contents
+    # )
 endforeach()
 
 add_custom_command(
-        OUTPUT syscall_ids.h
+        OUTPUT ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h
         COMMAND sed ARGS -n -e s/__NR_/SYS_/p
         < ${CMAKE_SOURCE_DIR}/${ARCH_DIR}/syscall_ids.h.in
         > ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h
+        DEPENDS ${CMAKE_SOURCE_DIR}/${ARCH_DIR}/syscall_ids.h.in
 )

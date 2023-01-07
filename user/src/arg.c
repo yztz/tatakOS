@@ -1,7 +1,6 @@
 #include "stdio.h"
 #include "string.h"
 #include "unistd.h"
-#include "generated/syscall.h"
 #include "syscall.h"
 #include "stddef.h"
 
@@ -18,14 +17,14 @@ typedef struct
 
 
 
-int main(uint64 argc, uint64 **argv) {
+int main(int argc, char **argv) {
     printf("args list:\n");
     int i;
     for(i = 0; i < argc; i++) {
         printf("arg %d: %s\n", i, argv[i]);
     }
     printf("envs list:\n");
-    char **envp = argv + argc + 1;
+    char **envp = (char **)(argv + argc + 1);
     for(i = 0; envp[i]; i++) {
         printf("env %d: %s\n", i, envp[i]);
     }
