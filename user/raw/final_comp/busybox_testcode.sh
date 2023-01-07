@@ -10,9 +10,9 @@
 # echo -e "Else nothing will put in $RST\n" >> $RST
 # echo "TEST START" >> $RST
 
-./busybox cat ./busybox_cmd.txt | while read line
+busybox cat ./busybox_cmd.txt | while read line
 do
-	eval "./busybox $line"
+	eval "busybox $line"
 	RTN=$?
 	if [[ $RTN -ne 0 && $line != "false" ]] ;then
 		echo "testcase busybox $line fail"

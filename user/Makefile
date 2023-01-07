@@ -5,7 +5,7 @@ app_dir = src
 src_dir := build/$(ARCH)
 bin_dir := build/bin
 out_dir := target
-cmake_build_args := -DARCH=$(ARCH) -DCHAPTER=$(CHAPTER) 
+cmake_build_args := -DARCH=$(ARCH)
 cmake_build_args += -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_C_COMPILER_WORKS=1
 ifeq ($(MODE), release)
 cmake_build_args += -DCMAKE_BUILD_TYPE=Release
@@ -16,47 +16,18 @@ endif
 # riscv64-unknown-elf-
 OBJCOPY := $(ARCH)-unknown-elf-objcopy
 OBJDUMP := $(ARCH)-unknown-elf-objdump
-CP := cp
-CH_TESTS :=  
+CP := cp 
 
-CH2_TESTS := ch2_ ch2t_
-CH3_TESTS_BASE := $(CH2_TESTS) ch3_0_ ch3t_
-CH4_TESTS := ch2_ ch3_0_ ch4_
-CH5_TESTS := $(CH4_TESTS) ch5_
-CH6_TESTS := $(CH5_TESTS) ch6_
-CH7_TESTS := $(CH6_TESTS) ch7_
 
-ifeq ($(CHAPTER), 2)
-	CH_TESTS += $(CH2_TESTS)
-else ifeq ($(CHAPTER), 3_0)
-	CH_TESTS += $(CH3_TESTS_BASE)
-else ifeq ($(CHAPTER), 3_1)
-	CH_TESTS += ch3_1_
-else ifeq ($(CHAPTER), 3_2)
-	CH_TESTS += ch3_2_
-else ifeq ($(CHAPTER), 4)
-	CH_TESTS += $(CH4_TESTS)
-else ifeq ($(CHAPTER), 5)
-	CH_TESTS += $(CH5_TESTS)
-else ifeq ($(CHAPTER), 6)
-	CH_TESTS += $(CH6_TESTS)
-else ifeq ($(CHAPTER), 7)
-	CH_TESTS += $(CH7_TESTS)
-endif
+makefile := $(U_OBJ_DIR)/Makefile
 
-# CH_TESTS += oscomp/open oscomp/write
-
-binary:
-	@mkdir -p $(U_OBJ_DIR)
-	@cd $(U_OBJ_DIR) && cmake $(cmake_build_args) $(shell pwd) && make
+binary: makefile
+	@cd $(U_OBJ_DIR) && make
 	@$(CP) -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
 
-# @ln -s build/riscv64/ .
-
-pre:
-	@rm -rf $(out_dir)
-	@mkdir -p $(out_dir)/bin/
-	@mkdir -p $(out_dir)/elf/
+makefile:
+	@mkdir -p $(U_OBJ_DIR)
+	@cd $(U_OBJ_DIR) && cmake $(cmake_build_args) $(shell pwd)
 
 all: binary
 

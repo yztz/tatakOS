@@ -8,7 +8,6 @@
  * 成功测试时子进程的输出：
  * "  child process."
  */
-static int fd[2];
 
 void test_fork(void){
     TEST_START(__func__);

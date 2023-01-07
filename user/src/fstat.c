@@ -3,8 +3,6 @@
 #include "stdlib.h"
 #include "stddef.h"
 
-#define AT_FDCWD (-100) //相对路径
-
 //Stat *kst;
 static struct kstat kst;
 void test_fstat() {

@@ -9,7 +9,7 @@
  * "  getppid error."
  */
 
-int test_getppid()
+void test_getppid()
 {
     TEST_START(__func__);
     pid_t ppid = getppid();

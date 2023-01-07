@@ -7,7 +7,7 @@ void test_getdents(void){
     TEST_START(__func__);
     int fd, nread;
     struct linux_dirent64 *dirp64;
-    dirp64 = buf;
+    dirp64 = (struct linux_dirent64 *)buf;
     //fd = open(".", O_DIRECTORY);
     fd = open(".", O_RDONLY);
     printf("open fd:%d\n", fd);

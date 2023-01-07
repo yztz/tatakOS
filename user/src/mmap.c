@@ -47,8 +47,6 @@ void test_mmap(void){
     char *array1;
     char *array2;
     char *array3;
-    char *array4;
-    char *array5;
     const char *str = "Hello, mmap successfully!";
     int fd;
 

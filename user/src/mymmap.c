@@ -10,7 +10,7 @@ char data[4098];
 int main() {
 
     for(int i = 0; i < 4096; i++) {
-        data[i] == 1;
+        data[i] = 1;
     }
     data[4096] = 2;
     data[4097] = 3;

@@ -1,0 +1,9 @@
+./test.sh lua_scripts/date.lua
+./test.sh lua_scripts/file_io.lua
+./test.sh lua_scripts/max_min.lua
+./test.sh lua_scripts/random.lua
+./test.sh lua_scripts/remove.lua
+./test.sh lua_scripts/round_num.lua
+./test.sh lua_scripts/sin30.lua
+./test.sh lua_scripts/sort.lua
+./test.sh lua_scripts/strings.lua
