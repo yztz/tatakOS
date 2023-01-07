@@ -27,6 +27,9 @@ else()
     message("Unsupported arch: ${ARCH}")
 endif ()
 
+
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
 set(CMAKE_ASM_COMPILER      ${PREFIX}gcc)
 set(CMAKE_C_COMPILER        ${PREFIX}gcc)
 set(CMAKE_CXX_COMPILER      ${PREFIX}g++)
@@ -36,6 +39,7 @@ set(CMAKE_RANLIB            ${PREFIX}ranlib)
 set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall")
 set(CMAKE_ASM_FLAGS         ${CMAKE_C_FLAGS})
 set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib -T ${CMAKE_CURRENT_SOURCE_DIR}/${ARCH_DIR}/user.ld")
+
 
 project(user)
 
