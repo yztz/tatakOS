@@ -36,37 +36,46 @@ void main() {
     
     platform_early_init();
     platform_early_init_hart();
-    /* PRCO && CPU */
-    procinit();      // process table
-    /* PM */
-    kinit();         // physical page allocator
-    /* VM */
-    kvminit();       // create kernel page table
+
+    /* Process && CPU */
+    procinit();      // process table & cpu state init
+
+    /* Physical Memory */
+    kinit();         // pages & physical page allocator(buddy, slob) init
+
+    /* Virtual Memory */
+    kvminit();       // kernel page table init
     kvminithart();   // turn on paging
 
-    /* TRAP */
+    /* Trap */
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector
+
     /* PLIC */
-    plic_init();     // set all sources' priorities to 0
-    platform_plic_init(); // platform enable source as required
-    plic_init_hart();  // disable all interrupts and set ctx threshould to 0 for hart
-    platform_plic_init_hart(); // enable for current hart as required
-    /* DRIVER */
+    plic_init();          // set all sources' priorities to 0
+    platform_plic_init(); // platform enable required source
+    plic_init_hart();     // disable all interrupts and set ctx threshould to 0 for hart
+    platform_plic_init_hart(); // enable required interrupts for current hart 
+    
+    /* Driver */
     platform_dirver_init();
-    /* CONSOLE */
+
+    /* Console */
     consoleinit();
-    /* DEV */
+
+    /* Device */
     devnull_init();
     devzero_init();
-    /* FILE SYSTEM */
-    binit();         // buffer cache
-    fs_init();
 
-    userinit();      // first user process
+    /* File System */
+    binit();          // buffer cache(or block cache) init
+    fs_init();        // pool of file entry in memory init
 
-    pdflush_init();
-    kthread_create("scavenger", scavenger_routine);
+    userinit();       // first user process
+
+    /* Kthread */
+    pdflush_init();   // thread for page writeback
+    kthread_create("scavenger", scavenger_routine); // thread for cleaning dangling trheads
 
     #ifdef K210
     for (int i = 1; i < NUM_CORES; i++) {

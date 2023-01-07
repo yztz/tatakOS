@@ -163,7 +163,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 
     *ppfat = fat;
 
-    /* don't forget to initialize the list */
+    /* Don't forget to initialize the list */
     INIT_LIST_HEAD(&fat->fat_dirty);
     return FR_OK;
 }
@@ -217,7 +217,6 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
         // 扇区内偏移
         off %= BPS(fat);
         for(int i = nth_sect; i < SPC(fat) && rest > 0; i++) {
-            // if(i == 0) printf("read sect %d\n", sect + i);
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
             int len = min(rest, BPS(fat) - off);
             buf_t *b = bread(fat->dev, sect + i);
@@ -247,7 +246,7 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
 }
 
 int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
-    if(cclus == 0 || n == 0) ///todo:空文件怎么办？
+    if(cclus == 0 || n == 0) // todo:空文件怎么办？
         return 0;
     debug("cclus is %d", cclus);
     uint32_t prev_clus;
@@ -296,20 +295,20 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
     return n - rest;
 }
 
-/* 申请指定数量的簇并将它们串在一起 */
+/**
+ * 反向分配簇
+ * 注意：反向分配不利于发挥页面缓存的性能以及多块连读的策略 
+ * 但是在算法实现上会比较简洁明了且高效
+ */
 FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
     const int entry_per_sect = BPS(fat) / 4;
     uint32_t sect = fat->fat_start_sector;
     int cnt = n - 1;
     uint32_t next = 0;
-    // uint32_t first = 0;
-    /* 存放当前簇号的前一个簇entry的地址 */
-    // uint32_t *pre = NULL;
 
     for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
         int changed = 0; // 用于标记当前的块是否被写
         buf_t *b = bread(fat->dev, sect);
-        // if(sect == clus2datsec(fat, 72)) panic("alloc data clus?");
         uint32_t *entry = (uint32_t *)b->data;
         for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
             if(i == 0 && j < 2) continue; // 跳过第0,1号簇
@@ -349,6 +348,11 @@ static inline void update_next_freeclus(fat32_t *fat, uint32_t freeclus) {
     release(&fat->lock); 
 }
 
+/**
+ * 正向分配簇
+ * 注意：正向分配有利于发挥页面缓存的性能以及适应多块连读的策略 
+ * 但是在算法实现上会比较繁琐（有时候需要同时持有两个块的锁）
+ */
 FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
     assert(n > 0);
     const int entry_per_sect = BPS(fat) / 4;
@@ -358,19 +362,19 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
 
     int cnt = n;
 
-    buf_t *pb = NULL;
-    uint32_t *pe = NULL;
+    buf_t *pb = NULL;    // previous block
+    uint32_t *pe = NULL; // previous entry
 
     // debug("i %d sect %d next freeclus %d", i, sect, fat->fsinfo.next_free_cluster);
 
     for(; i < fat->fat_tbl_sectors; i++, sect++) {
         buf_t *b = bread(fat->dev, sect);
         uint32_t *entry = (uint32_t *)b->data;
-        for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
-            if(i == 0 && j < 2) continue; // 跳过第0,1号簇
-            if(*(entry + j) == FAT_CLUS_FREE) { // 找到标记之
+        for(int j = 0; j < entry_per_sect; j++) {   // 遍历FAT项
+            if(i == 0 && j < 2) continue;           // 跳过第0,1号簇
+            if(*(entry + j) == FAT_CLUS_FREE) {     // 找到标记之
                 uint32_t clus_no = i * entry_per_sect + j;
-                if(pe) {
+                if(pe) {     // 非起始分配簇
                     *pe = clus_no;
                     if(pb) { // 如果存在pb，那么pe必定指向上个pb的内容，所以接下来写回释放即可
                         bwrite(pb);
@@ -381,7 +385,7 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
                     *news = clus_no;
                 }
 
-                if(--cnt == 0) {
+                if(--cnt == 0) { // 已经是所需的最后一块了
                     debug("mark clus %d[sect: %d] as end", clus_no, clus2datsec(fat, clus_no));
                     *(entry + j) = FAT_CLUS_END;
                     bwrite(b);
@@ -389,10 +393,14 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
                     update_next_freeclus(fat, clus_no + 1);
                     return FR_OK;
                 }
+                // 记录当前的表项指针
+                // 当找到下一空闲块时需要修改当前块，使其与下一块空闲块链接
                 pe = entry + j;
             } 
         }
-        if(pb || !pe) {
+        if(pb || !pe) { 
+            // 如果pb不为空，说明pe仍然指向pb的内存区域，所以可以直接释放当前块
+            // 如果pe为空，说明还不存在对上一块的引用，那自然可以释放当前块
             brelse(b);
         } else {
             pb = b;
@@ -540,6 +548,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
                 j < item_per_sec;   j++  ) 
             { 
                 FR_t res;
+                // 生成目录项元信息
                 uint32_t ofst = (clus_cnt * SPC(fat) + i) * BPS(fat) + j * item_size;
                 dir_item_t *item = (dir_item_t *)(b->data) + j;
                 travs_meta_t meta = {.buf = b, .item_no = j, .nitem = item_per_sec,.offset = ofst};
@@ -1038,7 +1047,6 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
             cur_bio_vec->bv_next = new_bio_vec;
             cur_bio_vec = new_bio_vec;
         }
-        // }
 
         uint32_t sect_nums = min(spc - sec_off_num, sec_total_num);
         /* the bio_vec is new allocated in this loop (we use kzalloc) */

@@ -688,9 +688,9 @@ scheduler(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     
+    // Poll a runnable process to run
     tq_lock(rq);
     if((p = tq_poll(rq)) == NULL) {
-      // info("NO AVAILABLE PROC");
       tq_unlock(rq);
       continue;
     }
@@ -779,9 +779,7 @@ int sched_timeout(int timeout) {
 }
 
 // Give up the CPU for one scheduling round.
-void
-yield(void)
-{
+void yield(void) {
   struct proc *p = myproc();
   acquire(&p->lock);
   pstate_migrate(p, RUNNABLE);
@@ -807,9 +805,7 @@ void forkret(proc_t *p) {
  * 所以新增了:
  * if(lk != NULL)
  */
-void
-__sleep(void *chan, struct spinlock *lk)
-{
+void __sleep(void *chan, struct spinlock *lk) {
   struct proc *p = myproc();
   
   // sig_handle(p->signal);
@@ -938,7 +934,7 @@ void procdump(void) {
   char *state;
 
   printf("\n");
-  for(p = proc; p < &proc[NPROC]; p++){
+  for(p = proc; p < &proc[NPROC]; p++) {
     if(p->state == UNUSED)
       continue;
     if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
