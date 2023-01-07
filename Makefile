@@ -171,7 +171,7 @@ $(fs.img): user $(MNT_DIR)
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
 	@make -C $U
-	@cp -r $U/raw/* $(U_PROG_DIR)
+	@cp -r $U/raw/. $(U_PROG_DIR)
 	$(call make_echo_color_bold, green,\nUSER EXE BUILD SUCCESSFUL!\n)
 
 mnt: $(fs.img)

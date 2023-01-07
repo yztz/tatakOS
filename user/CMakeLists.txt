@@ -56,11 +56,11 @@ target_include_directories(ulib PRIVATE ${ARCH_DIR})
 set(ENTRY "0x1000")
 
 # 编译全部
-#aux_source_directory(src SRCS)
+aux_source_directory(src SRCS)
 # 只编译要测试的文件
 # set(SRCS src/openat.c ${SRCS})
-set(SRCS src/bigwrite.c ${SRCS})
-set(SRCS src/getfree.c ${SRCS})
+# set(SRCS src/bigwrite.c ${SRCS})
+# set(SRCS src/getfree.c ${SRCS})
 # set(SRCS src/ls.c ${SRCS})
 # set(SRCS src/waitpid.c ${SRCS})
 # set(SRCS src/brk.c ${SRCS})

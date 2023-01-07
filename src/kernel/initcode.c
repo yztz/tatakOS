@@ -11,17 +11,40 @@ void __run(char *argv[]);
 #define lmbench(...) {char *__cmd[] = {"lmbench_all", ##__VA_ARGS__, 0};__run(__cmd);}
 
 
+char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
+                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
+                      "mount", "umount", "test_echo"};
+char *proc_testcase[] = { "getppid", "getpid",
+                       "clone", "wait", "waitpid",
+                      "yield", "fork",  "execve", "exit", "sleep"};
+char *mm_testcase[] = {"brk", "mmap", "munmap"};
+char *other_testcase[] = {"gettimeofday", "times", "uname"};
+//  单项测试
+char* prog_name[] = {"getpid"};
+
+
+
+
+#define run_testcases(cases) \
+  for (int i = 0; i < sizeof(cases)/sizeof(cases[0]);i++) { \
+    run(cases[i]); \
+  }
+
+
+
 __attribute__((section(".startup"))) 
 void main() {
 
-    mkdirat(-100, "tmp");
-    mkdirat(-100, "proc");
-    mkdirat(-100, "proc/mounts");
-    close(openat(-100, "/var/tmp/lmbench", 0100));
+    // mkdirat(-100, "tmp");
+    // mkdirat(-100, "proc");
+    // mkdirat(-100, "proc/mounts");
+    // close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
-    shell();
-    // run("qjs");
+    run_testcases(fs_testcase);
+    run_testcases(proc_testcase);
+    run_testcases(mm_testcase);
+    run_testcases(other_testcase);
     memuse();
     halt();
     for(;;);
