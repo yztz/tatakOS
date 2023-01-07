@@ -14,6 +14,8 @@ serial-port := /dev/ttyUSB0
 gdb_port := 1234
 # architecture
 arch := riscv64
+# card used to makefs
+card ?= /dev/sdd
 
 display_todo_info ?= off
 
@@ -44,7 +46,7 @@ export ROOT SCRIPT OBJ_DIR U_OBJ_DIR U_PROG_DIR K U P BUILD_ROOT TOOL
 export CC AS LD OBJCOPY OBJDUMP
 export debug platform arch
 
-#=============================FLAGS=+==============================#
+#=============================FLAGS================================#
 # platform
 CFLAGS += -I$(P)/$(platform)/include
 CFLAGS += $(EXTRA_CFLAGS)
@@ -65,6 +67,7 @@ ifeq ("${display_todo_info}", "on")
 endif
 
 include $(SCRIPT)/cflags.mk
+include $(SCRIPT)/colors.mk
 LDFLAGS := -z max-page-size=4096
 
 export LDFLAGS CFLAGS
@@ -81,13 +84,10 @@ all: kernel
 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
 	mv $(BUILD_ROOT)/k210.bin os.bin
-# all: kernel
-# 	cp $(BUILD_ROOT)/kernel kernel-qemu
-# 	cp bootloader/sbi-qemu sbi-qemu
 
 run: kernel
 ifeq ("$(debug)", "on")
-	@echo -e "\n\033[43;1mNotice: Run In Debug Mode\033[0m\n"
+	$(call make_echo_color_bold, magenta,\nNotice: Run In Debug Mode\n)
 endif
 ifeq ("$(platform)", "k210") # k210
 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
@@ -100,7 +100,7 @@ ifeq ("$(platform)", "k210") # k210
 else ifeq ("$(platform)", "qemu") # qemu
 	$(QEMU) $(QEMUOPTS) $(EXTRA_QEMUOPTS)
 else # others
-	@echo -e "\n\033[31;1mUNSUPPORT PLATFORM!\033[0m\n"
+	$(call make_echo_color_bold, red,\nUNSUPPORT PLATFORM!\n)
 endif
 
 GEN_HEADER_DIR := $(ROOT)/include/generated
@@ -109,11 +109,12 @@ syscall := $(GEN_HEADER_DIR)/syscall_gen.h
 profile := $(GEN_HEADER_DIR)/profile_gen.h
 
 kernel: $(syscall)
+	$(call make_echo_color_bold, white,\nCFLAGS = $(CFLAGS)\n)
 	@make -C $K
-	@echo -e "\n\033[32;1mKERNEL BUILD SUCCESSFUL!\033[0m\n"
+	$(call make_echo_color_bold, green,\nKERNEL BUILD SUCCESSFUL!\n)
 
 $(syscall): entry/syscall.tbl
-	@echo -e "GEN\t\tsyscall"
+	$(call make_echo_generate_file,syscall_tbl)
 	@mkdir -p $(GEN_HEADER_DIR)
 	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall_gen.h -t tbl
 	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall.h -t hdr
@@ -122,7 +123,7 @@ ifeq ("${debug}", "on")
 kernel: $(profile)
 
 $(profile): entry/profile.tbl
-	@echo -e "GEN\t\tprofile"
+	$(call make_echo_generate_file,profile)
 	@mkdir -p $(GEN_HEADER_DIR)
 	@python3 $(SCRIPT)/profile_tbl.py $< -o $@
 endif
@@ -143,7 +144,7 @@ clean:
 	-@rm -rf sbi-qemu
 	-@rm -rf kernel-qemu
 	-@rm -rf $K/include/generated
-	@echo -e "\n\033[32;1mCLEAN DONE\033[0m\n"
+	$(call make_echo_color_bold, green,\nCLEAN DONE\n)
 
 fs.img = $(BUILD_ROOT)/fs.img
 
@@ -158,7 +159,7 @@ fs.img : $(fs.img)
 $(MNT_DIR):
 	@mkdir -p $(MNT_DIR)
 
-# $(fs.img): user
+
 $(fs.img): user $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=4M count=80
 	@mkfs.vfat -F 32 -s 8 $@
@@ -167,14 +168,11 @@ $(fs.img): user $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
 
-# $(SCRIPT)/mkfs: $(SCRIPT)/mkfs.c include/fs/fs.h include/param.h
-# 	gcc -Werror -Wall -Iinclude -o $@ $<
-
 user: $(syscall)
 	@mkdir -p $(U_PROG_DIR)
 	@make -C $U
 	@cp -r $U/raw/* $(U_PROG_DIR)
-	@echo -e "\n\033[32;1mUSER EXE BUILD SUCCESSFUL!\033[0m\n"
+	$(call make_echo_color_bold, green,\nUSER EXE BUILD SUCCESSFUL!\n)
 
 mnt: $(fs.img)
 	@sudo mount $< $(MNT_DIR)
@@ -182,13 +180,10 @@ umnt: $(MNT_DIR)
 	@sudo umount $(MNT_DIR)
 
 sdcard: $(fs.img)
-	sudo dd if=$(fs.img) of=/dev/sdb bs=4M
+	sudo dd if=$(fs.img) of=$(card) bs=4M
 
 attach:
 	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
-
-.gdbinit: .gdbinit.tmpl-riscv
-	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
 .PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt sdcard
 

@@ -2,7 +2,7 @@
 # Set echo based on $(shell uname)
 UNAME := $(shell uname)
 
-ECHO = echo
+# ECHO = echo
 
 ifeq ($(VERBOSE),1)
 	at=
@@ -11,7 +11,7 @@ else
 endif
 
 # Set shell to BASH: echo requires -e on mac and Linux
-# ECHO := echo -e
+ECHO := echo -e
 # SHELL := /bin/bash
 
 define make_echo_color_bold
@@ -47,10 +47,13 @@ define success
 	@$(ECHO) '$@ : [32m✓[0m'
 endef
 define make_echo_build_c_object
-	$(call make_echo_color,green,Building C object $@)
+	$(call make_echo_color,white,CC\t\t$<)
+endef
+define make_echo_build_asm_object
+	$(call make_echo_color,white,CC\t\t$<)
 endef
 define make_echo_link_c_executable
-	$(call make_echo_color_bold,green,Linking C executable $@)
+	$(call make_echo_color,green,Linking C executable $@)
 endef
 
 define make_echo_build_cxx_object
@@ -74,8 +77,13 @@ define make_echo_link_shared_library
 	$(call make_echo_color_bold,green,Linking shared library $@)
 endef
 define make_echo_generate_file
-	$(call make_echo_color_bold,blue,Generating $@)
+	$(call make_echo_color,white,GEN\t\t$(1))
 endef
+
+define make_echo_ld
+	$(call make_echo_color,white,LD\t\t$(1))
+endef
+
 define make_echo_run_test
 	$(call make_echo_color_bold,cyan,$@ : $(1))
 endef

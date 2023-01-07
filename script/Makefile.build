@@ -18,6 +18,7 @@ $(BUILD_DIR):
 
 # 包含同级目录Makefile
 # 这里要注意，相对路径为 执行本 Makefile.build 的路径
+include $(SCRIPT)/colors.mk
 include Makefile
 
 # 额外的CFLAGS允许向下继承，方便传递-I
@@ -67,11 +68,13 @@ dep_file = $@.d
 $(BUILD_DIR)/%.o : %.c
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
 	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
-	@echo -e "CC\t\t$<"
+# @echo -e "CC\t\t$<"
+	$(call make_echo_build_c_object)
 
 $(BUILD_DIR)/%.o : %.S
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
 	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
-	@echo -e "CC\t\t$<"
+# @echo -e "CC\t\t$<"
+	$(call make_echo_build_asm_object)
 
 .PHONY : $(PHONY)
