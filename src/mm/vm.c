@@ -1,7 +1,7 @@
 #include "common.h"
 #include "types.h"
 #include "platform.h"
-#include "elf.h"
+#include "kernel/elf.h"
 #include "riscv.h"
 #include "defs.h"
 #include "mm/vm.h"

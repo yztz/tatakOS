@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(user)
 enable_language(ASM)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "")
 
@@ -34,6 +33,10 @@ set(CMAKE_RANLIB            ${PREFIX}ranlib)
 set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall")
 set(CMAKE_ASM_FLAGS         ${CMAKE_C_FLAGS})
 set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib -T ${CMAKE_CURRENT_SOURCE_DIR}/${ARCH_DIR}/user.ld")
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
+
+project(user)
 
 # Library
 aux_source_directory(lib LIBS)
