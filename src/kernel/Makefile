@@ -19,6 +19,8 @@ obj-y += asm/
 kernel_include_dir := $K/include/generated
 initcode_bin := $(kernel_include_dir)/initcode_bin.h
 
+include $(SCRIPT)/colors.mk
+
 $(BUILD_DIR)/usys.o : usys.S
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -g -c usys.S -o $(BUILD_DIR)/usys.o
 
@@ -30,7 +32,7 @@ $(initcode_bin): initcode.c $(ROOT)/entry/syscall.tbl $(BUILD_DIR)/usys.o
 	@$(OBJDUMP) -S $(BUILD_DIR)/initcode.o > $(BUILD_ROOT)/initcode.asm
 	@mkdir -p $(kernel_include_dir)
 	@$(SCRIPT)/bin2array.py $(BUILD_DIR)/initcode -l 16 -O $@
-	@echo -e "GEN\t\tinit_code"
+	$(call make_echo_generate_file,init_code)
 
 proc.c : $(initcode_bin)
 	@touch proc.c

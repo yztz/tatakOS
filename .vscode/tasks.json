@@ -8,6 +8,13 @@
             "type": "shell",
             "command": "./run-gdb.sh",
             "args": [],
+        },
+
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "make kernel platform=qemu debug=off",
+            "args": [],
         }
     ]
 }

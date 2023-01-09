@@ -15,36 +15,38 @@ ECHO := echo -e
 # SHELL := /bin/bash
 
 define make_echo_color_bold
-	@case $(1) in \
-		red)     $(ECHO) '[1;31m$(2)[0m' ;; \
-		green)   $(ECHO) '[1;32m$(2)[0m' ;; \
-		yellow)  $(ECHO) '[1;33m$(2)[0m' ;; \
-		blue)    $(ECHO) '[1;34m$(2)[0m' ;; \
-		magenta) $(ECHO) '[1;35m$(2)[0m' ;; \
-		cyan)    $(ECHO) '[1;36m$(2)[0m' ;; \
-		white)   $(ECHO) '[1;37m$(2)[0m' ;; \
-		*)       $(ECHO) '[1;4m$(2)[0m' ;; \
-	esac
+	@if [ "$(colorful_output)" = "on" ]; then \
+	case $(1) in \
+		red)     $(ECHO) '\e[1;31m$(2)\e[0m' ;; \
+		green)   $(ECHO) '\e[1;32m$(2)\e[0m' ;; \
+		yellow)  $(ECHO) '\e[1;33m$(2)\e[0m' ;; \
+		blue)    $(ECHO) '\e[1;34m$(2)\e[0m' ;; \
+		magenta) $(ECHO) '\e[1;35m$(2)\e[0m' ;; \
+		cyan)    $(ECHO) '\e[1;36m$(2)\e[0m' ;; \
+		white)   $(ECHO) '\e[1;37m$(2)\e[0m' ;; \
+		*)       $(ECHO) '\e[1;4m$(2)\e[0m' ;; \
+	esac else $(ECHO) '$(2)'; fi
 endef
 
 define make_echo_color
-	@case $(1) in \
-		red)     $(ECHO) '[31m$(2)[0m' ;; \
-		green)   $(ECHO) '[32m$(2)[0m' ;; \
-		yellow)  $(ECHO) '[33m$(2)[0m' ;; \
-		blue)    $(ECHO) '[34m$(2)[0m' ;; \
-		magenta) $(ECHO) '[35m$(2)[0m' ;; \
-		cyan)    $(ECHO) '[36m$(2)[0m' ;; \
-		white)   $(ECHO) '[37m$(2)[0m' ;; \
-		*)       $(ECHO) '[4m$(2)[0m' ;; \
-	esac
+	@if [ "$(colorful_output)" = "on" ]; then \
+	case $(1) in \
+		red)     $(ECHO) '\e[31m$(2)\e[0m' ;; \
+		green)   $(ECHO) '\e[32m$(2)\e[0m' ;; \
+		yellow)  $(ECHO) '\e[33m$(2)\e[0m' ;; \
+		blue)    $(ECHO) '\e[34m$(2)\e[0m' ;; \
+		magenta) $(ECHO) '\e[35m$(2)\e[0m' ;; \
+		cyan)    $(ECHO) '\e[36m$(2)\e[0m' ;; \
+		white)   $(ECHO) '\e[37m$(2)\e[0m' ;; \
+		*)       $(ECHO) '\e[4m$(2)\e[0m' ;; \
+	esac else $(ECHO) '$(2)'; fi
 endef
 
 define big_success
-	@$(ECHO) '$@ : [1;32m✓[0m'
+	@$(ECHO) '$@ : \e[1;32m✓\e[0m'
 endef
 define success
-	@$(ECHO) '$@ : [32m✓[0m'
+	@$(ECHO) '$@ : \e[32m✓\e[0m'
 endef
 define make_echo_build_c_object
 	$(call make_echo_color,white,CC\t\t$<)

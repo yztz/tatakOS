@@ -16,6 +16,8 @@ gdb_port := 1234
 arch := riscv64
 # card used to makefs
 card ?= /dev/sdd
+# colorful echo
+colorful_output ?= on
 
 display_todo_info ?= off
 
@@ -44,7 +46,7 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 export ROOT SCRIPT OBJ_DIR U_OBJ_DIR U_PROG_DIR K U P BUILD_ROOT TOOL
 export CC AS LD OBJCOPY OBJDUMP
-export debug platform arch
+export debug platform arch colorful_output
 
 #=============================FLAGS================================#
 # platform
