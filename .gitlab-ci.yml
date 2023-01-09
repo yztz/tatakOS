@@ -1,0 +1,10 @@
+stages:
+  - test
+
+run_qmeu:
+  stage: test
+  tags:
+    - C_Kernel_ENV
+  script:
+    - sh run-qemu.sh
+

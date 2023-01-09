@@ -42,10 +42,17 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
+
+ifeq ($(shell echo $$UID), 0)
+SUDO := 
+else
+SUDO := sudo
+endif
+
 #=============================EXPORT===============================#
 
 export ROOT SCRIPT OBJ_DIR U_OBJ_DIR U_PROG_DIR K U P BUILD_ROOT TOOL
-export CC AS LD OBJCOPY OBJDUMP
+export CC AS LD OBJCOPY OBJDUMP SUDO
 export debug platform arch colorful_output
 
 #=============================FLAGS================================#
@@ -95,7 +102,7 @@ ifeq ("$(platform)", "k210") # k210
 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
 	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
 	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
-	sudo chmod 777 $(serial-port)
+	$(SUDO) chmod 777 $(serial-port)
 # 注意：若是使用自装的kflash可能会出现重复换行的问题，原因在于kflash默认的terminal没有设置eol标志，详见kflash: 1105
 	$(TOOL)/kflash.py -p $(serial-port) -b 1500000 -B dan -t $(BUILD_ROOT)/k210.bin
 #	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
@@ -165,9 +172,9 @@ $(MNT_DIR):
 $(fs.img): user $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=4M count=80
 	@mkfs.vfat -F 32 -s 8 $@
-	@sudo mount $@ $(MNT_DIR)
-	@sudo cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
-	@sudo umount $(MNT_DIR)
+	$(SUDO) mount $@ $(MNT_DIR)
+	$(SUDO) cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
+	$(SUDO) umount $(MNT_DIR)
 
 
 user: $(syscall)
@@ -177,12 +184,12 @@ user: $(syscall)
 	$(call make_echo_color_bold, green,\nUSER EXE BUILD SUCCESSFUL!\n)
 
 mnt: $(fs.img)
-	@sudo mount $< $(MNT_DIR)
+	@$(SUDO) mount $< $(MNT_DIR)
 umnt: $(MNT_DIR)
-	@sudo umount $(MNT_DIR)
+	@$(SUDO) umount $(MNT_DIR)
 
 sdcard: $(fs.img)
-	sudo dd if=$(fs.img) of=$(card) bs=4M
+	$(SUDO) dd if=$(fs.img) of=$(card) bs=4M
 
 attach:
 	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
