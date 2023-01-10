@@ -41,12 +41,13 @@ void main() {
     // close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
-    shell();
+    // shell();
     // run_testcases(fs_testcase);
     // run_testcases(proc_testcase);
     // run_testcases(mm_testcase);
-    // run_testcases(other_testcase);
+    run_testcases(other_testcase);
     // run_testcases(prog_name);
+    printf("!TEST END\n");
     memuse();
     halt();
     for(;;);
