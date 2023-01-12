@@ -13,15 +13,13 @@ args = parser.parse_args()
 def read_file():
     ret = []
     with open(args.filename, 'r') as f:
-        while True:
-            line = f.readline()
-            if not line:
-                break
-            elif line.startswith('#') or line.startswith('//'):
+        for line in f:
+            line = line.strip()
+            if line.startswith(('#', '//')) or line == '':
                 continue
-            else:
-                fields = line.split()
-                ret.append({'num':fields[0], 'name':fields[1], 'sys_func':fields[2]})
+            
+            fields = line.split()
+            ret.append({'num':fields[0], 'name':fields[1], 'sys_func':fields[2]})
     return ret
 
 tbl_formatter = "__SYS_CALL({num}, {name}, {sys_func})"
