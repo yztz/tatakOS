@@ -6,5 +6,5 @@ run_qmeu:
   tags:
     - C_Kernel_ENV
   script:
-    - sh run-qemu.sh
+    - make kernel platform=qemu
 
