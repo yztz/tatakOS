@@ -20,7 +20,8 @@ void main() {
     close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
-    shell();
+    // shell();
+    printf("Hello World\n");
     // run("qjs");
     memuse();
     halt();

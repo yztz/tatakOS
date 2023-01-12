@@ -14,6 +14,7 @@ extern void panic(char *s);
 #define CONSOLE_PUT_CHAR_EXT 0x01L
 #define CONSOLE_GET_CHAR_EXT 0x02L
 #define LEGACY_SET_TIMER 0x00L
+#define LEGACY_SHUTDOWN 0x08L
 
 
 typedef struct sbiret {
@@ -70,6 +71,10 @@ static inline struct sbiret sbi_pmu_num_counters() {
 
 static inline struct sbiret sbi_send_ipi(uint64 mask, uint64 hart_mask_base) {
     return SBI_CALL_2(IPI_EXT, 0, mask, hart_mask_base);
+}
+
+static inline struct __attribute__((noreturn)) sbiret sbi_shutdown() {
+    return SBI_CALL_0(LEGACY_SHUTDOWN, 0);
 }
 
 #endif

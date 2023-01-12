@@ -153,6 +153,7 @@ uint64_t sys_times(void) {
 
 
 uint64_t sys_halt(void) {
+  sbi_shutdown();
   LOOP();
   return 0;
 }
