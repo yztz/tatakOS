@@ -3,7 +3,7 @@ MAKEFLAGS += --no-print-directory
 
 #===========================CONFIG=================================#
 # CPU NUMS(qemu)
-CPUS ?= 2
+CPUS ?= 1
 # platform [qemu|k210]
 platform ?= k210
 # debug [on|off]
@@ -18,7 +18,7 @@ arch := riscv64
 card ?= /dev/sdd
 # colorful echo
 colorful_output ?= on
-
+#
 display_todo_info ?= off
 
 #==========================DIR INFO================================#
