@@ -1,5 +1,15 @@
 stages:
+  - deploy
   - test
+
+deploy:
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  script:
+    - kubectl config get-contexts
+    - kubectl config use-context yztz/tatakos:test
+    - kubectl get pods
 
 run_qmeu:
   stage: test
