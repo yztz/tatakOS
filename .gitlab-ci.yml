@@ -17,4 +17,6 @@ run_qmeu:
     - C_Kernel_ENV
   script:
     - sh run-qemu.sh
+  needs:
+    - deploy
 
