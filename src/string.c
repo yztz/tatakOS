@@ -106,11 +106,9 @@ strlen(const char *s)
   return n;
 }
 
-#define UPPER(c) ((c) >= 'a' && (c) <= 'z' ? (c) - ('a' - 'A') : (c))
-
 void to_upper(char *str) {
   while(*str != '\0') {
-      *str = UPPER(*str);
+      *str = toupper(*str);
       str++;
   }
 }
@@ -133,4 +131,20 @@ int endwith(const char *s, const char *tail) {
   }
 
   return 1;
+}
+
+int strcasencmp(const char *s1, const char *s2, int n) {
+    unsigned char c1, c2;
+
+    do {
+        c1 = *s1++;
+        c2 = *s2++;
+        if (c1 != c2) {
+            c1 = toupper(c1);
+            c2 = toupper(c2);
+            if (c1 != c2)
+                return (int)c1 - (int)c2;
+        }
+    } while (c1 != 0 && --n > 0);
+    return 0;
 }

@@ -178,6 +178,7 @@ $(MNT_DIR):
 
 $(fs.img): user $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=4M count=80
+# @mkfs.vfat -F 32 -s 8 $@
 	@mformat -i $@ -F -c 8 ::
 	@mcopy -i $@ $(U_PROG_DIR)/* ::
 

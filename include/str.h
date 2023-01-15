@@ -8,6 +8,7 @@ void*           memset(void* addr, int val, uint n);
 char*           safestrcpy(char* dst, const char* src, int n);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
+int             strcasencmp(const char *s1, const char *s2, int n);
 char*           strncpy(char*, const char*, int);
 void            to_upper(char *str);
 int             endwith(const char *s, const char *tail);
