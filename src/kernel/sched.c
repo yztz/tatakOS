@@ -53,6 +53,10 @@ void pstate_migrate(proc_t *p, int newstate) {
 }
 
 
+static void inline set_current(proc_t *p) {
+    write_csr(sscratch, p);
+}
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -83,9 +87,11 @@ void scheduler(void) {
 
         p->__state = RUNNING;
         c->proc = p;
+        set_current(p);
         switchuvm(p->mm);
         swtch(&c->context, &p->context);
         switchkvm();
+        set_current(NULL);
         c->proc = 0;
         release(&p->lock);
     }

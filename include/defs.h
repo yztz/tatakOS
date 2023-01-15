@@ -22,12 +22,6 @@ void            devzero_init(void);
 int             consoleready(void);
 
 
-// pipe.c
-// int             pipealloc(struct file**, struct file**);
-// void            pipeclose(struct pipe*, int);
-// int             piperead(struct pipe*, uint64, int);
-// int             pipewrite(struct pipe *pi, int user, uint64 addr, int n);
-
 #include "printf.h"
 #include "str.h"
 
@@ -51,7 +45,6 @@ extern uint64   ticks;
 void            trapinit(void);
 void            trapinithart(void);
 extern struct spinlock tickslock;
-void            usertrapret(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

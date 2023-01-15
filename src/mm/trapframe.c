@@ -1,18 +1,42 @@
 #include "mm/trapframe.h"
 #include "common.h"
 #include "mm/alloc.h"
-#include "str.h"
 
-tf_t *tf_new() {
+#define BACKUP_TF(tf) ((tf_t *)((uint64_t)tf + sizeof(tf_t)))
+
+tf_t *tf_new(struct proc *p) {
     tf_t *tf = (tf_t*)kzalloc(PGSIZE);
-    if(tf == NULL)
+    if(tf == NULL) {
         return NULL;
+    }
+    
+    tf->proc = (uint64_t)p;
     tf->sigtf = NULL;
     return tf;
 }
 
+
+tf_t *tf_new_clone(struct proc *p, tf_t *old) {
+    tf_t *tf = (tf_t*)kzalloc(PGSIZE);
+    if(tf == NULL) {
+        return NULL;
+    }
+
+    // inlcudes backup
+    memmove(tf, old, 2 * sizeof(tf_t));
+
+    tf->proc = (uint64_t)p;
+    
+    if (tf->sigtf) {
+        tf->sigtf = BACKUP_TF(tf);
+        tf->sigtf->proc = (uint64_t)p;
+    }
+
+    return tf;
+}
+
 void tf_backup(tf_t *self) {
-    tf_t *backup = (tf_t *)((uint64_t)self + sizeof(tf_t));
+    tf_t *backup = BACKUP_TF(self);
     *backup = *self;
     self->sigtf = backup;
 }
@@ -25,7 +49,9 @@ void tf_restore(tf_t *self) {
 }
 
 void tf_reset(tf_t *self, uint64_t pc, uint64_t sp) {
+    uint64_t proc = self->proc;
     memset(self, 0, sizeof(tf_t));
+    self->proc = proc;
     self->sp = sp;
     self->epc = pc;
 }

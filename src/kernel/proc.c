@@ -1,5 +1,4 @@
 #include "memlayout.h"
-#include "riscv.h"
 #include "common.h"
 #include "kernel/sched.h"
 #include "kernel/taskqueue.h"
@@ -73,11 +72,13 @@ struct cpu *mycpu(void) {
     return c;
 }
 
-// Return the current struct proc *, or zero if none.
+
 struct proc *myproc(void) {
     push_off();
     struct cpu *c = mycpu();
     struct proc *p = c->proc;
+    struct proc *cur = current;
+    assert(cur == p);
     pop_off();
     return p;
 }
@@ -110,15 +111,6 @@ void pstate() {
     }
 }
 
-// A fork child's very first scheduling by scheduler()
-// will swtch to forkret.
-static void forkret(proc_t *p) {
-
-    if (p->set_tid_addr)
-        copy_to_user(p->set_tid_addr, &p->pid, 4);
-
-    usertrapret();
-}
 
 void newproc_callback_stage1(kthread_callback callback) {
     proc_t *p = myproc();
@@ -263,12 +255,11 @@ void userinit(void) {
         panic("alloc");
     }
 
-
     if ((mm = mmap_new()) == NULL ||
         (fdtable = fdtbl_new()) == NULL ||
         (sig = sig_new()) == NULL ||
         (tg = tg_new(p)) == NULL ||
-        (tf = tf_new()) == NULL) {
+        (tf = tf_new(p)) == NULL) {
         panic("alloc");
     }
 
@@ -341,119 +332,6 @@ int kthread_create(char *name, kthread_callback callback) {
     release(&np->lock);
 
     return 0;
-}
-
-int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid) {
-    int pid;
-    struct proc *np;
-    mm_t *newmm;
-    fdtable_t *newfdtbl;
-    signal_t *newsig;
-    tg_t *newtg;
-    tf_t *newtf;
-
-    // Allocate process.
-    if ((np = proc_new(forkret)) == NULL) {
-        return -1;
-    }
-
-    if ((newtf = tf_new()) == NULL) {
-        debug("trapframe alloc failure");
-        goto bad;
-    }
-
-    if ((flags & CLONE_VM)) {
-        newmm = p->mm;
-    } else {
-        if ((newmm = mmap_clone(p->mm)) == NULL)
-            goto bad;
-    }
-
-    if ((flags & CLONE_FILES)) {
-        newfdtbl = p->fdtable;
-    } else {
-        if ((newfdtbl = fdtbl_clone(p->fdtable)) == NULL)
-            goto bad;
-    }
-
-    if ((flags & CLONE_THREAD)) {
-        // debug("new thread statk is %#lx", stack);
-        newtg = p->tg;
-        tg_join(newtg, np);
-    } else {
-        if ((newtg = tg_new(np)) == NULL)
-            goto bad;
-    }
-
-    if ((flags & CLONE_SIGHAND)) {
-        newsig = p->signal;
-    } else {
-        if ((newsig = sig_clone(p->signal)) == NULL)
-            goto bad;
-    }
-
-    if ((flags & CLONE_CHILD_CLEARTID)) {
-        np->clear_tid_addr = ctid;
-    }
-
-    if ((flags & CLONE_CHILD_SETTID)) {
-        np->set_tid_addr = ctid;
-    }
-
-    if ((flags & CLONE_PARENT_SETTID)) {
-        copy_to_user(ptid, &np->pid, sizeof(int));
-    }
-
-    proc_setmm(np, newmm);
-    proc_setfdtbl(np, newfdtbl);
-    proc_setsig(np, newsig);
-    proc_settg(np, newtg);
-    proc_settf(np, newtf);
-
-    // 拷贝trapframe
-    memcpy(proc_get_tf(np), proc_get_tf(p), sizeof(tf_t));
-
-    if ((flags & CLONE_SETTLS)) {
-        proc_get_tf(np)->tp = tls;
-    }
-
-    // 将返回值置为0
-    proc_get_tf(np)->a0 = 0;
-
-    // 如果指定了栈，那么重设sp
-    if (stack) {
-        proc_get_tf(np)->sp = stack;
-    }
-
-
-    np->cwd = edup(p->cwd);
-    if (p->exe) {
-        np->exe = edup(p->exe);
-    }
-
-    safestrcpy(np->name, p->name, sizeof(p->name));
-
-    pid = np->pid;
-
-    release(&np->lock);
-
-    acquire(&wait_lock);
-    np->parent = p;
-    release(&wait_lock);
-
-    acquire(&np->lock);
-    pstate_migrate(np, RUNNABLE);
-    release(&np->lock);
-
-    return pid;
-
-
-bad:
-    ER();
-    debug("clone fail");
-    freeproc(np);
-    release(&np->lock);
-    return -1;
 }
 
 // Pass p's abandoned children to init.
@@ -645,8 +523,8 @@ tf_t *proc_get_tf(proc_t *p) {
 
 
 static void process_timeout(void *p) {
-    proc_t *current = (proc_t *)p;
-    wake_up_process(current);
+    proc_t *proc = (proc_t *)p;
+    wake_up_process(proc);
 }
 
 int sched_timeout(int timeout) {

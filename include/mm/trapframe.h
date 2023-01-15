@@ -39,7 +39,7 @@ struct k_trapframe {
 };
 
 struct trapframe {
-  /*   0 @depercated */ uint64 kernel_satp;   // kernel page table 
+  /*   0 */ uint64 proc;
   /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
   /*  16 */ uint64 kernel_trap;   // usertrap()
   /*  24 */ uint64 epc;           // saved user program counter
@@ -116,7 +116,10 @@ struct trapframe {
 typedef struct trapframe tf_t;
 typedef struct k_trapframe ktf_t;
 
-tf_t *tf_new();
+struct proc;
+
+tf_t *tf_new(struct proc *p);
+tf_t *tf_new_clone(struct proc *p, tf_t *old);
 void tf_free(tf_t **pptf);
 void tf_backup(tf_t *self);
 void tf_restore(tf_t *self);

@@ -5,6 +5,7 @@
 #include "sys/error.h"
 #include "types.h"
 #include "utils.h"
+#include "str.h"
 
 #define __STR(name) #name
 #define STR(name) __STR(name)
