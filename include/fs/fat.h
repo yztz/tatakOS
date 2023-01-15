@@ -20,6 +20,10 @@
 #define FAT_IS_DIR(attr) ((attr) & FAT_ATTR_DIR)
 #define FAT_IS_FILE(attr) ((attr) & FAT_ATTR_FILE)
 
+#define FAT_NAME_BODY_L_CASE 0x08
+#define FAT_NAME_EXT_L_CASE 0x10
+
+
 // 获取目录项中的簇号
 #define FAT_FETCH_CLUS(item) (((item)->starth << 16) | (item)->startl)
 

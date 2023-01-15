@@ -15,6 +15,16 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
+#define toupper(c) ({ \
+    char __rsv_c = (c); \
+    __rsv_c >= 'a' && __rsv_c <= 'z' ? __rsv_c - ('a' - 'A') : __rsv_c; \
+})
+
+#define tolower(c) ({ \
+    char __rsv_c = (c); \
+    __rsv_c >= 'A' && __rsv_c <= 'Z' ? __rsv_c + ('a' - 'A') : __rsv_c; \
+})
+
 #define _section(name) __attribute__((section(#name)))
 #define _always_inline __attribute__((always_inline)) inline
 

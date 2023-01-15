@@ -73,6 +73,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus,
 
 /* 用于目录项查找的辅助结构状态信息 */
 typedef struct lookup_param {
+    int   is_shortname;
     char *longname;     // 长文件名
     char *top;          // 栈顶
     char *p;            // 名称栈指针（满栈）
@@ -859,6 +860,65 @@ static int match_long_name(lp_t *lp, dir_slot_t *slot) {
 }
     
 
+static int match_short_name(lp_t *lp, const char *format_name) {
+    if (!lp->is_shortname) {
+        return 0;
+    }
+    const char *name = lp->longname;
+    // match main name
+    int i = 0;
+    int ext_flag = 0;
+    int nul_flag = 0;
+    do {
+        char c2 = *format_name++;
+        if (nul_flag || ext_flag) {
+            if (c2 != ' ') {
+                return 0;
+            }
+            continue;
+        }
+        
+        char c1 = *name++;
+
+        if (c1 == '.')  {
+            ext_flag = 1;
+            continue;
+        }
+
+        if (c1 == 0) {
+            nul_flag = 1;
+            continue;
+        }
+        c1 = toupper(c1);
+
+        if (c1 != c2) { 
+            return 0; 
+        }
+    } while (++i < 8);
+
+    do {
+        char c2 = *format_name++;
+        if (nul_flag) {
+            if (c2 != ' ') {
+                return 0;
+            }
+            continue;
+        }
+        
+        char c1 = *name++;
+        assert(c1 != '.');
+        if (c1 == 0)  {
+            nul_flag = 1;
+            continue;
+        }
+        c1 = toupper(c1);
+
+        if (c1 != c2) return 0;
+    } while (++i < FAT_SFN_LENGTH);
+
+    return 1;
+}
+
 static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, void *ret) {
     lp_t *lp = (lp_t *)param;
     if(item->name[0] == FAT_NAME_END) {
@@ -895,11 +955,11 @@ static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, vo
         } else { // 短文件
             // debug("lpcheckis: %d, mychecksum is: %d", lp->checksum,cal_checksum((char *)item->name));
             if(lp->next != 0) { // 短文件名没有紧随？文件系统错误了
-                debug("error: long entry not continous current next is %d", lp->next);
+                warn("long entry not continous current next is %d", lp->next);
             }
 
             if(lp->checksum == 0) { // 之前没有碰到长文件目录项
-                if(strncmp(lp->longname, (char *)item->name, FAT_SFN_LENGTH) == 0) {
+                if(match_short_name(lp, (char *)item->name)) {
                     goto found;
                 }
             }
@@ -936,9 +996,44 @@ FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
 FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *ret, uint32_t *offset) {
     char *name = (char *)cname;
     int len = strlen(name);
-    lp_t lp = {.longname = name, .p = name + len - 1, .top = name + len - 1, .next = 0, .checksum = 0};
+    lp_t lp = {.is_shortname = len <= FAT_SFN_LENGTH + 1, .longname = name, .p = name + len - 1, .top = name + len - 1, .next = 0, .checksum = 0};
 
     return fat_travs_dir(fat, dir_clus, 0, lookup_handler, 0, offset, &lp, ret);
+}
+
+
+static inline void copy_shotname(char *dst, dir_item_t *item) {
+    uint8_t lcase = item->lcase;
+    const char *item_name = (const char *)item->name;
+    int ext_flag = 0;
+    int body_lcase = lcase & FAT_NAME_BODY_L_CASE;
+    int ext_lcase = lcase & FAT_NAME_EXT_L_CASE;
+    char c;
+    
+    for (int i = 0; i < 8; i++) {
+        c = *item_name++;
+        if (c == ' ') continue;
+        if (body_lcase) {
+            *dst++ = tolower(c);
+        } else {
+            *dst++ = c;
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        char c = *item_name++;
+        if (c == ' ') break;
+        if (!ext_flag) {
+            *dst++ = '.';
+            ext_flag = 1;
+        }
+        if (ext_lcase) {
+            *dst++ = tolower(c);
+        } else {
+            *dst++ = c;
+        }
+    }
+    *dst = '\0';
 }
 
 /* 用于目录遍历（加了一层封装） */
@@ -974,12 +1069,12 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *
         return FR_CONTINUE;
     } else { // 短文件
         if(lp->next != 0) { // 短文件名没有紧随？文件系统错误了
-            debug("error: long entry not continous current next is %d", lp->next);
+            warn("long entry not continous current next is %d", lp->next);
         }
 
         if(lp->checksum == 0) { // 之前没有碰到长文件目录项
-            strncpy(lp->longname, (char *)item->name, FAT_SFN_LENGTH);
-            lp->longname[FAT_SFN_LENGTH] = '\0';
+            copy_shotname(lp->longname, item);
+            lp->is_shortname = 1;
         } else {
             assert(lp->p);
             *(lp->p) = '\0';
