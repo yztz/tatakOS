@@ -169,12 +169,17 @@ $(MNT_DIR):
 	@mkdir -p $(MNT_DIR)
 
 
+# $(fs.img): user $(MNT_DIR)
+# 	@dd if=/dev/zero of=$@ bs=4M count=80
+# 	@mkfs.vfat -F 32 -s 8 $@
+# 	$(SUDO) mount $@ $(MNT_DIR)
+# 	$(SUDO) cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
+# 	$(SUDO) umount $(MNT_DIR)
+
 $(fs.img): user $(MNT_DIR)
 	@dd if=/dev/zero of=$@ bs=4M count=80
-	@mkfs.vfat -F 32 -s 8 $@
-	$(SUDO) mount $@ $(MNT_DIR)
-	$(SUDO) cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
-	$(SUDO) umount $(MNT_DIR)
+	@mformat -i $@ -F -c 8 ::
+	@mcopy -i $@ $(U_PROG_DIR)/* ::
 
 
 user: $(syscall)

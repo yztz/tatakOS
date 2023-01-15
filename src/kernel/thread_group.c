@@ -3,8 +3,8 @@
 #include "mm/alloc.h"
 #include "atomic/spinlock.h"
 
-int tg_id = 0;
-SPINLOCK_INIT(tg_id_lock);
+static atomic_t next_tg_id = INIT_ATOMIC();
+#define get_next_tg_id() (atomic_inc(&next_tg_id))
 
 /* 
 ref与thrdcnt不能混用
@@ -27,7 +27,7 @@ static void tg_deref(tg_t *self) {
 }
 
 proc_t *tg_main_thrd(tg_t *self) {
-    proc_t *ans = list_first_entry(&self->member, proc_t, head);
+    proc_t *ans = list_first_entry(&self->member, proc_t, thrd_head);
     if(ans->pid != self->master_pid)
         panic("discord");
     return ans;
@@ -35,17 +35,18 @@ proc_t *tg_main_thrd(tg_t *self) {
 
 tg_t *tg_new(proc_t *p) {
     tg_t *newtg = kzalloc(sizeof(tg_t));
-    if(newtg) {
-        initlock(&newtg->lock, "threadgroup");
+    if(!newtg) {
+        return NULL;
     }
+
+    initlock(&newtg->lock, "threadgroup");
     INIT_LIST_HEAD(&newtg->member);
     
     newtg->master_pid = p->pid;
     tg_join(newtg, p);
 
-    acquire(&tg_id_lock);
-    newtg->tg_id = tg_id++;
-    release(&tg_id_lock);
+
+    newtg->tg_id = get_next_tg_id();
 
     return newtg;
 }
@@ -64,7 +65,7 @@ int tg_thrd_cnt(tg_t *self) {
 void tg_join(tg_t *self, proc_t *p) {
     acquire(&self->lock);
     self->thrdcnt++;
-    list_add_tail(&p->head, &self->member);
+    list_add_tail(&p->thrd_head, &self->member);
     release(&self->lock);
 }
 
@@ -73,7 +74,7 @@ int tg_quit(tg_t *self) {
     proc_t *p = myproc();
     acquire(&self->lock);
     rest = --self->thrdcnt;
-    list_del_init(&p->head);
+    list_del_init(&p->thrd_head);
     release(&self->lock);
 
     return rest;

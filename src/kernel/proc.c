@@ -155,7 +155,7 @@ proc_t *proc_new(kthread_callback callback) {
     p->s_time = 0;
     p->stub_time = ticks;
 
-    INIT_LIST_HEAD(&p->head);
+    INIT_LIST_HEAD(&p->thrd_head);
 
     if ((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
         debug("kstack alloc failure");
@@ -427,8 +427,9 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
 
 
     np->cwd = edup(p->cwd);
-    if (p->exe)
+    if (p->exe) {
         np->exe = edup(p->exe);
+    }
 
     safestrcpy(np->name, p->name, sizeof(p->name));
 
@@ -487,7 +488,7 @@ void exit(int status) {
     }
 
     eput(p->cwd);
-    p->cwd = 0;
+    p->cwd = NULL;
 
 
     acquire(&wait_lock);
