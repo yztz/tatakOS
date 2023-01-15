@@ -3,8 +3,7 @@ stages:
 
 run_qmeu:
   stage: test
-  tags:
-    - C_Kernel_ENV
+  image: registry-vpc.cn-hangzhou.aliyuncs.com/ji-sang/c_kernel_env:1.0
   script:
     - make kernel platform=qemu
 
