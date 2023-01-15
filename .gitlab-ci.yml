@@ -1,10 +1,21 @@
 stages:
+  - deploy
   - test
+
+deploy:
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  script:
+    - kubectl config get-contexts
+    - kubectl config use-context yztz/tatakos:test
+    - kubectl get pods
 
 run_qmeu:
   stage: test
-  tags:
-    - C_Kernel_ENV
+  image: registry-vpc.cn-hangzhou.aliyuncs.com/ji-sang/c_kernel_env:1.0
   script:
     - sh run-qemu.sh
+  needs:
+    - deploy
 
