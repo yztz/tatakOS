@@ -123,7 +123,7 @@ struct proc {
   int signaling;
 
   list_head_t state_head; // for state
-  list_head_t head; // for thread group
+  list_head_t thrd_head; // for thread group
 
   uint64_t set_tid_addr;
   uint64_t clear_tid_addr;

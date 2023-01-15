@@ -18,6 +18,9 @@ typedef struct atomic_t {
 #define atomic_dec(ptr) __atomic_add(ptr, -1)
 #define atomic_get(ptr) ((ptr)->counter)
 
+/**
+ * Add i atomically, return the old val.
+*/
 static inline int __atomic_add(atomic_t *v, int i) {
     register int ret;						
 	__asm__ __volatile__ (					

@@ -140,7 +140,6 @@ usertrapret(void)
 
   // set S Exception Program Counter to the saved user pc.
   w_sepc(p->trapframe->epc);
-  // tell trampoline.S the user page table to switch to.
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,
