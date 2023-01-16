@@ -102,9 +102,9 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
       i+=rest;
     }
   }
-  wakeup(&pi->nread);
-
-  debug_if(pi->id > 3, "PID %d ---> PIPE %d : %d", pr->pid, pi->id, i);
+  int wake = wakeup(&pi->nread);
+  
+  debug_if(pi->id > 3, "PID %d ---> PIPE %d : %d bytes %d wakeup", pr->pid, pi->id, i, wake);
 
   release(&pi->lock);
 

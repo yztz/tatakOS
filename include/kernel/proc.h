@@ -132,7 +132,7 @@ void            sleep(void*, struct spinlock*);
 void            sleep_deep(void *chan, struct spinlock *lk);
 void            userinit(void);
 int             waitpid(int cid, uint64 addr, int options);
-void            wakeup(void*);
+int             wakeup(void*);
 void            yield(void);
 void            procdump(void);
 
