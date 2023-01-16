@@ -187,6 +187,10 @@ void freeproc(struct proc *p) {
     tg_free(&p->tg);
     tf_free(&p->trapframe);
 
+    if(strncmp(p->name, "busybox", 7) == 0) {
+        printf("echo exit...\n");
+    }
+
     if (p->kstack) kfree_safe(&p->kstack);
     if (p->exe) eput(p->exe);
 
@@ -567,5 +571,7 @@ void procdump(void) {
         else
             state = "???";
         printf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
+        if (p->state == SLEEPING && p->pid > 3) 
+            backtrace_fp(p->context.s0);
     }
 }

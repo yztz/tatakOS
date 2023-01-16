@@ -73,6 +73,7 @@ struct zone;
 
 
 void backtrace();
+void backtrace_fp(uint64 fp);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_page(int pgnum);

@@ -5,6 +5,7 @@
 #include "mm/vm.h"
 
 #define __MODULE_NAME__ MMAP
+#define QUIET
 #include "debug.h"
 
 #define VMA_LEN(vma) ((vma)->len)
@@ -185,7 +186,7 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
                 // vma_print(vma);
                 // mmap_print(mm);
                 #ifdef DEBUG
-                vma_print(vma);
+                // vma_print(vma);
                 #endif
                 debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
                 release(&mm->mm_lock);

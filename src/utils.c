@@ -9,9 +9,18 @@
 
 #include "radix-tree.h"
 
-void  backtrace() {
+void backtrace() {
     uint64 fp, top;
     fp = r_fp();
+    top = PGROUNDUP(fp);
+    while (fp < top) {
+        printf("%p\n", *(uint64*)(fp - 8));
+        fp = *(uint64*)(fp - 16);
+    }
+}
+
+void backtrace_fp(uint64 fp) {
+    uint64 top;
     top = PGROUNDUP(fp);
     while (fp < top) {
         printf("%p\n", *(uint64*)(fp - 8));
