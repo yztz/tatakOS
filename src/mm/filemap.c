@@ -296,8 +296,7 @@ retry:
     page = find_get_page(mapping, index);
 
     /* the content is not cached in page cache, read from disk and cache it */
-    if (!page)
-    {
+    if (!page) {
 
       int pgcnts = cal_readahead_page_counts(rest);
 
@@ -312,14 +311,12 @@ retry:
         read_one_page(entry, pa, index);
 
         add_to_page_cache_lru(page, mapping, index);
-      }
-      else{
+      } else {
         /* 发挥连续读多块的优势，减小I/O次数 */
         readahead(entry, index, pgcnts);
         goto retry;
       }
-    }
-    else{
+    } else {
       pa = PAGETOPA(page);
     }
 
@@ -434,8 +431,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     read_one_page(entry, pa, pgoff);
     add_to_page_cache(page, mapping, pgoff);
     // lru_cache_add(page);
-  }
-  else {
+  } else {
     // 存在/不存在LRU
     pa = PAGETOPA(page);
     if(TestClearPageLRU(page))

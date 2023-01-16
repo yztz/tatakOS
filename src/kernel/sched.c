@@ -188,9 +188,10 @@ void sleep(void *chan, struct spinlock *lk) {
 
 // Wake up all processes sleeping on chan.
 // Must be called without any p->lock.
-void wakeup(void *chan) {
+int wakeup(void *chan) {
     struct proc *me = myproc();
     struct proc *p, *tmp;
+    int ans = 0;
 
     pstate_list_lock(SLEEPING);
     list_for_each_entry_safe(p, tmp, &sleep_queue.head, state_head) {
@@ -201,11 +202,14 @@ void wakeup(void *chan) {
             if (p->chan == chan) {
                 pstate_list_delete(SLEEPING, p);
                 pstate_set(p, RUNNABLE);
+                ans++;
             }
             if (!hold) release(&p->lock);
         }
     }
     pstate_list_unlock(SLEEPING);
+
+    return ans;
 }
 
 

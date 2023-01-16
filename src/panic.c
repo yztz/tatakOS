@@ -11,7 +11,7 @@ void panic(char *s)
   printf("\n");
   // printf("backtrace: \n");
   panicked = 1; // freeze uart output from other CPUs
-  sbi_shutdown();
+  // sbi_shutdown();
   // shutdown failure
   for(;;)
     ;

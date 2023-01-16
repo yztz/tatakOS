@@ -78,8 +78,8 @@ struct proc *myproc(void) {
     struct cpu *c = mycpu();
     struct proc *p = c->proc;
     struct proc *cur = current;
-    assert(cur == p);
     pop_off();
+    assert(cur == p);
     return p;
 }
 

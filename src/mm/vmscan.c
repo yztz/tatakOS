@@ -343,8 +343,7 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
 			 */
       SetPageLRU(page);
       list_add(&page->lru, &zone->active_list);
-    }
-    else{
+    } else {
       /* 引用数加1 */
       get_page(page);
       list_add(&page->lru, &l_hold);
