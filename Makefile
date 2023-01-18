@@ -177,10 +177,11 @@ $(MNT_DIR):
 # 	$(SUDO) umount $(MNT_DIR)
 
 $(fs.img): user $(MNT_DIR)
-	@dd if=/dev/zero of=$@ bs=4M count=80
-# @mkfs.vfat -F 32 -s 8 $@
+	@dd if=/dev/zero of=$@ bs=1M count=257
 	@mformat -i $@ -F -c 8 ::
 	@mcopy -i $@ $(U_PROG_DIR)/* ::
+# 似乎可以截断以减少体积...因为我们用不到后面的簇
+	@truncate $(fs.img) -s 30M
 
 
 user: $(syscall)
