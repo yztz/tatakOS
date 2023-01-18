@@ -187,10 +187,6 @@ void freeproc(struct proc *p) {
     tg_free(&p->tg);
     tf_free(&p->trapframe);
 
-    if(strncmp(p->name, "busybox", 7) == 0) {
-        printf("echo exit...\n");
-    }
-
     if (p->kstack) kfree_safe(&p->kstack);
     if (p->exe) eput(p->exe);
 
