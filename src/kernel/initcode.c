@@ -35,7 +35,7 @@ void main() {
 
     // memuse();
     // shell();
-    run("chapter1")
+    run("chapter1");
     // run_testcases(fs_testcase);
     // run_testcases(proc_testcase);
     // run_testcases(mm_testcase);
