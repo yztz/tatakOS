@@ -1,11 +1,6 @@
-#include "types.h"
-#include "param.h"
-#include "memlayout.h"
-#include "riscv.h"
-#include "atomic/spinlock.h"
+#include "common.h"
 #include "kernel/proc.h"
 #include "defs.h"
-#include "utils.h"
 #include "driver/timer.h"
 
 // #define QUIET

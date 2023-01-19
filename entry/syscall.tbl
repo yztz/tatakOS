@@ -80,7 +80,6 @@
 214     brk       sys_brk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
-#233     madvice   sys_madvice
 226     mprotect  sys_mprotect
 #227     msync     sys_msync
 ##############Sys###############
@@ -107,5 +106,4 @@
 231    profile        sys_profile
 232    philosophy   sys_philosophy
 235    memuse       sys_memuse
-236    procdump       sys_procdump
 234    halt         sys_halt
