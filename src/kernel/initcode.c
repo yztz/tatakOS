@@ -33,16 +33,17 @@ char* prog_name[] = {"munmap"};
 __attribute__((section(".startup"))) 
 void main() {
 
-    memuse();
+    // memuse();
     // shell();
+    run("chapter1")
     // run_testcases(fs_testcase);
     // run_testcases(proc_testcase);
     // run_testcases(mm_testcase);
-    run_testcases(other_testcase);
+    // run_testcases(other_testcase);
     // run_testcases(prog_name);
-    printf("info: Kernel is running successfully!\n");
-    printf("info: Last Built "__TIME__ " " __DATE__"\n");
-    printf("info: You can now add any things to run\n");
+    // printf("info: Kernel is running successfully!\n");
+    // printf("info: Last Built "__TIME__ " " __DATE__"\n");
+    // printf("info: You can now add any things to run\n");
 
     halt();
     for(;;);
