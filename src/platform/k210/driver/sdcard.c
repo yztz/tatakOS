@@ -461,7 +461,7 @@ uint8_t sd_init(void)
 uint8_t sd_read_sector_dma(uint8_t *data_buff, bio_vec_t *vec)
 {
 	uint8_t frame[2], flag;
-	proc_t *p = myproc();
+	proc_t *p = current;
 
 	sector_t sector = vec->bv_start_num;
 	int count = vec->bv_count;
@@ -531,7 +531,7 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, bio_vec_t *vec)
 {
 	uint8_t frame[2] = {0xFF};
 	// int flag = count > 1;
-	proc_t *p = myproc();
+	proc_t *p = current;
 
 	sector_t sector = vec->bv_start_num;
 	int count = vec->bv_count;

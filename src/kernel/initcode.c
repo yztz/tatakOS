@@ -23,8 +23,6 @@ char *other_testcase[] = {"gettimeofday", "times", "uname"};
 char* prog_name[] = {"munmap"};
 
 
-
-
 #define run_testcases(cases) \
   for (int i = 0; i < sizeof(cases)/sizeof(cases[0]);i++) { \
     run(cases[i]); \
@@ -35,20 +33,17 @@ char* prog_name[] = {"munmap"};
 __attribute__((section(".startup"))) 
 void main() {
 
-    // mkdirat(-100, "tmp");
-    // mkdirat(-100, "proc");
-    // mkdirat(-100, "proc/mounts");
-    // close(openat(-100, "/var/tmp/lmbench", 0100));
-
     memuse();
     // shell();
     // run_testcases(fs_testcase);
     // run_testcases(proc_testcase);
     // run_testcases(mm_testcase);
-    run_testcases(other_testcase);
+    // run_testcases(other_testcase);
     // run_testcases(prog_name);
-    printf("!TEST END\n");
-    memuse();
+    printf("info: Kernel is running successfully!\n");
+    printf("info: Last Built "__TIME__ " " __DATE__"\n");
+    printf("info: You can now add any things to run\n");
+
     halt();
     for(;;);
 }

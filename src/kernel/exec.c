@@ -91,7 +91,7 @@ int exec(char *path, char *argv[], char *envp[]) {
   struct elfhdr elf;
   entry_t *ep;
   struct proghdr ph;
-  struct proc *p = myproc();
+  struct proc *p = current;
   mm_t *newmm;
   mm_t *oldmm = p->mm;
 

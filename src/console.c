@@ -137,7 +137,7 @@ consoleread(int user_dst, uint64 dst, int n)
     // input into cons.buffer.
     while(cons.r == cons.w){
       if((lflag & ICANON) == 0 && vmin == 0) break;
-      if(myproc()->killed){
+      if(current->killed){
         release(&cons.lock);
         return -1;
       }
