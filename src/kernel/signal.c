@@ -273,25 +273,6 @@ void sig_handle(signal_t *self) {
 }
 
 extern proc_t proc[];
-uint64_t sys_tkill(void) {
-    int tid;
-    int sig;
-    proc_t *p;
-
-    if(argint(0, &tid) < 0 || argint(1, &sig) < 0) 
-        return -1;
-
-    debug("tid is %d sig is %d", tid, sig);
-
-    for(p = proc; p < &proc[NPROC]; p++) {
-        if(p->pid == tid) {
-            sig_send(p, sig);
-            return 0;
-        }
-    }
-
-    return -1;
-}
 
 uint64_t sys_kill(void) {
     int pid;
@@ -311,10 +292,6 @@ uint64_t sys_kill(void) {
     return 0;
 }
 
-uint64_t sys_tgkill(void) {
-    debug("called but not impl");
-    return 0;
-}
 
 
 

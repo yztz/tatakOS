@@ -526,7 +526,7 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, bio_vec_t *vec)
 	return 0;
 }
 
-// #include "profile.h"
+
 uint8_t (sd_write_sector_dma)(uint8_t *data_buff, bio_vec_t *vec)
 {
 	uint8_t frame[2] = {0xFF};

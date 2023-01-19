@@ -115,7 +115,6 @@ endif
 GEN_HEADER_DIR := $(ROOT)/include/generated
 
 syscall := $(GEN_HEADER_DIR)/syscall_gen.h
-profile := $(GEN_HEADER_DIR)/profile_gen.h
 
 kernel: $(syscall)
 	$(call make_echo_color_bold, white,\nCFLAGS = $(CFLAGS)\n)
@@ -128,14 +127,6 @@ $(syscall): entry/syscall.tbl
 	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall_gen.h -t tbl
 	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall.h -t hdr
 
-ifeq ("${debug}", "on")
-kernel: $(profile)
-
-$(profile): entry/profile.tbl
-	$(call make_echo_generate_file,profile)
-	@mkdir -p $(GEN_HEADER_DIR)
-	@python3 $(SCRIPT)/profile_tbl.py $< -o $@
-endif
 
 SBI_TARGET_PATH := target/riscv64imac-unknown-none-elf/debug
 sbi-k210:

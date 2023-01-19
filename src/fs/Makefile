@@ -6,4 +6,3 @@ obj-y += file.o
 obj-y += fs.o
 obj-y += fs_writeback.o
 obj-y += pipe.o
-obj-y += pselect.o

@@ -509,7 +509,3 @@ void print_map(kmap_t map) {
   printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
 }
 
-uint64_t sys_mprotect(void) {
-    return 0;
-}
-

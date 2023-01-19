@@ -1,4 +1,0 @@
-nonvoid bread
-void bwrite
-void brelse
-nonvoid fat_alloc_cluster

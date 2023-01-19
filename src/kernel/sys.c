@@ -53,91 +53,10 @@ uint64 sys_timetag(void) {
     return ticks;
 }
 
-uint64 sys_bio_cache(void) {
-    uint64_t addr;
 
-    if (argaddr(0, &addr) < 0)
-        return -1;
-
-#ifdef DEBUG
-    cache_rate_t rate;
-    extern uint64_t bio_cache_hit, bio_cache_miss;
-    rate.hit = bio_cache_hit;
-    rate.miss = bio_cache_miss;
-    return copyout(addr, (char*)&rate, sizeof(rate));
-#endif
-
-
-    return -1;
-}
-
-
-uint64_t sys_prlimit64(void) {
-    int pid;
-    int res;
-    uint64_t oldrl, newrl;
-    struct rlimit rl;
-    proc_t* p = myproc();
-
-    if (argint(0, &pid) < 0 ||
-        argint(1, &res) < 0 ||
-        argaddr(2, &newrl) < 0 ||
-        argaddr(3, &oldrl) < 0) 
-    {
-        return -1;
-    }
-
-    if (res == RLIMIT_STACK) {
-        if (oldrl) {
-            rl.rlim_cur = p->mm->ustack->len;
-            rl.rlim_max = 30 * PGSIZE;
-            if (copyout(oldrl, (char*)&rl, sizeof(struct rlimit)) < 0) {
-                return -1;
-            }
-        }
-
-        if (newrl) {
-            if (copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
-                return -1;
-            if (mmap_ext_stack(p->mm, rl.rlim_cur) < 0)
-                return -1;
-        }
-    } else if (res == RLIMIT_NOFILE) {
-        if (oldrl) {
-            rl.rlim_cur = p->fdtable->max_nfd;
-            rl.rlim_max = p->fdtable->max_nfd;
-            if (copyout(oldrl, (char*)&rl, sizeof(struct rlimit)) < 0) {
-                return -1;
-            }
-        }
-
-        if (newrl) {
-            if (copy_from_user(&rl, newrl, sizeof(struct rlimit)) < 0)
-                return -1;
-
-            return fdtbl_setmaxnfd(p->fdtable, rl.rlim_cur);
-        }
-    } else {
-        debug("ukres %d", res);
-        return -1;
-    }
-
-    return 0;
-}
-
-extern zone_t memory_zone;
-void print_buddy();
-extern char* philosophy;
-
-uint64_t sys_philosophy(void) {
-    printf("\n%s\n", philosophy);
-    return 0;
-}
 
 uint64_t sys_memuse(void) {
     buddy_print_free();
-    // print_buddy();
-    // print_zone_list_info(&memory_zone);
     return 0;
 }
 
@@ -186,52 +105,12 @@ uint64_t sys_gettimeofday(void) {
     return 0;
 }
 
-uint64_t sys_getrusage(void) {
-    int who;
-    uint64_t addr;
-    proc_t* p = myproc();
-    struct rusage usage;
 
-    if (argint(0, &who) < 0 || argaddr(1, &addr) < 0) {
-        return -1;
-    }
-
-    if (who == RUSAGE_SELF) {
-        usage.ru_utime = TICK2TIMEVAL(p->u_time);
-        usage.ru_stime = TICK2TIMEVAL(p->s_time);
-        if (copy_to_user(addr, &usage, sizeof(struct rusage)) < 0) {
-            return -1;
-        }
-
-        return 0;
-    }
-
-    return -1;
-}
-
-
-uint64_t sys_umask(void) {
-    return 0;
-}
-
-
-uint64_t sys_setitimer(void) {
-    // debug("setitimer called");
-    return 0;
-}
-
-
-uint64_t sys_prctl(void) {
-    return 0;
-}
 
 uint64 sys_clock_gettime(void) {
     // int clockid;
     uint64_t addr;
-    // debug("Get Time");
-    // time.tv_sec = 0;
-    // time.tv_nsec = 0;
-    // time_print(&time);
+
     if (argaddr(1, &addr) < 0)
         return -1;
 
@@ -243,37 +122,4 @@ uint64 sys_clock_gettime(void) {
     }
 
     return 0;
-}
-
-#define MSDOS_SUPER_MAGIC 0x4d44
-#define TOTAL_BLOCKS (32L * 1024 * 1024 * 1024 / 512)
-
-struct statfs gstat = {
-    .f_type = MSDOS_SUPER_MAGIC,
-    .f_bsize = 512,
-    .f_blocks = TOTAL_BLOCKS,
-    .f_bfree = TOTAL_BLOCKS / 2,
-    .f_bavail = TOTAL_BLOCKS / 2,
-    .f_files = 10,
-    .f_fsid = {{2}},
-    .f_namelen = MAX_FILE_NAME,
-    .f_frsize = 512,
-    .f_flags = 0,
-};
-
-
-uint64 sys_statfs64(void) {
-    char buf[MAXPATH];
-    uint64_t ustat;
-
-    if (argstr(0, buf, MAXPATH) < 0 || argaddr(1, &ustat) < 0) {
-        return -1;
-    }
-
-    if (copy_to_user(ustat, &gstat, sizeof(gstat)) < 0) {
-        return -1;
-    }
-
-    return 0;
-
 }

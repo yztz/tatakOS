@@ -26,65 +26,9 @@ sys_exit(void)
   return 0;  // not reached
 }
 
-uint64
-sys_getpid(void)
+uint64 sys_getpid(void)
 {
   return myproc()->pid;
-}
-
-uint64
-sys_getppid(void)
-{
-  return myproc()->parent->pid;
-}
-
-uint64
-sys_getuid(void)
-{
-  return 0;
-}
-
-uint64
-sys_getgid(void)
-{
-  return 0;
-}
-
-uint64_t 
-sys_geteuid(void) 
-{
-    return 0;
-}
-
-uint64_t 
-sys_getegid(void) 
-{
-    return 0;
-}
-
-uint64
-sys_setgid(void)
-{
-  return 0;
-}
-
-uint64
-sys_setpgid(void)
-{
-  return 0;
-}
-
-uint64
-sys_getpgid(void)
-{
-  // return myproc()->tg->tg_id;
-  return 0;
-}
-
-uint64
-sys_setuid(void)
-{
-  return 0;
 }
 
 uint64
@@ -107,21 +51,6 @@ sys_set_tid_address(void)
 
   return p->pid;
 }
-
-
-uint64
-sys_gettid(void)
-{
-  return myproc()->pid;
-}
-
-
-uint64
-sys_exit_group(void)
-{
-  return sys_exit();
-}
-
 
 
 uint64
@@ -149,7 +78,7 @@ sys_wait(void)
     return -1;
   return waitpid(-1, p, 0);
 }
-// ./busybox cat busybox_testcode.sh
+
 
 uint64
 sys_wait4(void)
@@ -196,31 +125,5 @@ sys_nanosleep(void)
   pstate_migrate(p, SLEEPING);
   sched_timeout(timeout);
   release(&p->lock);
-  return 0;
-}
-
-uint64
-sys_sched_yield(void)
-{
-  yield();
-  return 0;
-}
-
-
-// return how many clock tick interrupts have occurred
-// since start.
-uint64
-sys_uptime(void)
-{
-  uint xticks;
-
-  acquire(&tickslock);
-  xticks = ticks;
-  release(&tickslock);
-  return xticks;
-}
-
-uint64 sys_procdump(void) {
-  procdump();
   return 0;
 }

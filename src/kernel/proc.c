@@ -143,9 +143,6 @@ proc_t *proc_new(kthread_callback callback) {
     p->signaling = 0;
     p->set_tid_addr = 0;
     p->clear_tid_addr = 0;
-    p->u_time = 0;
-    p->s_time = 0;
-    p->stub_time = ticks;
 
     INIT_LIST_HEAD(&p->thrd_head);
 

@@ -58,7 +58,7 @@ void usertrap(void) {
     write_csr(stvec, (uint64)kernelvec);
 
     struct proc *p = current;
-    p->u_time += ticks - p->stub_time;
+
     // save user program counter.
     p->trapframe->epc = read_csr(sepc);
     tf_flstore(p->trapframe);
@@ -72,10 +72,10 @@ void usertrap(void) {
         p->trapframe->epc += 4;
         // an interrupt will change sstatus &c registers,
         // so don't enable until done with those registers.
-        p->stub_time = ticks;
+  
         intr_on();
         syscall();
-        p->s_time += ticks - p->stub_time;
+
     } else if (devintr(scause) == 0) {
         // ok
     } else if (handle_pagefault(scause) == 0) {
@@ -111,7 +111,7 @@ void usertrapret(void) {
     // kerneltrap() to usertrap(), so turn off interrupts until
     // we're back in user space, where usertrap() is correct.
     intr_off();
-    p->stub_time = ticks;
+
     // send syscalls, interrupts, and exceptions to trampoline.S
     w_stvec((uint64)uservec);
 

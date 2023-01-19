@@ -120,70 +120,6 @@ uint64 sys_write(void) {
     return ret;
 }
 
-uint64 sys_writev(void) {
-    struct file* f;
-    struct iovec iov;
-    uint64 iovcnt;
-    uint64 addr;
-    uint64 len = 0;
-
-
-    if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0 || argaddr(2, &iovcnt) < 0)
-        return -1;
-
-    // debug("writev iov %#lx iovcnt %d", addr, iovcnt);
-
-    for(int i = 0; i < iovcnt; i++) {
-        if(copyin(&iov, addr + i * sizeof(struct iovec), sizeof(struct iovec)) < 0)
-            return -1;
-        // debug("iov base is %#lx len is %#lx", iov.iov_base, iov.iov_len);
-        int res = filewrite(f, (uint64)iov.iov_base, iov.iov_len);
-        len += res;
-    }
-
-    return len;
-}
-
-uint64 sys_readv(void) {
-    struct file* f;
-    struct iovec iov;
-    uint64 iovcnt;
-    uint64 addr;
-    uint64 len = 0;
-
-    if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0 || argaddr(2, &iovcnt) < 0)
-        return -1;
-
-    for(int i = 0; i < iovcnt; i++) {
-        if(copyin(&iov, addr + i * sizeof(struct iovec), sizeof(struct iovec)) < 0)
-            return -1;
-        int res = fileread(f, (uint64)iov.iov_base, iov.iov_len);
-        len += res;
-        if(res < iov.iov_len)
-            break;
-    }
-
-    return len;
-
-}
-
-uint64 sys_pread(void) {
-    struct file *f;
-    uint64 buf;
-    size_t count;
-    off_t offset;
-    int cnt;
-
-    if(argfd(0, NULL, &f) < 0 || argaddr(1, &buf) < 0 || 
-      argaddr(2, &count) < 0 || argaddr(3, (uint64 *)&offset) < 0)
-        return -1;
-
-    elock(f->ep);
-    cnt =  reade(f->ep, 1, buf, offset, count);
-    eunlock(f->ep);
-
-    return cnt;
-}
 
 static struct file* getdevfile(char *path) {
     if(strncmp(path, "/dev/null", 9) == 0) {
@@ -259,53 +195,6 @@ uint64 sys_close(void) {
     return fdtbl_close(p->fdtable, fd);
 }
 
-uint64 sys_fstat(void) {
-    struct file* f;
-    struct kstat stat;
-    uint64_t addr;
-
-    if (argfd(0, 0, &f) < 0 || argaddr(1, &addr) < 0)
-        return -1;
-
-    filestat(f, &stat);
-
-    return copy_to_user(addr, &stat, sizeof(stat));
-}
-
-uint64 sys_fstatat(void) {
-    int dirfd, flags;
-    char path[MAXPATH];
-    uint64_t ustat;
-    entry_t *from, *ep;
-    struct file *pf;
-    struct kstat stat;
-    proc_t *p = myproc();
-    
-
-    if(argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0 ||
-         argaddr(2, &ustat) < 0 || argint(3, &flags) < 0)
-        return -1;
-
-    debug("dirfd %d path %s", dirfd, path);
-
-    // sepcial for device...
-    if((pf = getdevfile(path)) != NULL) {
-        filestat(pf, &stat);
-        return copy_to_user(ustat, &stat, sizeof(stat));
-    }
-    
-    from = getep(p, dirfd);
-
-    if((ep = namee(from, path)) == NULL) {
-        return -ENOENT;
-    }
-
-    elock(ep);
-    estat(ep, &stat);
-    eunlockput(ep);
-
-    return copy_to_user(ustat, &stat, sizeof(stat));
-}
 
 uint64 sys_getcwd(void) {
     int size;
@@ -326,12 +215,6 @@ uint64 sys_getcwd(void) {
 
     return addr;
 }
-
-
-uint64_t sys_faccessat(void) {
-    return 0;
-}
-
 
 uint64 sys_unlinkat(void) {
     entry_t *entry, *from;
@@ -489,98 +372,6 @@ uint64 sys_mkdirat(void) {
     return 0;
 }
 
-uint64 sys_fcntl(void) {
-    int fd, cmd;
-    uint64_t arg;
-    file_t *f;
-    proc_t *p = myproc();
-
-    if(argfd(0, &fd, &f) < 0 || argint(1, &cmd) < 0 || argaddr(2, &arg) < 0) {
-        return -1;
-    }
-
-    // debug("fd is %d cmd is %d arg is %ld", fd, cmd, arg);
-    if(cmd == F_SETFD) {
-        fdtbl_setflags(p->fdtable, fd, arg);
-        return 0;
-    } else if(cmd == O_NONBLOCK) {
-        return 0;
-    } else if(cmd == F_DUPFD_CLOEXEC) {
-        int dupfd;
-        if((dupfd = fdtbl_fdalloc(p->fdtable, f, arg, O_CLOEXEC)) < 0) 
-            return -1;
-        filedup(f);
-        return dupfd;
-    } else if(cmd == F_GETFL) {
-        return fdtbl_getflags(p->fdtable, fd);
-    } else {
-        debug("unknown cmd %d", cmd);
-        return -1;
-    }
-    
-
-}
-
-uint64_t sys_readlinkat(void) {
-    int dirfd;
-    char path[MAXPATH];
-    uint64_t bufaddr;
-    size_t bufsz;
-    entry_t *from, *ep;
-    proc_t *p = myproc();
-
-    int n;
-    if (argint(0, &dirfd) || (n = argstr(1, path, MAXPATH)) < 0 ||
-        argaddr(2, &bufaddr) < 0 || argaddr(3, &bufsz) < 0)
-        return -1;
-
-    if(strncmp(path, "/proc/self/exe", 14) == 0) {
-        char *end = namepath(p->exe, path);
-        int len = min(end - path, bufsz);
-        if(copy_to_user(bufaddr, path, len) < 0)
-            return -1;
-        return 0;
-    } 
-
-    from = getep(p, dirfd);
-    if((ep = namee(from, path)) == NULL) {
-        return -1;
-    }
-    char *end = namepath(p->exe, path);
-    int len = min(end - path, bufsz);
-    if(copy_to_user(bufaddr, path, len) < 0)
-        return -1;
-
-    eput(ep);
-
-    return 0;
-}
-
-uint64_t sys_sendfile(void) {
-    file_t *inf, *outf;
-    uint64_t poff;
-    size_t count;
-    off_t off;
-
-    if(argfd(0, NULL, &outf) < 0 || argfd(1, NULL, &inf) < 0 || 
-      argaddr(2, &poff) < 0 || argaddr(3, (uint64_t *)&count) < 0)
-        return -1;
-    
-    if(poff && copy_from_user(&off, poff, sizeof(off_t)) < 0)
-        return -1;
-
-    int ret;
-    if((ret = filesend(inf, outf, poff ? &off : NULL, count)) < 0)
-        return -1;
-    
-    if(poff && copy_to_user(poff, &off, sizeof(off_t)) < 0)
-        return -1;
-
-    debug("len %ld rlen %ld", count, ret);
-    return ret;
-
-}
-
 // OK:
 uint64 sys_chdir(void) {
     char path[MAXPATH];
@@ -678,60 +469,6 @@ bad:
     return -1;
 }
 
-// 简单的实现
-uint64_t sys_renameat2(void) {
-#define __bad(err) {ret = -(err);goto ret;}
-#define __ukn() {goto unknown;}
-    int ret = 0;
-    int olddirfd;
-    char oldpath[MAXPATH];
-    int newdirfd;
-    char newpath[MAXPATH];
-    uint flags;
-    entry_t *dirold,*dirnew;
-    entry_t *epold = NULL, *epnew = NULL;
-    proc_t *p = myproc();
-
-    if(argint(0, &olddirfd) < 0 ||
-      argstr(1, oldpath, MAXPATH) < 0 ||
-      argint(2, &newdirfd) < 0 ||
-      argstr(3, newpath, MAXPATH) < 0 ||
-      argint(4, (int *)&flags) < 0) {
-        return -1;
-    }
-    
-    if(flags != 0)
-        panic("flags");
-    
-    dirold = getep(p, olddirfd);
-    dirnew = getep(p, newdirfd);
-
-    epold = namee(dirold, oldpath);
-    epnew = namee(dirold, newpath);
-
-    if(epold == NULL) __bad(ENOENT);
-    if(epnew) __ukn();
-
-    // 重命名
-    if(dirnew == dirold) {
-        char *newname;
-        newname = getlastname(newpath);
-        if(*newname == '\0') __ukn();
-        return entry_rename(epold, newname);
-    } else {
-        __ukn();
-    }
-
-  ret:
-    if(epold) eput(epold);
-    if(epnew) eput(epnew);
-
-    return ret;
-
-  unknown:
-    panic("not support now");
-}
-
 // OK:
 uint64 sys_pipe2(void) {
     uint64 fdarray;  // user pointer to array of two integers
@@ -766,16 +503,6 @@ uint64 sys_pipe2(void) {
 }
 
 
-uint64 sys_ioctl(void) {
-    int fd;
-    uint64 request;
-    uint64 arg0;
-
-    if(argfd(0, &fd, NULL) < 0 || argaddr(1, &request) < 0 || argaddr(2, &arg0) < 0) 
-        return -1;
-    
-    return ioctl(NULL, request, arg0);
-}
 
 uint64 sys_lseek(void) {
     struct file* f;
@@ -844,88 +571,5 @@ uint64 sys_munmap(void) {
     // debug("UNMAP addr is %#lx len is %#lx", addr, len);
     // mmap_print(p->mm);
     do_unmap(p->mm, addr, 1);
-    return 0;
-}
-
-#include "kernel/time.h"
-
-uint64_t sys_utimensat(void){
-    /* times[0]: last access time
-        times[1]: last modificatin time */
-    timespec_t ts[2];
-    proc_t *p = myproc();
-    int fd;
-    char path[MAXPATH];
-    uint64 addr;
-    int flags;
-    entry_t *from, *ep;
-
-    if(argint(0, &fd) < 0 || argstr(1, path, MAXPATH) < 0 || 
-        argaddr(2, &addr) < 0 || argint(3, &flags) < 0) 
-        return -1;
-
-    debug("fd: %d\taddr: %p\tpath: %s\tflags: %d\n", fd, addr, path, flags);
-
-    from = getep(p, fd);
-
-    /* 文件不存在 */
-    if((ep = namee(from, path)) == NULL){
-        return -ENOENT;
-    }
-
-    /* 根据手册，如果为null，把两个timestamps都设置为当前时间 */
-    if((uint64_t *)addr == NULL){
-        ep->raw.adate.year_from_1980 = ticks; 
-        ep->raw.mdate.year_from_1980 = ticks;
-    }
-    else{
-        if(copy_from_user(ts, addr, 2*sizeof(ts)) < 0) {
-            return -1;
-        }
-        for(int i = 0; i < 2; i++){
-            if(ts[i].ts_nsec == UTIME_NOW){
-                if(i == 0){
-                    ep->raw.adate.year_from_1980 = ticks;
-                }
-                else{
-                    ep->raw.mdate.year_from_1980 = ticks;
-                }
-            }
-            else if(ts[i].ts_nsec == UTIME_OMIT){
-                /* do noting*/
-            }
-            else{
-                uint64_t ms = ts[i].ts_sec*1000 + ts[i].ts_nsec/1000;
-                if(i == 0){
-                    ep->raw.adate.year_from_1980 = ms;
-                }
-                else{
-                    ep->raw.mdate.year_from_1980 = ms;
-                }
-            }
-        }
-    }
-    return 0; 
-}
-
-uint64_t sys_ftruncate() {
-    int fd;
-    off_t length;
-    proc_t *p = myproc();
-
-    argint(0, &fd);
-    argaddr(1, (uint64_t *)&length);
-
-    file_t *fp = fdtbl_getfile(p->fdtable, fd);
-
-    if(!fp || !fp->writable || fp->type != FD_ENTRY)
-        return -1;
-    
-    entry_t *entry = fp->ep;
-
-    elock(entry);
-    etrunc(entry, length);
-    eunlock(entry);
-
     return 0;
 }
