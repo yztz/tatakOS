@@ -24,6 +24,7 @@
 ```shell
 $ sudo apt install gcc-riscv64-unknown-elf
 $ sudo apt install make cmake
+$ sudo apt install mtools
 $ sudo apt install qemu-system-misc
 ```
 
@@ -34,9 +35,21 @@ $ ./run-k210.sh # k210
 ```
 
 ### 文件系统构建
+
 ```shell
 $ make sdcard # 注意：默认ttyUSB0
 ```
+
+### 构建选项
+
+- platform=[qemu|k210] 目标平台
+- debug=[on|off] 调试选项
+- CPUS=[1|2|3|...] 核心线程数
+- card=[/dev/sdd] 指定sd卡设备
+- serial-port=[/dev/ttyUSB0] 板卡调试串口
+- colorful_output=[on|off] 彩色输出
+
+> 注意：在更改构建选项后请务必使用`make clean`清理后重新编译
 
 ## 文档
 

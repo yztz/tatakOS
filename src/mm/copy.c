@@ -11,7 +11,7 @@
 
 int memset_user(uint64 dstva, int val, uint64 len) {
     vma_t *vma;
-    proc_t *p = myproc();
+    proc_t *p = current;
     if (!p)
         panic("copyout: no process ctx");
 
@@ -40,7 +40,7 @@ int memset_user(uint64 dstva, int val, uint64 len) {
 
 int copy_to_user(uint64 dstva, void *src, uint64 len) {
     vma_t *vma;
-    proc_t *p = myproc();
+    proc_t *p = current;
     if (!p)
         panic("copyout: no process ctx");
 
@@ -80,7 +80,7 @@ int copyout(uint64 dstva, char *src, uint64 len) {
 
 /* We trust that kernel address is legal... */
 int copy_from_user(void *to, uint64 from, size_t n) {
-    proc_t *p = myproc();
+    proc_t *p = current;
     if (!p)
         panic("copy_from_user: no process ctx");
 
@@ -124,7 +124,7 @@ int copyin(void *dst, uint64 srcva, uint64 len) {
 // Return 0 on success, -1 on error.
 int copyinstr(char *dst, uint64 srcva, uint64 max) {
     int got_null = 0;
-    proc_t *proc = myproc();
+    proc_t *proc = current;
     vma_t *vma;
     if (!proc)
         panic("copyinstr: no process context");

@@ -107,7 +107,7 @@ void scheduler(void) {
 // there's no process.
 void sched(void) {
     int intena;
-    struct proc *p = myproc();
+    struct proc *p = current;
     struct cpu *cpu = mycpu();
 
     if (!holding(&p->lock))
