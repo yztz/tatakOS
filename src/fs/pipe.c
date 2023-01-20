@@ -87,7 +87,7 @@ int pipewrite(struct pipe *pi, int user, uint64 addr, int n) {
       sleep(&pi->nwrite, &pi->lock);
     } else {
       // 本次可写数据长度
-      int rest = min(pi->nread + PIPESIZE - pi->nwrite, n);
+      int rest = min(pi->nread + PIPESIZE - pi->nwrite, (uint64_t)n);
       int cur = pi->nwrite % PIPESIZE;
       // 管道数组到尾部的长度
       int avail = PIPESIZE - cur;
@@ -123,7 +123,7 @@ int piperead(struct pipe *pi, uint64 addr, int n) {
   }
 
   // 本次可读数据长度
-  int rest = min(pi->nwrite - pi->nread, n);
+  int rest = min(pi->nwrite - pi->nread, (uint)n);
   int cur = pi->nread % PIPESIZE;
   // 管道数组到尾部的长度
   int avail = PIPESIZE - cur;

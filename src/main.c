@@ -7,7 +7,6 @@
 #include "platform.h"
 #include "kernel/proc.h"
 #include "driver/plic.h"
-#include "test.h"
 #include "fs/blk_device.h"
 #include "common.h"
 #include "fs/file.h"
