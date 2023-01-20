@@ -8,7 +8,6 @@
 
 
 int main() {
-    syscall(236);
     syscall(235);
     return 0;
 }

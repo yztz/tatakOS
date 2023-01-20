@@ -12,7 +12,6 @@ obj-y+=misc/
 obj-y+=mm/
 obj-y+=platform/
 obj-y+=lib/
-obj-y+=tests/
 
 obj-y += device.o
 obj-y += main.o

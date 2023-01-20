@@ -1,2 +1,0 @@
-谨防隐式类型转换错误！gcc在长到短类型的cast中不会报warn，除非加-Wconvertion？
-ref：https://gcc.gnu.org/wiki/NewWconversion (未测试)
