@@ -294,7 +294,7 @@ void *slob_alloc(size_t size) {
 
 	// 若为2幂次 保证自然对齐 ref: linux slot.c
 	if(IS_POW2(size))
-		align = max(align, size);
+		align = max((size_t)align, size);
 	
 	debug("alloc size: %d minalign: %d align: %d", size, minalign, align);
 	

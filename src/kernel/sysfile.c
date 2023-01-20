@@ -536,7 +536,7 @@ uint64_t sys_readlinkat(void) {
 
     if(strncmp(path, "/proc/self/exe", 14) == 0) {
         char *end = namepath(p->exe, path);
-        int len = min(end - path, bufsz);
+        int len = min((size_t)(end - path), bufsz);
         if(copy_to_user(bufaddr, path, len) < 0)
             return -1;
         return 0;
@@ -547,7 +547,7 @@ uint64_t sys_readlinkat(void) {
         return -1;
     }
     char *end = namepath(p->exe, path);
-    int len = min(end - path, bufsz);
+    int len = min((size_t)(end - path), bufsz);
     if(copy_to_user(bufaddr, path, len) < 0)
         return -1;
 

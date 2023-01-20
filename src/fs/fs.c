@@ -493,7 +493,7 @@ int reade(entry_t *entry, int user, uint64_t buff, off_t off, int n) {
 
   if(off >= entry->size_in_mem)
     return 0;
-  n = min(n, entry->size_in_mem - off);
+  n = min((off_t)n, entry->size_in_mem - off);
   ret = do_generic_mapping_read(entry->i_mapping, user, buff, off, n);
   return ret;
 }

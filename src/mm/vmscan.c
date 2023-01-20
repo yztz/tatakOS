@@ -433,8 +433,8 @@ refill_inactive_list(zone_t *zone, struct scan_control *sc){
  */
 static void
 shrink_zone(struct zone *zone, struct scan_control *sc){
-	uint64_t nr_to_scan_active;
-	uint64_t nr_to_scan_inactive;
+	int nr_to_scan_active;
+	int nr_to_scan_inactive;
 
 	/* 两条链表遍历的页数，根据优先级调整 */
 	nr_to_scan_active = zone->nr_active >> sc->priority;

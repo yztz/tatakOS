@@ -219,7 +219,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
         off %= BPS(fat);
         for(int i = nth_sect; i < SPC(fat) && rest > 0; i++) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
-            int len = min(rest, BPS(fat) - off);
+            int len = min((off_t)rest, BPS(fat) - off);
             buf_t *b = bread(fat->dev, sect + i);
             either_copyout(user, buffer, b->data + off, len);
             brelse(b);
@@ -266,7 +266,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
         off %= BPS(fat);
         for(int i = nth_sect; i < SPC(fat) && rest > 0; i++) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
-            int len = min(rest, BPS(fat) - off);
+            int len = min((off_t)rest, BPS(fat) - off);
             buf_t *b = bread(fat->dev, sect + i);
             if(either_copyin(b->data + off, user, buffer, len) < 0) {
                 brelse(b);

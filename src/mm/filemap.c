@@ -237,7 +237,7 @@ extern uint total;
  */
 int cal_readahead_page_counts(int rest){
       /* 剩余的页数 */
-      int remain = ROUND_COUNT(rest);
+      uint remain = ROUND_COUNT(rest);
       /* 最大连读设置为空余内存的10% */
       int u = atomic_get(&used);
       int pgcnts = min(remain, DIV_ROUND_UP((total - u), READ_AHEAD_RATE));
@@ -322,9 +322,9 @@ retry:
 
     mark_page_accessed(page);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
-    int len = min(rest, PGSIZE - pgoff);
+    int len = min((uint64_t)rest, PGSIZE - pgoff);
     /* 文件最后一页 */
-    len = min(len, file_size - pgoff);
+    len = min((uint64_t)len, file_size - pgoff);
 
     // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
@@ -378,7 +378,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 
     // SetPageDirect(page);
 
-    len = min(rest, PGSIZE - pg_off);
+    len = min((uint64_t)rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), user, buff, len);
 
     // ERROR("to handle the only index 0 set tag and clear tag");

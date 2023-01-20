@@ -73,7 +73,7 @@ uint64_t sys_recvfrom(void) {
         return -1;
 
     socket_t *sock = f->socket;
-    len = min(len, sock->pos);
+    len = min(len, (size_t)sock->pos);
 
     if(copy_to_user(buff_addr, sock->buf, len) < 0)
         return -1;
