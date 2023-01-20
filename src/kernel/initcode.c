@@ -2,48 +2,18 @@
 #include "stdarg.h"
 
 void printf(const char *fmt, ...);
-void*memcpy(void* dst, const void* src, uint n);
 void __run(char *argv[]);
 
 #define run(name, ...) {char *__cmd[] = {name, ##__VA_ARGS__, 0};__run(__cmd);}
 #define shell(...) {char *__cmd[] = {"busybox", "sh", ##__VA_ARGS__, 0};__run(__cmd);}
-#define lua(...) {char *__cmd[] = {"lua", ##__VA_ARGS__, 0};__run(__cmd);}
-#define lmbench(...) {char *__cmd[] = {"lmbench_all", ##__VA_ARGS__, 0};__run(__cmd);}
-
-
-char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-                      "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-                       "test_echo"};
-char *proc_testcase[] = { "getppid", "getpid",
-                       "clone", "wait", "waitpid",
-                      "yield", "fork",  "execve", "exit", "sleep"};
-char *mm_testcase[] = {"brk", "mmap", "munmap"};
-char *other_testcase[] = {"gettimeofday", "times", "uname"};
-//  单项测试
-char* prog_name[] = {"munmap"};
-
-
-#define run_testcases(cases) \
-  for (int i = 0; i < sizeof(cases)/sizeof(cases[0]);i++) { \
-    run(cases[i]); \
-  }
 
 
 
 __attribute__((section(".startup"))) 
 void main() {
 
-    // memuse();
-    // shell();
-    run("chapter1");
-    // run_testcases(fs_testcase);
-    // run_testcases(proc_testcase);
-    // run_testcases(mm_testcase);
-    // run_testcases(other_testcase);
-    // run_testcases(prog_name);
-    // printf("info: Kernel is running successfully!\n");
-    // printf("info: Last Built "__TIME__ " " __DATE__"\n");
-    // printf("info: You can now add any things to run\n");
+    memuse();
+    shell();
 
     halt();
     for(;;);
@@ -67,27 +37,6 @@ void __run(char *argv[]) {
 
 
 ///////////utils/////////////
-
-void*memcpy(void *dst, const void *src, uint n) {
-  const char *s;
-  char *d;
-
-  if(n == 0)
-    return dst;
-  
-  s = src;
-  d = dst;
-  if(s < d && s + n > d){
-    s += n;
-    d += n;
-    while(n-- > 0)
-      *--d = *--s;
-  } else
-    while(n-- > 0)
-      *d++ = *s++;
-
-  return dst;
-}
 
 static char digits[] = "0123456789ABCDEF";
 
@@ -206,67 +155,3 @@ strncmp(const char *p, const char *q, uint n)
     return 0;
   return (uchar)*p - (uchar)*q;
 }
-
-///////////////////////
-// #include "usys.h"
-// #include "stdarg.h"
-
-// void printf(const char *fmt, ...);
-// void read_test();
-
-// // FS
-// char *fs_testcase[] = { "mkdir_","openat", "dup2","close", "unlink", "getcwd", "getdents",
-//                       "chdir", "dup", "pipe", "open", "read", "write", "fstat",
-//                       "mount", "umount", "test_echo"};
-// //
-// char *proc_testcase[] = { "getppid", "getpid",
-//                        "clone", "wait", "waitpid",
-//                       "yield", "fork",  "execve", "exit", "sleep"};
-
-// char *mm_testcase[] = {"brk", "mmap", "munmap"};
-
-// char *other_testcase[] = {"gettimeofday", "times", "uname"};
-// // //  单项测试
-// char* prog_name[] = { "bigwrite" };
-
-// void run(char *testcases[], int cnt);
-// #define run(cases) run(cases, sizeof(cases)/sizeof(cases[0]))
-// __attribute__((section(".startup"))) 
-// void main() {
-//     memuse();
-//     // run(fs_testcase);
-//     // run(proc_testcase);
-//     // run(mm_testcase);
-//     // run(other_testcase);
-//     run(prog_name);
-//     memuse();
-//   for(;;);
-// }
-// #undef run
-
-// void run(char *testcases[], int cnt) {
-//   // char *argv[4];
-//   // argv[1] = "ash";
-//   // argv[2] = "./busybox_cmd.txt";
-//   // argv[2] = "busybox_testcode.sh";
-//   // argv[3] = 0;
-//   char *argv[2];
-//   argv[1] = 0;
-//   for (int t = 0; t < cnt; t++) {
-//       printf("ready to run %s\n", testcases[t]);
-//       int npid = fork();
-//       if(npid < 0) {
-//           printf("fork failed");
-//           for(;;);
-//       }
-//       if (npid == 0) { //子进程
-//           argv[0] = testcases[t];
-//           int ret = exec(argv[0], argv);
-//           printf("exec fail with %d\n", ret);
-//       } else {          // 父进程
-//           int status;
-//           wait(&status);
-//           printf("child exit with %d\n", status);
-//       }
-//   }
-// }
