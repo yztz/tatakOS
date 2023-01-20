@@ -120,7 +120,7 @@
         "atomic": "c",
         "bit": "c",
         "system_error": "c",
-        "freelist.h": "c"
+        "freelist.h": "c",
         "fdtable.h": "c",
         "signal.h": "c",
         "futex.h": "c",
@@ -130,7 +130,7 @@
         "syscall_gen.h": "c",
         "termios.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Enabled",
+    "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [
         {
             "text": "OK:",

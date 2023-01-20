@@ -77,7 +77,12 @@ endif
 
 include $(SCRIPT)/cflags.mk
 include $(SCRIPT)/colors.mk
+include $(SCRIPT)/json.mk
 LDFLAGS := -z max-page-size=4096
+
+chapter_config = $(ROOT)/.vscode/chapter.json
+CFLAGS += -DCHAPTER=$(call get_from_json,$(chapter_config),id)
+CFLAGS += -DCHAPTER_DES="$(call get_from_json,$(chapter_config),description)"
 
 export LDFLAGS CFLAGS
 

@@ -5,18 +5,12 @@ void printf(const char *fmt, ...);
 void __run(char *argv[]);
 
 #define run(name, ...) {char *__cmd[] = {name, ##__VA_ARGS__, 0};__run(__cmd);}
-#define shell(...) {char *__cmd[] = {"busybox", "sh", ##__VA_ARGS__, 0};__run(__cmd);}
-
 
 
 __attribute__((section(".startup"))) 
 void main() {
-
-    memuse();
-    shell();
-
+    run("welcome");
     halt();
-    for(;;);
 }
 
 void __run(char *argv[]) {
@@ -144,14 +138,4 @@ printf(const char *fmt, ...)
 
   va_start(ap, fmt);
   vprintf(1, fmt, ap);
-}
-
-int
-strncmp(const char *p, const char *q, uint n)
-{
-  while(n > 0 && *p && *p == *q)
-    n--, p++, q++;
-  if(n == 0)
-    return 0;
-  return (uchar)*p - (uchar)*q;
 }

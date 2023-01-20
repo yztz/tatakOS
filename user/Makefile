@@ -1,17 +1,12 @@
 ARCH ?= riscv64
-MODE ?= release
-CHAPTER ?= 7
-app_dir = src
-src_dir := build/$(ARCH)
-bin_dir := build/bin
-out_dir := target
 cmake_build_args := -DARCH=$(ARCH)
 cmake_build_args += -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_C_COMPILER_WORKS=1
-ifeq ($(MODE), release)
-cmake_build_args += -DCMAKE_BUILD_TYPE=Release
-else ifeq ($(MODE), debug)
-cmake_build_args += -DCMAKE_BUILD_TYPE=Debug
-endif
+
+include $(SCRIPT)/json.mk
+chapter_config = $(ROOT)/.vscode/chapter.json
+cmake_build_args += -DCHAPTER="$(call get_from_json,$(chapter_config),id)"
+cmake_build_args += -DCHAPTER_DES="$(call get_from_json,$(chapter_config),description)"
+
 
 # riscv64-unknown-elf-
 OBJCOPY := $(ARCH)-unknown-elf-objcopy
@@ -20,6 +15,7 @@ CP := cp
 
 
 makefile := $(U_OBJ_DIR)/Makefile
+
 
 binary: makefile
 	@cd $(U_OBJ_DIR) && make
