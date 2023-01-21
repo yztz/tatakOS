@@ -9,11 +9,13 @@
 #include "debug.h"
 #include "mm/page.h"
 #include "radix-tree.h"
-// #include "mm/mm.h"
 
 #include "fs/mpage.h"
 #include "swap.h"
-#include "config.h"
+
+
+#define READ_AHEAD_RATE 10
+
 /**
  * 定义了关于file map相关的函数，函数声明在fs.h
  *

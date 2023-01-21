@@ -62,10 +62,6 @@ void main() {
     /* Console */
     consoleinit();
 
-    /* Device */
-    devnull_init();
-    devzero_init();
-
     /* File System */
     binit();          // buffer cache(or block cache) init
     fs_init();        // pool of file entry in memory init

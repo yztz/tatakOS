@@ -128,7 +128,10 @@
         "reent.h": "c",
         "cdefs.h": "c",
         "syscall_gen.h": "c",
-        "termios.h": "c"
+        "termios.h": "c",
+        "pipe.h": "c",
+        "unistd.h": "c",
+        "swap.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [

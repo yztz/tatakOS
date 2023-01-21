@@ -8,6 +8,8 @@
 #define	SWAP_AGAIN	1
 #define	SWAP_FAIL	2
 
+#include <mm/page.h>
+
 /* linux/mm/swap.c */
 extern void lru_cache_add(page_t *);
 extern void lru_cache_add_active(page_t *);

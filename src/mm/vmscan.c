@@ -17,7 +17,6 @@
 #include "debug.h"
 
 #include "mm/mm_types.h"
-#include "mm/mm.h"
 #include "rbtree.h"
 #include "utils.h"
 #include "memlayout.h"
@@ -28,7 +27,6 @@
 #include "swap.h"
 #include "writeback.h"
 #include "fs/mpage.h"
-#include "config.h"
 
 struct scan_control {
 	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */

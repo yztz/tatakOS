@@ -1,16 +1,9 @@
-#include "types.h"
-#include "param.h"
-#include "memlayout.h"
-#include "riscv.h"
-#include "atomic/spinlock.h"
 #include "kernel/proc.h"
 #include "elf.h"
 #include "defs.h"
 #include "common.h"
 #include "mm/vm.h"
 #include "fs/fs.h"
-#include "mm/mm.h"
-#include "config.h"
 
 
 // #define QUIET

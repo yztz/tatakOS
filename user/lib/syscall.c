@@ -112,10 +112,6 @@ int sleep(unsigned long long time)
     return 0;
 }
 
-int set_priority(int prio)
-{
-    return syscall(SYS_setpriority, prio);
-}
 
 void *mmap(void *start, size_t len, int prot, int flags, int fd, off_t off)
 {
@@ -137,15 +133,6 @@ int spawn(char *file)
     return syscall(SYS_spawn, file);
 }
 
-int mailread(void *buf, int len)
-{
-    return syscall(SYS_mailread, buf, len);
-}
-
-int mailwrite(int pid, void *buf, int len)
-{
-    return syscall(SYS_mailwrite, pid, buf, len);
-}
 
 int fstat(int fd, struct kstat *st)
 {

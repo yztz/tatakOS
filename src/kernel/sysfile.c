@@ -10,7 +10,6 @@
 #include "fs/fcntl.h"
 #include "fs/file.h"
 #include "fs/fs.h"
-#include "ioctl.h"
 #include "fs/stat.h"
 #include "kernel/proc.h"
 #include "mm/mmap.h"
@@ -22,7 +21,6 @@
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
 #include "utils.h"
-#include "mm/mm.h"
 
 
 static char *getlastname(char *path) {
@@ -120,64 +118,6 @@ uint64 sys_write(void) {
     return ret;
 }
 
-
-static struct file* getdevfile(char *path) {
-    if(strncmp(path, "/dev/null", 9) == 0) {
-        struct file *fnull = filealloc();
-        if(fnull == NULL) {
-            debug("alloc fail");
-            return NULL;
-        }
-        fnull->type = T_DEVICE;
-        fnull->dev = &devs[DEVNULL];
-        fnull->readable = 1;
-        fnull->writable = 1;
-        return fnull;
-    } 
-
-    if(strncmp(path, "/dev/zero", 9) == 0) {
-        struct file *fzero = filealloc();
-        if(fzero == NULL) {
-            debug("alloc fail");
-            return NULL;
-        }
-        fzero->type = T_DEVICE;
-        fzero->dev = &devs[DEVZERO];
-        fzero->readable = 1;
-        fzero->writable = 1;
-        return fzero;
-    } 
-
-    if(strncmp(path, "/dev/rtc", 8) == 0){
-        struct file *frtc = filealloc();
-        if(frtc == NULL){
-            debug("alloc fail");
-            return NULL;
-        }
-        frtc->type = T_DEVICE;
-        frtc->dev = &devs[DEVRTC];
-        frtc->readable = 1;
-        frtc->writable = 1;
-        return frtc;
-    }
-    return NULL;
-}
-
-static struct file* getprocfile(char *path){
-    if(strncmp(path, "/proc/meminfo", 13) == 0){
-        struct file *fmeminfo = filealloc();
-        if(fmeminfo == NULL){
-            debug("alloc fail");
-            return NULL;
-        }
-        fmeminfo->type = T_RAM;
-        fmeminfo->readable = 1;
-        fmeminfo->writable = 1;
-        return fmeminfo;
-    }
-    return NULL;
-}
-
 // OK:
 uint64 sys_close(void) {
     int fd;
@@ -226,10 +166,6 @@ uint64 sys_unlinkat(void) {
     if (argint(0, &dirfd) < 0 || argstr(1, path, MAXPATH) < 0)
         return -1;
 
-    // shm not supported now
-    if(strncmp(path, "/dev/shm/testshm", 16) == 0) {
-        return 0;
-    }
 
     from = getep(p, dirfd);
 
@@ -282,30 +218,6 @@ uint64 sys_openat(void) {
         return -1;
 
     debug("dirfd is %d path is %s omode is %o", dirfd, path, omode);
-
-    // not support shm now
-    if(strncmp(path, "/dev/shm/testshm", 16) == 0) {
-        return MAX_FD + 1;
-    }
-
-    // sepcial for device...
-    f = getdevfile(path);
-    if(f != NULL) {
-        if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
-            fileclose(f);
-            return -EMFILE;
-        }
-        return fd;
-    }
-
-    f = getprocfile(path);
-    if(f != NULL){
-        if((fd = fdtbl_fdalloc(tbl, f, -1, omode)) == -1) {
-            fileclose(f);
-            return -EMFILE;
-        }
-        return fd;
-    }
 
     from = getep(p, dirfd);
         
@@ -424,20 +336,6 @@ uint64 sys_exec(void) {
         if (fetchstr(uarg, argv[i], PGSIZE) < 0)
             goto bad;
         i++;
-    }
-
-    if(endwith(path, ".sh")) {
-        memmove(argv + 2, argv, sizeof(uint64_t) * i);
-        strncpy(path, "./busybox", 10);
-        argv[0] = kmalloc(16);
-        if(argv[0] == NULL) return -1;
-        argv[1] = kmalloc(16);
-        if(argv[1] == NULL) {
-            kfree(argv[0]);
-            return -1;
-        }
-        strncpy(argv[0], "./busybox", 10);
-        strncpy(argv[1], "sh", 3);
     }
 
     char cwd[MAXPATH];

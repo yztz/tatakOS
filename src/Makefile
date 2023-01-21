@@ -13,18 +13,15 @@ obj-y+=mm/
 obj-y+=platform/
 obj-y+=lib/
 
-obj-y += device.o
 obj-y += main.o
 obj-y += panic.o
 obj-y += printf.o
 obj-y += console.o
 obj-y += futex.o
-obj-y += nulldev.o
 obj-y += riscv.o
 obj-y += string.o
 obj-y += utils.o
 
-obj-y += zerodev.o
 
 
 #================GEN kernel=================#

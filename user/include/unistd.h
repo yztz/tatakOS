@@ -25,13 +25,10 @@ int64 get_time();
 int sys_get_time(TimeVal *ts, int tz); // syscall ID: 169; tz 表示时区，这里无需考虑，始终为0; 返回值：正确返回 0，错误返回 -1。
 int times(void *mytimes);
 int sleep(unsigned long long);
-int set_priority(int prio);
 void *mmap(void *, size_t, int, int, int, off_t);
 int munmap(void *start, size_t len);
 int wait(int *);
 int spawn(char *file);
-int mailread(void *buf, int len);
-int mailwrite(int pid, void *buf, int len);
 
 int fstat(int fd, struct kstat *st);
 int sys_linkat(int olddirfd, char *oldpath, int newdirfd, char *newpath, unsigned int flags);

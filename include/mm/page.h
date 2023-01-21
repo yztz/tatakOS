@@ -15,8 +15,6 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #include "atomic/spinlock.h"
 #include "atomic/atomic.h"
 #include "page-flags.h"
-#include "config.h"
-// #include "fs/fs.h"
 
 /* use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))

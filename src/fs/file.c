@@ -155,8 +155,6 @@ int filestat(struct file *f, struct kstat *stat) {
     elock(f->ep);
     estat(f->ep, stat);
     eunlock(f->ep);
-  } else if(f->type == FD_DEVICE) {
-    dev_stat(f->dev, stat);
   } else {
     panic("unknown ft");
   }
@@ -165,9 +163,7 @@ int filestat(struct file *f, struct kstat *stat) {
 
 // Read from file f.
 // addr is a user virtual address.
-int
-fileread(struct file *f, uint64 addr, int n)
-{
+int fileread(struct file *f, uint64 addr, int n) {
   int r = -1;
 
   if(f->readable == 0)
@@ -184,11 +180,7 @@ fileread(struct file *f, uint64 addr, int n)
       f->off += r;
     }
     eunlock(f->ep);
-  } 
-  else if(f->type == T_RAM){
-    r = 0;
-  }
-  else {
+  }  else {
     panic("fileread");
   }
 

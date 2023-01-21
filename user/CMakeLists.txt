@@ -41,7 +41,6 @@ set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -DCHAPTER=${CHAPTER} -DCHAPTER_DES
 set(CMAKE_ASM_FLAGS         ${CMAKE_C_FLAGS})
 set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib -T ${CMAKE_CURRENT_SOURCE_DIR}/${ARCH_DIR}/user.ld")
 
-
 project(user)
 
 # Library

@@ -17,7 +17,6 @@
 #include "debug.h"
 
 #include "mm/mm_types.h"
-#include "mm/mm.h"
 #include "rbtree.h"
 #include "utils.h"
 #include "memlayout.h"

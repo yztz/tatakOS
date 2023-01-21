@@ -10,7 +10,6 @@
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
-#include "mm/mm.h"
 
 uint64 sys_exit(void) {
     int n;
