@@ -7,19 +7,15 @@ chapter_config = $(ROOT)/.vscode/chapter.json
 cmake_build_args += -DCHAPTER="$(call get_from_json,$(chapter_config),id)"
 cmake_build_args += -DCHAPTER_DES="$(call get_from_json,$(chapter_config),description)"
 
-
-# riscv64-unknown-elf-
 OBJCOPY := $(ARCH)-unknown-elf-objcopy
 OBJDUMP := $(ARCH)-unknown-elf-objdump
-CP := cp 
-
 
 makefile := $(U_OBJ_DIR)/Makefile
 
 
 binary: makefile
 	@cd $(U_OBJ_DIR) && make
-	@$(CP) -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
+	@cp -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
 
 makefile:
 	@mkdir -p $(U_OBJ_DIR)

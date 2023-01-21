@@ -10,6 +10,7 @@ void __run(char *argv[]);
 __attribute__((section(".startup"))) 
 void main() {
     run("welcome");
+    run("chapter1");
     halt();
 }
 
