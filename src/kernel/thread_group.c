@@ -3,9 +3,6 @@
 #include "mm/alloc.h"
 #include "atomic/spinlock.h"
 
-static atomic_t next_tg_id = INIT_ATOMIC();
-#define get_next_tg_id() (atomic_inc(&next_tg_id))
-
 /* 
 ref与thrdcnt不能混用
 原因在于exit与freeproc是两个过程
@@ -26,13 +23,6 @@ static void tg_deref(tg_t *self) {
     release(&self->lock);
 }
 
-proc_t *tg_main_thrd(tg_t *self) {
-    proc_t *ans = list_first_entry(&self->member, proc_t, thrd_head);
-    if(ans->pid != self->master_pid)
-        panic("discord");
-    return ans;
-}
-
 tg_t *tg_new(proc_t *p) {
     tg_t *newtg = kzalloc(sizeof(tg_t));
     if(!newtg) {
@@ -42,11 +32,9 @@ tg_t *tg_new(proc_t *p) {
     initlock(&newtg->lock, "threadgroup");
     INIT_LIST_HEAD(&newtg->member);
     
-    newtg->master_pid = p->pid;
+    // Set threadID as same as procID
+    newtg->tg_id = p->pid;
     tg_join(newtg, p);
-
-
-    newtg->tg_id = get_next_tg_id();
 
     return newtg;
 }

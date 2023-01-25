@@ -21,7 +21,7 @@ uint64 sys_exit(void) {
 }
 
 uint64 sys_getpid(void) {
-    return myproc()->pid;
+    return myproc()->tg->tg_id;
 }
 
 uint64 sys_getppid(void) {

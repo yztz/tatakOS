@@ -120,7 +120,7 @@
         "atomic": "c",
         "bit": "c",
         "system_error": "c",
-        "freelist.h": "c"
+        "freelist.h": "c",
         "fdtable.h": "c",
         "signal.h": "c",
         "futex.h": "c",
@@ -128,9 +128,10 @@
         "reent.h": "c",
         "cdefs.h": "c",
         "syscall_gen.h": "c",
-        "termios.h": "c"
+        "termios.h": "c",
+        "unistd.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Enabled",
+    "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [
         {
             "text": "OK:",
@@ -140,6 +141,7 @@
     ],
     "C_Cpp.dimInactiveRegions": false,
     "terminal.integrated.commandsToSkipShell": [
-        "-workbench.action.quickOpen"
+        "-workbench.action.quickOpen",
+        "-workbench.action.terminal.paste"
     ]
 }   

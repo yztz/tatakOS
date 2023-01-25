@@ -11,4 +11,8 @@ void panic(char *);
 	panic("\n --- Assert Fatal ! ---\n")
 #endif
 
+typedef struct thread { 
+    
+} thread_t;
+
 #endif //__STDLIB_H__

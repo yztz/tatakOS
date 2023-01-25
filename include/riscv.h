@@ -344,4 +344,18 @@ static inline void sfence_vma_addr(uint64_t addr)
     __asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
 }
 
+
+struct proc;
+
+static inline struct proc *get_current() {
+    return (struct proc *)read_csr(sscratch);
+}
+
+#define current (get_current())
+
+static void inline set_current(struct proc *p) {
+    write_csr(sscratch, p);
+}
+
+
 #endif
