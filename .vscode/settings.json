@@ -143,6 +143,7 @@
     ],
     "C_Cpp.dimInactiveRegions": false,
     "terminal.integrated.commandsToSkipShell": [
-        "-workbench.action.quickOpen"
+        "-workbench.action.quickOpen",
+        "-workbench.action.terminal.paste"
     ]
 }   

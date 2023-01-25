@@ -68,13 +68,11 @@ dep_file = $@.d
 $(BUILD_DIR)/%.o : %.c
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
 	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
-# @echo -e "CC\t\t$<"
 	$(call make_echo_build_c_object)
 
 $(BUILD_DIR)/%.o : %.S
 	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
 	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
-# @echo -e "CC\t\t$<"
 	$(call make_echo_build_asm_object)
 
 .PHONY : $(PHONY)

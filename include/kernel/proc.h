@@ -155,10 +155,4 @@ struct pagevec* my_active_pvec();
 extern void usertrapret(void);
 
 
-static inline proc_t *get_current() {
-    return (proc_t *)read_csr(sscratch);
-}
-
-#define current (get_current())
-
 #endif
