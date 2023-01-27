@@ -97,7 +97,7 @@ static int do_anonymous_page(struct mm_struct *mm, unsigned long address, unsign
             ER();
         
         /* 先不考虑swap，只在lru链表中加入page cache页和mmap页 */
-        // mark_page_accessed(&pages[PAGE2NUM(pa)]);
+        // mark_page_accessed(&pages[PG_TO_NR(pa)]);
 
         release(&mm->mm_lock);
     }

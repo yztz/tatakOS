@@ -207,7 +207,7 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
     if(find_page(entry->i_mapping, cur_index) == NULL){
       rw_page_t *read_page= kzalloc(sizeof(rw_page_t));
       uint64_t cur_pa = (uint64_t)kalloc();
-      page_t *page = PATOPAGE(cur_pa);
+      page_t *page = ADDR_TO_PAGE(cur_pa);
       add_to_page_cache(page, entry->i_mapping, cur_index);
       lru_cache_add(page);  
       read_page->pa = cur_pa;
@@ -307,7 +307,7 @@ retry:
 
       if(pgcnts == 1) {
         pa = (uint64_t)kalloc();
-        page = PATOPAGE(pa);
+        page = ADDR_TO_PAGE(pa);
 
         get_page(page);
         read_one_page(entry, pa, index);
@@ -319,7 +319,7 @@ retry:
         goto retry;
       }
     } else {
-      pa = PAGETOPA(page);
+      pa = PG_TO_ADDR(page);
     }
 
     mark_page_accessed(page);
@@ -363,7 +363,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
     page = find_get_lock_page(mapping, pg_id);
     if(!page){
       pa = (uint64_t)kalloc();
-      page = PATOPAGE(pa);
+      page = ADDR_TO_PAGE(pa);
 
       get_lock_page(page);
       /* 整个页都要重新写过的，就没必要从磁盘中读了；或者要写的文件偏移大于文件在磁盘上的大小，也没必要读磁盘  */
@@ -373,7 +373,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       add_to_page_cache_lru(page, mapping, pg_id);
     }
     else{
-      pa = PAGETOPA(page);
+      pa = PG_TO_ADDR(page);
     }
 
     mark_page_accessed(page);
@@ -426,7 +426,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
   if(!page) {
     // 不存在LRU
     pa = (uint64_t)kalloc();
-    page = PATOPAGE(pa);
+    page = ADDR_TO_PAGE(pa);
 
     get_page(page);
     entry_t *entry = mapping->host;
@@ -435,7 +435,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     // lru_cache_add(page);
   } else {
     // 存在/不存在LRU
-    pa = PAGETOPA(page);
+    pa = PG_TO_ADDR(page);
     if(TestClearPageLRU(page))
       del_page_from_lru(&memory_zone, page);
   }
@@ -448,7 +448,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     uint64_t pa0 = (uint64_t)kalloc();
 #ifdef SWAP
     /* 页替换算法需要用到swap */
-    page_t *page0 = PAGETOPA(pa0);
+    page_t *page0 = PG_TO_ADDR(pa0);
     lru_cache_add(page0);
     mark_page_accessed(page0);
 #endif

@@ -173,7 +173,7 @@ void print_argv(char** argv) {
  */
 void print_page_info(page_t* page) {
     printf("refcnt: %d\tpgnum: %d\taddr: 0x%x\tflags: 0x%x\tpg_pointer: 0x%x\n",
-        page->refcnt, page - pages, NUM2PAGE(page - pages), page->flags, page);
+        page->refcnt, page - pages, NR_TO_ADDR(page - pages), page->flags, page);
 }
 
 /**
@@ -186,7 +186,7 @@ void print_not_freed_pages() {
 
     printf(rd("pages not be freed:\n"));
     // for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
-      // pgnum = PAGE2NUM(p);
+      // pgnum = PG_TO_NR(p);
       // if(pages[pgnum].refcnt > 0)
         // printf("pgnum: %d\taddr: %p\n", pgnum, p);
     // }

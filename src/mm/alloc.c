@@ -134,7 +134,7 @@ void free_one_page(page_t *page) {
 
 //     /* buddy/kfree的接口可以考虑换一下，参数可选择页指针 */
 //     while(--i >= 0){
-//         kfree(NUM2PAGE(pvec->pages[i] - pages));
+//         kfree(NR_TO_ADDR(pvec->pages[i] - pages));
 //     }
 // }
 uint64_t get_total_mem() {
