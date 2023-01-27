@@ -42,23 +42,9 @@ void page_init(void) {
   }
 }
 
-// pgref_t ref_page(uint64_t pa) {
-//   // pgref_t ret;
-//   // acquire(&reflock);
-//   // ret = ++pages[PAGE2NUM(pa)].refcnt;
-//   // release(&reflock);
-//   // return ret;
-//   return atomic_inc(&pages[PAGE2NUM(pa)].refcnt);
-// }
-
-
-
-// pgref_t page_ref(uint64_t pa) {
-//   return atomic_get(&pages[PAGE2NUM(pa)].refcnt);
-// }
 
 int page_type(uint64_t pa) {
-  return pages[PAGE2NUM(pa)].type;
+  return pages[PG_TO_NR(pa)].type;
 }
 
 
@@ -168,7 +154,7 @@ pgref_t __page_refcnt_pointer(page_t *page){
 }
 
 pgref_t __page_refcnt_paddr(uint64_t pa){
-  return __page_refcnt_pointer(PATOPAGE(pa));
+  return __page_refcnt_pointer(ADDR_TO_PAGE(pa));
 }
 
 
@@ -177,16 +163,15 @@ pgref_t __deref_page_pointer(page_t *page) {
 }
 
 pgref_t __deref_page_paddr(uint64_t pa) {
-  return __deref_page_pointer(&pages[PAGE2NUM(pa)]);
+  return __deref_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
 pgref_t __get_page_pointer(page_t *page){
-  assert(atomic_get(&page->refcnt) > 0);
   return atomic_inc(&page->refcnt) + 1;
 }
 
 pgref_t __get_page_paddr(uint64_t pa){
-  return __get_page_pointer(&pages[PAGE2NUM(pa)]);
+  return __get_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
 
@@ -205,7 +190,7 @@ pgref_t __put_page_pointer(page_t *page){
 }
 
 pgref_t __put_page_padder(uint64_t pa){
-  return __put_page_pointer(&pages[PAGE2NUM(pa)]);
+  return __put_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
 /**
@@ -244,7 +229,7 @@ void unlock_put_page(page_t *page){
  * 
  */
 void set_page_dirty(uint64_t pa){
-  page_t *page = &pages[PAGE2NUM(pa)];
+  page_t *page = &pages[PG_TO_NR(pa)];
 
   // page->flags |= PG_dirty;
   SetPageDirty(page);
@@ -252,14 +237,14 @@ void set_page_dirty(uint64_t pa){
 
 
 void clear_page_dirty(uint64_t pa){
-  page_t *page = &pages[PAGE2NUM(pa)];
+  page_t *page = &pages[PG_TO_NR(pa)];
 
   // page->flags &= ~PG_dirty;
   ClearPageDirty(page);
 }
 
 int page_is_dirty(uint64_t pa){
-  page_t *page = &pages[PAGE2NUM(pa)];
+  page_t *page = &pages[PG_TO_NR(pa)];
 
   // return page->flags & PG_dirty;
   return PageDirty(page);

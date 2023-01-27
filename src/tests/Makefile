@@ -1,1 +1,1 @@
-obj-y+=mmtest.o
+obj-y+=mem_test.o

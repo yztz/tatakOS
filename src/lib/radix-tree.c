@@ -375,7 +375,7 @@ void lookup_tag(radix_tree_node_t *node, uint32_t tag, rw_page_list_t *pg_list, 
 				rw_page_t *page = kzalloc(sizeof(rw_page_t));
 
 				ppage = (page_t *)node->slots[i];
-				page->pa = PAGETOPA(ppage);
+				page->pa = PG_TO_ADDR(ppage);
 				page->pg_id = pg_id_base + i;
 
 				if(pg_list->head == NULL && pg_list->tail == NULL){
@@ -407,7 +407,7 @@ radix_tree_find_tags(radix_tree_root_t *root, uint32_t tag, rw_page_list_t *pg_l
 	if(root->height == 0){
 		rw_page_t *page = kzalloc(sizeof(rw_page_t));
 		page_t *ppage = (page_t *)root->rnode;
-		page->pa = PAGETOPA(ppage);
+		page->pa = PG_TO_ADDR(ppage);
 		page->pg_id = 0;
 
 		pg_list->head = page;

@@ -21,7 +21,7 @@ backtrace:
 00000000802079E0
 0000000080206B4C
 00000000802081E0
-PAGE2NUM：没有使用pa，使用了va
+PAGE_TO_NR：没有使用pa，使用了va
 
 2. forkfailed
 因为内存没有被释放->ref操作需要在alloc与free中进行

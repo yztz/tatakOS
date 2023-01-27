@@ -16,9 +16,8 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #include "atomic/atomic.h"
 #include "page-flags.h"
 #include "config.h"
-// #include "fs/fs.h"
 
-/* use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
+/* Use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 /* Equal with page level */
 #define PGSPEC_NORMAL 0
@@ -71,7 +70,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 #include "platform.h"
 
-// use typedef to make type flexible.
+// Use typedef to make type flexible.
 typedef uint8_t pgref_t;
 
 struct address_space;
@@ -83,7 +82,6 @@ typedef struct _page_t {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
 #define ALLOC_BUDDY     0b10
-// #define ALLOC_FREELIST  1
 #define ALLOC_SLOB      0b01
         uint8_t type  : 2; // page type ()
     };
@@ -105,31 +103,33 @@ typedef struct _page_t {
 
 /* 页的数量 */
 #define PAGE_NUMS ((MEM_END - KERN_BASE)/PGSIZE)
-/* 地址--->页号 */
-#define PAGE2NUM(pa) (((uint64_t)(pa) - KERN_BASE) / PGSIZE)
-/* 页号--->地址 */
-#define NUM2PAGE(num) ((uint64_t)((num) * PGSIZE + KERN_BASE))
-/* 页指针--->地址 */
-#define PAGETOPA(page) NUM2PAGE(page-pages)
-/* 地址--->页指针 */
-#define PATOPAGE(pa) &pages[PAGE2NUM(pa)]
 
 extern page_t pages[PAGE_NUMS];
 
-void    page_init(void);
+/* 页指针--->页号 */
+#define PG_TO_NR(pa) (((uint64_t)(pa) - KERN_BASE) / PGSIZE)
+/* 页号--->地址 */
+#define NR_TO_ADDR(num) ((uint64_t)((num) * PGSIZE + KERN_BASE))
+/* 页指针--->地址 */
+#define PG_TO_ADDR(page) NR_TO_ADDR(page-pages)
+/* 地址--->页指针 */
+#define ADDR_TO_PAGE(pa) &pages[PG_TO_NR(pa)]
 
-pgref_t ref_page(uint64_t pa);
-pgref_t deref_page(uint64_t pa);
-// pgref_t page_ref(uint64_t pa);
-static inline void mark_page(uint64_t pa, int type) {
-  pages[PAGE2NUM(pa)].type |= type;
-}
+#define PAGE_CACHE_SHIFT PGSHIFT
+#define PAGE_CACHE_SIZE PGSIZE
 
-static inline void unmark_page(uint64_t pa, int type) {
-  pages[PAGE2NUM(pa)].type &= ~type;
-}
-int     page_type(uint64_t pa);
-void    pte_print(pte_t *pte);
+#define PAGE_SHIFT PGSHIFT
+
+/* page fault 使用的位 */
+#define pte_none(pte)           (!pte)
+#define pte_valid(pte)          (pte & PTE_V) 
+#define pte_write(pte)          (pte & PTE_W)
+
+#define PTE_VALID (0) // valid
+#define PTE_READ (1)
+#define PTE_WRITE (2)
+#define PTE_EXECUTE (3)
+#define PTE_USER (4) 
 
 
 pgref_t __get_page_pointer(page_t *page);
@@ -148,12 +148,18 @@ pgref_t __deref_page_pointer(page_t *page);
 pgref_t __deref_page_paddr(uint64_t pa);
 #define put_page_nofree(param) _Generic((param), uint64_t: __deref_page_paddr, page_t *: __deref_page_pointer)(param)   
 
+void page_init(void);
+int  page_type(uint64_t pa);
+void pte_print(pte_t *pte);
+/* swap.c */
+void mark_page_accessed(page_t *page);
+
 void lock_page(page_t *page);
 void unlock_page(page_t *page);
 
 void set_page_dirty(uint64_t pa);
 void clear_page_dirty(uint64_t pa);
-int page_is_dirty(uint64_t pa);
+int  page_is_dirty(uint64_t pa);
 
 void unlock_put_page(page_t *page);
 void get_lock_page(page_t *page);
@@ -163,6 +169,14 @@ void reset_page(page_t *page);
 int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
 void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec);
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
+
+static inline void mark_page(uint64_t pa, int type) {
+  pages[PG_TO_NR(pa)].type |= type;
+}
+
+static inline void unmark_page(uint64_t pa, int type) {
+  pages[PG_TO_NR(pa)].type &= ~type;
+}
 
 static inline int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot) {
     return __mappages(pagetable, va, size, pa, prot, PGSPEC_NORMAL);
@@ -176,16 +190,6 @@ static inline pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
     return __walk(pagetable, va, alloc, PGSPEC_NORMAL);
 }
 
-#define PAGE_CACHE_SHIFT PGSHIFT
-#define PAGE_CACHE_SIZE PGSIZE
-
-#define PAGE_SHIFT PGSHIFT
-
-/* page fault 使用的位 */
-#define pte_none(pte)           (!pte)
-#define pte_valid(pte)          (pte & PTE_V) 
-#define pte_write(pte)          (pte & PTE_W)
-
 
 /* page frame reclaiming 页回收算法需要的数据结构 */
 
@@ -198,6 +202,7 @@ static inline int page_mapped(page_t *page)
     return page->pte.direct != 0;
 }
 #endif
+
 /* mmzone.h */
 struct zone{
 
@@ -213,6 +218,7 @@ struct zone{
 typedef struct zone zone_t;
 
 extern zone_t memory_zone;
+
 /* mm_inline.h */
 static inline void
 add_page_to_active_list(struct zone *zone, page_t *page)
@@ -254,15 +260,7 @@ del_page_from_lru(struct zone *zone, page_t *page)
 	}
 }
 
-/* swap.c */
-void mark_page_accessed(page_t *page);
 
-
-#define PTE_VALID (0) // valid
-#define PTE_READ (1)
-#define PTE_WRITE (2)
-#define PTE_EXECUTE (3)
-#define PTE_USER (4) 
 
 // static inline  int ptep_test_and_clear_valid(pte_t *ptep)	{ return test_and_clear_bit(PTE_VALID, ptep);}
 #define DEF_PRIORITY 5

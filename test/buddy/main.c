@@ -37,8 +37,8 @@ char* end;
 uint64 KERNBASE;
 
 #define PAGE_NUMS (MEM_SIZE / PGSIZE)
-#define PAGE2NUM(va) (((uint64_t)(va)-KERNBASE) / PGSIZE)
-#define NUM2PAGE(num) ((void*)((num)*PGSIZE + KERNBASE))
+#define PG_TO_NR(va) (((uint64_t)(va)-KERNBASE) / PGSIZE)
+#define NR_TO_ADDR(num) ((void*)((num)*PGSIZE + KERNBASE))
 
 typedef struct _page_t {
     uint8_t refcnt;
@@ -83,8 +83,8 @@ struct spinlock {
 
 #define MAX_ORDER 10
 
-#define PARTNER_NO(pgnum, order) (pgnum ^ (1 << order))
-#define MERGE_NO(pgnum, order) (pgnum & ~(1 << order))
+#define PARTNER_NR(pgnum, order) (pgnum ^ (1 << order))
+#define MERGE_NR(pgnum, order) (pgnum & ~(1 << order))
 
 #define BUDDY_INIT_HEAD(head) \
     { (head) = (buddy_t){&(head), &(head)}; }
@@ -105,7 +105,7 @@ void buddy_free(void* va);
 //   printf("this is a stub!\n");
 // }
 void buddy_init() {
-    int knum = PAGE2NUM(PGROUNDUP(end));
+    int knum = PG_TO_NR(PGROUNDUP(end));
     // printf("kmum: %d\n", knum);
 
     for (int i = 0; i < MAX_ORDER; i++) {
@@ -123,7 +123,7 @@ void buddy_init() {
     for (int i = knum; i < PAGE_NUMS; i++) {
         // printf("release page %d all: %d\n", i, PAGE_NUMS);
         // if(i == 2047) stub();
-        buddy_free(NUM2PAGE(i));
+        buddy_free(NR_TO_ADDR(i));
     }
 }
 
@@ -207,20 +207,20 @@ void *buddy_alloc(size_t size) {
     remove(b);
     release(&lists[order].lock);
     order--;
-    pgnum = PAGE2NUM(b);
-    ppgnum = PARTNER_NO(PAGE2NUM(b), order);
+    pgnum = PG_TO_NR(b);
+    ppgnum = PARTNER_NR(PG_TO_NR(b), order);
     acquire(&lists[order].lock);
-    insert(order, (buddy_t *)NUM2PAGE(ppgnum));
+    insert(order, (buddy_t *)NR_TO_ADDR(ppgnum));
     insert(order, b);
     pages[pgnum].order = order;
     pages[ppgnum].order = order;
-    printf("split order %d addr %#lx -> %#lx, %#lx\n", order + 1, (uint64_t)b, (uint64_t)b, (uint64_t)NUM2PAGE(ppgnum));
+    printf("split order %d addr %#lx -> %#lx, %#lx\n", order + 1, (uint64_t)b, (uint64_t)b, (uint64_t)NR_TO_ADDR(ppgnum));
   }
   b = lists[order].head.next;
   remove(b);
   release(&lists[order].lock);
   
-  pages[PAGE2NUM(b)].alloc = 1;
+  pages[PG_TO_NR(b)].alloc = 1;
   return (void *) b;
 }
 
@@ -230,7 +230,7 @@ void buddy_free(void *va) {
   buddy_list_t *list;
   buddy_t *b;
 
-  pgnum = PAGE2NUM(va);
+  pgnum = PG_TO_NR(va);
 
   if(pgnum >= PAGE_NUMS) {
     panic("buddy_free: out of range");
@@ -249,30 +249,30 @@ void buddy_free(void *va) {
   acquire(&list->lock);
   insert(page->order, b);
 
-  // printf("va: %p, pgnum: %d, macro va: %p\n", va, pgnum, NUM2PAGE(pgnum));
+  // printf("va: %p, pgnum: %d, macro va: %p\n", va, pgnum, NR_TO_ADDR(pgnum));
 
-  ppgnum = PARTNER_NO(pgnum, page->order);
+  ppgnum = PARTNER_NR(pgnum, page->order);
   ppage = &pages[ppgnum];
   // we need hold lock to avoid partner being allocated
   while(page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
     // remove from list
-    remove((buddy_t *)NUM2PAGE(pgnum));
-    remove((buddy_t *)NUM2PAGE(ppgnum));
+    remove((buddy_t *)NR_TO_ADDR(pgnum));
+    remove((buddy_t *)NR_TO_ADDR(ppgnum));
     // printf("after remove: \n");
     // print_list(page->order);
     // release lock to continue others' alloc
     release(&list->lock);
     // the pgnum is always free because we merged from two free blocks.
-    pgnum = MERGE_NO(pgnum, page->order);
+    pgnum = MERGE_NR(pgnum, page->order);
     page = &pages[pgnum];
     page->order++; // no need to set alloc
     // so we can insert it back
     list = &lists[page->order];
-    b = (buddy_t *) NUM2PAGE(pgnum);
+    b = (buddy_t *) NR_TO_ADDR(pgnum);
     acquire(&list->lock);
     insert(page->order, b);
 
-    ppgnum = PARTNER_NO(pgnum, page->order);
+    ppgnum = PARTNER_NR(pgnum, page->order);
     ppage = &pages[ppgnum];
     // continue check...
   }
