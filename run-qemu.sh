@@ -1,2 +1,2 @@
 #!/bin/sh
-make run platform=qemu CPUS=5 $*
+make run platform=qemu CPUS=1 $*
