@@ -5,5 +5,5 @@ sync_chapter:
   stage: sync
   only: 
     - template
-  trigger: op/auto-merge
+  trigger: op/auto-sync
 
