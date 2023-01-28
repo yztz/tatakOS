@@ -1,9 +1,9 @@
 stages:
-  - test
+  - sync
 
-run_qmeu:
-  stage: test
-  image: registry-vpc.cn-hangzhou.aliyuncs.com/ji-sang/c_kernel_env:1.0
-  script:
-    - make kernel platform=qemu
+sync_chapter:
+  stage: sync
+  only: 
+    - template
+  trigger: op/auto-merge
 
