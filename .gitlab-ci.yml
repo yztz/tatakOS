@@ -5,5 +5,6 @@ sync_chapter:
   stage: sync
   only: 
     - template
-  trigger: yztz/auto-sync
+  script:
+  - "curl -X POST --fail -F token=$AUTO_SYNC_TOKEN -F ref=main http://gitlab.ji-sang.com/api/v4/projects/27/trigger/pipeline"
 
