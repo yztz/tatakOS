@@ -153,7 +153,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
  */
 int handle_pagefault(uint64_t scause) {
     int ktrap = r_sstatus() & SSTATUS_SPP;
-    proc_t *p = myproc();
+    proc_t *p = current;
     uint64_t epc = read_csr(sepc);
     uint64_t stval = read_csr(stval);
     // uint64_t rva = PGROUNDDOWN(read_csr(stval));

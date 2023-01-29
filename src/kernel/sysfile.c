@@ -342,14 +342,13 @@ uint64 sys_exec(void) {
     char pwd[MAXPATH];
     namepath(p->cwd, cwd);
     snprintf(pwd, MAXPATH, "PWD=%s", cwd);
+    
+    // 暂时忽略了envp参数...
     char *envp[] = {"LD_LIBRARY_PATH=/",
                     "LOGNAME=root",
                     pwd,
                     "PS1=\\u"grn("\\w")"\\$ ",
                     "PATH=/:/bin",
-                    "ENOUGH=3000", 
-                    "TIMING_O=7", 
-                    "LOOP_O=0",
                     NULL};
 
     int ret = exec(path, argv, envp);
