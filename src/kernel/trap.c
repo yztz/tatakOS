@@ -130,9 +130,6 @@ void usertrapret(void) {
 
     assert(p->trapframe->proc != 0);
 
-    // jump to trampoline.S at the top of memory, which 
-    // switches to the user page table, restores user registers,
-    // and switches to user mode with sret.
     userret(p->trapframe);
 }
 

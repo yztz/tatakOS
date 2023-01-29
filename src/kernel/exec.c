@@ -28,7 +28,7 @@ static int loadseg(mm_t *mm, uint64 va, entry_t *ip, uint offset, uint sz) {
 }
 
 
-int exec(char *path, char *argv[], char *envp[]) {
+int exec(char *path, char *argv[]) {
     char *s, *last;
     int i, off;
     struct elfhdr elf;
@@ -38,21 +38,6 @@ int exec(char *path, char *argv[], char *envp[]) {
     mm_t *newmm;
     mm_t *oldmm = p->mm;
 
-    uint64_t aux[AUX_CNT][2];
-    memset(aux, 0, sizeof(aux));
-    int auxcnt = 0;
-
-#define putaux(key, val) do{\
-  aux[auxcnt][0] = (key);\
-  aux[auxcnt][1] = (val);\
-  auxcnt++;}while(0);
-
-    putaux(AT_PAGESZ, PGSIZE);
-    putaux(AT_UID, 0);
-    putaux(AT_EUID, 0);
-    putaux(AT_GID, 0);
-    putaux(AT_EGID, 0);
-    putaux(AT_SECURE, 0);
 
     if ((newmm = mmap_new()) == NULL) {
         debug("newmm alloc failure");
@@ -83,12 +68,6 @@ int exec(char *path, char *argv[], char *envp[]) {
             goto bad;
         }
         
-        if (ph.type == PT_PHDR) {
-            putaux(AT_PHDR, ph.vaddr);
-            putaux(AT_PHENT, elf.phentsize);
-            putaux(AT_PHNUM, elf.phnum);
-            continue;
-        }
 
         if (ph.type != PT_LOAD)
             continue;
@@ -110,7 +89,7 @@ int exec(char *path, char *argv[], char *envp[]) {
 
     }
     // debug("%s: loadseg done entry is %#lx", path, elfentry);
-    // mmap_print(newmm);
+
     eunlock(ep);
 
     // initcode has not exe
@@ -127,32 +106,8 @@ int exec(char *path, char *argv[], char *envp[]) {
         goto bad;
     }
 
-
     ustackbase = newmm->ustack->addr;
     ustack = ustackbase + newmm->ustack->len;
-
-
-    // 环境变量数目
-    uint64 envpc;
-    // 环境变量字符串指针数组
-    uint64 envps[MAXENV + 1]; // +1 -> '\0'
-
-    // 复制环境变量字符串
-    for (envpc = 0; envp[envpc]; envpc++) {
-        if (envpc >= MAXENV) {
-            goto bad;
-        }
-        size_t len = strlen(envp[envpc]);
-        ustack -= len + 1;
-
-        if (copy_to_user(ustack, envp[envpc], len + 1) == -1) {
-            goto bad;
-        }
-        envps[envpc] = ustack;
-    }
-
-    envps[envpc] = 0;
-    envpc += 1; // 还需要包含末尾的NULL
 
     // 参数个数
     uint64 argc;
@@ -180,33 +135,12 @@ int exec(char *path, char *argv[], char *envp[]) {
     argc += 2;
 
 
-    // 设置random
-    uint64 random[2] = { 0xea0dad5a44586952, 0x5a1fa5497a4a283d };
-    ustack -= 16;
-    ustack -= ustack % 8; // uint64参数8字节宽度对齐
-
-    if (copy_to_user(ustack, random, 16) == -1) {
-        goto bad;
-    }
-
-    putaux(AT_RANDOM, ustack);
-    putaux(AT_NULL, 0);
-
-    ustack -= sizeof(uint64) * (envpc + argc + auxcnt * 2);
+    ustack -= sizeof(uint64) * argc;
     ustack -= ustack % 16; // riscv sp必须16字节对齐
 
     if (ustack < ustackbase) {
         goto bad;
     }
-
-    ustack += sizeof(uint64) * (envpc + argc);
-
-    // 复制辅助变量
-    copy_to_user(ustack, aux, auxcnt * 2 * sizeof(uint64));
-
-    // 复制环境变量字符串地址
-    ustack -= sizeof(uint64) * envpc;
-    copy_to_user(ustack, envps, sizeof(uint64) * envpc);
 
     // 复制参数字符串地址
     ustack -= sizeof(uint64) * argc;

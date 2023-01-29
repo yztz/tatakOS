@@ -20,7 +20,6 @@
 #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
-#include "utils.h"
 
 
 static char *getlastname(char *path) {
@@ -303,13 +302,13 @@ uint64 sys_chdir(void) {
     return 0;
 }
 
-extern int exec(char *path, char *argv[], char *envp[]);
+extern int exec(char *path, char *argv[]);
 
 uint64 sys_exec(void) {
     char path[MAXPATH], *argv[MAXARG];
     int i = 0;
     uint64 uargv, uarg;
-    proc_t *p = myproc();
+    proc_t *p = current;
 
     // [sharp] (arg0) (arg1) (arg2)...
 
@@ -338,20 +337,7 @@ uint64 sys_exec(void) {
         i++;
     }
 
-    char cwd[MAXPATH];
-    char pwd[MAXPATH];
-    namepath(p->cwd, cwd);
-    snprintf(pwd, MAXPATH, "PWD=%s", cwd);
-    
-    // 暂时忽略了envp参数...
-    char *envp[] = {"LD_LIBRARY_PATH=/",
-                    "LOGNAME=root",
-                    pwd,
-                    "PS1=\\u"grn("\\w")"\\$ ",
-                    "PATH=/:/bin",
-                    NULL};
-
-    int ret = exec(path, argv, envp);
+    int ret = exec(path, argv);
 
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         kfree(argv[i]);
