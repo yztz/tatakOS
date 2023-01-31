@@ -111,13 +111,13 @@ void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
 
     fat->root_cluster = dbr->fat32.root_cluster;
 
-    info("start sector   is %d", fat->fat_start_sector);
-    info("fat sectors    is %d", fat->fat_tbl_sectors);
-    info("sec per clus   is %d", fat->sec_per_cluster);
-    info("bytes per sec  is %d", fat->bytes_per_sec);
-    info("bytes per cluster is %d", fat->bytes_per_cluster);
-    info("fat table num  is %d", fat->fat_tbl_num);
-    info("root cluster   is %d", fat->root_cluster);
+    debug("start sector   is %d", fat->fat_start_sector);
+    debug("fat sectors    is %d", fat->fat_tbl_sectors);
+    debug("sec per clus   is %d", fat->sec_per_cluster);
+    debug("bytes per sec  is %d", fat->bytes_per_sec);
+    debug("bytes per cluster is %d", fat->bytes_per_cluster);
+    debug("fat table num  is %d", fat->fat_tbl_num);
+    debug("root cluster   is %d", fat->root_cluster);
 
     fat->fsinfo.next_free_cluster = -1;
     assert(fat->bytes_per_sec == 512);
