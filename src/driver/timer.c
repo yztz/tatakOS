@@ -37,7 +37,7 @@ void reset_timer() {
 }
 
 
-void wait_timer() {
+void wait_tick() {
     DECLARE_WQ_ENTRY(entry);
     wq_prepare(&timer_waiters);
     wq_sleep(&timer_waiters, &entry);

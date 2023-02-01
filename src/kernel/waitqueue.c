@@ -23,15 +23,24 @@ static inline wq_entry_t *peek(wq_t *self) {
     return list_first_entry(&self->head, wq_entry_t, head);
 }
 
+/**
+ * @brief Call before calling wq_sleep, sometimes it is used to avoid "Lost wakeup".
+ *        What is "Lost Wakeup" ? If A are going to sleep but the state hasn't changed, 
+ *        B wakes up it at same time so nothing happened. The key problem here is that 
+ *        there is no mechanism for atomically putting a process to sleep while it is sleeping.
+ *          
+ *        Such as a
+ * 
+ * @param self 
+ */
 void wq_prepare(wq_t *self) {
     acquire(&self->wq_lock);
 }
 
 void wq_sleep(wq_t *self, wq_entry_t* entry) {
-#ifdef DEBUG
     if(!holding(&self->wq_lock))
         panic("Sleep without preparing. Wakeup may be lost.");
-#endif
+
     proc_t *p = entry->private;
     acquire(&p->lock);
 
@@ -52,10 +61,9 @@ void wq_sleep(wq_t *self, wq_entry_t* entry) {
 }
 
 int wq_sleep_timeout(wq_t *self, wq_entry_t* entry, int timeout) {
-#ifdef DEBUG
     if(!holding(&self->wq_lock))
         panic("Sleep without preparing. Wakeup may be lost.");
-#endif
+
     proc_t *p = entry->private;
     acquire(&p->lock);
 
@@ -87,7 +95,7 @@ void wq_wakeup(wq_t *self) {
     wq_entry_t *entry;
 
     acquire(&self->wq_lock);
-    if((entry = peek(self))) 
+    if((entry = poll(self))) 
         wake_up_process(entry->private);
     release(&self->wq_lock);
 }
@@ -97,8 +105,7 @@ void wq_wakeup_all(wq_t *self) {
     wq_entry_t *entry;
 
     acquire(&self->wq_lock);
-    list_for_each_entry(entry, &self->head, head) {
+    while((entry = poll(self))) 
         wake_up_process(entry->private);
-    }
     release(&self->wq_lock);
 }

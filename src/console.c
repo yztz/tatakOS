@@ -206,9 +206,9 @@ consoleintr(char c)
   uint16_t lflag = term.c_lflag;
   acquire(&cons.lock);
   
-  #ifdef DEBUG
+//   #ifdef DEBUG
   interactive_debug_info(c);
-  #endif
+//   #endif
 
   // not cookmode
   if((lflag & ICANON) == 0) {

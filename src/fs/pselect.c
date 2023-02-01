@@ -87,11 +87,7 @@ uint64_t sys_pselect(void) {
         if(timeout == -1) continue;
 
         if(timeout) {
-            // debug("sleep");
-            // acquire(&p->lock);
-            // sleep(&ticks, &p->lock);
-            // release(&p->lock);
-            wait_timer();
+            wait_tick();
             timeout--;
         } else {
             break;
@@ -154,10 +150,7 @@ uint64 sys_ppoll(void) {
 
         if(timeout == -1) continue;
         if(timeout) {
-            // acquire(&p->lock);
-            // sleep(&ticks, &p->lock);
-            // release(&p->lock);
-            wait_timer();
+            wait_tick();
             timeout--;
         } else {
             break;
