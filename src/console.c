@@ -14,10 +14,10 @@
 #include "common.h"
 #include "fs/fs.h"
 #include "fs/file.h"
-#include "defs.h"
 #include "kernel/proc.h"
 #include "platform.h"
 #include "driver/plic.h"
+#include "driver/console.h"
 #include "mm/vm.h"
 
 #define __MODULE_NAME__ CONSOLE
@@ -37,8 +37,7 @@ void _putchar(char c) {
 // called by printf, and to echo input characters,
 // but not from write().
 //
-void
-consputc(int c) {
+void consputc(int c) {
     if (c == BACKSPACE) {
         // if the user typed backspace, overwrite with a space.
         sbi_putchar('\b'); sbi_putchar(' '); sbi_putchar('\b');
@@ -61,8 +60,7 @@ struct console {
 //
 // user write()s to the console go here.
 //
-int
-consolewrite(int user_src, uint64 src, int n) {
+int consolewrite(int user_src, uint64 src, int n) {
     int i;
 
     for (i = 0; i < n; i++) {
@@ -89,8 +87,7 @@ int consoleready() {
 // user_dist indicates whether dst is a user
 // or kernel address.
 //
-int
-consoleread(int user_dst, uint64 dst, int n) {
+int consoleread(int user_dst, uint64 dst, int n) {
     uint target;
     char c;
 
@@ -158,8 +155,7 @@ static void interactive_debug_info(char c) {
 // wake up consoleread() if a whole line has arrived.
 // 基于中断，用于字符回显，以及存储字符到缓存
 //
-void
-consoleintr(char c) {
+void consoleintr(char c) {
     acquire(&cons.lock);
 
     interactive_debug_info(c);
@@ -211,8 +207,7 @@ int cons_irq_callback(void *ctx) {
 }
 
 
-void
-consoleinit(void) {
+void consoleinit(void) {
     initlock(&cons.lock, "cons");
     plic_register_handler(UART_IRQ, cons_irq_callback, NULL);
     // console_init(consoleintr, NULL);

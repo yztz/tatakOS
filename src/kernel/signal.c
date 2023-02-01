@@ -1,7 +1,7 @@
-#include "kernel/signal.h"
 #include "kernel/proc.h"
+#include "kernel/syscall.h"
+#include "kernel/signal.h"
 #include "mm/vm.h"
-#include "defs.h"
 
 #define QUIET
 #define __MODULE_NAME__ SIGNAL

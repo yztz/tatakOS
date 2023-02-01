@@ -10,7 +10,6 @@
 // #include "debug.h"
 #include "atomic/sleeplock.h"
 #include "atomic/spinlock.h"
-#include "defs.h"
 #include "fs/fcntl.h"
 #include "fs/file.h"
 #include "fs/fs.h"

@@ -2,7 +2,6 @@
 #include "common.h"
 #include "kernel/sched.h"
 #include "kernel/taskqueue.h"
-#include "defs.h"
 #include "mm/vm.h"
 #include "driver/timer.h"
 
@@ -30,10 +29,11 @@ static atomic_t nextpid = INIT_ATOMIC();
 
 #define IS_MAIN_THREAD(p) ((p)->tg->master_pid==p->pid)
 
-// helps ensure that wakeups of wait()ing
-// parents are not lost. helps obey the
-// memory model when using p->parent.
-// must be acquired before any p->lock.
+
+/*! @brief helps ensure that wakeups of wait()ing parents are not lost. 
+    helps obey the memory model when using p->parent.
+    must be acquired before any p->lock. 
+*/
 struct spinlock wait_lock;
 
 
@@ -201,8 +201,7 @@ void freeproc(struct proc *p) {
     atomic_dec(&proc_cnt);
 }
 
-// a user program that calls exec("/init")
-// od -t xC initcode
+/// @brief a user program that calls exec("/init"): od -t xC initcode
 uchar initcode[] = {
     #include "generated/initcode_bin.h"
 };

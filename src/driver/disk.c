@@ -2,11 +2,9 @@
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "riscv.h"
-#include "defs.h"
 #include "fs/fs.h"
 #include "fs/blk_device.h"
 #include "bio.h"
-#include "utils.h"
 
 
 #ifdef K210

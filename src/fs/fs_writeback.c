@@ -5,7 +5,6 @@
 #include "fs/file.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
-#include "defs.h"
 #include "mm/page.h"
 #include "radix-tree.h"
 #include "fs/mpage.h"

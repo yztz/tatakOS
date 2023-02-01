@@ -1,6 +1,5 @@
 #include "types.h"
 #include "riscv.h"
-#include "defs.h"
 #include "mm/vm.h"
 #include "param.h"
 #include "fs/stat.h"
@@ -10,7 +9,6 @@
 #include "atomic/sleeplock.h"
 #include "fs/file.h"
 #include "fs/fcntl.h"
-#include "mm/page.h"
 
 // #define QUIET
 #define __MODULE_NAME__ VMSCAN

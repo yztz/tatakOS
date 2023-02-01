@@ -1,5 +1,4 @@
 #include "riscv.h"
-#include "defs.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
 #include "fs/fs.h"

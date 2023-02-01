@@ -1,11 +1,9 @@
 #include "printf.h"
-#include "defs.h"
 #include "mm/freelist.h"
 #include "mm/alloc.h"
 #include "mm/buddy.h"
 #include "mm/slob.h"
-#include "param.h"
-#include "utils.h"
+#include "common.h"
 
 #define __MODULE_NAME__ ALLOC
 #include "debug.h"

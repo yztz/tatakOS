@@ -1,6 +1,5 @@
 #include "kernel/proc.h"
 #include "elf.h"
-#include "defs.h"
 #include "common.h"
 #include "mm/vm.h"
 #include "fs/fs.h"

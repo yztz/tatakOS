@@ -1,12 +1,9 @@
-#include "types.h"
-#include "param.h"
-#include "memlayout.h"
 #include "riscv.h"
-#include "defs.h"
 #include "mm/vm.h"
 #include "platform.h"
 #include "kernel/proc.h"
 #include "driver/plic.h"
+#include "driver/console.h"
 #include "fs/blk_device.h"
 #include "common.h"
 #include "fs/file.h"
@@ -22,10 +19,13 @@ static inline void clear_bss() {
   printf("\n.bss %#lx-%#lx (%#lx) cleared\n", &bss_start, &bss_end, len);
 }
 
-// TODO:
-extern int pdflush_init(void);
+extern void devnull_init(void);
+extern void devzero_init(void);
 
 extern void scavenger_routine();
+extern int  pdflush_init(void);
+extern void trapinit(void);
+extern void trapinithart(void);
 extern char *logo;
 
 void main() {

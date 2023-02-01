@@ -5,7 +5,6 @@
 #include "fs/file.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
-#include "defs.h"
 
 #define __MODULE_NAME__ PAGEFAULT
 
@@ -216,7 +215,7 @@ int handle_pagefault(uint64_t scause) {
     return 0;
 
 kernel_fail:
-    info(rd("[Kernel] %s")" PID %d: epc %#lx va %#lx ra %#lx", riscv_cause2str(scause), p->pid, epc, read_csr(stval), p->ktf->ra);
+    info(rd("[Kernel] %s")" PID %d: epc %#lx va %#lx ra %#lx", riscv_cause2str(scause), p->pid, epc, read_csr(stval), p->k_trapframe->ra);
     info("pagefault handle fault");
     // replace instruction in sepc with a loop [0x0000006f]
     pte_t *pte = walk(p->mm->pagetable, epc, 0);

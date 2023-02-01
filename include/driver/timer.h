@@ -62,5 +62,7 @@ void set_timer(timer_t *timer, timer_callback_t callback, int timeout, void *par
 void remove_timer(timer_t *timer);
 
 
+extern struct spinlock tickslock;
+extern uint64 ticks;
 
 #endif

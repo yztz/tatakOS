@@ -6,7 +6,6 @@
 #include "kernel/time.h"
 #include "kernel/waitqueue.h"
 #include "driver/timer.h"
-#include "defs.h"
 #include "mm/vm.h"
 
 
