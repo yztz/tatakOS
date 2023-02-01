@@ -80,9 +80,9 @@ include $(SCRIPT)/colors.mk
 include $(SCRIPT)/json.mk
 LDFLAGS := -z max-page-size=4096
 
-chapter_config = $(ROOT)/.vscode/chapter.json
-CFLAGS += -DCHAPTER=$(call get_from_json,$(chapter_config),id)
-CFLAGS += -DCHAPTER_DES="$(call get_from_json,$(chapter_config),description)"
+lab_config = $(ROOT)/.vscode/lab.json
+CFLAGS += -DLAB_ID=$(call get_from_json,$(lab_config),id)
+CFLAGS += -DLAB_DES="$(call get_from_json,$(lab_config),description)"
 
 export LDFLAGS CFLAGS
 

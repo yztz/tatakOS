@@ -1,7 +1,7 @@
 stages:
   - sync
 
-sync_chapter:
+sync_labs:
   stage: sync
   only: 
     - template

@@ -3,9 +3,9 @@ cmake_build_args := -DARCH=$(ARCH)
 cmake_build_args += -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_C_COMPILER_WORKS=1
 
 include $(SCRIPT)/json.mk
-chapter_config = $(ROOT)/.vscode/chapter.json
-cmake_build_args += -DCHAPTER="$(call get_from_json,$(chapter_config),id)"
-cmake_build_args += -DCHAPTER_DES="$(call get_from_json,$(chapter_config),description)"
+lab_config = $(ROOT)/.vscode/lab.json
+cmake_build_args += -DLAB_ID="$(call get_from_json,$(lab_config),id)"
+cmake_build_args += -DLAB_DES="$(call get_from_json,$(lab_config),description)"
 
 OBJCOPY := $(ARCH)-unknown-elf-objcopy
 OBJDUMP := $(ARCH)-unknown-elf-objdump

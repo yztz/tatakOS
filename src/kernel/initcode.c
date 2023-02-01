@@ -1,16 +1,19 @@
 #include "usys.h"
 #include "stdarg.h"
 
+#define __STR(name) #name
+#define STR(name) __STR(name)
+
 void printf(const char *fmt, ...);
 void __run(char *argv[]);
 
 #define run(name, ...) {char *__cmd[] = {name, ##__VA_ARGS__, 0};__run(__cmd);}
+#define test() run("lab"STR(LAB_ID))
 
-
-__attribute__((section(".startup"))) 
+__attribute__((section(".startup")))
 void main() {
     run("welcome");
-    run("chapter1");
+    test();
     halt();
 }
 
@@ -22,11 +25,11 @@ void __run(char *argv[]) {
     }
     if (npid == 0) { //子进程
         int ret = exec(argv[0], argv);
-        printf("exec fail with %d\n", ret);
+        printf("exec %s fail with %d\n", argv[0], ret);
     } else {          // 父进程
         int status;
         wait(&status);
-        printf("child exit with %d\n", status);
+        printf("child %s exit with %d\n", argv[0], status);
     }
 }
 
