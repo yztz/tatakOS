@@ -1,17 +1,10 @@
 // Mutual exclusion spin locks.
 
-#include "types.h"
-#include "param.h"
-#include "memlayout.h"
-#include "atomic/spinlock.h"
-#include "riscv.h"
-#include "kernel/proc.h"
-#include "defs.h"
-#include "debug.h"
 
-void
-initlock(struct spinlock *lk, char *name)
-{
+#include "atomic/spinlock.h"
+#include "kernel/proc.h"
+
+void initlock(struct spinlock *lk, char *name) {
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
@@ -66,9 +59,7 @@ acquire(struct spinlock *lk)
 }
 
 // Release the lock.
-void
-release(struct spinlock *lk)
-{
+void release(struct spinlock *lk) {
   if(!holding(lk))
     panic("release");
 
@@ -96,9 +87,7 @@ release(struct spinlock *lk)
 
 // Check whether this cpu is holding the lock.
 // Interrupts must be off.
-int
-holding(struct spinlock *lk)
-{
+int holding(struct spinlock *lk) {
   int r;
   r = (lk->locked && lk->cpu == mycpu());
   return r;
@@ -108,9 +97,7 @@ holding(struct spinlock *lk)
 // it takes two pop_off()s to undo two push_off()s.  Also, if interrupts
 // are initially off, then push_off, pop_off leaves them off.
 
-void
-push_off(void)
-{
+void push_off(void) {
   int old = intr_get();
 
   intr_off();
@@ -119,9 +106,7 @@ push_off(void)
   mycpu()->noff += 1;
 }
 
-void
-pop_off(void)
-{
+void pop_off(void) {
   struct cpu *c = mycpu();
   if(intr_get())
     panic("pop_off - interruptible");
@@ -156,6 +141,6 @@ void bit_spin_lock(int bitnum, unsigned long *addr){
 
 void bit_spin_unlock(int bitnum, unsigned long *addr){
   if(!test_bit(bitnum, addr))
-    ER();
+    panic("lock err");
   clear_bit_unlock(bitnum, addr);
 }

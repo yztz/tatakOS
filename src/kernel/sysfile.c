@@ -6,23 +6,22 @@
 
 #include "atomic/sleeplock.h"
 #include "atomic/spinlock.h"
-#include "defs.h"
 #include "fs/fcntl.h"
 #include "fs/file.h"
 #include "fs/fs.h"
 #include "ioctl.h"
 #include "fs/stat.h"
 #include "kernel/proc.h"
+#include "kernel/syscall.h"
 #include "mm/mmap.h"
 #include "mm/vm.h"
 #include "mm/io.h"
 #include "common.h"
+#include "driver/timer.h"
 
 #define QUIET
 #define __MODULE_NAME__ SYS_FILE
 #include "debug.h"
-#include "utils.h"
-#include "mm/mm.h"
 
 
 static char *getlastname(char *path) {

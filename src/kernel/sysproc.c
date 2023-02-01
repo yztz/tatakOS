@@ -1,9 +1,8 @@
 #include "riscv.h"
-#include "defs.h"
-#include "memlayout.h"
-#include "kernel/proc.h"
 #include "common.h"
+#include "kernel/proc.h"
 #include "kernel/time.h"
+#include "kernel/syscall.h"
 #include "mm/vm.h"
 #include "driver/timer.h"
 

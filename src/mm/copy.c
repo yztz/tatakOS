@@ -1,7 +1,6 @@
 #include "utils.h"
 #include "mm/vm.h"
 #include "mm/mmap.h"
-#include "defs.h"
 #include "platform.h"
 #include "kernel/proc.h"
 

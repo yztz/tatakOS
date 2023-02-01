@@ -129,7 +129,12 @@
         "cdefs.h": "c",
         "syscall_gen.h": "c",
         "termios.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "atomic.h": "c",
+        "waitqueue.h": "c",
+        "timer.h": "c",
+        "ioctl.h": "c",
+        "error.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [

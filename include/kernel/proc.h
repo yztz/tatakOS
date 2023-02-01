@@ -7,39 +7,50 @@
 #include "mm/trapframe.h"
 #include "fdtable.h"
 #include "signal.h"
-#include "riscv.h"
 #include "kernel/thread_group.h"
 
-// Saved registers for kernel context switches.
+/**
+ * @brief Saved registers for kernel context switches.
+ * 
+ */
 struct context {
-  uint64 ra;
-  uint64 sp;
+    uint64 ra;
+    uint64 sp;
 
-  // callee-saved
-  uint64 s0;
-  uint64 s1;
-  uint64 s2;
-  uint64 s3;
-  uint64 s4;
-  uint64 s5;
-  uint64 s6;
-  uint64 s7;
-  uint64 s8;
-  uint64 s9;
-  uint64 s10;
-  uint64 s11;
+    // callee-saved
+    uint64 s0;
+    uint64 s1;
+    uint64 s2;
+    uint64 s3;
+    uint64 s4;
+    uint64 s5;
+    uint64 s6;
+    uint64 s7;
+    uint64 s8;
+    uint64 s9;
+    uint64 s10;
+    uint64 s11;
 };
 
 struct pagevec;
 
-// Per-CPU state.
+/**
+ * @brief Per-CPU state.
+ * 
+ */
 struct cpu {
-  struct proc *proc;          // The process running on this cpu, or null.
-  struct context context;     // swtch() here to enter scheduler().
-  struct pagevec *inactive_pvec;
-  struct pagevec *active_pvec;
-  int noff;                   // Depth of push_off() nesting.
-  int intena;                 // Were interrupts enabled before push_off()?
+    /// @brief The process running on this cpu, or null.
+    struct proc *proc;
+    /// @brief swtch() here to enter scheduler().
+    struct context context;
+    /// @brief 
+    struct pagevec *inactive_pvec;
+    /// @brief 
+    struct pagevec *active_pvec;
+    /// @brief Depth of push_off() nesting.
+    int noff;
+    /// @brief Were interrupts enabled before push_off()?
+    int intena;
 };
 
 
@@ -51,61 +62,77 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE, MAXPSTATE };
 struct fat_entry;
 // Per-process state
 struct proc {
-  struct spinlock lock;
+    /// @brief protect struct field below
+    struct spinlock lock;
+    
+    /* p->lock must be held when using these: */
 
-  // p->lock must be held when using these:
+    /// @brief process state
+    union {
+        const enum procstate state;        // Process state
+        enum procstate __state;
+    };
 
-  // readonly
-  union {
-    const enum procstate state;        // Process state
-    enum procstate __state;
-  };
-  
-  void *chan;                  // If non-zero, sleeping on chan
-  void *futex_chan;             
-  wq_t *wait_channel;
-  int killed;                  // If non-zero, have been killed
-  int xstate;                  // Exit status to be returned to parent's wait
-  int pid;                     // Process ID
-  // int tid;
+    /// @brief sleep chan, if non-zero, sleeping on chan
+    void *chan;
+    /// @brief futex chan
+    void *futex_chan;
+    /// @brief which waitqueue the proc is sleeping in
+    wq_t *wait_channel;
+    /// @brief process kill state, if non-zero, have been killed
+    int killed;
+    /// @brief exit status to be returned to parent's wait. Ref: WEXITSTATUS
+    int xstate;
+    /// @brief process ID (tid in fact)
+    int pid;
 
-  // int fuext_waiting;
+    /// @brief parent process, wait_lock must be held when using this
+    struct proc *parent;
 
-  // wait_lock must be held when using this:
-  struct proc *parent;         // Parent process
+    /* these are private to the process, so p->lock need not be held. */
 
-  // these are private to the process, so p->lock need not be held.
-  mm_t *mm;
-  uint64 kstack;
-  tf_t *trapframe;
-  ktf_t *ktf;
-
-  struct context context;      // swtch() here to run process
-  
-  fdtable_t *fdtable;
-  signal_t *signal;
-  tg_t *tg;
-
-  sigset_t sig_pending;
-  sigset_t sig_mask;
-  int signaling;
-
-  list_head_t state_head; // for state
-  list_head_t thrd_head; // for thread group
-
-  uint64_t set_tid_addr;
-  uint64_t clear_tid_addr;
-
-  struct fat_entry *cwd;           // Current directory
-  struct fat_entry *exe;           // Excutable
-
-  uint64_t stub_time;
-  uint64_t u_time;
-  uint64_t s_time;
-
-  char name[20];               // Process name (debugging)
-
-  uint64 ktrap_fp;
+    /// @brief memory map
+    mm_t *mm;
+    /// @brief kernel stack address
+    uint64 kstack;
+    /// @brief U-mode before-trap state
+    tf_t *trapframe;
+    /// @brief S-mode before-trap state, which is stored in the kernel stack
+    ktf_t *k_trapframe;
+    /// @brief swtch() here to run process
+    struct context context;
+    /// @brief file open table
+    fdtable_t *fdtable;
+    /// @brief signal info
+    signal_t *signal;
+    /// @brief thread group info, we get 'pid' from here
+    tg_t *tg;
+    /// @brief pending signal
+    sigset_t sig_pending;
+    /// @brief ignored signal
+    sigset_t sig_mask;
+    /// @brief signal handling state
+    int signaling;
+    /// @brief for state queue linklist
+    list_head_t state_head;
+    /// @brief for thread group linklist
+    list_head_t thrd_head;
+    /// @brief the addr to copy tid
+    uint64_t set_tid_addr;
+    /// @brief the addr to clear
+    uint64_t clear_tid_addr;
+    /// @brief current working directory
+    struct fat_entry *cwd;
+    /// @brief excutable file
+    struct fat_entry *exe;
+    /// @brief used to help do timing
+    uint64_t stub_time;
+    /// @brief time cost in U-mode 
+    uint64_t u_time;
+    /// @brief time cost in S-mode 
+    uint64_t s_time;
+    /// @brief process name
+    char name[64];
 };
 
 typedef struct proc proc_t;
@@ -117,22 +144,22 @@ void            forkret(proc_t *p);
 uint64          growproc(uint64_t n);
 void            proc_mapstacks();
 int             kill(int);
-struct cpu*     mycpu(void);
-struct cpu*     getmycpu(void);
+struct cpu *mycpu(void);
+struct cpu *getmycpu(void);
 /**
  * @deprecated use current instead
  * @return the current struct proc *, or zero if none.
 */
-struct proc*    myproc();
+struct proc *myproc();
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 int             sched_timeout(int timeout);
-void            sleep(void*, struct spinlock*);
+void            sleep(void *, struct spinlock *);
 void            sleep_deep(void *chan, struct spinlock *lk);
 void            userinit(void);
 int             waitpid(int cid, uint64 addr, int options);
-int             wakeup(void*);
+int             wakeup(void *);
 void            yield(void);
 void            procdump(void);
 
@@ -143,7 +170,7 @@ void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
 void            proc_settf(proc_t *p, tf_t *tf);
 
 void            proc_switchmm(proc_t *p, mm_t *newmm);
-tf_t           *proc_get_tf(proc_t *p);
+tf_t *          proc_get_tf(proc_t *p);
 int             kthread_create(char *name, void (*entry)());
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
@@ -152,8 +179,8 @@ void            sig_send(proc_t *p, int signum);
 int             freechild();
 void            pstate_migrate(proc_t *p, int newstate);
 
-struct pagevec* my_inactive_pvec();
-struct pagevec* my_active_pvec();
+struct pagevec *my_inactive_pvec();
+struct pagevec *my_active_pvec();
 
 
 extern void usertrapret(void);

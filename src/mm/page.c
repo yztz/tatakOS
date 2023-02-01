@@ -4,7 +4,6 @@
 #include "mm/page.h"
 #include "mm/alloc.h"
 #include "atomic/spinlock.h"
-#include "defs.h"
 #include "printf.h"
 #include "param.h"
 

@@ -3,7 +3,6 @@
 #include "platform.h"
 #include "elf.h"
 #include "riscv.h"
-#include "defs.h"
 #include "mm/vm.h"
 #include "printf.h"
 #include "utils.h"

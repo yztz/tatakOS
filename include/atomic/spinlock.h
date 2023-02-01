@@ -4,10 +4,6 @@
 #include "types.h"
 #include "bitops.h"
 
-// extern void error(char *info, char *s, const char *s1, int d);
-// #define ERROR(str)    error(str, __FILE__, __func__, __LINE__)
-// #define ER()    ERROR("")
-
 #define INIT_SPINLOCK(ln) (spinlock_t){.locked=0, .name=#ln, .cpu=NULL}
 #define SPINLOCK_INIT(ln) static spinlock_t ln = (spinlock_t){.locked=0, .name=#ln, .cpu=NULL}
 

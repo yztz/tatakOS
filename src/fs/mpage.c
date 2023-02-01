@@ -5,13 +5,11 @@
 #include "fs/file.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
-#include "defs.h"
 #include "debug.h"
 #include "mm/page.h"
 #include "radix-tree.h"
 #include "mm/mm.h"
 #include "bio.h"
-#include "utils.h"
 
 #include "fs/mpage.h"
 /**

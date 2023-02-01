@@ -23,16 +23,6 @@ static inline wq_entry_t *peek(wq_t *self) {
     return list_first_entry(&self->head, wq_entry_t, head);
 }
 
-/**
- * @brief Call before calling wq_sleep, sometimes it is used to avoid "Lost wakeup".
- *        What is "Lost Wakeup" ? If A are going to sleep but the state hasn't changed, 
- *        B wakes up it at same time so nothing happened. The key problem here is that 
- *        there is no mechanism for atomically putting a process to sleep while it is sleeping.
- *          
- *        Such as a
- * 
- * @param self 
- */
 void wq_prepare(wq_t *self) {
     acquire(&self->wq_lock);
 }

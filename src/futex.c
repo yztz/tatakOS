@@ -1,8 +1,8 @@
 #include "kernel/proc.h"
 #include "kernel/futex.h"
 #include "kernel/time.h"
+#include "kernel/syscall.h"
 #include "mm/vm.h"
-#include "defs.h"
 
 #define QUIET
 #define __MODULE_NAME__ FUTEX

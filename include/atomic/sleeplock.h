@@ -6,8 +6,8 @@
 
 // Long-term locks for processes
 struct sleeplock {
-  uint locked;       // Is the lock held?
-  struct spinlock lk; // spinlock protecting this sleep lock
+  int locked;       // Is the lock held?
+  spinlock_t lk; // spinlock protecting this sleep lock
   wq_t waitqueue;
   
   // For debugging:

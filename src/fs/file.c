@@ -2,10 +2,7 @@
 // Support functions for system calls that involve file descriptors.
 //
 
-#include "types.h"
-#include "riscv.h"
-#include "defs.h"
-#include "param.h"
+#include "common.h"
 #include "fs/fs.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"

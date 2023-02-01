@@ -1,6 +1,6 @@
 #include "common.h"
 #include "kernel/proc.h"
-#include "defs.h"
+#include "kernel/syscall.h"
 #include "driver/timer.h"
 
 // #define QUIET
@@ -31,8 +31,6 @@ void trapinithart(void) {
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
 //
-#include "mm/vm.h"
-extern void vmprint(pagetable_t pagetable);
 void usertrap(void) {
     uint64 scause = read_csr(scause);
 
@@ -154,7 +152,7 @@ void kerneltrap(ktf_t *context) {
         panic("kerneltrap: interrupts enabled");
     }
 
-    if (p) p->ktf = context;
+    if (p) p->k_trapframe = context;
 
     if (devintr(scause) == 0) {
         // ok

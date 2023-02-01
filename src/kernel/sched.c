@@ -52,14 +52,13 @@ void pstate_migrate(proc_t *p, int newstate) {
     pstate_set(p, newstate);
 }
 
-// Per-CPU process scheduler.
-// Each CPU calls scheduler() after setting itself up.
-// Scheduler never returns.  It loops, doing:
-//  - choose a process to run.
-//  - swtch to start running that process.
-//  - eventually that process transfers control
-//    via swtch back to the scheduler.
+
+/**
+ * @brief Context switch
+ *        Save current registers in old. Load from new.	
+ */
 extern void swtch(struct context *old, struct context *new);
+
 void scheduler(void) {
     struct proc *p;
     struct cpu *c = mycpu();

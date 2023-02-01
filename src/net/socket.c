@@ -1,8 +1,8 @@
 #include "common.h"
 #include "kernel/proc.h"
+#include "kernel/syscall.h"
 #include "mm/alloc.h"
 #include "mm/vm.h"
-#include "defs.h"
 #include "fs/file.h"
 
 

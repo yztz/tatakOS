@@ -1,13 +1,14 @@
 #include "common.h"
-#include "defs.h"
 #include "fdtable.h"
 #include "fs/file.h"
 #include "fs/pipe.h"
 #include "kernel/proc.h"
 #include "kernel/signal.h"
+#include "kernel/syscall.h"
 #include "kernel/time.h"
 #include "mm/vm.h"
 #include "driver/timer.h"
+#include "driver/console.h"
 
 #define QUIET
 #define __MODULE_NAME__ PSELECT
