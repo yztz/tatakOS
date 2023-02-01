@@ -162,10 +162,7 @@ void
 consoleintr(char c) {
     acquire(&cons.lock);
 
-#ifdef DEBUG
     interactive_debug_info(c);
-#endif
-
 
     switch (c) {
     case C('U'):  // Kill line.

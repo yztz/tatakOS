@@ -19,7 +19,6 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     uint64_t res = 0;
     struct proc *p = myproc();
     sig_handle(p->signal);
-    // p->fuext_waiting = 1;
     
     DECLARE_WQ_ENTRY(entry);
     wq_prepare(&futex_queue);
@@ -35,27 +34,6 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     } else {
         wq_sleep(&futex_queue, &entry);  
     }
-    // pstate_migrate(p, SLEEPING);
-    // sched();
-    // if(p->futex_chan == 0) {
-    //     res = 0;
-    // } else if(time == NULL) {
-    //     panic("bad wake up");
-    // }
-    // only time intr
-    // wake_time = TICK2TIMESPEC(ticks);
-    // uint64_t ds = wake_time.ts_sec - cur_time.ts_sec;
-    // uint64_t dus = wake_time.tv_nsec - cur_time.tv_nsec;
-    // if(ds > time->tv_sec || (ds == time->tv_sec && dus > time->tv_nsec)) {
-    // if(ds > 2) { // FIXME: 超时时间不准确可能导致错误的超时行为
-    //     debug("PID %d futex timeout", p->pid);
-    //     break;
-    // }
-
-
-    // Tidy up.
-    // p->futex_chan = 0;
-    // p->chan = 0;
 
     // Reacquire original lock.
     acquire(futex_lock);
@@ -73,8 +51,7 @@ int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim)
     acquire(&futex_queue.wq_lock);
     list_for_each_entry_condition(entry, &futex_queue.head, head, i < n) {
         p = entry->private;
-        // if(p->state == SLEEPING && p->futex_chan == chan) {
-        // if((p->state == SLEEPING || p->state == RUNNABLE) && p->futex_chan == chan) {
+
         if(p->futex_chan == chan) {
             p->futex_chan = 0;
             wake_up_process(p);
