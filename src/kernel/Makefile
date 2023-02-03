@@ -1,6 +1,5 @@
 obj-y += clone.o
 obj-y += exec.o
-obj-y += kthread.o
 obj-y += pagefault.o
 obj-y += proc.o
 obj-y += scavenger.o
