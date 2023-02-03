@@ -134,7 +134,9 @@
         "waitqueue.h": "c",
         "timer.h": "c",
         "ioctl.h": "c",
-        "error.h": "c"
+        "error.h": "c",
+        "clone.h": "c",
+        "sched.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [

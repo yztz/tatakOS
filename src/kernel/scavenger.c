@@ -1,5 +1,5 @@
 #include "common.h"
-#include "kernel/proc.h"
+#include "kernel/sched.h"
 
 #define __MODULE_NAME__ SCAVENGER
 #include "debug.h"

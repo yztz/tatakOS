@@ -1,5 +1,5 @@
 #include "kernel/waitqueue.h"
-#include "kernel/proc.h"
+#include "kernel/sched.h"
 
 #define __MODULE_NAME__ WQ
 

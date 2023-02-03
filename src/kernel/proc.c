@@ -111,9 +111,9 @@ void pstate() {
     }
 }
 
-
-void newproc_callback_stage1(kthread_callback callback) {
-    proc_t *p = myproc();
+extern void newproc_callback_stage0();
+void newproc_callback_stage1(kthread_callback_t callback) {
+    proc_t *p = current;
     release(&p->lock);
 
     callback(p);
@@ -121,9 +121,7 @@ void newproc_callback_stage1(kthread_callback callback) {
     panic("bad ret");
 }
 
-extern void newproc_callback_stage0();
-
-proc_t *proc_new(kthread_callback callback) {
+proc_t *proc_new(kthread_callback_t callback) {
     struct proc *p;
 
     pstate_list_lock(UNUSED);
@@ -228,6 +226,7 @@ static void init_std(proc_t *p) {
     stdout->dev = &devs[CONSOLE];
 }
 
+extern void forkret(proc_t *p);
 static void __userinit(proc_t *p) {
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
@@ -315,7 +314,7 @@ uint64 growproc(uint64_t newbreak) {
 }
 
 
-int kthread_create(char *name, kthread_callback callback) {
+int kthread_create(char *name, kthread_callback_t callback) {
     if (initproc == NULL)
         panic("initproc required");
 
@@ -350,8 +349,6 @@ void reparent(struct proc *p) {
 
 void exit(int status) {
     proc_t *p = myproc();
-    // tg_t *thrdgrp = p->tg;
-    // proc_t *mp = tg_main_thrd(thrdgrp);
     int thrdcnt = tg_quit(p->tg);
 
     if (p == initproc) {
@@ -432,8 +429,8 @@ int freechild() {
     }
     return cnt;
 }
-// Wait for a child process to exit and return its pid.
-// Return -1 if this process has no children.
+
+
 int waitpid(int cid, uint64 addr, int options) {
     struct proc *np;
     int havekids, pid, haveckid;

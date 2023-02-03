@@ -1,12 +1,8 @@
-#include "kernel/proc.h"
 #include "kernel/clone.h"
 #include "mm/vm.h"
 #include "debug.h"
 
-
 extern struct spinlock wait_lock;
-extern proc_t *proc_new(kthread_callback callback);
-
 
 int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid) {
     int pid;
@@ -119,10 +115,7 @@ bad:
 }
 
 
-// A fork child's very first scheduling by scheduler()
-// will swtch to forkret.
 void forkret(proc_t *p) {
-
     if (p->set_tid_addr)
         copy_to_user(p->set_tid_addr, &p->pid, 4);
 

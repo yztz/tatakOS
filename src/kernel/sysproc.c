@@ -1,10 +1,12 @@
 #include "riscv.h"
 #include "common.h"
-#include "kernel/proc.h"
-#include "kernel/time.h"
-#include "kernel/syscall.h"
-#include "mm/vm.h"
 #include "driver/timer.h"
+#include "kernel/clone.h"
+#include "kernel/proc.h"
+#include "kernel/sched.h"
+#include "kernel/syscall.h"
+#include "kernel/time.h"
+#include "mm/vm.h"
 
 #define QUIET
 #define __MODULE_NAME__ SYS_PROC
