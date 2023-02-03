@@ -12,11 +12,12 @@ void __run(char *argv[]);
 
 __attribute__((section(".startup")))
 void main() {
-    run("stack_overflow");
+    run("welcome");
     test();
     halt();
 }
 
+#define WEXITSTATUS(s) (((s) & 0xff00) >> 8)
 void __run(char *argv[]) {
     int npid = fork();
     if(npid < 0) {
@@ -29,7 +30,7 @@ void __run(char *argv[]) {
     } else {          // 父进程
         int status;
         wait(&status);
-        printf("child %s exit with %d\n", argv[0], status);
+        printf("child %s exit with %d\n", argv[0], WEXITSTATUS(status));
     }
 }
 
