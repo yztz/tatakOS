@@ -1,5 +1,6 @@
 #include "common.h"
 #include "kernel/proc.h"
+#include "kernel/sched.h"
 #include "kernel/syscall.h"
 #include "driver/timer.h"
 
@@ -17,7 +18,10 @@ void trapinit(void) {
     init_timer();
 }
 
-// set up to take exceptions and traps while in the kernel.
+/**
+ * @brief Set up to take exceptions and traps while in the kernel.
+ * 
+ */
 void trapinithart(void) {
     // 设置中断向量
     write_csr(stvec, (uint64)kernelvec);
@@ -27,10 +31,10 @@ void trapinithart(void) {
     reset_timer();
 }
 
-//
-// handle an interrupt, exception, or system call from user space.
-// called from trampoline.S
-//
+/**
+ * @brief handle an interrupt, exception, or system call from user space.
+ * 
+ */
 void usertrap(void) {
     uint64 scause = read_csr(scause);
 
@@ -72,7 +76,6 @@ void usertrap(void) {
     } else if (devintr(scause) == 0) {
         // ok
     } else if (handle_pagefault(scause) == 0) {
-        // do_page_fault(scause);
         // ok
     } else {
         info("pid is %d sepc is %lx scause is "rd("%s(%d)")" stval is %lx", p->pid, r_sepc(), riscv_cause2str(scause), scause, r_stval());
@@ -93,11 +96,19 @@ void usertrap(void) {
     usertrapret();
 }
 
-// 保留了xv6的注释
-// return to user space
-//
-void userret(tf_t *trapfram);
+/**
+ * @brief Return to user space
+ * 
+ * @param trapfram user trapframe address
+ */
+void userret(tf_t *);
+
+/**
+ * @brief entry of user trap
+ * 
+ */
 void uservec();
+
 void usertrapret(void) {
     struct proc *p = current;
     // we're about to switch the destination of traps from
@@ -109,13 +120,12 @@ void usertrapret(void) {
     w_stvec((uint64)uservec);
 
     // set up trapframe values that uservec will need when
-    // the process next re-enters the kernel.        // kernel page table
+    // the process next re-enters the kernel.
     p->trapframe->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
     p->trapframe->kernel_trap = (uint64)usertrap;
     p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+    // restore float registers
     tf_flrestore(p->trapframe);
-    // set up the registers that trampoline.S's sret will use
-    // to get to user space.
 
     // set S Previous Privilege mode to User.
     unsigned long x = r_sstatus();
@@ -131,8 +141,13 @@ void usertrapret(void) {
     userret(p->trapframe);
 }
 
-// interrupts and exceptions from kernel code go here via kernelvec,
-// on whatever the current kernel stack is.
+
+/**
+ * @brief interrupts and exceptions from kernel code go here via kernelvec,
+ *        on whatever the current kernel stack is.
+ * 
+ * @param context kernel trapframe on kernel stack
+ */
 void kerneltrap(ktf_t *context) {
     uint64 sepc = r_sepc();
     uint64 sstatus = r_sstatus();

@@ -1,6 +1,7 @@
 #ifndef _H_CLONE_
 #define _H_CLONE_
 
+#include "kernel/proc.h"
 
 #define CSIGNAL       0x000000ff /* Signal mask to be sent at exit.  */
 #define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
@@ -27,5 +28,14 @@
 #define CLONE_NEWPID	0x20000000	/* New pid namespace.  */
 #define CLONE_NEWNET	0x40000000	/* New network namespace.  */
 #define CLONE_IO	0x80000000	/* Clone I/O context.  */
+
+int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid);
+
+/**
+ * @brief A fork child's very first scheduling by scheduler() will swtch to forkret.
+ * 
+ * @param p 
+ */
+void forkret(proc_t *p);
 
 #endif

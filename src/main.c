@@ -1,7 +1,7 @@
 #include "riscv.h"
 #include "mm/vm.h"
 #include "platform.h"
-#include "kernel/proc.h"
+#include "kernel/sched.h"
 #include "driver/plic.h"
 #include "driver/console.h"
 #include "fs/blk_device.h"

@@ -129,18 +129,16 @@
         "cdefs.h": "c",
         "syscall_gen.h": "c",
         "termios.h": "c",
-<<<<<<< HEAD
         "pipe.h": "c",
         "unistd.h": "c",
-        "swap.h": "c"
-=======
-        "unistd.h": "c",
+        "swap.h": "c",
         "atomic.h": "c",
         "waitqueue.h": "c",
         "timer.h": "c",
         "ioctl.h": "c",
-        "error.h": "c"
->>>>>>> fa97cb7 (clean & format)
+        "error.h": "c",
+        "clone.h": "c",
+        "sched.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [

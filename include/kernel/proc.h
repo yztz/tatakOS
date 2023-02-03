@@ -38,7 +38,7 @@ struct pagevec;
  * @brief Per-CPU state.
  * 
  */
-struct cpu {
+typedef struct cpu {
     /// @brief The process running on this cpu, or null.
     struct proc *proc;
     /// @brief swtch() here to enter scheduler().
@@ -51,7 +51,7 @@ struct cpu {
     int noff;
     /// @brief Were interrupts enabled before push_off()?
     int intena;
-};
+} cpu_t;
 
 
 extern struct cpu cpus[NUM_CORES];
@@ -136,32 +136,16 @@ struct proc {
 };
 
 typedef struct proc proc_t;
-typedef void (*kthread_callback)(proc_t *);
+typedef void (*kthread_callback_t)(proc_t *);
 
 void            exit(int);
-int             do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, uint64_t ctid);
-void            forkret(proc_t *p);
+
 uint64          growproc(uint64_t n);
-void            proc_mapstacks();
-int             kill(int);
-struct cpu *mycpu(void);
-struct cpu *getmycpu(void);
-/**
- * @deprecated use current instead
- * @return the current struct proc *, or zero if none.
-*/
-struct proc *myproc();
+
+struct cpu *    mycpu(void);
 void            procinit(void);
-void            scheduler(void) __attribute__((noreturn));
-void            sched(void);
-int             sched_timeout(int timeout);
-void            sleep(void *, struct spinlock *);
-void            sleep_deep(void *chan, struct spinlock *lk);
 void            userinit(void);
-int             waitpid(int cid, uint64 addr, int options);
 int             wakeup(void *);
-void            yield(void);
-void            procdump(void);
 
 void            proc_setmm(proc_t *p, mm_t *mm);
 void            proc_setsig(proc_t *p, signal_t *sig);
@@ -169,15 +153,57 @@ void            proc_settg(proc_t *p, tg_t *tg);
 void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
 void            proc_settf(proc_t *p, tf_t *tf);
 
+proc_t *        proc_new(kthread_callback_t callback);
 void            proc_switchmm(proc_t *p, mm_t *newmm);
 tf_t *          proc_get_tf(proc_t *p);
-int             kthread_create(char *name, void (*entry)());
+int             kthread_create(char *name, kthread_callback_t);
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
 void            wake_up_process(proc_t *p);
 void            sig_send(proc_t *p, int signum);
 int             freechild();
-void            pstate_migrate(proc_t *p, int newstate);
+
+
+/**
+ * @brief sleep
+ * @see wq_prepare
+ * 
+ * @param chan the chan the proc is sleeping on
+ * @param lock lock to release before schedule
+ */
+void sleep(void *chan, struct spinlock *lock);
+
+/**
+ * @brief Wait for children 
+ * 
+ * @param cid child pid. -1 means any children.
+ * @param addr buffer to save exit code
+ * @param options some other options, not used now
+ * @return int child pid. -1 means no children.
+ */
+int waitpid(int cid, uint64 addr, int options);
+
+/**
+ * @brief Get current process context
+ * @deprecated use current instead
+ * @return the current struct proc *, or zero if none.
+*/
+struct proc *myproc();
+
+/**
+ * @brief  Migrate state of process. 
+ * @pre p->lock must be held.
+ * 
+ * @param p
+ * @param newstate 
+ */
+void pstate_migrate(proc_t *p, int newstate);
+
+/**
+ * @brief print all processes info
+ * 
+ */
+void procdump(void);
 
 struct pagevec *my_inactive_pvec();
 struct pagevec *my_active_pvec();

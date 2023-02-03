@@ -26,7 +26,7 @@ tq_t *pstatelist[MAXPSTATE] = {
 };
 
 
-// p->lock hold
+// p->lock held
 static inline void pstate_set(proc_t *p, int newstate) {
     pstate_list_lock(newstate);
     pstate_list_offer(newstate, p);
@@ -35,9 +35,7 @@ static inline void pstate_set(proc_t *p, int newstate) {
     p->__state = newstate;
 }
 
-
 // p->lock held
-// This general API is used to migrate state of process
 void pstate_migrate(proc_t *p, int newstate) {
     int oldstate = p->state;
     if (oldstate == newstate) return;
@@ -91,14 +89,6 @@ void scheduler(void) {
     }
 }
 
-
-// Switch to scheduler.  Must hold only p->lock
-// and have changed proc->state. Saves and restores
-// intena because intena is a property of this
-// kernel thread, not this CPU. It should
-// be proc->intena and proc->noff, but that would
-// break in the few places where a lock is held but
-// there's no process.
 void sched(void) {
     int intena;
     struct proc *p = current;
@@ -106,21 +96,23 @@ void sched(void) {
 
     if (!holding(&p->lock))
         panic("sched p->lock");
-    if (mycpu()->noff != 1)
+    if (cpu->noff != 1)
         panic("sched locks");
     if (p->state == RUNNING)
         panic("sched running");
     if (intr_get())
         panic("sched interruptible");
-
+        
+    // Saves and restores intena 
+    // because intena is a property of this kernel thread, not this CPU. 
+    // It should be proc->intena and proc->noff, but that would
+    // break in the few places where a lock is held but there's no process.
     intena = cpu->intena;
 
-    swtch(&p->context, &mycpu()->context);
-    mycpu()->intena = intena;
+    swtch(&p->context, &cpu->context);
+    cpu->intena = intena;
 }
 
-
-// Give up the CPU for one scheduling round.
 void yield(void) {
     struct proc *p = myproc();
     acquire(&p->lock);

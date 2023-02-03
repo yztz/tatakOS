@@ -21,7 +21,22 @@ extern tq_t *pstatelist[MAXPSTATE];
  *         - eventually that process transfers control
  *           via swtch back to the scheduler.
  */
-extern void scheduler(void);
+extern void scheduler(void) __attribute__((noreturn));
+
+
+/**
+ * @brief Switch to scheduler.
+ * @pre Must hold only p->lock and have changed proc->state
+ * 
+ */
+void sched(void);
+int sched_timeout(int timeout);
+
+/**
+ * @brief Give up the CPU for one scheduling round.
+ * 
+ */
+void yield(void);
 
 
 #endif

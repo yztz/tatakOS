@@ -40,10 +40,10 @@ struct k_trapframe {
 
 struct trapframe {
   /*   0 */ uint64 proc;
-  /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
-  /*  16 */ uint64 kernel_trap;   // usertrap()
-  /*  24 */ uint64 epc;           // saved user program counter
-  /*  32 */ uint64 kernel_hartid; // saved kernel tp
+  /*   8 */ uint64 kernel_sp;     ///< top of process's kernel stack
+  /*  16 */ uint64 kernel_trap;   ///< usertrap()
+  /*  24 */ uint64 epc;           ///< saved user program counter
+  /*  32 */ uint64 kernel_hartid; ///< saved kernel tp
   /*  40 */ uint64 ra;
   /*  48 */ uint64 sp;
   /*  56 */ uint64 gp;
@@ -76,7 +76,7 @@ struct trapframe {
   /* 272 */ uint64 t5;
   /* 280 */ uint64 t6;
   char resv[8];
-// 也许我们可以选择性地保存
+/* float registers below*/
   /* 296 */ uint64 f0;
   /* 304 */ uint64 f1;
   /* 312 */ uint64 f2;
@@ -110,7 +110,7 @@ struct trapframe {
   /* 536 */ uint64 f30;
   /* 544 */ uint64 f31;
   /* 552 */ uint64 fcsr;
-  struct trapframe *sigtf;
+  struct trapframe *sigtf; ///< save copy when handling signals
 };
 
 typedef struct trapframe tf_t;
