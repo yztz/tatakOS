@@ -381,7 +381,7 @@ void exit(int status) {
 
     acquire(&p->lock);
 
-    p->xstate = status;
+    p->xstate = status << 8; // ref: WEXITSTATUS
     pstate_migrate(p, ZOMBIE);
 
     release(&wait_lock);

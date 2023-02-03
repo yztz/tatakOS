@@ -28,6 +28,7 @@ void main() {
     for(;;);
 }
 
+#define WEXITSTATUS(s) (((s) & 0xff00) >> 8)
 void __run(char *argv[]) {
     int npid = fork();
     if(npid < 0) {
@@ -36,11 +37,11 @@ void __run(char *argv[]) {
     }
     if (npid == 0) { //子进程
         int ret = exec(argv[0], argv);
-        printf("exec fail with %d\n", ret);
+        printf("exec %s fail with %d\n", argv[0], ret);
     } else {          // 父进程
         int status;
         wait(&status);
-        printf("child exit with %d\n", status);
+        printf("child %s exit with %d\n", argv[0], WEXITSTATUS(status));
     }
 }
 
