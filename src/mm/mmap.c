@@ -475,7 +475,7 @@ void switchkvm() {
 }
 
 
-static void _vmprint(pagetable_t pagetable, int level, int ignore_level) {
+static void __print_pagetable(pagetable_t pagetable, int level, int ignore_level) {
     static char* indents[] = {
         ".. .. ..",
         ".. ..",
@@ -494,19 +494,19 @@ static void _vmprint(pagetable_t pagetable, int level, int ignore_level) {
             } else {// 打印下级页表地址 
                 printf("%s %-3d: ", indent, i);
                 pte_print(&pte);
-                _vmprint((pagetable_t) PTE2PA(pte), level - 1, ignore_level);
+                __print_pagetable((pagetable_t) PTE2PA(pte), level - 1, ignore_level);
             }
         }
     }
 }
 
 
-void vmprint(pagetable_t pagetable) {
+void print_pagetable(pagetable_t pagetable) {
   printf("page table %p\n", pagetable);
-  _vmprint(pagetable, 2, -1);
+  __print_pagetable(pagetable, 2, -1);
 }
 
-void print_map(kmap_t map) {
+void print_kmap(kmap_t map) {
   printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
 }
 

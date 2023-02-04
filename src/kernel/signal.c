@@ -18,7 +18,7 @@ static void sig_dfl(int signum) {
     debug("SIG %d default", signum);
 
     if(signum == SIGCHLD) {
-        int UNUSED(freed) = freechild();
+        int unused(freed) = freechild();
         debug("%d Child Freed", freed);
         return;
     } 

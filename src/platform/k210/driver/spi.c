@@ -19,7 +19,6 @@
 #include "gpiohs.h"
 #include "sysctl.h"
 #include "types.h"
-#include "defs.h"
 #include "atomic/spinlock.h"
 #include "mm/io.h"
 #include "mm/vm.h"

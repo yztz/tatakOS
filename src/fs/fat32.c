@@ -448,7 +448,7 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
  * @startwith 要比较的前缀
  * @ret 返回的序号，传入的时候务必确保初始化为1
  */
-static FR_t get_next_shortname_order(dir_item_t *item, travs_meta_t *meta, void *startwith, void *UNUSED(ret)) {
+static FR_t get_next_shortname_order(dir_item_t *item, travs_meta_t *meta, void *startwith, void *ret) {
     int *order = (int *) ret;
     if(item->name[0] == FAT_NAME_END){ // 没找到了就返回
         return FR_OK;
@@ -760,7 +760,7 @@ static FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, 
     int len = strlen(cname);
     int entry_num = (len + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1;
     strncpy(name, cname, MAX_FILE_NAME);
-    int UNUSED(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name);
+    int unused(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name);
     debug("short name gened: %s", item->name);
 
     int cnt = 0;

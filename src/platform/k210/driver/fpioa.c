@@ -5358,7 +5358,7 @@ int fpioa_get_io_driving(int number)
 
     return fpioa->io[number].ds;
 }
-#include "defs.h"
+
 int fpioa_set_function_raw(int number, fpioa_function_t function)
 {
     /* Check parameters */

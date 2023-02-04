@@ -2,6 +2,8 @@
 #include "mm/alloc.h"
 #include "common.h"
 
+#define DIVIDER() {printf("\n---------------------------------\n");}
+
 void mm_test() {
     uint64 mem1 = (uint64_t)kmalloc(257);
     DIVIDER();

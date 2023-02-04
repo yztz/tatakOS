@@ -5,50 +5,75 @@
 #include "mm/page.h"
 #include "mm/alloc.h"
 
-/* 用于表示内核内存的映射关系 */
-/* Used to represent memory map*/
-typedef struct _kmap_t {
+/**
+ * @brief Kernel memory map
+ * 
+ */
+typedef struct kmap {
     uint64_t va;
     uint64_t pa;
     size_t   size;
     int      pg_spec;
-    int      perm;
+    int      prot;
 } kmap_t;
 
+/**
+ * @brief Initialize the one kernel_pagetable
+ * 
+ */
+void kvminit(void);
 
-void        kvminit(void);
-void        kvminithart(void);
+/**
+ * @brief  Switch h/w page table register to the kernel's page table, and enable paging.
+ * 
+ */
+void kvminithart(void);
 
-void        kvmmap(uint64 va, uint64 pa, size_t sz, int perm, int pg_spec);
-pagetable_t uvmcreate(void);
-void        uvminit(pagetable_t, uchar *, uint);
-uint64      uvmalloc(pagetable_t, uint64, uint64);
-uint64      uvmdealloc(pagetable_t, uint64, uint64);
+/**
+ * @brief Add a mapping to the kernel page table only called when booting.
+ * @warning Does not flush TLB or enable paging.
+ * 
+ * @param va virtual address
+ * @param pa physical address
+ * @param sz size
+ * @param prot protection flags
+ * @param pg_spec page specification
+ */
+void kvmmap(uint64 va, uint64 pa, size_t sz, int prot, int pg_spec);
+
 int         uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma);
-void        uvmfree(pagetable_t, uint64);
-void        uvmclear(pagetable_t, uint64);
 void        freewalk(pagetable_t pagetable);
-uint64      _walkaddr(pagetable_t pagetable, uint64 va, int pg_spec);
 
-void        __copyout(mm_t *mm, uint64_t dstva, char *src, uint64 len, int walk);
-int         copyout(uint64 dstva, char *src, uint64 len);
-/** @deprecated use copy_from_user instead */
+/**
+ * @brief Copy from kernel to user.
+ * @deprecated use copy_to_user instead
+ * 
+ * @param dstva user buffer address
+ * @param src kernel address
+ * @param len copy size
+ * @return 0 on success, -1 on error.
+ */
+int copyout(uint64 dstva, char *src, uint64 len);
+
+/**
+ * @brief Copy from user to kernel.
+ * @deprecated use copy_from_user instead
+ * 
+ * @param dst kernel buffer address
+ * @param srcva user address
+ * @param len copy size
+ * @return 0 on success, -1 on error.
+ */
+int copyin(void *dst, uint64 srcva, uint64 len);
+
 int         memset_user(uint64 dstva, int val, uint64 len) _section(.copy_set_user);
-int         copyin(void *dst, uint64 srcva, uint64 len);
 int         copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
 int         copy_from_user(void *to, uint64 from, size_t n) _section(.copy_from_user);
 int         copy_to_user(uint64 dstva, void *src, uint64 len) _section(.copy_to_user);
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
-int         __cow_copy(uint64_t va, pte_t *pte);
-
-void        vmprint(pagetable_t pagetable);
-void        print_map(struct _kmap_t map);
-
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
 
-#define walkaddr(pagetable, va) \
-    _walkaddr(pagetable, va, PGSPEC_NORMAL)
 
 #endif
