@@ -293,7 +293,7 @@ void *slob_alloc(size_t size) {
 		sp0 = &large_list;
 
 	// 若为2幂次 保证自然对齐 ref: linux slot.c
-	if(IS_POW2(size))
+	if(is_pow2(size))
 		align = max((size_t)align, size);
 	
 	debug("alloc size: %d minalign: %d align: %d", size, minalign, align);

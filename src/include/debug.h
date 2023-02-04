@@ -16,10 +16,12 @@
 
 #define debug(fmt, ...) printf("[DEBUG]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
 #define debug_if(condition, fmt, ...) {if(condition) debug(fmt, ##__VA_ARGS__)}
+#define debug_statement(statement) statement
 #else 
 
 #define debug(fmt, ...)
 #define debug_if(condition, fmt, ...)
+#define debug_statement(statement)
 
 #endif // DEBUG
 

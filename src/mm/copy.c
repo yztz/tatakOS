@@ -110,9 +110,6 @@ int copy_from_user(void *to, uint64 from, size_t n) {
     return 0;
 }
 
-// Copy from user to kernel.
-// Copy len bytes to dst from virtual address srcva in a given page table.
-// Return 0 on success, -1 on error.
 int copyin(void *dst, uint64 srcva, uint64 len) {
     return copy_from_user(dst, srcva, len);
 }

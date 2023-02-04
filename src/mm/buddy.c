@@ -110,7 +110,7 @@ void *buddy_alloc(size_t size) {
 
     pgnums = ROUND_COUNT(size);
     // 获取最小的大于size的2^order
-    oorder = IS_POW2(pgnums) ? get_order(pgnums) : get_order(pgnums) + 1;
+    oorder = is_pow2(pgnums) ? log2(pgnums) : log2(pgnums) + 1;
     if (oorder >= MAX_ORDER)
         return NULL;
 

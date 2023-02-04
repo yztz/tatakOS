@@ -4,7 +4,6 @@
 #include "fpioa.h"
 #include "dmac.h"
 #include "spi.h"
-#include "defs.h"
 #include "gpiohs.h"
 #include "kernel/proc.h"
 #include "atomic/spinlock.h"

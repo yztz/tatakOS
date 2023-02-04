@@ -43,7 +43,7 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
 }
 
 int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim) {
-    proc_t *UNUSED(me) = myproc();
+    debug_statement(proc_t *me = current);
     struct proc *p;
     wq_entry_t *entry;
     int i = 0;
