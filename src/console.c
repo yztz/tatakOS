@@ -27,9 +27,16 @@
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x
 
+static inline void putchar(char c) {
+    if (panicked) {
+        LOOP();
+    }
+    sbi_putchar(c);
+}
+
 /* used by printf */
 void _putchar(char c) {
-    sbi_putchar(c);
+    putchar(c);
 }
 
 //
@@ -40,9 +47,9 @@ void _putchar(char c) {
 void consputc(int c) {
     if (c == BACKSPACE) {
         // if the user typed backspace, overwrite with a space.
-        sbi_putchar('\b'); sbi_putchar(' '); sbi_putchar('\b');
+        putchar('\b'); putchar(' '); putchar('\b');
     } else {
-        sbi_putchar(c);
+        putchar(c);
     }
 }
 

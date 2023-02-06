@@ -30,9 +30,9 @@ static atomic_t nextpid = INIT_ATOMIC();
 #define IS_MAIN_THREAD(p) ((p)->tg->master_pid==p->pid)
 
 
-/*! @brief helps ensure that wakeups of wait()ing parents are not lost. 
+/*! @brief helps ensure that wakeups of wait()ing parents are not lost.
     helps obey the memory model when using p->parent.
-    must be acquired before any p->lock. 
+    must be acquired before any p->lock.
 */
 struct spinlock wait_lock;
 
@@ -68,6 +68,9 @@ void procinit(void) {
 // Interrupts must be disabled.
 struct cpu *mycpu(void) {
     int id = cpuid();
+#ifdef QEMU 
+    assert_s(id < NUM_CORES, "CPUS change detected. Please clean and remake.");
+#endif
     struct cpu *c = &cpus[id];
     return c;
 }
@@ -560,7 +563,5 @@ void procdump(void) {
         else
             state = "???";
         printf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
-        if (p->state == SLEEPING && p->pid > 3) 
-            backtrace_fp(p->context.s0);
     }
 }
