@@ -13,7 +13,7 @@ static int child_func(void *arg){
 void test_clone(void){
     TEST_START(__func__);
     int wstatus;
-    child_pid = clone(child_func, NULL, stack, 1024, SIGCHLD);
+    child_pid = clone(child_func, NULL, stack, 1024, SIGCHLD, NULL, NULL);
     assert(child_pid != -1);
     if (child_pid == 0){
 	exit(0);

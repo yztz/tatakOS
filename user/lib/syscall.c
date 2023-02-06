@@ -5,7 +5,7 @@
 
 int open(const char *path, int flags)
 {
-    return syscall(SYS_openat, AT_FDCWD, path, flags, O_RDWR);
+    return syscall(SYS_openat, AT_FDCWD, path, flags, 0666);
 }
 
 int openat(int dirfd,const char *path, int flags)
@@ -45,15 +45,15 @@ int sched_yield(void)
 
 pid_t fork(void)
 {
-    return syscall(SYS_clone, SIGCHLD, 0);
+    return syscall(SYS_clone, 0, 0, 0, 0, 0);
 }
 
-pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags)
+pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void *tls, void *ctid)
 {
     if (stack)
-	stack += stack_size;
-
-    return __clone(fn, stack, flags, NULL, NULL, NULL);
+	    stack += stack_size;
+    // __clone(func, stack, flags, arg, ptid, tls, ctid)
+    return __clone(fn, stack, flags, arg, NULL, tls, ctid);
     //return syscall(SYS_clone, fn, stack, flags, NULL, NULL, NULL);
 }
 void exit(int code)

@@ -53,7 +53,7 @@ include_directories(../include/)
 target_include_directories(ulib PRIVATE ${ARCH_DIR})
 
 # Execuatble
-set(ENTRY "0x1000")
+set(ENTRY "0x10000")
 
 # 编译全部
 aux_source_directory(src SRCS)

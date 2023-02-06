@@ -15,8 +15,6 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
-            // "miDebuggerPath": "/home/yztz/musl-cross-make/riscv64-unknown-elf-gdb",
             "miDebuggerPath": "gdb-multiarch",
             "miDebuggerServerAddress": "localhost:26000",
             "setupCommands": [

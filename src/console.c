@@ -20,7 +20,7 @@
 #include "driver/console.h"
 #include "mm/vm.h"
 
-#define __MODULE_NAME__ CONSOLE
+#define __MODULE_NAME__ CONS
 #include "debug.h"
 
 

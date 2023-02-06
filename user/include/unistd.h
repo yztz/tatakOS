@@ -17,7 +17,7 @@ pid_t getppid(void);
 int sched_yield(void);
 void exit(int);
 pid_t fork(void);
-pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags);
+pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void *tls, void *ctid);
 int exec(char *);
 int execve(const char *, char *const [], char *const []);
 int waitpid(int, int *, int);
@@ -25,7 +25,7 @@ int64 get_time();
 int sys_get_time(TimeVal *ts, int tz); // syscall ID: 169; tz 表示时区，这里无需考虑，始终为0; 返回值：正确返回 0，错误返回 -1。
 int times(void *mytimes);
 int sleep(unsigned long long);
-void *mmap(void *, size_t, int, int, int, off_t);
+void *mmap(void *start, size_t len, int prot, int flags, int fd, off_t off);
 int munmap(void *start, size_t len);
 int wait(int *);
 int spawn(char *file);
