@@ -5,19 +5,21 @@
 #include "str.h"
 #include "common.h"
 
-#define assert(conditon) if(!(conditon)) {printf("assert fail: "#conditon"\n");LOOP()}
 
+#define assert_s(conditon, fmt, ...) if(!(conditon)) {printf(fmt"\n", ##__VA_ARGS__);panicked=1;LOOP()}
+#define assert(condition) assert_s(condition, "assert fail: "#condition)
 
 #if defined DEBUG && !defined QUIET
 
 #ifndef __MODULE_NAME__
 #define __MODULE_NAME__ OTHER
-#endif
+#endif // __MODULE_NAME__
 
 #define debug(fmt, ...) printf("[DEBUG]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
 #define debug_if(condition, fmt, ...) {if(condition) debug(fmt, ##__VA_ARGS__)}
 #define debug_statement(statement) statement
-#else 
+
+#else // DEBUG
 
 #define debug(fmt, ...)
 #define debug_if(condition, fmt, ...)
@@ -29,7 +31,6 @@
 #define ylw(str) 	"\e[33;1m"str"\e[0m"
 #define rd(str) 	"\e[31;1m"str"\e[0m"
 
-// #define info(fmt, ...) printf("[INFO]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
 #define info(fmt, ...) printf("[INFO] "fmt"\n", ##__VA_ARGS__);
 #define warn(fmt, ...) printf("[WARN] "ylw(fmt)"\n", ##__VA_ARGS__);
 #define ERROR(str)    error(str, __FILE__, __func__, __LINE__)

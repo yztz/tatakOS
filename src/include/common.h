@@ -13,5 +13,6 @@ typedef struct _buf_desc_t {
     int size;
 } buf_desc_t;
 
+extern volatile int panicked;
 
 #endif

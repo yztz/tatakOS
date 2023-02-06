@@ -806,11 +806,15 @@ uint64_t sys_mmap(void) {
     struct proc* p = myproc();
 
     if (argaddr(0, &addr) < 0 || argaddr(1, &len) < 0 ||
-        argint(2, &prot) < 0 || argint(3, &flags) < 0 || argint(4, &fd) < 0 ||
+        argint(2, &prot) < 0 || argint(3, &flags) < 0 ||
         argaddr(5, (uint64_t *)&offset) < 0)
         return -1;
 
-    fp = fdtbl_getfile(p->fdtable, fd);
+    if ((flags & MAP_ANONYMOUS) == 0) {
+        if (argint(4, &fd) < 0 || (fp = fdtbl_getfile(p->fdtable, fd)) == NULL) {
+            return -1;
+        }
+    }
 
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
 
