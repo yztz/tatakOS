@@ -387,8 +387,8 @@ void exit(int status) {
     release(&wait_lock);
 
     if (p->clear_tid_addr) {
-        memset_user(p->clear_tid_addr, 0, sizeof(int));
         acquire(&p->tg->lock);
+        memset_user(p->clear_tid_addr, 0, sizeof(int));
         futex_wake((void *)p->clear_tid_addr, 1);
         release(&p->tg->lock);
     }
