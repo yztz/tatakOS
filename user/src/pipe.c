@@ -9,7 +9,7 @@
 static int fd[2];
 
 void test_pipe(void){
-    TEST_START(__func__);
+    
     int cpid;
     char buf[128] = {0};
     int ret = pipe(fd);
@@ -30,7 +30,7 @@ void test_pipe(void){
 	close(fd[1]);
 	exit(0);
     }
-    TEST_END(__func__);
+    
 }
 
 int main(void){

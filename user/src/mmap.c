@@ -11,7 +11,7 @@
  */
 // static struct kstat kst;
 // void test_mmap(void){
-//     TEST_START(__func__);
+//     
 //     char *array;
 //     const char *str = "  Hello, mmap successfully!";
 //     int fd;
@@ -34,7 +34,7 @@
 
 //     close(fd);
 
-//     TEST_END(__func__);
+//     
 // }
 
 // int main(void){
@@ -43,7 +43,7 @@
 // }
 static struct kstat kst;
 void test_mmap(void){
-    TEST_START(__func__);
+    
     char *array1;
     char *array2;
     char *array3;
@@ -95,7 +95,7 @@ void test_mmap(void){
 //   for(;;);
   close(fd);
 //   for(;;);
-    TEST_END(__func__);
+    
 }
 
 int main(void){

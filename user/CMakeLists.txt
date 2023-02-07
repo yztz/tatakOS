@@ -46,7 +46,7 @@ project(user)
 # Library
 aux_source_directory(lib LIBS)
 #set(LIBS ${ARCH_DIR}/crt.S ${LIBS})
-set(LIBS ${ARCH_DIR}/crt.S src/clone.s ${LIBS})
+set(LIBS ${ARCH_DIR}/crt.S lib/clone.s ${LIBS})
 add_library(ulib ${LIBS} ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h)
 include_directories(include/)
 include_directories(../include/)

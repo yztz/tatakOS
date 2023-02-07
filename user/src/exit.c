@@ -9,7 +9,7 @@
  * "exit ERR."
  */
 void test_exit(void){
-    TEST_START(__func__);
+    
     int cpid, waitret, wstatus;
     cpid = fork();
     assert(cpid != -1);
@@ -20,7 +20,7 @@ void test_exit(void){
         if(waitret == cpid) printf("exit OK.\n");
         else printf("exit ERR.\n");
     }
-    TEST_END(__func__);
+    
 }
 
 int main(void){

@@ -4,7 +4,7 @@
 
 int i = 1000;
 void test_waitpid(void){
-    TEST_START(__func__);
+    
     int cpid, wstatus;
     cpid = fork();
     assert(cpid != -1);
@@ -22,7 +22,7 @@ void test_waitpid(void){
 	    printf("waitpid error.\n");
 
     }
-    TEST_END(__func__);
+    
 }
 
 int main(void){

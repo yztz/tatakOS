@@ -11,7 +11,7 @@ static int child_func(void *arg){
 }
 
 void test_clone(void){
-    TEST_START(__func__);
+    
     int wstatus;
     child_pid = clone(child_func, NULL, stack, 1024, SIGCHLD, NULL, NULL);
     assert(child_pid != -1);
@@ -24,7 +24,7 @@ void test_clone(void){
 	    printf("clone process error.\n");
     }
 
-    TEST_END(__func__);
+    
 }
 
 int main(void){

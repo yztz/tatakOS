@@ -13,7 +13,7 @@
 
 void test_unlink()
 {
-    TEST_START(__func__);
+    
 
     char *fname = "./test_unlink";
     int fd, ret;
@@ -34,7 +34,7 @@ void test_unlink()
     }
     // It's Ok if you don't delete the inode and data blocks.
 
-    TEST_END(__func__);
+    
 }
 
 int main(void) {

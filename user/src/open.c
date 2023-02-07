@@ -3,7 +3,7 @@
 #include "stdlib.h"
 
 void test_open() {
-	TEST_START(__func__);
+	
 	// O_RDONLY = 0, O_WRONLY = 1
 	int fd = open("./text.txt", 0);
 	assert(fd >= 0);
@@ -14,7 +14,7 @@ void test_open() {
 	}
 	write(STDOUT, buf, size);
 	close(fd);
-	TEST_END(__func__);
+	
 }
 
 int main(void) {

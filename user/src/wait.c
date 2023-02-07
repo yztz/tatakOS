@@ -3,7 +3,7 @@
 #include "unistd.h"
 
 void test_wait(void){
-    TEST_START(__func__);
+    
     int cpid, wstatus;
     cpid = fork();
     if(cpid == 0){
@@ -17,7 +17,7 @@ void test_wait(void){
 	else
 	    printf("wait child error.\n");
     }
-    TEST_END(__func__);
+    
 }
 
 int main(void){

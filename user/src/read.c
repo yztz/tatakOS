@@ -3,7 +3,7 @@
 #include "stdlib.h"
 
 void test_read() {
-	TEST_START(__func__);
+	
 	int fd = open("./text.txt", 0);
 	char buf[256];
 	int size = read(fd, buf, 256);
@@ -11,7 +11,7 @@ void test_read() {
 
 	write(STDOUT, buf, size);
 	close(fd);
-	TEST_END(__func__);
+	
 }
 
 int main(void) {

@@ -3,7 +3,7 @@
 #include "unistd.h"
 
 void test_mkdir(void){
-    TEST_START(__func__);
+    
     int rt, fd;
 
     rt = mkdir("test_mkdir", 0666);
@@ -15,7 +15,7 @@ void test_mkdir(void){
         close(fd);
     }
     else printf("  mkdir error.\n");
-    TEST_END(__func__);
+    
 }
 
 int main(void){

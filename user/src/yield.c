@@ -6,7 +6,7 @@
 */
 
 void test_yield(){
-    TEST_START(__func__);
+    
 
     for (int i = 0; i < 3; ++i){
         if(fork() == 0){
@@ -20,7 +20,7 @@ void test_yield(){
     wait(NULL);
     wait(NULL);
     wait(NULL);
-    TEST_END(__func__);
+    
 }
 
 int main(void) {

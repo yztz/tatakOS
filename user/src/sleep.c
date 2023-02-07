@@ -9,7 +9,7 @@
  * "sleep error."
  */
 void test_sleep() {
-	TEST_START(__func__);
+	
 
 	int time1 = get_time();
 	assert(time1 >= 0);
@@ -23,7 +23,7 @@ void test_sleep() {
 	}else{
 		printf("sleep error.\n");
 	}
-	TEST_END(__func__);
+	
 }
 
 int main(void) {

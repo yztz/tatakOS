@@ -20,10 +20,11 @@ static tls_t *get_tls() {
 }
 
 
-static int  __attribute__((noreturn)) thread_entry(void *arg) {
+static int  thread_entry(void *arg) {
     thread_t *thread = (thread_t *) arg;
     thread->entry(thread->arg);
     exit(0);
+    return 0;
 }
 
 void thread_join(thread_t *thread) {

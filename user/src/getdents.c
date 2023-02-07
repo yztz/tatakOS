@@ -4,7 +4,7 @@
 
 char buf[512];
 void test_getdents(void){
-    TEST_START(__func__);
+    
     int fd, nread;
     struct linux_dirent64 *dirp64;
     dirp64 = (struct linux_dirent64 *)buf;
@@ -27,7 +27,7 @@ void test_getdents(void){
 
     printf("\n");
     close(fd);
-    TEST_END(__func__);
+    
 }
 
 int main(void){

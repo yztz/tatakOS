@@ -11,7 +11,7 @@
  * "gettimeofday error."
  */
 void test_gettimeofday() {
-	TEST_START(__func__);
+	
 	int test_ret1 = get_time();
 	volatile int i = 12500000;	// qemu时钟频率12500000
 	while(i > 0) i--;
@@ -23,7 +23,7 @@ void test_gettimeofday() {
 	}else{
 		printf("gettimeofday error.\n");
 	}
-	TEST_END(__func__);
+	
 }
 
 int main(void) {

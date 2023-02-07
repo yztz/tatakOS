@@ -11,7 +11,7 @@
  */
 static struct kstat kst;
 void test_munmap(void){
-    TEST_START(__func__);
+    
     char *array;
     const char *str = "  Hello, mmap successfully!";
     int fd;
@@ -37,7 +37,7 @@ void test_munmap(void){
     }
     close(fd);
 
-    TEST_END(__func__);
+    
 }
 
 int main(void){

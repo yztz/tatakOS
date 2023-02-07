@@ -15,14 +15,14 @@ struct utsname {
 struct utsname un;
 
 void test_uname() {
-	TEST_START(__func__);
+	
 	int test_ret = uname(&un);
 	assert(test_ret >= 0);
 
 	printf("Uname: %s %s %s %s %s %s\n", 
 		un.sysname, un.nodename, un.release, un.version, un.machine, un.domainname);
 
-	TEST_END(__func__);
+	
 }
 
 int main(void) {

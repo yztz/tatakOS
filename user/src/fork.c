@@ -10,7 +10,7 @@
  */
 
 void test_fork(void){
-    TEST_START(__func__);
+    
     int cpid, wstatus;
     cpid = fork();
     assert(cpid != -1);
@@ -22,7 +22,7 @@ void test_fork(void){
 	printf("  child process.\n");
 	exit(0);
     }
-    TEST_END(__func__);
+    
 }
 
 int main(void){

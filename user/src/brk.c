@@ -15,7 +15,7 @@
  */
 /* 根据意思， 调用的是brk，而不是sbrk */
 void test_brk(){
-    TEST_START(__func__);
+    
     intptr_t cur_pos, alloc_pos, alloc_pos_1;
 
     cur_pos = brk(0);
@@ -26,7 +26,7 @@ void test_brk(){
     brk((void *)(alloc_pos + 64000));
     alloc_pos_1 = brk(0);
     printf("Alloc again,heap pos: %d\n",alloc_pos_1);
-    TEST_END(__func__);
+    
 }
 
 int main(void) {

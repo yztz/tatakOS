@@ -5,10 +5,6 @@
 #define STDOUT 1
 #define STDERR 2
 
-//#define TEST_START(x) puts(x)
-#define TEST_START(x) puts("========== START ");puts(x);puts(" ==========\n");
-#define TEST_END(x) puts("========== END ");puts(x);puts(" ==========\n");
-
 #define stdin STDIN
 #define stdout STDOUT
 #define stderr STDERR
