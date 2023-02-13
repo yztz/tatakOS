@@ -235,6 +235,7 @@ static void __userinit(proc_t *p) {
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
     extern fat32_t *fat;
+    debug("mount fs");
     fat_mount(ROOTDEV, &fat);
     p->cwd = namee(NULL, "/");
     forkret(p);

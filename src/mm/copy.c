@@ -37,14 +37,14 @@ int memset_user(uint64 dstva, int val, uint64 len) {
     return 0;
 }
 
-int copy_to_user(uint64 dstva, void *src, uint64 len) {
+int copy_to_user(uint64 to, void *from, uint64 len) {
     vma_t *vma;
     proc_t *p = current;
     if (!p)
         panic("copyout: no process ctx");
 
     // 1. 首先确定目标段是否存在
-    if ((vma = vma_exist(p->mm, (uint64)dstva, len)) == NULL) {
+    if ((vma = vma_exist(p->mm, (uint64)to, len)) == NULL) {
         return -1;
     }
     // 2. 是否是用户段
@@ -54,8 +54,8 @@ int copy_to_user(uint64 dstva, void *src, uint64 len) {
     // 3. 直接拷贝 
     enable_sum();
 
-    char *s = (char *)src;
-    char *d = (char *)dstva;
+    char *s = (char *)from;
+    char *d = (char *)to;
     if (s < d && s + len > d) {
         s += len;
         d += len;

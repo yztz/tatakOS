@@ -4,30 +4,14 @@ cmake_minimum_required(VERSION 3.13)
 enable_language(ASM)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "")
 
-# Path
-if (${ARCH} STREQUAL riscv32 OR ${ARCH} STREQUAL riscv64)
-    set(ARCH_DIR lib/arch/riscv)
-else()
-    set(ARCH_DIR lib/arch/${ARCH})
-endif()
+set(ARCH_DIR lib/arch/riscv)
 
 set(ASM_DIR asm)
 set(BIN_DIR bin)
 
 # Toolchain
 set(PREFIX ${ARCH}-unknown-elf-)
-# set(PREFIX /opt/kendryte-toolchain/bin/${ARCH}-unknown-elf-)
-# riscv64-unknown-elf-
-
-if (${ARCH} STREQUAL riscv32)
-    set(CMAKE_C_FLAGS       "-march=rv32imac -mabi=ilp32 -mcmodel=medany")
-elseif (${ARCH} STREQUAL riscv64)
-    set(CMAKE_C_FLAGS       "-march=rv64imac -mabi=lp64 -mcmodel=medany")
-else()
-    message("Unsupported arch: ${ARCH}")
-endif ()
-
-
+set(CMAKE_C_FLAGS       "-march=rv64imac -mabi=lp64 -mcmodel=medany")
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_WORKS TRUE)
 set(CMAKE_ASM_COMPILER      ${PREFIX}gcc)
@@ -46,7 +30,7 @@ project(user)
 # Library
 aux_source_directory(lib LIBS)
 #set(LIBS ${ARCH_DIR}/crt.S ${LIBS})
-set(LIBS ${ARCH_DIR}/crt.S src/clone.s ${LIBS})
+set(LIBS ${ARCH_DIR}/crt.S lib/clone.s ${LIBS})
 add_library(ulib ${LIBS} ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h)
 include_directories(include/)
 include_directories(../include/)
