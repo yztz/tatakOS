@@ -22,6 +22,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
         debug("trapframe alloc failure");
         goto bad;
     }
+    proc_settf(np, newtf);
 
     if ((flags & CLONE_VM)) {
         newmm = p->mm;
@@ -29,6 +30,8 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
         if ((newmm = mmap_clone(p->mm)) == NULL)
             goto bad;
     }
+    proc_setmm(np, newmm);
+
 
     if ((flags & CLONE_FILES)) {
         newfdtbl = p->fdtable;
@@ -36,6 +39,8 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
         if ((newfdtbl = fdtbl_clone(p->fdtable)) == NULL)
             goto bad;
     }
+    proc_setfdtbl(np, newfdtbl);
+
 
     if ((flags & CLONE_THREAD)) {
         // debug("new thread statk is %#lx", stack);
@@ -45,12 +50,20 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
         if ((newtg = tg_new(np)) == NULL)
             goto bad;
     }
+    proc_settg(np, newtg);
 
     if ((flags & CLONE_SIGHAND)) {
         newsig = p->signal;
     } else {
         if ((newsig = sig_clone(p->signal)) == NULL)
             goto bad;
+    }
+    proc_setsig(np, newsig);
+
+    if ((flags & CLONE_PARENT_SETTID)) {
+        if (copy_to_user(ptid, &np->pid, sizeof(int)) == -1) {
+            goto bad;
+        }
     }
 
     if ((flags & CLONE_CHILD_CLEARTID)) {
@@ -61,34 +74,26 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
         np->set_tid_addr = ctid;
     }
 
-    if ((flags & CLONE_PARENT_SETTID)) {
-        copy_to_user(ptid, &np->pid, sizeof(int));
-    }
-
-    proc_setmm(np, newmm);
-    proc_setfdtbl(np, newfdtbl);
-    proc_setsig(np, newsig);
-    proc_settg(np, newtg);
-    proc_settf(np, newtf);
-
     if ((flags & CLONE_SETTLS)) {
         proc_get_tf(np)->tp = tls;
     }
 
-    // 将返回值置为0
+    // Child returns 0
     proc_get_tf(np)->a0 = 0;
 
-    // 如果指定了栈，那么重设sp
+    // Reset sp if stack specified
     if (stack) {
         proc_get_tf(np)->sp = stack;
     }
 
-
+    // Dup cwd
     np->cwd = edup(p->cwd);
+    // Dup exe
     if (p->exe) {
         np->exe = edup(p->exe);
     }
 
+    // Copy process name
     safestrcpy(np->name, p->name, sizeof(p->name));
 
     pid = np->pid;
@@ -103,12 +108,12 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
     pstate_migrate(np, RUNNABLE);
     release(&np->lock);
 
+    // Parent returns child pid
     return pid;
 
 
 bad:
-    ER();
-    debug("clone fail");
+    warn("clone fail");
     freeproc(np);
     release(&np->lock);
     return -1;

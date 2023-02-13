@@ -164,7 +164,16 @@ void kerneltrap(ktf_t *context) {
         panic("kerneltrap: interrupts enabled");
     }
 
-    if (p) p->k_trapframe = context;
+#ifdef K210
+    if (scause == EXCP_STORE_MISALIGNED) {
+        printf("sepc=%p ", r_sepc());
+        panic("misaligned access is not support on K210 now.");
+    }
+#endif
+
+    if (p) {
+        p->k_trapframe = context;
+    }
 
     if (devintr(scause) == 0) {
         // ok

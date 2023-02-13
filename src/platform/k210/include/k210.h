@@ -8,7 +8,7 @@
 
 #define KERN_BASE 0X80020000L
 #define MEM_START 0x80000000L
-#define MEM_END   0x80600000L // 8MB
+#define MEM_END   0x80600000L // 6MB
 
 #define PLIC_MODE M_MODE
 

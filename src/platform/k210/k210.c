@@ -26,7 +26,8 @@ void platform_early_init() {
 }
 
 void platform_early_init_hart() {
-    
+    // for 'current'
+    write_csr(sscratch, 0);
 }
 
 void platform_plic_init() {

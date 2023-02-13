@@ -68,8 +68,27 @@ int copyin(void *dst, uint64 srcva, uint64 len);
 
 int         memset_user(uint64 dstva, int val, uint64 len) _section(.copy_set_user);
 int         copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
-int         copy_from_user(void *to, uint64 from, size_t n) _section(.copy_from_user);
-int         copy_to_user(uint64 dstva, void *src, uint64 len) _section(.copy_to_user);
+
+/**
+ * @brief Copy from user to kernel.
+ * 
+ * @param dst kernel buffer address
+ * @param srcva user address
+ * @param len copy size
+ * @return 0 on success, -1 on error.
+ */
+int copy_from_user(void *to, uint64 from, size_t len) _section(.copy_from_user);
+
+/**
+ * @brief Copy from kernel to user.
+ * 
+ * @param to user buffer address
+ * @param from kernel address
+ * @param len copy size
+ * @return 0 on success, -1 on error.
+ */
+int copy_to_user(uint64 to, void *from, uint64 len) _section(.copy_to_user);
+
 int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 int         setupkvm(pagetable_t pagetable);
