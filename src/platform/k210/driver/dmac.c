@@ -723,7 +723,7 @@ int dmac_is_idle(dmac_channel_number_t channel_num)
 
 void dmac_wait_idle(dmac_channel_number_t channel_num)
 {   
-    proc_t *p = myproc();
+    proc_t *p = current;
     while(!dmac_is_idle(channel_num)) {
         // printf("sleep...\n");
         sleep((void *)dmac, &p->lock);

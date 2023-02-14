@@ -185,7 +185,7 @@ typedef enum _uarths_stopbit
     UARTHS_STOP_2
 } uarths_stopbit_t;
 
-extern volatile uarths_t *const uarths;
+// extern volatile uarths_t *const uarths;
 
 /**
  * @brief       Initialization Core UART
@@ -201,11 +201,8 @@ void uarths_init(void);
  *
  * @param[in]   c       The char to put
  *
- * @return      result
- *     - Byte   On success, returns the written character.
- *     - EOF    On failure, returns EOF and sets the error indicator (see ferror()) on stdout.
  */
-int uarths_putchar(char c);
+void uarths_putchar(char c);
 
 /**
  * @brief       Get a byte from UART
@@ -223,11 +220,8 @@ int uarths_getchar(void);
  *
  * @note        The string must ending with '\0'
  *
- * @return      result
- *     - 0      Success
- *     - Other  Fail
  */
-int uarths_puts(const char *s);
+void uarths_puts(const char *s);
 
 /**
  * @brief       [Deprecated] Get a byte from UART

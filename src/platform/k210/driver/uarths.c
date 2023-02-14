@@ -13,11 +13,25 @@
  * limitations under the License.
  */
 
+#include "driver/console.h"
+#include "driver/plic.h"
 #include <stdint.h>
 #include "uarths.h"
 #include "sysctl.h"
+#include "mm/io.h"
 
-volatile uarths_t *const uarths = (volatile uarths_t *)UARTHS_BASE_ADDR;
+int uartintr(void *ctx);
+void uarths_putchar(char c);
+int uarths_getchar(void);
+
+volatile uarths_t * uarths = NULL;
+
+
+static console_io_op_t ioop = {
+    .console_getchar = uarths_getchar,
+    .console_putchar = uarths_putchar,
+    .console_putchar_sync = uarths_putchar
+};
 
 void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
 {
@@ -38,28 +52,30 @@ void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
     }
 }
 
-// int uarths_putchar(char c)
-// {
-//     while (uarths->txdata.full)
-//         continue;
-//     uarths->txdata.data = (uint8_t)c;
+void uarths_puts(const char *s)
+{
+    while (*s)
+        uarths_putchar(*s++);
+}
 
-//     return (c & 0xff);
-// }
+void uarths_putchar(char c)
+{
+    while (uarths->txdata.full)
+        continue;
+    uarths->txdata.data = (uint8_t)c;
+}
 
-// int uarths_getchar(void)
-// {
-//     /* while not empty */
-//     uarths_rxdata_t recv = uarths->rxdata;
+int uarths_getchar(void)
+{
+    /* while not empty */
+    uarths_rxdata_t recv = uarths->rxdata;
 
-//     if (recv.empty)
-//         return EOF;
-//     else
-//         return (recv.data & 0xff);
-// }
+    if (recv.empty)
+        return -1;
+    else
+        return (recv.data & 0xff);
+}
 
-// /* [Deprecated] this function will remove in future */
-// int uarths_getc(void) __attribute__ ((weak, alias ("uarths_getchar")));
 
 // size_t uarths_receive_data(uint8_t *buf, size_t buf_len)
 // {
@@ -86,30 +102,47 @@ void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
 //     return write;
 // }
 
-// int uarths_puts(const char *s)
-// {
-//     while (*s)
-//         if (uarths_putchar(*s++) != 0)
-//             return -1;
-//     return 0;
-// }
+void uarths_init(void)
+{
+    uarths = (volatile uarths_t *)ioremap(UARTHS_BASE_ADDR, PGSIZE);
 
-// void uarths_init(void)
-// {
-//     uint32_t freq = sysctl_clock_get_freq(SYSCTL_CLOCK_CPU);
-//     uint16_t div = freq / 115200 - 1;
+    uint32_t freq = sysctl_clock_get_freq(SYSCTL_CLOCK_CPU);
+    uint16_t div = freq / 115200 - 1;
 
-//     /* Set UART registers */
-//     uarths->div.div = div;
-//     uarths->txctrl.txen = 1;
-//     uarths->rxctrl.rxen = 1;
-//     uarths->txctrl.txcnt = 0;
-//     uarths->rxctrl.rxcnt = 0;
-//     uarths->ip.txwm = 1;
-//     uarths->ip.rxwm = 1;
-//     uarths->ie.txwm = 0;
-//     uarths->ie.rxwm = 1;
-// }
+    /* Set UART registers */
+    uarths->div.div = div;
+    uarths->txctrl.txen = 1;
+    uarths->rxctrl.rxen = 1;
+    uarths->txctrl.txcnt = 0;
+    uarths->rxctrl.rxcnt = 0;
+    uarths->ip.txwm = 1;
+    uarths->ip.rxwm = 1;
+    uarths->ie.txwm = 0;
+    uarths->ie.rxwm = 1;
+
+    uarths_enable_irq(UARTHS_RECEIVE);
+
+    plic_register_handler(IRQN_UARTHS_INTERRUPT, uartintr, NULL);
+
+    console_register(&ioop);
+    uarths_puts("switch to UARTHS driver\n");
+}
+
+
+int uartintr(void *ctx)
+{
+  // read and process incoming characters.
+  while (1)
+  {
+    int c = uarths_getchar();
+    if (c == -1)
+      break;
+    console_intr_callback(c);
+  }
+
+
+  return 0;
+}
 
 // void uarths_config(uint32_t baud_rate, uarths_stopbit_t stopbit)
 // {

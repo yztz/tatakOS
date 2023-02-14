@@ -26,6 +26,26 @@
 #define __MODULE_NAME__ CONSOLE
 #include "debug.h"
 
+// static int __wrapper_sbi_getchar() {
+//     return sbi_getchar();
+// }
+
+// static void __wrapper_sbi_putchar(char c) {
+//     sbi_putchar(c);
+// }
+
+// static console_io_op_t sbi_ioop = {
+//     .console_getchar = __wrapper_sbi_getchar,
+//     .console_putchar_sync = __wrapper_sbi_putchar,
+//     .console_putchar = __wrapper_sbi_putchar
+// };
+
+static console_io_op_t *ioop = NULL;
+
+void console_register(console_io_op_t *console) {
+    ioop = console;
+}
+
 struct termios term = {
     .c_iflag = ICRNL,
     .c_oflag = OPOST,
@@ -43,13 +63,9 @@ static inline void putchar(char c) {
     if (panicked) {
         LOOP();
     }
-    sbi_putchar(c);
+    ioop->console_putchar(c);
 }
 
-/* used by printf */
-void _putchar(char c) {
-    putchar(c);
-}
 
 //
 // send one character to the uart.
@@ -197,8 +213,7 @@ static void interactive_debug_info(char c) {
 // wake up consoleread() if a whole line has arrived.
 // 基于中断，用于字符回显，以及存储字符到缓存
 //
-void
-consoleintr(char c) {
+void console_intr_callback(char c) {
     uint16_t iflag = term.c_iflag;
     uint16_t lflag = term.c_lflag;
     acquire(&cons.lock);
@@ -264,18 +279,10 @@ consoleintr(char c) {
     release(&cons.lock);
 }
 
-int cons_irq_callback(void *ctx) {
-    char c = sbi_getchar();
-    if (c < 0) return 0;
-    consoleintr(c);
-    return 0;
-}
 
-
-void
-consoleinit(void) {
+void consoleinit(void) {
     initlock(&cons.lock, "cons");
-    plic_register_handler(UART_IRQ, cons_irq_callback, NULL);
+    // plic_register_handler(UART_IRQ, cons_irq_callback, NULL);
     // console_init(consoleintr, NULL);
     cons.e = cons.w = cons.r = 0;
     // connect read and write system calls

@@ -11,7 +11,8 @@
             "defines": [
                 "__riscv",
                 "__riscv_xlen=64",
-                "USE_SIGNALS"
+                "USE_SIGNALS",
+                "CPUS=1"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/riscv64-unknown-elf-gcc",

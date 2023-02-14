@@ -15,6 +15,8 @@
 #define __MODULE_NAME__ k210
 #include "debug.h"
 
+extern void uarths_init(void);
+
 
 void platform_early_init() {
     /* 开启8M内存 */
@@ -31,23 +33,14 @@ void platform_early_init_hart() {
 }
 
 void platform_plic_init() {
-    plic_set_priority(UART_IRQ, 1);
+    plic_set_priority(IRQN_UARTHS_INTERRUPT, 1);
     plic_set_priority(IRQN_DMA0_INTERRUPT, 1);
     plic_set_priority(IRQN_WDT0_INTERRUPT, 1);
 }
 
 
-#define PLIC_PRIORITY (PLIC_BASE_ADDR + 0x0)
-#define PLIC_PENDING (PLIC_BASE_ADDR + 0x1000)
-#define PLIC_MENABLE(hart) (PLIC_BASE_ADDR + 0x2000 + (hart)*0x100)
-#define PLIC_SENABLE(hart) (PLIC_BASE_ADDR + 0x2080 + (hart)*0x100)
-#define PLIC_MPRIORITY(hart) (PLIC_BASE_ADDR + 0x200000 + (hart)*0x2000)
-#define PLIC_SPRIORITY(hart) (PLIC_BASE_ADDR + 0x201000 + (hart)*0x2000)
-#define PLIC_MCLAIM(hart) (PLIC_BASE_ADDR + 0x200004 + (hart)*0x2000)
-#define PLIC_SCLAIM(hart) (PLIC_BASE_ADDR + 0x201004 + (hart)*0x2000)
-
 void platform_plic_init_hart() {
-    plic_irq_enable(UART_IRQ);
+    plic_irq_enable(IRQN_UARTHS_INTERRUPT);
     plic_irq_enable(IRQN_DMA0_INTERRUPT);
     plic_irq_enable(IRQN_WDT0_INTERRUPT);
 }
@@ -83,4 +76,6 @@ void platform_dirver_init() {
     // wdt_feed();
     // wdt_start();
     debug("driver init success!");
+
+    uarths_init();
 }
