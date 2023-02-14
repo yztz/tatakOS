@@ -85,11 +85,9 @@
 
 
 /* 适配下内核宏名称 */
-#define UART GPIOHS_BASE_ADDR
+// #define UART GPIOHS_BASE_ADDR
 #define CLINT CLINT_BASE_ADDR
 #define CLINT_MTIME (CLINT + 0xBFF8)
-
-#define UART_IRQ IRQN_UARTHS_INTERRUPT
 
 enum _plic_irq {
     IRQN_NO_INTERRUPT        = 0, /*!< The non-existent interrupt */
@@ -161,7 +159,8 @@ enum _plic_irq {
     IRQN_MAX
 };
 
-#include "common.h"
+// #include "common.h"
+#include "types.h"
 static inline void set_bit(volatile uint32_t *bits, uint32_t mask, uint32_t value)
 {
     uint32_t org = (*bits) & ~mask;

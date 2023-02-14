@@ -47,9 +47,9 @@
 #define PLIC_BASE_ADDR
 #endif
 /* define UART IRQ for console */
-#ifndef UART_IRQ
-#define UART_IRQ
-#endif
+// #ifndef UART_IRQ
+// #define UART_IRQ
+// #endif
 /* define memory */
 #ifndef KERN_BASE
 #define KERN_BASE

@@ -10,7 +10,7 @@
 #define NUM_CORES CPUS
 #define PLIC_BASE_ADDR (0x0C000000L)
 
-#define UART 0x10000000L
+#define UART0 0x10000000L
 #define VIRTIO0 0x10001000
 
 #define KERN_BASE 0x80200000L
@@ -34,7 +34,6 @@ enum _plic_irq {
     IRQN_MAX
 };
 
-#define UART_IRQ UART0_IRQ
 
 
 

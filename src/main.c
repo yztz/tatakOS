@@ -31,10 +31,11 @@ extern char *logo;
 void main() {
   if(cpuid() == 0){
     clear_bss();
-    printf("\n%s\n", logo);
     
     platform_early_init();
     platform_early_init_hart();
+
+    printf("\n%s\n", logo);
 
     /* Process && CPU */
     procinit();      // process table & cpu state init
