@@ -132,3 +132,23 @@ int strcasencmp(const char *s1, const char *s2, int n) {
     } while (c1 != 0 && --n > 0);
     return 0;
 }
+
+char *strchr(const char* str1, const char str2) {
+	while (*str1 != '\0'&& *str1 !=(char) str2) {
+		++str1;
+	}
+	if (*str1 == (char)str2) {
+		return (char*)str1;
+	}
+	return NULL;
+}
+
+int startswith(const char *str, const char *target) {
+    int len = strlen(target);
+	if (len <= 0)
+		return 0;
+	if (strncmp(str, target, len) == 0)
+		return 1;
+
+	return 0;
+}

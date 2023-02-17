@@ -57,6 +57,11 @@ int argaddr(int n, uint64 *ip) {
   return 0;
 }
 
+int arglong(int n, uint64 *ip) {
+  *ip = argraw(n);
+  return 0;
+}
+
 int argstr(int n, char *buf, int max) {
   uint64 addr;
   if(argaddr(n, &addr) < 0)
