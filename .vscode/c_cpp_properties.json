@@ -14,7 +14,8 @@
                 "USE_SIGNALS",
                 "LAB_ID=-1",
                 "LAB_DES=None",
-                "CPUS=1"
+                "CPUS=1",
+                "QEMU"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/riscv64-unknown-elf-gcc",

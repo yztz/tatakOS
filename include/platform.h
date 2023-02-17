@@ -19,11 +19,11 @@
 ////////////// platform list here ///////////////
 /////////////////////////////////////////////////
 #if defined K210
-#include "k210.h"
+#include "platform/k210.h"
 #elif defined QEMU
-#include "qemu.h"
+#include "platform/qemu.h"
 #else
-#include "k210.h" /* placate vscode */
+#error "No platform"
 #endif
 /////////////////////////////////////////////////
 ////////////// platform list end ////////////////
@@ -46,10 +46,6 @@
 #ifndef PLIC_BASE_ADDR
 #define PLIC_BASE_ADDR
 #endif
-/* define UART IRQ for console */
-// #ifndef UART_IRQ
-// #define UART_IRQ
-// #endif
 /* define memory */
 #ifndef KERN_BASE
 #define KERN_BASE

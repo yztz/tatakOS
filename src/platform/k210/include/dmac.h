@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 #include "mm/io.h"
-#include "k210.h"
+#include "platform/k210.h"
 #include "stdbool.h"
 #include "driver/plic.h"
 #include <stddef.h>

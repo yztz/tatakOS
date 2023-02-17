@@ -7,7 +7,7 @@
 #include "kernel/waitqueue.h"
 #include "memlayout.h"
 #include "mm/io.h"
-#include "qemu.h"
+#include "platform/qemu.h"
 #include "riscv.h"
 #include "driver/console.h"
 #include "driver/plic.h"

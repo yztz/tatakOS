@@ -1,4 +1,4 @@
-#include "qemu.h"
+#include "platform/qemu.h"
 #include "driver/plic.h"
 #include "driver/console.h"
 #include "riscv.h"

@@ -16,7 +16,6 @@ obj-y+=lib/
 
 obj-y += kprint.o
 obj-y += main.o
-obj-y += panic.o
 obj-y += printf.o
 obj-y += console.o
 obj-y += futex.o

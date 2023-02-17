@@ -9,7 +9,7 @@
 #include "riscv.h"
 #include "kernel/proc.h"
 #include "common.h"
-#include "qemu.h"
+#include "platform/qemu.h"
 #include "atomic/spinlock.h"
 #include "atomic/sleeplock.h"
 #include "fs/fs.h"
@@ -300,10 +300,7 @@ virtio_disk_rw(bio_vec_t *bio_vec, int write)
   release(&disk.vdisk_lock);
 }
 
-#include "printf.h"
-int
-virtio_disk_intr()
-{
+int virtio_disk_intr() {
   // printf("virtual disk handler start!\n");
   acquire(&disk.vdisk_lock);
 
@@ -338,4 +335,8 @@ virtio_disk_intr()
   // printf("virtual disk handle end!\n");
   release(&disk.vdisk_lock);
   return 0;
+}
+
+void disk_io(bio_vec_t *bio_vec,  int write) {
+    virtio_disk_rw(bio_vec, write);
 }

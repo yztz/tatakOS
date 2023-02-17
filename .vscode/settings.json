@@ -139,7 +139,9 @@
         "error.h": "c",
         "clone.h": "c",
         "sched.h": "c",
-        "console.h": "c"
+        "console.h": "c",
+        "bio.h": "c",
+        "gpio_common.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [
