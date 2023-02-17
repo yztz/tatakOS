@@ -42,6 +42,11 @@ int  fetchstr(uint64, char*, int);
  */
 int  fetchaddr(uint64, uint64*);
 
+/**
+ * @brief Retrieve an argument as a uint64.
+*/
+int arglong(int n, uint64 *ip);
+
 void syscall();
 
 

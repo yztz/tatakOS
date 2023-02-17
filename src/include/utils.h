@@ -4,6 +4,7 @@
 #include "printf.h"
 #include "sbi.h"
 #include "bio.h"
+#include "str.h"
 
 #define LOOP() {while(1) continue;}
 #define ALIGN(a, align) ((a + (align - 1)) & ~(align - 1))
@@ -23,15 +24,7 @@
 	(void) (&_max1 == &_max2);		\
 	_max1 > _max2 ? _max1 : _max2; })
 
-#define toupper(c) ({ \
-    char __rsv_c = (c); \
-    __rsv_c >= 'a' && __rsv_c <= 'z' ? __rsv_c - ('a' - 'A') : __rsv_c; \
-})
 
-#define tolower(c) ({ \
-    char __rsv_c = (c); \
-    __rsv_c >= 'A' && __rsv_c <= 'Z' ? __rsv_c + ('a' - 'A') : __rsv_c; \
-})
 
 #define abs(n) ((n)>=0?(n):-(n))
 
