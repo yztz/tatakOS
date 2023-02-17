@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "k210.h"
+#include "platform/k210.h"
 #include "spi.h"
 #include "fpioa.h"
 #include "common.h"

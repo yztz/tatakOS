@@ -6,7 +6,7 @@ __build:
 # 清空需要的变量
 obj-y :=
 subdir-y :=
-EXTRA_CFLAGS :=
+# EXTRA_CFLAGS :=
 
 # 构建目录
 BUILD_DIR := $(subst $K,$(OBJ_DIR),$(shell pwd))
@@ -22,7 +22,7 @@ include $(SCRIPT)/colors.mk
 include Makefile
 
 # 额外的CFLAGS允许向下继承，方便传递-I
-# export EXTRA_CFLAGS
+export EXTRA_CFLAGS
 
 # 获取当前 Makefile 需要编译的子目录的目录名
 # obj-y := a.o b.o c/ d/

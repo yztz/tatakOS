@@ -16,7 +16,7 @@
 #define _DRIVER_SYSCTL_H
 
 #include <stdint.h>
-#include "k210.h"
+#include "platform/k210.h"
 
 #ifdef __cplusplus
 extern "C" {

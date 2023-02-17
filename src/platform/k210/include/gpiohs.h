@@ -16,7 +16,7 @@
 #define _DRIVER_GPIOHS_H
 
 #include <stdint.h>
-#include "k210.h"
+#include "platform/k210.h"
 #include <stddef.h>
 #include "gpio_common.h"
 #include "driver/plic.h"

@@ -600,3 +600,11 @@ uint8_t (sd_write_sector_dma)(uint8_t *data_buff, bio_vec_t *vec)
 	/*!< Returns the reponse */
 	return 0;
 }
+
+void disk_io(bio_vec_t *bio_vec,  int write) {
+	if(write) {
+		sd_write_sector_dma(bio_vec->bv_buff, bio_vec);
+	} else {
+		sd_read_sector_dma(bio_vec->bv_buff, bio_vec);
+	}
+}

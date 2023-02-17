@@ -57,7 +57,6 @@ export debug platform arch colorful_output
 
 #=============================FLAGS================================#
 # platform
-CFLAGS += -I$(P)/$(platform)/include
 CFLAGS += $(EXTRA_CFLAGS)
 ifeq ("${platform}", "qemu")
   CFLAGS += -DQEMU
