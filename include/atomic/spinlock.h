@@ -4,8 +4,8 @@
 #include "types.h"
 #include "bitops.h"
 
-#define INIT_SPINLOCK(ln) (spinlock_t){.locked=0, .name=#ln, .cpu=NULL}
-#define SPINLOCK_INIT(ln) spinlock_t ln = (spinlock_t){.locked=0, .name=#ln, .cpu=NULL}
+#define INIT_SPINLOCK(NAME) (spinlock_t){.locked=0, .name=#NAME, .cpu=NULL}
+#define SPINLOCK_INIT(NAME) spinlock_t NAME = (spinlock_t){.locked=0, .name=#NAME, .cpu=NULL}
 
 // Mutual exclusion lock.
 struct spinlock {

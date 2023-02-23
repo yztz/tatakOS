@@ -139,7 +139,9 @@
         "sched.h": "c",
         "console.h": "c",
         "bio.h": "c",
-        "gpio_common.h": "c"
+        "gpio_common.h": "c",
+        "semaphore.h": "c",
+        "pipe.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "todohighlight.keywords": [
