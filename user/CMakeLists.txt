@@ -11,7 +11,7 @@ set(BIN_DIR bin)
 
 # Toolchain
 set(PREFIX ${ARCH}-unknown-elf-)
-set(CMAKE_C_FLAGS       "-march=rv64imac -mabi=lp64 -mcmodel=medany")
+set(CMAKE_C_FLAGS       "-march=rv64imafc -mabi=lp64f -mcmodel=medany")
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_WORKS TRUE)
 set(CMAKE_ASM_COMPILER      ${PREFIX}gcc)
@@ -29,7 +29,6 @@ project(user)
 
 # Library
 aux_source_directory(lib LIBS)
-#set(LIBS ${ARCH_DIR}/crt.S ${LIBS})
 set(LIBS ${ARCH_DIR}/crt.S lib/clone.s ${LIBS})
 add_library(ulib ${LIBS} ${CMAKE_SOURCE_DIR}/lib/syscall_ids.h)
 include_directories(include/)

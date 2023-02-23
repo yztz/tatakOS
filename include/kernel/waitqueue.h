@@ -39,7 +39,7 @@ int wq_sleep_timeout(wq_t *self, wq_entry_t* entry, int timeout);
 void wq_wakeup(wq_t *self);
 void wq_wakeup_all(wq_t *self);
 
-#define INIT_WAIT_QUEUE(name) (wq_t){.wq_lock=INIT_SPINLOCK((name).wq_lock), .head=LIST_HEAD_INIT((name).head)}
+#define INIT_WAIT_QUEUE(name) {.wq_lock=INIT_SPINLOCK((name).wq_lock), .head=LIST_HEAD_INIT((name).head)}
 #define WAIT_QUEUE_INIT(name) wq_t name = INIT_WAIT_QUEUE(name)
 #define DECLARE_WQ_ENTRY(name) wq_entry_t name = {.private=current, .head=LIST_HEAD_INIT((name).head)}
 

@@ -7,7 +7,7 @@
 
 void initsleeplock(struct sleeplock *lk, char *name) {
     initlock(&lk->lk, "sleep lock");
-    lk->waitqueue = INIT_WAIT_QUEUE(lk->waitqueue);
+    lk->waitqueue = (wq_t)INIT_WAIT_QUEUE(lk->waitqueue);
     lk->name = name;
     lk->locked = 0;
     lk->pid = 0;
