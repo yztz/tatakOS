@@ -27,7 +27,7 @@ static inline uint32_t elf_map_prot(uint32_t prot) {
 
     // Does RISC-V have a mechanism liKe cr0.WP in X86?
     // If we do not set prot PROT_WRITE, we could not write data to this memory region, even if SUM is set.
-    // Another solution is that we can map twice: writeable first, readonly
+    // Another solution is that we can map twice: writeable first, and then turn to readonly
     return PROT_READ | PROT_WRITE | PROT_EXEC | PROT_USER;
 }
 

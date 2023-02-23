@@ -22,7 +22,7 @@ set(CMAKE_OBJDUMP           ${PREFIX}objdump)
 set(CMAKE_RANLIB            ${PREFIX}ranlib)
 set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall")
 set(CMAKE_ASM_FLAGS         ${CMAKE_C_FLAGS})
-set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib -T ${CMAKE_CURRENT_SOURCE_DIR}/${ARCH_DIR}/user.ld")
+set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib")
 
 
 project(user)
@@ -35,8 +35,6 @@ include_directories(include/)
 include_directories(../include/)
 target_include_directories(ulib PRIVATE ${ARCH_DIR})
 
-# Execuatble
-set(ENTRY "0x1000")
 
 # 编译全部
 aux_source_directory(src SRCS)
@@ -59,20 +57,7 @@ foreach(PATH ${SRCS})
 
     add_executable(${NAME} ${PATH})
     target_link_libraries(${NAME} ulib)
-    target_link_options(${NAME} PRIVATE -Ttext ${ENTRY})
-
-    # add_custom_command(
-    #         TARGET ${NAME}
-    #         POST_BUILD
-    #         COMMAND mkdir -p ${ASM_DIR}
-    #         COMMAND ${CMAKE_OBJDUMP} ARGS -d -S $<TARGET_FILE:${NAME}> > ${ASM_DIR}/${NAME}.asm
-    # )
-    # add_custom_command(
-    #         TARGET ${NAME}
-    #         POST_BUILD
-    #         COMMAND mkdir -p ${BIN_DIR}
-    #         COMMAND ${CMAKE_OBJCOPY} ARGS -O binary $<TARGET_FILE:${NAME}> ${BIN_DIR}/${NAME}.bin --set-section-flags .bss=alloc,load,contents
-    # )
+    
 endforeach()
 
 add_custom_command(

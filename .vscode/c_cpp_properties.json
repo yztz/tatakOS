@@ -12,6 +12,7 @@
                 "__riscv",
                 "__riscv_xlen=64",
                 "USE_SIGNALS",
+                "__STDC_HOSTED__=0",
                 "CPUS=1",
                 "K210"
             ],
