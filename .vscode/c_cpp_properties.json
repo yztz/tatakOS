@@ -23,7 +23,6 @@
             "cStandard": "c11",
             "compilerArgs": [
                 "-fstrict-volatile-bitfields",
-                "-ffreestanding ",
                 "-fno-common ",
                 "-nostdlib ",
                 "-mno-relax"
