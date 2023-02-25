@@ -29,15 +29,11 @@ extern void *__alloc_page();
 static inline void *__alloc_one_page() {
 	debug("alloc new page");
 	void *new = __alloc_page();
-	if (new) {
-		mark_page((uint64_t)new, ALLOC_SLOB);
-	}
 	return new;
 }
 
 static inline void __free_one_page(void *addr) {
 	debug("page freed");
-	unmark_page((uint64_t)addr, ALLOC_SLOB);
 	put_page((uint64_t)addr);
 }
 

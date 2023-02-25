@@ -69,22 +69,18 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 #include "platform.h"
 
-// Use typedef to make type flexible.
 typedef uint8_t pgref_t;
 
 struct address_space;
-// 8MB/PAGESIZE = 2K * 2B
+
 typedef struct page_t {
     atomic_t refcnt;        
     
     struct {
         uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
         uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
-#define ALLOC_BUDDY     0b10
-#define ALLOC_SLOB      0b01
-        uint8_t type  : 2; // page type ()
+        uint8_t resv  : 2;
     };
-    // uint8_t resv[2]; // reserved for special use
 
     uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
     list_head_t lru; /* 串联页，active/inactive list */
@@ -148,7 +144,7 @@ pgref_t __deref_page_paddr(uint64_t pa);
 #define put_page_nofree(param) _Generic((param), uint64_t: __deref_page_paddr, page_t *: __deref_page_pointer)(param)   
 
 void page_init(void);
-int  page_type(uint64_t pa);
+
 void pte_print(pte_t *pte);
 /* swap.c */
 void mark_page_accessed(page_t *page);
@@ -162,20 +158,13 @@ int  page_is_dirty(uint64_t pa);
 
 void unlock_put_page(page_t *page);
 void get_lock_page(page_t *page);
+void print_page_info(page_t* page);
 void print_not_freed_pages();
 void reset_page(page_t *page);
 
 int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
 void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec);
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
-
-static inline void mark_page(uint64_t pa, int type) {
-  pages[PG_TO_NR(pa)].type |= type;
-}
-
-static inline void unmark_page(uint64_t pa, int type) {
-  pages[PG_TO_NR(pa)].type &= ~type;
-}
 
 static inline int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot) {
     return __mappages(pagetable, va, size, pa, prot, PGSPEC_NORMAL);
