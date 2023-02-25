@@ -3,22 +3,19 @@
 
 #include "page.h"
 
-void  kinit(void);
-void *kalloc(void);
-void  kfree(void *addr);
-void  _kfree_safe(void **paddr);
+void mem_init();
+
 void *kzalloc(size_t size);
 void *kmalloc(size_t size);
+void  kfree(void *addr);
+
 uint64_t get_total_mem();
 uint64_t get_free_mem();
 
+void  _kfree_safe(void **paddr);
 #define kfree_safe(pp) _kfree_safe((void **)(pp))
-void free_one_page(page_t *page);
 
 // Allocate memory from stack, so use it carefully.
 #define alloca(size) __builtin_alloca(size)
-
-#define AF_KERNEL 0x0
-#define AF_USER 0x1
 
 #endif

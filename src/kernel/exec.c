@@ -190,14 +190,8 @@ int exec(char *path, char *argv[], char *envp[]) {
             for (int va = PGROUNDDOWN(ph.vaddr); va < ph.vaddr + ph.filesz; va += PGSIZE) {
                 if ((pte = walk(old, va, 0)) == 0)
                     continue;
-                // if((*pte & PTE_V) == 0)
-                  // continue;
-
 
                 pa = PTE2PA(*pte);
-
-                // if(va == 0x121000)
-                //   pa = (uint64_t)kalloc();
 
                 sfence_vma_addr(va);
                 get_page(pa);
@@ -209,8 +203,6 @@ int exec(char *path, char *argv[], char *envp[]) {
                     ER();
                 }
             }
-
-            // do_mmap(newmm, NULL, 0, 0x124000, 0x1000, 0, elf_map_prot(ph.flags));
 
             continue;
         }

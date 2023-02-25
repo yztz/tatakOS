@@ -203,8 +203,8 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   for(i = 0; i < pg_cnt; i++){
     if(find_page(entry->i_mapping, cur_index) == NULL){
       rw_page_t *read_page= kzalloc(sizeof(rw_page_t));
-      uint64_t cur_pa = (uint64_t)kalloc();
-      page_t *page = ADDR_TO_PAGE(cur_pa);
+      uint64_t cur_pa = (uint64_t)kmalloc(PGSIZE);
+      page_t *page = ADDR_TO_PG(cur_pa);
       add_to_page_cache(page, entry->i_mapping, cur_index);
       lru_cache_add(page);  
       read_page->pa = cur_pa;
@@ -303,8 +303,8 @@ retry:
         ER();
 
       if(pgcnts == 1) {
-        pa = (uint64_t)kalloc();
-        page = ADDR_TO_PAGE(pa);
+        pa = (uint64_t)kmalloc(PGSIZE);
+        page = ADDR_TO_PG(pa);
 
         get_page(page);
         read_one_page(entry, pa, index);
@@ -358,9 +358,9 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 
 
     page = find_get_lock_page(mapping, pg_id);
-    if(!page){
-      pa = (uint64_t)kalloc();
-      page = ADDR_TO_PAGE(pa);
+    if (!page) {
+      pa = (uint64_t)kmalloc(PGSIZE);
+      page = ADDR_TO_PG(pa);
 
       get_lock_page(page);
       /* 整个页都要重新写过的，就没必要从磁盘中读了；或者要写的文件偏移大于文件在磁盘上的大小，也没必要读磁盘  */
@@ -422,8 +422,8 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
 // TODO: 存在或不存在LRU链表是契税不确定的
   if(!page) {
     // 不存在LRU
-    pa = (uint64_t)kalloc();
-    page = ADDR_TO_PAGE(pa);
+    pa = (uint64_t)kmalloc(PGSIZE);
+    page = ADDR_TO_PG(pa);
 
     get_page(page);
     entry_t *entry = mapping->host;
@@ -442,7 +442,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
    * private mmap和shared mmap
    */
   if(area->flags & MAP_PRIVATE){
-    uint64_t pa0 = (uint64_t)kalloc();
+    uint64_t pa0 = (uint64_t)kmalloc(PGSIZE);
 #ifdef SWAP
     /* 页替换算法需要用到swap */
     page_t *page0 = PG_TO_ADDR(pa0);

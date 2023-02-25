@@ -75,7 +75,7 @@ typedef uint8_t pgref_t;
 
 struct address_space;
 // 8MB/PAGESIZE = 2K * 2B
-typedef struct _page_t {
+typedef struct page_t {
     atomic_t refcnt;        
     
     struct {
@@ -113,7 +113,7 @@ extern page_t pages[PAGE_NUMS];
 /* 页指针--->地址 */
 #define PG_TO_ADDR(page) NR_TO_ADDR(page-pages)
 /* 地址--->页指针 */
-#define ADDR_TO_PAGE(pa) &pages[PG_TO_NR(pa)]
+#define ADDR_TO_PG(pa) &pages[PG_TO_NR(pa)]
 
 #define PAGE_CACHE_SHIFT PGSHIFT
 #define PAGE_CACHE_SIZE PGSIZE

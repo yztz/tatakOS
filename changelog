@@ -165,3 +165,7 @@
     2. 调整utils.h与common.h的宏的定义
     3. 增加手工用例mem_test，修复buddy内存分配bug
     4. 修改内存管理相关宏的命名
+
+2023/2/25
+    1. 修改alloc接口实现
+    2. 移除kalloc接口
