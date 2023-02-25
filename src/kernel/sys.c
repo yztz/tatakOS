@@ -9,12 +9,6 @@
 #define __MODULE_NAME__ SYS
 #include "debug.h"
 
-typedef struct {
-    uint64_t hit;
-    uint64_t miss;
-} cache_rate_t;
-
-
 utsname_t sysname = {
     .domainname = "tatak.os",
     .machine = "xxxk210xxx",
@@ -22,37 +16,6 @@ utsname_t sysname = {
     .release = "5.0",
     .version = "0.0.0",
 };
-
-
-uint64_t sys_sysinfo(void) {
-    uint64_t addr;
-
-    if (argaddr(0, &addr) < 0)
-        return -1;
-
-    struct sysinfo si = {
-      .uptime = TICK2SEC(ticks),
-      .loads = {0},
-      .totalram = get_total_mem(),
-      .freeram = get_free_mem(),
-      .sharedram = 0,
-      .bufferram = 0,
-      .totalswap = 0,
-      .freeswap = 0,
-      .procs = get_proc_cnt(),
-      .totalhigh = 0,
-      .freehigh = 0,
-      .mem_unit = 1,
-    };
-
-    return copy_to_user(addr, &si, sizeof(struct sysinfo));
-}
-
-
-uint64 sys_timetag(void) {
-    return ticks;
-}
-
 
 
 uint64_t sys_memuse(void) {
@@ -72,7 +35,6 @@ uint64_t sys_times(void) {
 
     return ret;
 }
-
 
 
 uint64_t sys_halt(void) {

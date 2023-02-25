@@ -40,8 +40,6 @@
 153     times           sys_times
 160     uname           sys_uname
 169     gettimeofday    sys_gettimeofday
-179     sysinfo         sys_sysinfo
 #############TEST###############
-89     timetag      sys_timetag
 235    memuse       sys_memuse
 234    halt         sys_halt
