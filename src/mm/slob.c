@@ -24,21 +24,21 @@ typedef struct slob_page {
 	struct slob_page *next, *pre;
 } sp_t;
 
+extern void *__alloc_page();
 
-#include "mm/buddy.h"
 static inline void *__alloc_one_page() {
 	debug("alloc new page");
-	void *new = buddy_alloc(PGSIZE);
-	if(new)
+	void *new = __alloc_page();
+	if (new) {
 		mark_page((uint64_t)new, ALLOC_SLOB);
+	}
 	return new;
 }
 
 static inline void __free_one_page(void *addr) {
 	debug("page freed");
 	unmark_page((uint64_t)addr, ALLOC_SLOB);
-	/* 这里改位put_page，其检测到page refcnt为0自动释放 */
-	buddy_free(addr);
+	put_page((uint64_t)addr);
 }
 
 
@@ -58,7 +58,7 @@ SLOB_INIT_LIST(large_list);
 
 static struct spinlock slob_lock;
 
-void slob_init(void) {
+void slob_init() {
     initlock(&slob_lock, "slob_lock");
 }
 
@@ -325,4 +325,12 @@ void *slob_alloc(size_t size) {
 	return ret;
 }
 
+/* Below is alloc interface implementation */
 
+void *__alloc_frags(size_t size) {
+	return slob_alloc(size);
+}
+
+void __free_frags(void *addr) {
+	slob_free(addr);
+}

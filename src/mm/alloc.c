@@ -1,8 +1,51 @@
-#include "printf.h"
-#include "mm/freelist.h"
+/**
+ * This file defines the interface to the memory request module. 
+ * Currently, page allocation and small memory allocation are supported. 
+ * The real allocator interface is as follows:
+ * 
+ *      void *__alloc_frags(size_t size)
+ *      void *__free_frags(void *addr)
+ *      void *__alloc_page()
+ *      void *__alloc_pages(int pgnum)
+ *      void __free_page(page_t *page)
+ *      void __free_pages(page_t *first_page)
+ *      int __page_count(page_t *first_page)
+ *      int __page_gettotal()
+ *      int __page_getfree()
+ * 
+ * Currently, the underlying allocator implementation is 
+ *  the Buddy allocator and the slob allocator 
+ * (there may be a freelist implementation in the future).
+ * 
+ * Of particular concern is the `kfree`:
+ * In fact, for page allocation, it can be divided into single-page allocation 
+ *  and (continuous) multi-page allocation. 
+ * Due to some implementation details of Buddy allocator, 
+ *  we currently handle single-page and multi-page references in the same way, 
+ *  which is also one of the main problems of allocator. 
+ * So, there is no good way to distinguish between the two.
+ * 
+ * The dependences of the modules(alloc buddy slob) are just like below:
+ * 
+ *           alloc  
+ *           |  \
+ *          |    \
+ *      buddy <- slob
+ * 
+ * Another point to note is how `kfree` frees page units. 
+ * As mentioned above, we currently handle references to pages in the same way 
+ *  (whether single page or multiple page).
+ * So we simply call `put_page` in the free page branch in `kfree`. 
+ * Then decide if call `free_page` for true free.
+ * 
+ * In other words, both `kfree` and `put_page` take into account the number of references on the page, 
+ *  whereas the underlying allocator's interface implementation does not.
+ * 
+ * In fact, `kfree` is just a more general wrapper for `put_page` for page free.
+ * 
+*/
+
 #include "mm/alloc.h"
-#include "mm/buddy.h"
-#include "mm/slob.h"
 #include "common.h"
 
 #define __MODULE_NAME__ ALLOC
@@ -11,9 +54,20 @@
 
 #define JUNK 1
 
-extern char end[];
+extern void buddy_init();
+extern void slob_init();
 
-void kinit(void) {
+extern void *__alloc_frags(size_t size);
+extern void *__free_frags(void *addr);
+extern void *__alloc_page();
+extern void *__alloc_pages(int pgnum);
+extern void __free_page(page_t *page);
+extern void __free_pages(page_t *first_page);
+extern int __page_count(page_t *first_page);
+extern int __page_gettotal();
+extern int __page_getfree();
+
+void mem_init() {
     page_init();
     buddy_init();
     slob_init();
@@ -21,57 +75,30 @@ void kinit(void) {
     debug("init success");
 }
 
-// extern void free_more_memory(void);
+void free_page(page_t *page) {
+    zone_t *zone = &memory_zone;
+    spin_lock(&zone->lru_lock);
+    if(TestClearPageLRU(page))
+        del_page_from_lru(zone, page);
+    spin_unlock(&zone->lru_lock);
+    __free_page(page);
+}
 
+void free_pages(page_t *first_page) {
+    __free_pages(first_page);
+}
 
-// /**
-//  *  内存存在优先级：内核数据结构 > 匿名页(SWAP) > pagecahce(FILE)
-//  *  当内核数据结构内存不足时，应从低优先级回收
-//  */
-// void *__kmalloc(size_t sz, int flag) {
-//     void *ret;
-
-//     if(flag & AF_USER) {
-//         if(sz != PGSIZE)
-//             ER();
-//     } else {
-//         // 
-//         int flag = 0;
-//       retry:
-//         ret = buddy_alloc(sz);
-//         if(ret == NULL) {
-//             if(flag) ERROR("out of mem");
-//             // 没有页了，调用free_more_memory释放更多的内存，返回之后，goto重新分配。还不行则使用oom killer
-//             buddy_print_free();
-//             // 当sz大于PGSIZE时，free_more_memory的策略可能需要调整，不然连续的释放可能凑不齐相连的页面
-//             free_more_memory();
-//             buddy_print_free();
-//             flag = 1;
-//             goto retry;
-//         }
-//     }
-// }
-
-extern void free_more_memory(void);
 void *kmalloc(size_t size) {
     void *ret = NULL;
-retry:
-    if(size < PGSIZE) { // Smaller, we use slob
-        // printf("alloc from slob\n");
-        // if(size == 1)
-        //     panic("one byte?");
-        ret = slob_alloc(size);
-    } else { // more than one page, We use buddy
-        ret = buddy_alloc(size);
-    }
-    /* slob和buddy分配失败，都会返回空 */
-    if(!ret){
-        // buddy_print_free();
-        free_more_memory();
-        // buddy_print_free();
 
-        // printf("\n");
-        goto retry;
+    if(size < PGSIZE) {
+        ret = __alloc_frags(size);
+    } else {
+        ret = __alloc_pages(ROUND_COUNT(size));
+    }
+    /* Alloc failure */
+    if(!ret){
+        panic("No Mem");
     }
     return ret;
 }
@@ -85,27 +112,20 @@ void *kzalloc(size_t size) {
 }
 
 /**
- * @deprecated use kmalloc(PGSIZE) instead
-*/
-void *kalloc(void) {
-    return kzalloc(PGSIZE);
-}
-
-/**
- * IMPORTANT!
- * Note: kfree does not check the legality of addr now,
- * so never try to free an unallocated mem or try to free a truncated mem.
+ * @brief free memory
+ * @note kfree does not check the legality of addr now,
+ *       so never try to free an unallocated mem or try to free a truncated mem.
 */
 void kfree(void *addr) {
     //todo: do more checks...
     if(addr == NULL) return;
 
     if((uint64)addr & ~PGMASK) { // piece
-        slob_free(addr);
+        __free_frags(addr);
     } else {
-        buddy_free(addr);
+        page_t *first_page = ADDR_TO_PG(addr);
+        put_page(first_page);
     }
-    
 }
 
 
@@ -116,29 +136,10 @@ void _kfree_safe(void **paddr) {
     }
 }
 
-void free_one_page(page_t *page) {
-    zone_t *zone = &memory_zone;
-    spin_lock(&zone->lru_lock);
-    if(TestClearPageLRU(page))
-    del_page_from_lru(zone, page);
-    spin_unlock(&zone->lru_lock);
-    buddy_free_one_page(page);
-}
-
-
-/* new added functions for page frame reclaiming */
-// void __pagevec_free(pagevec_t *pvec){
-//     int i = pagevec_count(pvec);
-
-//     /* buddy/kfree的接口可以考虑换一下，参数可选择页指针 */
-//     while(--i >= 0){
-//         kfree(NR_TO_ADDR(pvec->pages[i] - pages));
-//     }
-// }
 uint64_t get_total_mem() {
-    return buddy_gettotal();
+    return __page_gettotal();
 }
 
 uint64_t get_free_mem() {
-    return buddy_getfree();
+    return __page_getfree();
 }

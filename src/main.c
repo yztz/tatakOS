@@ -41,7 +41,7 @@ void main() {
     procinit();      // process table & cpu state init
 
     /* Physical Memory */
-    kinit();         // pages & physical page allocator(buddy, slob) init
+    mem_init();      // pages & physical page allocator(buddy, slob) init
 
     /* Virtual Memory */
     kvminit();       // kernel page table init

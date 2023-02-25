@@ -109,7 +109,7 @@ int filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len)
   // 目前暂时采用缓存区的办法，后续可以使用pagecahce来加速
   const int SEND_SIZE = PGSIZE; 
   // static char buf[PGSIZE];
-  char *buf = kalloc();
+  char *buf = kmalloc(PGSIZE);
   off_t off;
   int rest = len;
 

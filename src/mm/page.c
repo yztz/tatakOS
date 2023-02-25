@@ -34,7 +34,7 @@ void reset_page(page_t *page){
 void page_init(void) {
   initlock(&reflock, "reflock");
   for(int i = 0; i < PAGE_NUMS; i++) {
-    pages[i].refcnt = (atomic_t){1};
+    pages[i].refcnt = (atomic_t){0};
     pages[i].order = 0;
     pages[i].alloc = 1;
     reset_page(&pages[i]);
@@ -124,7 +124,7 @@ void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, in
       panic("uvmunmap: not a leaf");
     if(do_free){
       uint64 pa = PTE2PA(*pte);
-      kfree((void*)pa);
+      put_page(pa);
     }
     *pte = 0;
 
@@ -153,7 +153,7 @@ pgref_t __page_refcnt_pointer(page_t *page){
 }
 
 pgref_t __page_refcnt_paddr(uint64_t pa){
-  return __page_refcnt_pointer(ADDR_TO_PAGE(pa));
+  return __page_refcnt_pointer(ADDR_TO_PG(pa));
 }
 
 
@@ -173,6 +173,7 @@ pgref_t __get_page_paddr(uint64_t pa){
   return __get_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
+extern void free_page(page_t *page);
 
 pgref_t __put_page_pointer(page_t *page){
   pgref_t ret;
@@ -181,8 +182,8 @@ pgref_t __put_page_pointer(page_t *page){
     ER();
 
   ret = atomic_dec(&page->refcnt) - 1;
-  if(ret == 0){
-    free_one_page(page);
+  if(ret == 0) {
+    free_page(page);
   }
   return ret; 
 

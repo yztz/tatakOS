@@ -30,10 +30,14 @@ typedef struct _buddy_list_t {
 
 extern char end[];
 
-buddy_list_t lists[MAX_ORDER];
+buddy_list_t lists[BUDDY_ORDER_NUM];
 
 atomic_t used;
 uint total;
+
+static inline int is_vaild_order(int order) {
+    return order >= 0 && order < BUDDY_ORDER_NUM;
+}
 
 void print_order(int order) {
     printf(grn("[order %d head: %p] "), order, &lists[order].head);
@@ -44,7 +48,7 @@ void print_order(int order) {
 
 
 void print_buddy() {
-    for (int i = 0; i < MAX_ORDER; i++) {
+    for (int i = 0; i < BUDDY_ORDER_NUM; i++) {
         print_order(i);
         printf("\n");
     }
@@ -61,15 +65,17 @@ uint64_t buddy_gettotal() {
     return total;
 }
 
+void buddy_free(page_t *page);
+
 void buddy_init() {
-    for (int i = 0; i < MAX_ORDER; i++) {
+    for (int i = 0; i < BUDDY_ORDER_NUM; i++) {
         BUDDY_INIT_HEAD(lists[i].head);
         initlock(&lists[i].lock, "buddy list");
     }
     total = 0;
     /* 从kernel end处一直释放到MEM_END */
     for (uint64_t p = (uint64_t)end; p < MEM_END; p += PGSIZE) {
-        buddy_free((void *)p);
+        buddy_free(ADDR_TO_PG(p));
         total++;
     }
     used = INIT_ATOMIC();
@@ -111,13 +117,13 @@ void *buddy_alloc(size_t size) {
     pgnums = ROUND_COUNT(size);
     // 获取最小的大于size的2^order
     oorder = is_pow2(pgnums) ? log2(pgnums) : log2(pgnums) + 1;
-    if (oorder >= MAX_ORDER)
+    if (oorder >= BUDDY_ORDER_NUM)
         return NULL;
 
     order = oorder;
     // 从当前order向上，直到寻找到有空闲空间的order
     acquire(&lists[order].lock);
-    while (order + 1 < MAX_ORDER && empty(order)) {
+    while (order + 1 < BUDDY_ORDER_NUM && empty(order)) {
         release(&lists[order].lock);
         order++;
         acquire(&lists[order].lock);
@@ -177,7 +183,7 @@ void *buddy_alloc(size_t size) {
     // 设置页面属性
     // 为什么需要在锁范围内设置？因为无论是在分裂还是合并页的时候，我们都是根据地址特征来获取兄弟页面的
     // 因此如果在锁外设置页面属性，就可能导致我们的页面属性还没被设置为alloc，结果被提前合并的现象
-    page_t *page = ADDR_TO_PAGE(b);
+    page_t *page = ADDR_TO_PG(b);
 
     assert(page->alloc == 0);
     page->alloc = 1;
@@ -198,75 +204,75 @@ extern zone_t memory_zone;
 /**
  * 释放一个页
  */
-void buddy_free(void *pa) {
-    int pgnum, ppgnum;
-    page_t *page, *ppage;
-    buddy_t *b;
+// void buddy_free(void *pa) {
+//     int pgnum, ppgnum;
+//     page_t *page, *ppage;
+//     buddy_t *b;
 
-    pgnum = PG_TO_NR(pa);
+//     pgnum = PG_TO_NR(pa);
 
-    if (pgnum >= PAGE_NUMS) {
-        panic("buddy_free: out of range");
-    }
+//     if (pgnum >= PAGE_NUMS) {
+//         panic("buddy_free: out of range");
+//     }
 
-    assert(page_refcnt((uint64_t)pa) > 0);
+//     assert(page_refcnt((uint64_t)pa) > 0);
 
-    if (put_page_nofree((uint64_t)pa) > 0)
-        return;
+//     if (put_page_nofree((uint64_t)pa) > 0)
+//         return;
 
-    page = &pages[pgnum];
+//     page = &pages[pgnum];
 
-    /* 不应该放在这里 */
-    // if(!list_is_head(&page->lru, &page->lru))
-      // del_page_from_lru(&memory_zone, page);
-    /* 回收page时清除其状态 */
-    reset_page(page);
+//     /* 不应该放在这里 */
+//     // if(!list_is_head(&page->lru, &page->lru))
+//       // del_page_from_lru(&memory_zone, page);
+//     /* 回收page时清除其状态 */
+//     reset_page(page);
 
-    if (page->alloc == 0) {
-        print_page(pgnum);
-        panic("buddy_free: page not allocated");
-    }
-    b = (buddy_t *)pa;
+//     if (page->alloc == 0) {
+//         print_page(pgnum);
+//         panic("buddy_free: page not allocated");
+//     }
+//     b = (buddy_t *)pa;
 
-    // insert back
-    acquire(&lists[page->order].lock);
-    insert(page->order, b);
+//     // insert back
+//     acquire(&lists[page->order].lock);
+//     insert(page->order, b);
 
-    // release
-    page->alloc = 0;
-    atomic_add(&used, -(1 << page->order));
+//     // release
+//     page->alloc = 0;
+//     atomic_add(&used, -(1 << page->order));
 
-    ppgnum = PARTNER_NR(pgnum, page->order);
-    ppage = &pages[ppgnum];
-    // 尝试合并
-    while (page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
-        int order;
-        // remove from list
-        remove((buddy_t *)NR_TO_ADDR(pgnum));
-        remove((buddy_t *)NR_TO_ADDR(ppgnum));
-        order = page->order;
-        page->order = INVAIL_ORDER;
-        ppage->order = INVAIL_ORDER;
-        release(&lists[order].lock);
+//     ppgnum = PARTNER_NR(pgnum, page->order);
+//     ppage = &pages[ppgnum];
+//     // 尝试合并
+//     while (page->order + 1 < BUDDY_ORDER_NUM && ppage->alloc == 0 && page->order == ppage->order) {
+//         int order;
+//         // remove from list
+//         remove((buddy_t *)NR_TO_ADDR(pgnum));
+//         remove((buddy_t *)NR_TO_ADDR(ppgnum));
+//         order = page->order;
+//         page->order = INVAIL_ORDER;
+//         ppage->order = INVAIL_ORDER;
+//         release(&lists[order].lock);
 
-        acquire(&lists[order + 1].lock);
-        pgnum = MERGE_NR(pgnum, order);
-        page = &pages[pgnum];
-        page->order = order + 1;
-        b = (buddy_t *)NR_TO_ADDR(pgnum);
+//         acquire(&lists[order + 1].lock);
+//         pgnum = MERGE_NR(pgnum, order);
+//         page = &pages[pgnum];
+//         page->order = order + 1;
+//         b = (buddy_t *)NR_TO_ADDR(pgnum);
 
-        insert(page->order, b);
+//         insert(page->order, b);
 
-        ppgnum = PARTNER_NR(pgnum, page->order);
-        ppage = &pages[ppgnum];
-    }
-    release(&lists[page->order].lock);
-}
+//         ppgnum = PARTNER_NR(pgnum, page->order);
+//         ppage = &pages[ppgnum];
+//     }
+//     release(&lists[page->order].lock);
+// }
 
 /**
  * 当page->refcnt为0时调用，释放一个页，buddy_free的改版
  */
-void buddy_free_one_page(page_t *page) {
+void buddy_free(page_t *page) {
     int pgnum, ppgnum;
     page_t *ppage;
     buddy_t *b;
@@ -283,12 +289,8 @@ void buddy_free_one_page(page_t *page) {
     /**
      * page->refcnt为0才会调用free函数free掉页
      */
-    if (page_refcnt(page) != 0)
-        ER();
+    assert(page_refcnt(page) == 0);
 
-    /* 不应该放在这里 */
-    // if(!list_is_head(&page->lru, &page->lru))
-      // del_page_from_lru(&memory_zone, page);
     /* 回收page时清除其状态 */
     reset_page(page);
 
@@ -309,7 +311,7 @@ void buddy_free_one_page(page_t *page) {
     ppgnum = PARTNER_NR(pgnum, page->order);
     ppage = &pages[ppgnum];
     // 尝试合并
-    while (page->order + 1 < MAX_ORDER && ppage->alloc == 0 && page->order == ppage->order) {
+    while (page->order + 1 < BUDDY_ORDER_NUM && ppage->alloc == 0 && page->order == ppage->order) {
         int order;
         // remove from list
         remove((buddy_t *)NR_TO_ADDR(pgnum));
@@ -338,4 +340,32 @@ void buddy_print_free() {
     printf("page usage: %d%% ( %d used | %d total )\n", u * 100 / total, u, total);
 }
 
+/* Below is alloc interface implementation */
 
+void *__alloc_page() {
+    return buddy_alloc(PGSIZE);
+}
+
+void *__alloc_pages(int pgnum) {
+    return buddy_alloc(pgnum * PGSIZE);
+}
+
+void __free_page(page_t *page) {
+    buddy_free(page);
+}
+
+void __free_pages(page_t *first_page) {
+    buddy_free(first_page);
+}
+
+int __page_count(page_t *first_page) {
+    assert(is_vaild_order(first_page->order));
+    return pow2(first_page->order);
+}
+
+int __page_gettotal() {
+    return buddy_gettotal();
+}
+int __page_getfree() {
+    return buddy_getfree();
+}

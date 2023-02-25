@@ -24,7 +24,7 @@ static inline int cow_copy(uint64_t va, pte_t *pte) {
         *pte &= ~PTE_COW;
     } else {
         char *mem;
-        if ((mem = kalloc()) == 0) {
+        if ((mem = kmalloc(PGSIZE)) == 0) {
             return -1;
         }
         // 复制页
