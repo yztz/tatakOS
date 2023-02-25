@@ -41,10 +41,6 @@ void print_sbiret(sbiret_t ret) {
     printf("sbiret{err: %d, val: %d}\n", ret.error, ret.value);
 }
 
-void print_page(int pgnum) {
-    page_t* page = &pages[pgnum];
-    printf("page %d {order: %d, refcnt: %d, alloc: %d, type: %d}\n", pgnum, page->order, page->refcnt, page->alloc, page->type);
-}
 
 void print_dir_item(struct dir_item* item) {
     if (!item) {

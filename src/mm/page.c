@@ -42,11 +42,6 @@ void page_init(void) {
 }
 
 
-int page_type(uint64_t pa) {
-  return pages[PG_TO_NR(pa)].type;
-}
-
-
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec) {
   if(va >= MAXVA)
     panic("walk");

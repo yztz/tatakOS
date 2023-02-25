@@ -189,9 +189,8 @@ void *buddy_alloc(size_t size) {
     page->alloc = 1;
 
     assert(page_refcnt(page) == 0);
+    
     get_page(page);
-
-    mark_page((uint64_t)b, ALLOC_BUDDY);
 
     release(&lists[order].lock);
 
@@ -201,73 +200,6 @@ void *buddy_alloc(size_t size) {
 }
 
 extern zone_t memory_zone;
-/**
- * 释放一个页
- */
-// void buddy_free(void *pa) {
-//     int pgnum, ppgnum;
-//     page_t *page, *ppage;
-//     buddy_t *b;
-
-//     pgnum = PG_TO_NR(pa);
-
-//     if (pgnum >= PAGE_NUMS) {
-//         panic("buddy_free: out of range");
-//     }
-
-//     assert(page_refcnt((uint64_t)pa) > 0);
-
-//     if (put_page_nofree((uint64_t)pa) > 0)
-//         return;
-
-//     page = &pages[pgnum];
-
-//     /* 不应该放在这里 */
-//     // if(!list_is_head(&page->lru, &page->lru))
-//       // del_page_from_lru(&memory_zone, page);
-//     /* 回收page时清除其状态 */
-//     reset_page(page);
-
-//     if (page->alloc == 0) {
-//         print_page(pgnum);
-//         panic("buddy_free: page not allocated");
-//     }
-//     b = (buddy_t *)pa;
-
-//     // insert back
-//     acquire(&lists[page->order].lock);
-//     insert(page->order, b);
-
-//     // release
-//     page->alloc = 0;
-//     atomic_add(&used, -(1 << page->order));
-
-//     ppgnum = PARTNER_NR(pgnum, page->order);
-//     ppage = &pages[ppgnum];
-//     // 尝试合并
-//     while (page->order + 1 < BUDDY_ORDER_NUM && ppage->alloc == 0 && page->order == ppage->order) {
-//         int order;
-//         // remove from list
-//         remove((buddy_t *)NR_TO_ADDR(pgnum));
-//         remove((buddy_t *)NR_TO_ADDR(ppgnum));
-//         order = page->order;
-//         page->order = INVAIL_ORDER;
-//         ppage->order = INVAIL_ORDER;
-//         release(&lists[order].lock);
-
-//         acquire(&lists[order + 1].lock);
-//         pgnum = MERGE_NR(pgnum, order);
-//         page = &pages[pgnum];
-//         page->order = order + 1;
-//         b = (buddy_t *)NR_TO_ADDR(pgnum);
-
-//         insert(page->order, b);
-
-//         ppgnum = PARTNER_NR(pgnum, page->order);
-//         ppage = &pages[ppgnum];
-//     }
-//     release(&lists[page->order].lock);
-// }
 
 /**
  * 当page->refcnt为0时调用，释放一个页，buddy_free的改版
@@ -295,7 +227,7 @@ void buddy_free(page_t *page) {
     reset_page(page);
 
     if (page->alloc == 0) {
-        print_page(pgnum);
+        print_page_info(page);
         panic("buddy_free: page not allocated");
     }
     b = (buddy_t *)pa;
