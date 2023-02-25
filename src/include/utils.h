@@ -87,6 +87,7 @@ void print_zone_list_info(struct zone *zone);
 void print_pages_be_found(struct pages_be_found_head *pg_head);
 void print_kmap(struct kmap map);
 void print_pagetable(pagetable_t pagetable);
+void print_mm_free();
 
 
 void TD(char *info, char *s, const char *s1, int d);

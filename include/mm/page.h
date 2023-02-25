@@ -76,11 +76,19 @@ struct address_space;
 typedef struct page_t {
     atomic_t refcnt;        
     
-    struct {
-        uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
-        uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
-        uint8_t resv  : 2;
+    union {
+        // Buddy
+        struct {
+            uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
+            uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
+            uint8_t resv  : 2;
+        };
+        // Freelist
+        struct {
+            uint8_t pgnum;
+        };
     };
+    
 
     uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
     list_head_t lru; /* 串联页，active/inactive list */

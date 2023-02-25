@@ -11,6 +11,7 @@ void  kfree(void *addr);
 
 uint64_t get_total_mem();
 uint64_t get_free_mem();
+uint64_t get_used_mem();
 
 void  _kfree_safe(void **paddr);
 #define kfree_safe(pp) _kfree_safe((void **)(pp))

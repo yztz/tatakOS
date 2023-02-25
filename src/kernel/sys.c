@@ -19,7 +19,7 @@ utsname_t sysname = {
 
 
 uint64_t sys_memuse(void) {
-    buddy_print_free();
+    print_mm_free();
     return 0;
 }
 

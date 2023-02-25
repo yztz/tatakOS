@@ -32,5 +32,6 @@ static inline int __atomic_add(atomic_t *v, int i) {
 }
 
 #define INIT_ATOMIC() (atomic_t){.counter=0}
+#define INIT_ATOMIC_N(N) (atomic_t){.counter=N}
 
 #endif
