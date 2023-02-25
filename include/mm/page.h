@@ -15,7 +15,6 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #include "atomic/spinlock.h"
 #include "atomic/atomic.h"
 #include "page-flags.h"
-#include "config.h"
 
 /* Use 38 in sv39 to avoid sign-extend ref: riscv-privileged-20211203 p84 */
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
@@ -77,11 +76,19 @@ struct address_space;
 typedef struct page_t {
     atomic_t refcnt;        
     
-    struct {
-        uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
-        uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
-        uint8_t resv  : 2;
+    union {
+        // Buddy
+        struct {
+            uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
+            uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
+            uint8_t resv  : 2;
+        };
+        // Freelist
+        struct {
+            uint8_t pgnum;
+        };
     };
+    
 
     uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
     list_head_t lru; /* 串联页，active/inactive list */

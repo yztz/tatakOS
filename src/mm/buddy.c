@@ -30,10 +30,10 @@ typedef struct _buddy_list_t {
 
 extern char end[];
 
-buddy_list_t lists[BUDDY_ORDER_NUM];
+static buddy_list_t lists[BUDDY_ORDER_NUM];
 
-atomic_t used;
-uint total;
+static atomic_t used;
+static uint total;
 
 static inline int is_vaild_order(int order) {
     return order >= 0 && order < BUDDY_ORDER_NUM;
@@ -55,10 +55,12 @@ void print_buddy() {
     print_not_freed_pages();
 }
 
-
-
 uint64_t buddy_getfree() {
     return total - atomic_get(&used);
+}
+
+uint64_t buddy_getused() {
+    return atomic_get(&used);
 }
 
 uint64_t buddy_gettotal() {
@@ -68,6 +70,11 @@ uint64_t buddy_gettotal() {
 void buddy_free(page_t *page);
 
 void buddy_init() {
+    for(int i = 0; i < PAGE_NUMS; i++) {
+        pages[i].order = 0;
+        pages[i].alloc = 1;
+    }
+
     for (int i = 0; i < BUDDY_ORDER_NUM; i++) {
         BUDDY_INIT_HEAD(lists[i].head);
         initlock(&lists[i].lock, "buddy list");
@@ -267,12 +274,11 @@ void buddy_free(page_t *page) {
     release(&lists[page->order].lock);
 }
 
-void buddy_print_free() {
-    int u = atomic_get(&used);
-    printf("page usage: %d%% ( %d used | %d total )\n", u * 100 / total, u, total);
-}
-
 /* Below is alloc interface implementation */
+
+void __alloc_page_init() {
+    buddy_init();
+}
 
 void *__alloc_page() {
     return buddy_alloc(PGSIZE);
@@ -298,6 +304,11 @@ int __page_count(page_t *first_page) {
 int __page_gettotal() {
     return buddy_gettotal();
 }
+
 int __page_getfree() {
     return buddy_getfree();
+}
+
+int __page_getused() {
+    return buddy_getused();
 }

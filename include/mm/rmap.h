@@ -5,7 +5,6 @@
 #include "spinlock.h"
 #include "list.h"
 #include "types.h"
-#include "config.h"
 
 #ifdef RMAP
 /* 参考了linux 2.6.0的reverse mappping方案，这个方案感觉十分占用内存 */

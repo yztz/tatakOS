@@ -193,14 +193,13 @@ int consoleread(int user_dst, uint64 dst, int n) {
     return target - n;
 }
 
-extern void buddy_print_free();
 
 static void interactive_debug_info(char c) {
     // printf("%d\n", c);
     switch (c) {
     case C('P'):  // Print process list.
         procdump();
-        buddy_print_free();
+        print_mm_free();
         break;
     }
 }

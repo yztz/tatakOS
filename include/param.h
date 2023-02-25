@@ -24,14 +24,18 @@
 
 #define TICK_GRANULARITY 10L // ms
 
-/* Maximum number of active map areas.. This is a random (large) number, 
-   即一个进程的地址空间拥有的vma_area_struct的最大数量*/
-#define DEFAULT_MAX_MAP_COUNT 4096	
-/////////////MM//////////////
+/* 最大readahead页数占当前空余内存的页数 */
+#define READ_AHEAD_RATE 10
+/* Buddy最大Order */
 #define BUDDY_ORDER_NUM 10
 
+/* Which page allocator */
+#define BUDDY_ALLOCATOR 0
+#define FREELIST_ALLOCATOR 1
 
-////////////DEBUG////////////
+#define PAGE_ALLOCATOR BUDDY_ALLOCATOR
+
+
 
 
 #endif

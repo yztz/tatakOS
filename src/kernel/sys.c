@@ -133,7 +133,7 @@ uint64_t sys_philosophy(void) {
 }
 
 uint64_t sys_memuse(void) {
-    buddy_print_free();
+    print_mm_free();
     return 0;
 }
 

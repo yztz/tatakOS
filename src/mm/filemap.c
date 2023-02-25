@@ -12,7 +12,7 @@
 
 #include "fs/mpage.h"
 #include "swap.h"
-#include "config.h"
+
 /**
  * 定义了关于file map相关的函数，函数声明在fs.h
  *
@@ -228,9 +228,6 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
   read_pages(entry, pg_list);
 }
 
-extern atomic_t used;
-extern uint total;
-
 /**
  * 预读的页数最大为READ_AHEAD_RATE%
  */
@@ -238,8 +235,9 @@ int cal_readahead_page_counts(int rest){
       /* 剩余的页数 */
       uint remain = ROUND_COUNT(rest);
       /* 最大连读设置为空余内存的10% */
-      int u = atomic_get(&used);
-      int pgcnts = min(remain, DIV_ROUND_UP((total - u), READ_AHEAD_RATE));
+      uint t = get_total_mem();
+      uint u = get_used_mem();
+      int pgcnts = min(remain, DIV_ROUND_UP((t - u), READ_AHEAD_RATE));
       return pgcnts;
 }
 

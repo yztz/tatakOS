@@ -323,6 +323,10 @@ void *slob_alloc(size_t size) {
 
 /* Below is alloc interface implementation */
 
+void __alloc_frag_init() {
+    slob_init();
+}
+
 void *__alloc_frags(size_t size) {
 	return slob_alloc(size);
 }

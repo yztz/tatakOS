@@ -12,6 +12,8 @@
  *      int __page_count(page_t *first_page)
  *      int __page_gettotal()
  *      int __page_getfree()
+ *      void __alloc_page_init();
+ *      void __alloc_frag_init();
  * 
  * Currently, the underlying allocator implementation is 
  *  the Buddy allocator and the slob allocator 
@@ -59,6 +61,8 @@ extern void slob_init();
 
 extern void *__alloc_frags(size_t size);
 extern void *__free_frags(void *addr);
+extern void __alloc_page_init();
+extern void __alloc_frag_init();
 extern void *__alloc_page();
 extern void *__alloc_pages(int pgnum);
 extern void __free_page(page_t *page);
@@ -66,11 +70,12 @@ extern void __free_pages(page_t *first_page);
 extern int __page_count(page_t *first_page);
 extern int __page_gettotal();
 extern int __page_getfree();
+extern int __page_getused();
 
 void mem_init() {
     page_init();
-    buddy_init();
-    slob_init();
+    __alloc_page_init();
+    __alloc_frag_init();
 
     debug("init success");
 }
@@ -142,4 +147,14 @@ uint64_t get_total_mem() {
 
 uint64_t get_free_mem() {
     return __page_getfree();
+}
+
+uint64_t get_used_mem() {
+    return __page_getused();
+}
+
+void print_mm_free() {
+    int u = get_used_mem();
+    int t = get_total_mem();
+    printf("page usage: %d%% ( %d used | %d total )\n", u * 100 / t, u, t);
 }

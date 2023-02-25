@@ -9,7 +9,6 @@
 #include "mm/vm.h"
 #include "fs/fs.h"
 #include "mm/mm.h"
-#include "config.h"
 
 
 // #define QUIET

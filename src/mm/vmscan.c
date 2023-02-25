@@ -25,7 +25,6 @@
 #include "swap.h"
 #include "writeback.h"
 #include "fs/mpage.h"
-#include "config.h"
 
 struct scan_control {
 	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */
@@ -512,7 +511,7 @@ static void needpool(entry_t pool[NENTRY]) {
 }
 
 void writeback_entrys_and_free_mapping(struct writeback_control *wbc);
-extern atomic_t used;
+
 /*
  * 唤醒写回线程。写回更多的页。
  */
@@ -521,7 +520,7 @@ void free_more_memory(void)
   /* 启动bdflush写回 */
 	/* 是否会出现两个线程写回一个页的情况？ */
 	/* 尝试释放所有的pagecache */
-  int u1 = atomic_get(&used);
+  int u1 = get_used_mem();
 	// writeback_entrys_and_free_mapping(NULL);
 	// wakeup_bdflush(1024);
 	// yield();
@@ -536,7 +535,7 @@ void free_more_memory(void)
 // 		eunlock(entry);
 // 	}
 //  }
-	int u2 = atomic_get(&used);
+	int u2 = get_used_mem();
 	if(u1 - u2 > SWAP_CLUSTER_MAX)
 		return;
 //  needpool(pool);
