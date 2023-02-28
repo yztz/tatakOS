@@ -16,7 +16,6 @@
 
 extern fat32_t *fat;
 
-extern void buddy_print_free();
 
 /**
  * 只写回，不释放pagecache。

@@ -15,5 +15,5 @@ obj-y += vma.o
 obj-y += vmscan.o
 
 # buddy or freelist
-# obj-y += buddy.o
-obj-y += freelist.o
+obj-y += buddy.o
+# obj-y += freelist.o

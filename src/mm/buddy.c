@@ -6,8 +6,6 @@
 #include "atomic/atomic.h"
 #include "common.h"
 #include "mm/page.h"
-#include "mm/buddy.h"
-#include "mm/mmap.h"
 
 #define __MODULE_NAME__ BUDDY
 #include "debug.h"

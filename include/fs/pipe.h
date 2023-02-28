@@ -1,7 +1,7 @@
 #ifndef _H_PIPE_
 #define _H_PIPE_
 
-#include "common.h"
+#include "types.h"
 
 
 struct pipe {
@@ -17,8 +17,6 @@ struct pipe {
 // #define RPIPESIZE (4 * PGSIZE)
 #define RPIPESIZE (PGSIZE)
 #define PIPESIZE (RPIPESIZE - sizeof(struct pipe))
-
-struct file;
 
 int pipealloc(struct file **f0, struct file **f1);
 void pipeclose(struct pipe *pi, int writable);

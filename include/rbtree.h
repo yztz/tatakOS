@@ -107,14 +107,12 @@ struct rb_node
 	struct rb_node *rb_left;
 };
 
-typedef struct rb_node rb_node_t;
 
 struct rb_root
 {
 	struct rb_node *rb_node;
 };
 
-typedef struct rb_root rb_root_t;
 
 #define RB_ROOT	(struct rb_root) { NULL, }
 #define	rb_entry(ptr, type, member) container_of(ptr, type, member)

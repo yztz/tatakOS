@@ -1,10 +1,8 @@
 #include "common.h"
-#include "types.h"
 #include "platform.h"
-#include "elf.h"
 #include "riscv.h"
+#include "mm/mmap.h"
 #include "mm/vm.h"
-#include "printf.h"
 #include "utils.h"
 
 #define __MODULE_NAME__ VM
@@ -150,4 +148,6 @@ void freewalk(pagetable_t pagetable) {
     kfree((void *)pagetable);
 }
 
-
+void print_kmap(kmap_t map) {
+  printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
+}

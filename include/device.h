@@ -6,10 +6,10 @@
 
 struct kstat;
 
-typedef struct _device_t {
+struct _device_t {
   int (*read)(int, uint64, int);
   int (*write)(int, uint64, int);
-} device_t;
+};
 
 #define CONSOLE 1
 #define DEVNULL 2

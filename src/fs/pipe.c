@@ -1,11 +1,12 @@
 #include "riscv.h"
 #include "atomic/spinlock.h"
+#include "atomic/sleeplock.h"
 #include "kernel/proc.h"
 #include "fs/fs.h"
-#include "atomic/sleeplock.h"
 #include "fs/file.h"
 #include "fs/pipe.h"
 #include "mm/vm.h"
+#include "mm/alloc.h"
 
 #define __MODULE_NAME__ PIPE
 #include "debug.h"

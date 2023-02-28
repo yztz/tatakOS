@@ -1,16 +1,18 @@
 #ifndef _H_FDTABLE_
 #define _H_FDTABLE_
 
-#include "common.h"
+#include "types.h"
+#include "param.h"
 #include "atomic/spinlock.h"
-#include "fs/file.h"
+
+typedef struct file file_t;
+
 
 struct fdt_entry {
   file_t *f;
   int flag;
 };
 
-typedef struct fdt_entry fdt_entry_t; 
 
 struct fdtable {
   int ref;
@@ -21,7 +23,6 @@ struct fdtable {
   int max_nfd;
 };
 
-typedef struct fdtable fdtable_t;
 
 fdtable_t *fdtbl_new();
 file_t  *fdtbl_getfile(fdtable_t *self, int fd);

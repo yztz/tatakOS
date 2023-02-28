@@ -506,10 +506,6 @@ void print_pagetable(pagetable_t pagetable) {
   __print_pagetable(pagetable, 2, -1);
 }
 
-void print_kmap(kmap_t map) {
-  printf("map:%p => %p, size: %#x type: %d\n", map.pa, map.va, map.size, map.pg_spec);
-}
-
 uint64_t sys_mprotect(void) {
     return 0;
 }

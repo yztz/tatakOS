@@ -4,15 +4,11 @@
 #include "printf.h"
 #include "common.h"
 #include "kernel/proc.h"
-#include "param.h"
-#include "hlist.h"
-#include "mm/vm.h"
-#include "str.h"
+#include "mm/alloc.h"
 
 // #define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
-#include "mm/mm.h"
 #include "fs/mpage.h"
 #include "writeback.h"
 

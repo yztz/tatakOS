@@ -1,6 +1,7 @@
 #ifndef _H_COMMON_
 #define _H_COMMON_
 
+#include <stdarg.h>
 #include "param.h"
 #include "sys/error.h"
 #include "types.h"

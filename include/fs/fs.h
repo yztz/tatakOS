@@ -70,7 +70,6 @@ struct fat_entry {
     list_head_t e_list;
 };
 
-typedef struct fat_entry entry_t;
 
 void fs_init();
 entry_t *namee(entry_t *from, char *path);

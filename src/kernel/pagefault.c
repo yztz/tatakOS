@@ -1,11 +1,9 @@
 #include "platform.h"
 #include "common.h"
-#include "mm/alloc.h"
 #include "fs/fs.h"
-#include "fs/file.h"
+#include "mm/alloc.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
-#include "mm/mm.h"
 
 #define __MODULE_NAME__ PAGEFAULT
 
@@ -70,7 +68,6 @@ static pagefault_t get_pagefault(uint64 scause) {
     default:return PF_UNKNOWN;
     }
 }
-#include "mm/buddy.h"
 
 static int have_prot(pagefault_t fault, vma_t *vma) {
     if (fault == PF_STORE) {

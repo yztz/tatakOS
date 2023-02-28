@@ -34,7 +34,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
-#include "riscv.h"
+#include "gcc_attr.h"
 
 
 #ifdef __cplusplus
@@ -110,7 +110,7 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
 
 
 
-void panic(char*) __attribute__((noreturn));
+void _noret panic(char*);
 
 
 #ifdef __cplusplus

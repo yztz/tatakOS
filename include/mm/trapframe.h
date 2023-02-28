@@ -113,10 +113,6 @@ struct trapframe {
   struct trapframe *sigtf; ///< save copy when handling signals
 };
 
-typedef struct trapframe tf_t;
-typedef struct k_trapframe ktf_t;
-
-struct proc;
 
 tf_t *tf_new(struct proc *p);
 tf_t *tf_new_clone(struct proc *p, tf_t *old);

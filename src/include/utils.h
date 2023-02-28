@@ -5,6 +5,7 @@
 #include "sbi.h"
 #include "bio.h"
 #include "str.h"
+#include "gcc_attr.h"
 
 #define LOOP() {while(1) continue;}
 #define ALIGN(a, align) ((a + (align - 1)) & ~(align - 1))
@@ -35,13 +36,6 @@
 #define log2(x) luaO_log2(x)
 
 
-#define _section(name) __attribute__((section(#name)))
-#define _always_inline __attribute__((always_inline)) inline
-
-#define weak_alias(name, aliasname) _mweak_alias(name, aliasname)
-#define _weak_alias(name, aliasname) \
-extern __typeof(name) aliasname __attribute__((weak, alias(#name)));
-
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -57,10 +51,6 @@ extern __typeof(name) aliasname __attribute__((weak, alias(#name)));
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 #endif
-
-#define unused(x) x __attribute__((__unused__))
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
 
 
 struct dir_item;

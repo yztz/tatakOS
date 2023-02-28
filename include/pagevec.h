@@ -24,16 +24,12 @@
 
 #define PAGEVEC_SIZE	14
 
-struct page;
-struct address_space;
-
 struct pagevec {
 	unsigned long nr;
 	// unsigned long cold;
 	page_t *pages[PAGEVEC_SIZE];
 };
 
-typedef struct pagevec pagevec_t;
 
 // extern pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 

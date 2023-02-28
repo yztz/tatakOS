@@ -1,6 +1,7 @@
 #include "kernel/proc.h"
 #include "kernel/syscall.h"
 #include "kernel/signal.h"
+#include "mm/alloc.h"
 #include "mm/vm.h"
 
 #define QUIET
