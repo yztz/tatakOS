@@ -1,4 +1,5 @@
 #include "fdtable.h"
+#include "fs/file.h"
 #include "mm/alloc.h"
 
 #define __MODULE_NAME__ FD_TABLE

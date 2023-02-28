@@ -1,8 +1,8 @@
-#include "memlayout.h"
+#include "common.h"
 #include "mm/io.h"
 #include "mm/vm.h"
+#include "mm/mmap.h"
 #include "riscv.h"
-#include "printf.h"
 
 #define QUIET
 #define __MODULE_NAME__ IO

@@ -1,30 +1,25 @@
-#include "types.h"
+
 #include "riscv.h"
 #include "mm/vm.h"
-#include "param.h"
 #include "fs/stat.h"
 #include "fs/fs.h"
+#include "fs/mpage.h"
 #include "atomic/spinlock.h"
-#include "kernel/proc.h"
 #include "atomic/sleeplock.h"
+#include "kernel/proc.h"
 #include "fs/file.h"
 #include "fs/fcntl.h"
+#include "rbtree.h"
+#include "common.h"
+#include "list.h"
+#include "pagevec.h"
+#include "swap.h"
+#include "writeback.h"
 
 // #define QUIET
 #define __MODULE_NAME__ VMSCAN
 #include "debug.h"
 
-#include "mm/mm_types.h"
-#include "rbtree.h"
-#include "utils.h"
-#include "memlayout.h"
-#include "list.h"
-#include "kthread.h"
-#include "mm/page.h"
-#include "pagevec.h"
-#include "swap.h"
-#include "writeback.h"
-#include "fs/mpage.h"
 
 struct scan_control {
 	/* Ask refill_inactive_list, or shrink_inactive_list to scan this many pages */

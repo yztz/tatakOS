@@ -1,5 +1,4 @@
 #include "kernel/sys.h"
-#include "mm/buddy.h"
 #include "mm/vm.h"
 #include "kernel/proc.h"
 #include "kernel/syscall.h"

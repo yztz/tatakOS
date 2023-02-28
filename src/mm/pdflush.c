@@ -1,26 +1,21 @@
-#include "types.h"
+
 #include "riscv.h"
 #include "mm/vm.h"
-#include "param.h"
 #include "fs/stat.h"
 #include "fs/fs.h"
 #include "atomic/spinlock.h"
-#include "kernel/proc.h"
 #include "atomic/sleeplock.h"
 #include "fs/file.h"
 #include "fs/fcntl.h"
-#include "mm/page.h"
+#include "rbtree.h"
+#include "common.h"
+#include "list.h"
+#include "kernel/proc.h"
 
 // #define QUIET
 #define __MODULE_NAME__ PDFLUSH 
 #include "debug.h"
 
-#include "mm/mm_types.h"
-#include "rbtree.h"
-#include "utils.h"
-#include "memlayout.h"
-#include "list.h"
-#include "kernel/proc.h"
 
 /**
  * @brief pdflush是内核中的写回线程，用来执行dirty页的写回操作。当一个进程需要写回

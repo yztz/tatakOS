@@ -1,5 +1,6 @@
 #include "kernel/clone.h"
 #include "mm/vm.h"
+#include "fs/fs.h"
 #include "debug.h"
 
 extern struct spinlock wait_lock;

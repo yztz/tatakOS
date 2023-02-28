@@ -28,7 +28,6 @@ struct vma{
   struct file *map_file;
 };
 
-typedef struct vma vma_t;
 
 // flags
 #define MAP_SHARED     0x01
@@ -72,7 +71,6 @@ struct mmlayout
     // proc_t *owner;
 };
 
-typedef struct mmlayout mm_t;
 
 
 vma_t *vma_new();

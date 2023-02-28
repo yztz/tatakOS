@@ -1,28 +1,22 @@
-#include "types.h"
+
 #include "riscv.h"
 #include "mm/vm.h"
-#include "param.h"
 #include "fs/stat.h"
 #include "fs/fs.h"
 #include "atomic/spinlock.h"
-#include "kernel/proc.h"
 #include "atomic/sleeplock.h"
+#include "kernel/proc.h"
 #include "fs/file.h"
 #include "fs/fcntl.h"
-#include "mm/page.h"
+#include "rbtree.h"
+#include "common.h"
+#include "list.h"
+#include "pagevec.h"
 
 // #define QUIET
 #define __MODULE_NAME__ SWAP
 #include "debug.h"
 
-#include "mm/mm_types.h"
-#include "rbtree.h"
-#include "utils.h"
-#include "memlayout.h"
-#include "list.h"
-#include "kthread.h"
-#include "mm/page.h"
-#include "pagevec.h"
 
 zone_t memory_zone = (zone_t){.lru_lock = {.locked=0, .name="zone lock", .cpu=NULL}, 
                               .active_list = {&memory_zone.active_list, &memory_zone.active_list}, 

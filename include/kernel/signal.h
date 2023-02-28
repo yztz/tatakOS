@@ -78,7 +78,6 @@
 //     list_head_t head;
 // };
 
-typedef uint64_t sigset_t;
 
 typedef struct siginfo {
 	int si_signo;

@@ -8,53 +8,12 @@
 #include "fdtable.h"
 #include "signal.h"
 #include "kernel/thread_group.h"
+#include "kernel/waitqueue.h"
+#include "kernel/cpu.h"
 
-/**
- * @brief Saved registers for kernel context switches.
- * 
- */
-struct context {
-    uint64 ra;
-    uint64 sp;
-
-    // callee-saved
-    uint64 s0;
-    uint64 s1;
-    uint64 s2;
-    uint64 s3;
-    uint64 s4;
-    uint64 s5;
-    uint64 s6;
-    uint64 s7;
-    uint64 s8;
-    uint64 s9;
-    uint64 s10;
-    uint64 s11;
-};
 
 struct pagevec;
 
-/**
- * @brief Per-CPU state.
- * 
- */
-typedef struct cpu {
-    /// @brief The process running on this cpu, or null.
-    struct proc *proc;
-    /// @brief swtch() here to enter scheduler().
-    struct context context;
-    /// @brief 
-    struct pagevec *inactive_pvec;
-    /// @brief 
-    struct pagevec *active_pvec;
-    /// @brief Depth of push_off() nesting.
-    int noff;
-    /// @brief Were interrupts enabled before push_off()?
-    int intena;
-} cpu_t;
-
-
-extern struct cpu cpus[NUM_CORES];
 
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE, MAXPSTATE };
@@ -134,9 +93,6 @@ struct proc {
     /// @brief process name
     char name[64];
 };
-
-typedef struct proc proc_t;
-typedef void (*kthread_callback_t)(proc_t *);
 
 void            exit(int);
 

@@ -2,7 +2,7 @@
 #define _H_SBI_
 
 #include "types.h"
-#include "riscv.h"
+#include "gcc_attr.h"
 
 extern void panic(char *s);
 
@@ -73,8 +73,10 @@ static inline struct sbiret sbi_send_ipi(uint64 mask, uint64 hart_mask_base) {
     return SBI_CALL_2(IPI_EXT, 0, mask, hart_mask_base);
 }
 
-static inline struct __attribute__((noreturn)) sbiret sbi_shutdown() {
-    return SBI_CALL_0(LEGACY_SHUTDOWN, 0);
+static inline _noret void sbi_shutdown() {
+    SBI_CALL_0(LEGACY_SHUTDOWN, 0);
+    while (1)
+        ;
 }
 
 #endif

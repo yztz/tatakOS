@@ -77,7 +77,6 @@ struct page_state {
 	unsigned long pgrotated;	/* pages rotated to tail of the LRU */
 };
 
-typedef struct page_state page_state_t;
 
 #define read_page_state(member) \
 	__read_page_state(offsetof(struct page_state, member))

@@ -2,6 +2,7 @@
 #include "common.h"
 #include "kernel/sched.h"
 #include "kernel/taskqueue.h"
+#include "mm/alloc.h"
 #include "mm/vm.h"
 #include "driver/timer.h"
 

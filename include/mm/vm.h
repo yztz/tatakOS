@@ -1,9 +1,8 @@
 #ifndef _H_VM_
 #define _H_VM_
 
-#include "mm/mmap.h"
-#include "mm/page.h"
-#include "mm/alloc.h"
+#include "types.h"
+
 
 /**
  * @brief Kernel memory map
@@ -41,7 +40,7 @@ void kvminithart(void);
  */
 void kvmmap(uint64 va, uint64 pa, size_t sz, int prot, int pg_spec);
 
-int         uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma);
+int         uvmcopy(pagetable_t old, pagetable_t new, struct vma *vma);
 void        freewalk(pagetable_t pagetable);
 
 /**
@@ -66,8 +65,8 @@ int copyout(uint64 dstva, char *src, uint64 len);
  */
 int copyin(void *dst, uint64 srcva, uint64 len);
 
-int         memset_user(uint64 dstva, int val, uint64 len) _section(.copy_set_user);
-int         copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
+int memset_user(uint64 dstva, int val, uint64 len) _section(.copy_set_user);
+int copyinstr(char *, uint64, uint64) _section(.copy_from_user_str);
 
 /**
  * @brief Copy from user to kernel.
@@ -94,5 +93,6 @@ int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 int         setupkvm(pagetable_t pagetable);
 void        erasekvm(pagetable_t pagetable);
 
+#include "mm/alloc.h"
 
 #endif

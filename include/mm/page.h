@@ -69,11 +69,9 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 #include "platform.h"
 
-typedef uint8_t pgref_t;
 
-struct address_space;
 
-typedef struct page_t {
+struct page_t {
     atomic_t refcnt;        
     
     union {
@@ -102,7 +100,7 @@ typedef struct page_t {
 		pte_addr_t direct;
 	} pte;
 #endif
-} page_t;
+};
 
 /* 页的数量 */
 #define PAGE_NUMS ((MEM_END - KERN_BASE)/PGSIZE)

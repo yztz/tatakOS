@@ -20,6 +20,11 @@ static uint64_t plic_virt_base_addr;
 #error PLIC_MODE IS NOT DETERMINED!
 #endif
 
+typedef struct _plic_instance_t {
+    plic_irq_callback_t callback;
+    void *ctx;
+} plic_instance_t;
+
 typedef enum _plic_irq_mode_t{
     S_MODE=0x01, M_MODE=0x10,
 }plic_irq_mode_t;

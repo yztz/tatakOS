@@ -4,12 +4,11 @@
 
 #include "common.h"
 #include "fs/fs.h"
-#include "atomic/spinlock.h"
-#include "atomic/sleeplock.h"
 #include "fs/file.h"
 #include "fs/stat.h"
 #include "kernel/proc.h"
 #include "device.h"
+#include "mm/alloc.h"
 #include "mm/vm.h"
 
 #define __MODULE__NAME__ FILE
