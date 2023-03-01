@@ -12,13 +12,8 @@
 #include "kernel/cpu.h"
 
 
-struct pagevec;
-
-
-
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE, MAXPSTATE };
 
-struct fat_entry;
 // Per-process state
 struct proc {
     /// @brief protect struct field below
@@ -55,7 +50,7 @@ struct proc {
     /// @brief kernel stack address
     uint64 kstack;
     /// @brief U-mode before-trap state
-    tf_t *trapframe;
+    utf_t *trapframe;
     /// @brief S-mode before-trap state, which is stored in the kernel stack
     ktf_t *k_trapframe;
     /// @brief swtch() here to run process
@@ -98,7 +93,6 @@ void            exit(int);
 
 uint64          growproc(uint64_t n);
 
-struct cpu *    mycpu(void);
 void            procinit(void);
 void            userinit(void);
 int             wakeup(void *);
@@ -107,11 +101,11 @@ void            proc_setmm(proc_t *p, mm_t *mm);
 void            proc_setsig(proc_t *p, signal_t *sig);
 void            proc_settg(proc_t *p, tg_t *tg);
 void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
-void            proc_settf(proc_t *p, tf_t *tf);
+void            proc_settf(proc_t *p, utf_t *tf);
 
 proc_t *        proc_new(kthread_callback_t callback);
 void            proc_switchmm(proc_t *p, mm_t *newmm);
-tf_t *          proc_get_tf(proc_t *p);
+utf_t *          proc_get_tf(proc_t *p);
 int             kthread_create(char *name, kthread_callback_t);
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
@@ -160,9 +154,6 @@ void pstate_migrate(proc_t *p, int newstate);
  * 
  */
 void procdump(void);
-
-struct pagevec *my_inactive_pvec();
-struct pagevec *my_active_pvec();
 
 
 extern void usertrapret(void);

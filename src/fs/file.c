@@ -144,8 +144,6 @@ int filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len)
 // Get metadata about file f.
 // addr is a user virtual address, pointing to a struct stat.
 int filestat(struct file *f, struct kstat *stat) {
-  // struct proc *p = myproc();
-  // struct stat st;
   
   if(f->type == FD_ENTRY) {
     elock(f->ep);

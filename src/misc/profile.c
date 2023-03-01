@@ -1,4 +1,5 @@
 #include "common.h"
+#include "platform.h"
 
 #ifdef DEBUG
 

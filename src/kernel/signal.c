@@ -119,7 +119,7 @@ static char sigret_code[] = { 0x93, 0x08, 0xB0, 0x08, 0x73, 0x00, 0x00, 0x00 };
 
 static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *act) {
     debug("SIG %d handled handler is %#lx", signum, (uint64_t)act->handler);
-    tf_t *tf = proc_get_tf(p);
+    utf_t *tf = proc_get_tf(p);
 
     tf_backup(tf);
     
@@ -183,7 +183,7 @@ static void __sig_handle(proc_t *p, signal_t *signal, int signum, sigaction_t *a
 
 uint64_t sys_rt_sigreturn(void) {
     proc_t *p = myproc();
-    tf_t *tf =proc_get_tf(p);
+    utf_t *tf =proc_get_tf(p);
 
     if(p->signaling == 0) {
         debug("not from signal?");

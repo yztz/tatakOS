@@ -3,6 +3,8 @@
 
 #include "platform.h"
 
+typedef void (*plic_irq_callback_t)(void *ctx);
+
 void plic_init(void);
 void plic_init_hart(void);
 
@@ -18,6 +20,13 @@ void plic_set_threshold(uint32_t threshould);
 int plic_claim(void);
 void plic_complete(plic_irq_t source);
 
+/**
+ * @brief Register IRQ handler
+ * 
+ * @param source IRQ source
+ * @param callback IRQ callback
+ * @param ctx callback param
+ */
 void plic_register_handler(plic_irq_t source, plic_irq_callback_t callback, void *ctx);
 
 #endif

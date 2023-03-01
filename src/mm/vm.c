@@ -35,10 +35,8 @@ void kvminit(void) {
 }
 
 
-extern void pvec_init();
 void kvminithart() {
-    pvec_init();
-    w_satp(MAKE_SATP(kernel_pagetable));
+    set_pgtbl(kernel_pagetable);
     sfence_vma();
 }
 

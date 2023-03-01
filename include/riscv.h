@@ -27,28 +27,6 @@ static inline uint32_t riscv_map_prot(uint32_t linux_prot) {
     return linux_prot << 1;
 }
 
-static inline uint64
-r_mstatus()
-{
-  uint64 x;
-  asm volatile("csrr %0, mstatus" : "=r" (x) );
-  return x;
-}
-
-static inline void 
-w_mstatus(uint64 x)
-{
-  asm volatile("csrw mstatus, %0" : : "r" (x));
-}
-
-// machine exception program counter, holds the
-// instruction address to which a return from
-// exception will go.
-static inline void 
-w_mepc(uint64 x)
-{
-  asm volatile("csrw mepc, %0" : : "r" (x));
-}
 
 // Supervisor Status Register, sstatus
 
@@ -93,18 +71,8 @@ w_mepc(uint64 x)
   __tmp; })
 
 
-static inline uint64
-r_sstatus()
-{
-  uint64 x;
-  asm volatile("csrr %0, sstatus" : "=r" (x) );
-  return x;
-}
-
 extern void push_off(void);
 extern void pop_off(void);
-#define printf printf_
-extern int printf_(const char* format, ...);
   /* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
 static inline void enable_sum() {
   push_off();
@@ -128,45 +96,11 @@ static inline void disable_sum() {
   pop_off();
 }
 
-
-static inline void 
-w_sstatus(uint64 x)
-{
-  asm volatile("csrw sstatus, %0" : : "r" (x));
-}
-
-// Supervisor Interrupt Pending
-static inline uint64
-r_sip()
-{
-  uint64 x;
-  asm volatile("csrr %0, sip" : "=r" (x) );
-  return x;
-}
-
-static inline void 
-w_sip(uint64 x)
-{
-  asm volatile("csrw sip, %0" : : "r" (x));
-}
-
 // Supervisor Interrupt Enable
 #define SIE_SEIE (1L << 9) // external
 #define SIE_STIE (1L << 5) // timer
 #define SIE_SSIE (1L << 1) // software
-static inline uint64
-r_sie()
-{
-  uint64 x;
-  asm volatile("csrr %0, sie" : "=r" (x) );
-  return x;
-}
 
-static inline void 
-w_sie(uint64 x)
-{
-  asm volatile("csrw sie, %0" : : "r" (x));
-}
 
 // SIP
 #define SIP_SSIP (1L << 1)
@@ -174,97 +108,15 @@ w_sie(uint64 x)
 #define SIP_SEIP (1L << 9)
 
 
-// supervisor exception program counter, holds the
-// instruction address to which a return from
-// exception will go.
-static inline void 
-w_sepc(uint64 x)
-{
-  asm volatile("csrw sepc, %0" : : "r" (x));
-}
-
-static inline uint64
-r_sepc()
-{
-  uint64 x;
-  asm volatile("csrr %0, sepc" : "=r" (x) );
-  return x;
-}
-
-
-
-
-// Supervisor Trap-Vector Base Address
-// low two bits are mode.
-static inline void 
-w_stvec(uint64 x)
-{
-  asm volatile("csrw stvec, %0" : : "r" (x));
-}
-
-static inline uint64
-r_stvec()
-{
-  uint64 x;
-  asm volatile("csrr %0, stvec" : "=r" (x) );
-  return x;
-}
-
-
 // use riscv's sv39 page table scheme.
 #define SATP_SV39 (8L << 60)
 
-#define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
-#define FETCH_PGTBL() ((pagetable_t)(r_satp() << 12))
-
-// supervisor address translation and protection;
-// holds the address of the page table.
-static inline void 
-w_satp(uint64 x)
-{
-  asm volatile("csrw satp, %0" : : "r" (x));
-}
-
-static inline uint64
-r_satp()
-{
-  uint64 x;
-  asm volatile("csrr %0, satp" : "=r" (x) );
-  return x;
-}
-
-// Supervisor Scratch register, for early trap handler in trampoline.S.
-static inline void 
-w_sscratch(uint64 x)
-{
-  asm volatile("csrw sscratch, %0" : : "r" (x));
-}
+#define set_pgtbl(pagetable) write_csr(satp, (SATP_SV39 | (((uint64)(pagetable)) >> 12)))
+#define get_pgtbl() ((pagetable_t)(read_csr(satp) << 12))
 
 
 
-// Supervisor Trap Cause
-static inline uint64
-r_scause()
-{
-  uint64 x;
-  asm volatile("csrr %0, scause" : "=r" (x) );
-  return x;
-}
-
-// Supervisor Trap Value
-static inline uint64
-r_stval()
-{
-  uint64 x;
-  asm volatile("csrr %0, stval" : "=r" (x) );
-  return x;
-}
-
-
-
-static inline uint64
-r_fp()
-{
+static inline uint64 r_fp() {
   uint64 x;
   asm volatile("mv %0, s0" : "=r" (x) );
   return x;
@@ -272,46 +124,23 @@ r_fp()
 
 
 // enable device interrupts
-static inline void
-intr_on()
-{
-  w_sstatus(r_sstatus() | SSTATUS_SIE);
+static inline void intr_on() {
+    set_csr(sstatus, SSTATUS_SIE);
 }
 
 // disable device interrupts
-static inline void
-intr_off()
-{
-  w_sstatus(r_sstatus() & ~SSTATUS_SIE);
+static inline void intr_off() {
+    clear_csr(sstatus, SSTATUS_SIE);
 }
 
 // are device interrupts enabled?
-static inline int
-intr_get()
-{
-  uint64 x = r_sstatus();
-  return (x & SSTATUS_SIE) != 0;
-}
-
-static inline uint64
-r_sp()
-{
-  uint64 x;
-  asm volatile("mv %0, sp" : "=r" (x) );
-  return x;
-}
-
-static inline void 
-w_sp(uint64 x)
-{
-  asm volatile("mv sp, %0" : : "r" (x));
+static inline int intr_get() {
+  return (read_csr(sstatus) & SSTATUS_SIE);
 }
 
 // read and write tp, the thread pointer, which holds
 // this core's hartid (core number), the index into cpus[].
-static inline uint64
-r_tp()
-{
+static inline uint64 r_tp() {
   uint64 x;
   asm volatile("mv %0, tp" : "=r" (x) );
   return x;
@@ -320,33 +149,25 @@ r_tp()
 // called with intr_off
 #define cpuid() (r_tp())
 
-static inline void 
-w_tp(uint64 x)
-{
+static inline void  w_tp(uint64 x) {
   asm volatile("mv tp, %0" : : "r" (x));
 }
 
-static inline uint64
-r_ra()
-{
+static inline uint64 r_ra() {
   uint64 x;
   asm volatile("mv %0, ra" : "=r" (x) );
   return x;
 }
 
 // flush the TLB.
-static inline void sfence_vma(void)
-{
+static inline void sfence_vma(void) {
     __asm__ __volatile__ ("fence\nfence.i\nsfence.vma" : : : "memory");
 }
 
-static inline void sfence_vma_addr(uint64_t addr)
-{
+static inline void sfence_vma_addr(uint64_t addr) {
     __asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
 }
 
-
-struct proc;
 
 static inline struct proc *get_current() {
     return (struct proc *)read_csr(sscratch);

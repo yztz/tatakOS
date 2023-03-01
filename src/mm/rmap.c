@@ -17,13 +17,10 @@
 #define __MODULE_NAME__ RMAP
 #include "debug.h"
 
-#include "mm/mm_types.h"
-#include "mm/mm.h"
 #include "rbtree.h"
 #include "utils.h"
 #include "memlayout.h"
 #include "list.h"
-#include "kthread.h"
 #include "mm/page.h"
 #include "pagevec.h"
 #include "swap.h"

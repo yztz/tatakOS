@@ -216,7 +216,7 @@ void print_zone_list_info(zone_t* zone) {
     print_zone_list(&zone->active_list);
 }
 
-struct rw_page_list;
+
 void print_rw_page_list(struct rw_page_list* pg_list) {
     rw_page_t* pg = pg_list->head;
     while (pg) {

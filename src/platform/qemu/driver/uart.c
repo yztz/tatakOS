@@ -52,7 +52,7 @@ uint64 uart_tx_r; // read next from uart_tx_buf[uart_tx_r % UART_TX_BUF_SIZE]
 int uartgetc(void);
 void uartputc(char c);
 void uartputc_sync(char c);
-int uartintr(void *ctx);
+void uartintr(void *ctx);
 
 static console_io_op_t ioop = {
     .console_getchar = uartgetc,
@@ -179,7 +179,7 @@ int uartgetc(void)
 // handle a uart interrupt, raised because input has
 // arrived, or the uart is ready for more output, or
 // both. called from devintr().
-int uartintr(void *ctx)
+void uartintr(void *ctx)
 {
   // read and process incoming characters.
   while (1)
@@ -194,6 +194,4 @@ int uartintr(void *ctx)
   acquire(&uart_tx_lock);
   uartstart();
   release(&uart_tx_lock);
-
-  return 0;
 }

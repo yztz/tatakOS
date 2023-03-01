@@ -7,6 +7,7 @@
 #include "kernel/proc.h"
 #include "kernel/sys.h"
 
+#define __MODULE_NAME__ SYSCALL
 #include "debug.h"
 
 int fetchaddr(uint64 addr, uint64 *ip) {
@@ -96,16 +97,17 @@ char *syscall_name(int num) {
 #endif
 
 void syscall(void) {
-  int num;
-  struct proc *p = myproc();
+  struct proc *p = current;
+  int num = proc_get_tf(p)->a7;
+  uint64_t epc = read_csr(sepc);
 
-  num = proc_get_tf(p)->a7;
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // debug_if(p->pid >= 4, "PID %d syscall " grn("%s") " from %#lx", p->pid, syscall_name(num), r_sepc());
-    proc_get_tf(p)->a0 = syscalls[num]();
+  if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    uint64_t ret = syscalls[num]();
+    debug_if(p->pid >= first_user_pid, "PID %d syscall " grn("%s = %ld") " from %#lx", p->pid, syscall_name(num), ret, epc);
+    proc_get_tf(p)->a0 = ret;
   } else {
     printf("PID %d %s: "rd("unknown sys call %d")" sepc %lx\n",
-            p->pid, p->name, num, r_sepc());
+            p->pid, p->name, num, epc);
     proc_get_tf(p)->a0 = -ENOSYS;
     panic("");
   }

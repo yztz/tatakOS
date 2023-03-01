@@ -17,8 +17,6 @@
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
 #define E_FILESIZE(entry) ((entry)->raw.size)
 
-struct fat_entry;
-
 typedef struct address_space {
 	struct fat_entry *host;		/* owner: inode, block_device */
 	struct radix_tree_root	page_tree;	/* radix tree of all pages */

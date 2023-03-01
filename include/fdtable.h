@@ -5,14 +5,13 @@
 #include "param.h"
 #include "atomic/spinlock.h"
 
-typedef struct file file_t;
-
 
 struct fdt_entry {
   file_t *f;
   int flag;
 };
 
+typedef struct fdt_entry fdt_entry_t;
 
 struct fdtable {
   int ref;
@@ -39,32 +38,5 @@ void fdtbl_ref(fdtable_t *self);
 void fdtbl_deref(fdtable_t *self);
 void fdtbl_closexec(fdtable_t *self);
 int fdtbl_getflags(fdtable_t *self, int fd);
-
-#define FD_SETSIZE 1024
-
-struct fdset {
-    unsigned long fds_bits[FD_SETSIZE / (8 * sizeof(long))];
-};
-
-struct pollfd {
-    int   fd;         /* file descriptor */
-    short events;     /* requested events */
-    short revents;    /* returned events */
-};
-
-#include "bitops.h"
-
-static inline void fdset_set(struct fdset* set, int nr) {
-  __set_bit(nr, (volatile unsigned long *)set);
-} 
-
-static inline void fdset_clear(struct fdset* set, int nr) {
-  __clear_bit(nr, (volatile unsigned long *)set);
-} 
-
-static inline int fdset_test(struct fdset* set, int nr) {
-  return test_bit(nr, (volatile unsigned long *)set);
-} 
-
 
 #endif

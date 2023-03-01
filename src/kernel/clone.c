@@ -12,7 +12,7 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
     fdtable_t *newfdtbl;
     signal_t *newsig;
     tg_t *newtg;
-    tf_t *newtf;
+    utf_t *newtf;
 
     // Allocate process.
     if ((np = proc_new(forkret)) == NULL) {

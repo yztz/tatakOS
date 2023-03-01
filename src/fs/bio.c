@@ -42,9 +42,7 @@ uint64_t bio_cache_hit;
 uint64_t bio_cache_miss;
 #endif
 
-void
-binit(void)
-{
+void binit(void) {
   struct buf *b;
 
   initlock(&bcache.lock, "bcache");

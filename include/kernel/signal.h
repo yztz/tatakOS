@@ -1,7 +1,7 @@
 #ifndef _H_SIGNAL_
 #define _H_SIGNAL_
 
-#include "common.h"
+#include "types.h"
 #include "atomic/spinlock.h"
 #include "list.h"
 

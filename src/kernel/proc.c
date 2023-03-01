@@ -16,8 +16,6 @@
 #define __MODULE_NAME__ PROC
 #include "debug.h"
 
-struct cpu cpus[NUM_CORES];
-
 struct proc proc[NPROC];
 
 struct proc *initproc;
@@ -25,6 +23,10 @@ struct proc *initproc;
 atomic_t proc_cnt = INIT_ATOMIC();
 
 static atomic_t nextpid = INIT_ATOMIC();
+
+#ifdef DEBUG
+int first_user_pid = -1;
+#endif
 
 #define get_next_pid() (atomic_inc(&nextpid))
 
@@ -50,30 +52,11 @@ static inline void procstate_init() {
     }
 }
 
-static inline void cpustate_init() {
-    for (int i = 0; i < NUM_CORES; i++) {
-        cpus[i].intena = 0;
-        cpus[i].noff = 0;
-        cpus[i].proc = NULL;
-    }
-}
-
 // initialize the proc table at boot time.
-void procinit(void) {
+void procinit() {
+    cpu_init();
     initlock(&wait_lock, "wait_lock");
     procstate_init();
-    cpustate_init();
-}
-
-// Return this CPU's cpu struct.
-// Interrupts must be disabled.
-struct cpu *mycpu(void) {
-    int id = cpuid();
-#ifdef QEMU 
-    assert_s(id < NUM_CORES, "CPUS change detected. Please clean and remake.");
-#endif
-    struct cpu *c = &cpus[id];
-    return c;
 }
 
 
@@ -87,23 +70,6 @@ struct proc *myproc(void) {
     return p;
 }
 
-struct pagevec;
-
-struct pagevec *my_inactive_pvec() {
-    push_off();
-    struct cpu *c = mycpu();
-    struct pagevec *inactive_pvec = c->inactive_pvec;
-    // pop_off();
-    return inactive_pvec;
-}
-
-struct pagevec *my_active_pvec() {
-    push_off();
-    struct cpu *c = mycpu();
-    struct pagevec *active_pvec = c->active_pvec;
-    // pop_off();
-    return active_pvec;
-}
 
 int get_proc_cnt() {
     return atomic_get(&proc_cnt);
@@ -239,6 +205,9 @@ static void __userinit(proc_t *p) {
     debug("mount fs");
     fat_mount(ROOTDEV, &fat);
     p->cwd = namee(NULL, "/");
+#ifdef DEBUG
+    first_user_pid = atomic_get(&nextpid);
+#endif
     forkret(p);
 }
 
@@ -249,7 +218,7 @@ void userinit(void) {
     fdtable_t *fdtable;
     signal_t *sig;
     tg_t *tg;
-    tf_t *tf;
+    utf_t *tf;
 
     p = proc_new(__userinit);
     initproc = p;
@@ -507,7 +476,7 @@ void proc_settg(proc_t *p, tg_t *tg) {
     p->tg = tg;
 }
 
-void proc_settf(proc_t *p, tf_t *tf) {
+void proc_settf(proc_t *p, utf_t *tf) {
     p->trapframe = tf;
 }
 
@@ -516,7 +485,7 @@ void proc_setfdtbl(proc_t *p, fdtable_t *fdtbl) {
     p->fdtable = fdtbl;
 }
 
-tf_t *proc_get_tf(proc_t *p) {
+utf_t *proc_get_tf(proc_t *p) {
     return p->trapframe;
 }
 

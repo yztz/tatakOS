@@ -102,7 +102,7 @@ void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, in
   pte_t *pte;
   int pgsize = PGSIZE_SPEC(spec);
 
-  int need_flush = FETCH_PGTBL() == pagetable;
+  int need_flush = get_pgtbl() == pagetable;
 
   if((va % pgsize) != 0)
     panic("uvmunmap: not aligned");

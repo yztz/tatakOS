@@ -24,21 +24,7 @@ zone_t memory_zone = (zone_t){.lru_lock = {.locked=0, .name="zone lock", .cpu=NU
                               .nr_active = 0, 
                               .nr_inactive = 0};
 
-/* 2个cpu */
-pagevec_t lru_add_pvecs[NUM_CORES], lru_add_active_pvecs[NUM_CORES];
-// pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 
-
-void pvec_init(){
-	push_off();
-	struct cpu *c = mycpu();
-	int id = cpuid();
-	c->inactive_pvec = &lru_add_pvecs[id];
-	c->active_pvec = &lru_add_active_pvecs[id];
-	lru_add_pvecs[id].nr = 0;
-	lru_add_active_pvecs[id].nr = 0;
-	pop_off();
-}
 /**
  * @brief 从inactive链表上删除，添加到active链表头。
  * 
@@ -79,7 +65,7 @@ void mark_page_accessed(page_t *page)
  */
 void lru_cache_add(page_t *page)
 {
-	// pagevec_t *pvec = &lru_add_pvecs;
+    push_off();
 	pagevec_t *pvec = my_inactive_pvec();
 
 	if(pvec == NULL)
@@ -95,7 +81,7 @@ void lru_cache_add(page_t *page)
  */
 void lru_cache_add_active(page_t *page)
 {
-	// struct pagevec *pvec = &lru_add_active_pvecs;
+	push_off();
 	struct pagevec *pvec = my_active_pvec();
 
 	get_page(page);
@@ -180,14 +166,12 @@ void pagevec_lru_add_active(struct pagevec *pvec)
  */
 void lru_add_drain(void)
 {
-	// struct pagevec *pvec = &(lru_add_pvecs);
+    push_off();
 	struct pagevec *pvec = my_inactive_pvec();
 
 	if (pagevec_count(pvec))
 		pagevec_lru_add(pvec);
 
-	pop_off();
-	// pvec = &(lru_add_active_pvecs);
 	pvec = my_active_pvec();
 
 	if (pagevec_count(pvec))

@@ -21,7 +21,6 @@ obj-y += kprint.o
 obj-y += main.o
 obj-y += printf.o
 obj-y += console.o
-obj-y += futex.o
 obj-y += nulldev.o
 obj-y += riscv.o
 obj-y += string.o

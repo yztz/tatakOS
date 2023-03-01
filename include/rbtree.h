@@ -94,8 +94,6 @@ static inline struct page * rb_insert_page_cache(struct inode * inode,
 #ifndef	_LINUX_RBTREE_H
 #define	_LINUX_RBTREE_H
 #include "types.h"
-// #include <linux/kernel.h>
-// #include <linux/stddef.h>
 
 struct rb_node
 {
@@ -112,6 +110,9 @@ struct rb_root
 {
 	struct rb_node *rb_node;
 };
+
+typedef struct rb_node rb_node_t;
+typedef struct rb_root rb_root_t;
 
 
 #define RB_ROOT	(struct rb_root) { NULL, }

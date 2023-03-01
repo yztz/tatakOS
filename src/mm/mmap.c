@@ -464,13 +464,13 @@ void switchuvm(mm_t *mm) {
   if(mm->pagetable == 0)
     panic("switchuvm: no pgdir");
 
-  write_csr(satp, MAKE_SATP(mm->pagetable));
+  set_pgtbl(mm->pagetable);
   sfence_vma();
 }
 
 extern pagetable_t kernel_pagetable;
 void switchkvm() {
-  write_csr(satp, MAKE_SATP(kernel_pagetable));
+  set_pgtbl(kernel_pagetable);
 //   sfence_vma();
 }
 

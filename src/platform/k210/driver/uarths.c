@@ -20,7 +20,7 @@
 #include "sysctl.h"
 #include "mm/io.h"
 
-int uartintr(void *ctx);
+void uartintr(void *ctx);
 void uarths_putchar(char c);
 int uarths_getchar(void);
 
@@ -129,7 +129,7 @@ void uarths_init(void)
 }
 
 
-int uartintr(void *ctx)
+void uartintr(void *ctx)
 {
   // read and process incoming characters.
   while (1)
@@ -140,8 +140,6 @@ int uartintr(void *ctx)
     console_intr_callback(c);
   }
 
-
-  return 0;
 }
 
 // void uarths_config(uint32_t baud_rate, uarths_stopbit_t stopbit)

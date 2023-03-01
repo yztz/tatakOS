@@ -30,8 +30,8 @@ struct pagevec {
 	page_t *pages[PAGEVEC_SIZE];
 };
 
+typedef struct pagevec pagevec_t;
 
-// extern pagevec_t lru_add_pvecs, lru_add_active_pvecs;
 
 void pagevec_release(struct pagevec *pvec);
 void __pagevec_release_nonlru(struct pagevec *pvec);

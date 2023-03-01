@@ -7,6 +7,7 @@
 #include "kernel/syscall.h"
 #include "kernel/time.h"
 #include "mm/vm.h"
+#include "poll.h"
 #include "driver/timer.h"
 #include "driver/console.h"
 
@@ -25,7 +26,7 @@ uint64_t sys_pselect(void) {
     struct fdset exceptfds;
     timespec_t ts;
 
-    proc_t *p = myproc(); 
+    proc_t *p = current; 
 
     argint(0, &nfds);
     if(nfds > FD_SETSIZE) return -1;
@@ -105,7 +106,6 @@ uint64_t sys_pselect(void) {
     return ans;
 }
 
-#include "poll.h"
 uint64 sys_ppoll(void) {
     uint64_t pfdaddr;
     int nfds;
@@ -135,7 +135,7 @@ uint64 sys_ppoll(void) {
         return -1;
     
    
-    uint64_t timeout = tsaddr ? ts2ticks(&ts) : -1;
+    int64_t timeout = tsaddr ? ts2ticks(&ts) : -1;
 
     while(1) {
         switch(f->type) {
