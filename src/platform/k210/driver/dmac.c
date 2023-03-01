@@ -541,7 +541,7 @@ void dmac_set_linked_list_addr_point(dmac_channel_number_t channel_num,
 }
 
 
-int dmac_intr(void *ctx);
+void dmac_intr(void *ctx);
 void dmac_init(void)
 {
     uint64_t tmp;
@@ -733,7 +733,7 @@ void dmac_wait_idle(dmac_channel_number_t channel_num)
 
 
 
-int dmac_intr(void *ctx)
+void dmac_intr(void *ctx)
 {
     // printf("dma intr...\n");
     dmac_chanel_interrupt_clear(DMAC_CHANNEL0);
@@ -750,7 +750,6 @@ int dmac_intr(void *ctx)
     // }
     
     wakeup((void *)dmac);
-    return 0;
 }
 
 void dmac_set_src_dest_length(dmac_channel_number_t channel_num, const void *src, void *dest, size_t len)

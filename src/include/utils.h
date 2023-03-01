@@ -5,6 +5,7 @@
 #include "sbi.h"
 #include "bio.h"
 #include "str.h"
+#include "types.h"
 #include "gcc_attr.h"
 
 #define LOOP() {while(1) continue;}

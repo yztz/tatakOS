@@ -1,7 +1,7 @@
 #ifndef _H_TIME_
 #define _H_TIME_
 
-#include "common.h"
+#include "types.h"
 
 struct timespec {
 	uint64_t ts_sec;        /* 秒 */
@@ -16,10 +16,13 @@ struct timeval {
 typedef struct timespec timespec_t;
 typedef struct timeval timeval_t;
 
+#define MS_IN_NS (1000 * 1000 * 1000UL)
+#define MS_ROUND_UP(ns) ((((ns) + MS_IN_NS - 1) / MS_IN_NS) * MS_IN_NS)
+
 #define SEC2TICK(sec) ((sec) * 1000 / TICK_GRANULARITY)
-#define MS2TICK(ms) ((ms) / TICK_GRANULARITY)
-#define US2TICK(us) ((us) * TICK_GRANULARITY / 1000)
-#define NS2TICK(ns) ((ns) / 1000 / 1000 / TICK_GRANULARITY)
+#define NS2TICK(ns) (MS_ROUND_UP(ns) / 1000 / 1000 / TICK_GRANULARITY)
+#define US2TICK(us) NS2TICK((us) * 1000)
+#define MS2TICK(ms) US2TICK((ms) * 1000)
 
 #define TICK2SEC(tick) (tick * TICK_GRANULARITY / 1000)
 #define TICK2MS(tick) (tick * TICK_GRANULARITY)

@@ -27,7 +27,7 @@
 #define PLIC_MODE S_MODE
 
 /* supported source is platform-specific */
-enum _plic_irq {
+enum plic_irq {
     VIRTIO0_IRQ = 1,
     // ...
     UART0_IRQ = 10,

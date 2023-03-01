@@ -56,13 +56,13 @@
 #ifndef MEM_END
 #define MEM_END
 #endif
-
+// Hz
 #ifndef CLOCK_FREQ
 #define CLOCK_FREQ
 #endif
 
 /* supported source */
-enum _plic_irq;
+typedef enum plic_irq plic_irq_t;
 /////////////////////////////////////////////////
 //////// platform-specific macro list end ///////
 /////////////////////////////////////////////////

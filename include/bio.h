@@ -36,10 +36,12 @@ typedef struct bio_vec {
 } bio_vec_t;
 
 
-typedef struct request_queue {
+struct request_queue {
   struct bio *rq_head, *rq_tail;
   spinlock_t rq_lock;
-} request_queue_t;
+};
+
+typedef struct request_queue request_queue_t;
 
 void make_request();
 void submit_bio(struct bio *bio);

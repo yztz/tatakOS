@@ -163,7 +163,7 @@ void plic_register_handler(plic_irq_t source, plic_irq_callback_t callback, void
     };
 }
 
-#include "printf.h"
+
 int handle_ext_irq() {
     int ret;
     /* Get current IRQ num */
@@ -172,7 +172,8 @@ int handle_ext_irq() {
 
     // debug("IRQ: %d\n", int_num);
     if (plic_instances[int_num].callback) {
-        ret = plic_instances[int_num].callback(plic_instances[int_num].ctx);
+        plic_instances[int_num].callback(plic_instances[int_num].ctx);
+        ret = 0;
     } else {
         printf("no handler for IRQ: %d...\n", int_num);
         ret = -1;

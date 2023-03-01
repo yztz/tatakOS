@@ -1,40 +1,42 @@
 #ifndef _H_PARAM_
 #define _H_PARAM_
 
-#define NPROC        50  // maximum number of processes
-#define NOFILE       5  // open files per process
-#define NFILE        30  // open files per system
-#define NDEV         10  // maximum major device number
-#define ROOTDEV       1  // device number of file system root disk
-#define MAXARG       32  // max exec arguments
+/* maximum nr of processes */
+#define NPROC        50  
+/* static open files per process */
+#define NOFILE       5
+/* maximum device nr */
+#define NDEV         10
+/* device nr of file system root disk */
+#define ROOTDEV       1
+/* maximum exec arg nr */
+#define MAXARG       32 
+/* maximum exec arg length */
 #define MAXARGLEN    64
-#define MAXENV       32  // max exec arguments
-
-#define NBUF         (30)  // size of disk block cache
-#define MAXPATH      128   // maximum file path name
-#define MAX_MAP      15    // maximum io map
-
+/* maximum exec env nr */
+#define MAXENV       32  
+/* size of disk block cache */
+#define NBUF         30
+/* io map nr */
+#define MAX_MAP      15    
+/* maximum file descriptor */
 #define MAX_FD       256
-
-#define BSIZE 512
-#define NENTRY 10
+/* block size */
+#define BSIZE        512
+/* maximum file entry in memory */
+#define NENTRY       10
+/* maximum file path name */
+#define MAXPATH      128 
+/* maximum file name length */
 #define MAX_FILE_NAME 64
-
-#define USTACKSIZE (4096 * 40)
-
-#define TICK_GRANULARITY 10L // ms
-
-/* 最大readahead页数占当前空余内存的页数 */
+/* user stack size */
+#define USTACKSIZE (4096 * 10)
+/* clock IRQ interval (ms) */
+#define TICK_GRANULARITY 10L
+/* percentage of the maximum readahead pages to the free */
 #define READ_AHEAD_RATE 10
-/* Buddy最大Order */
+/* maximum order for buddy */
 #define BUDDY_ORDER_NUM 10
-
-/* Which page allocator */
-#define BUDDY_ALLOCATOR 0
-#define FREELIST_ALLOCATOR 1
-
-#define PAGE_ALLOCATOR BUDDY_ALLOCATOR
-
 
 
 

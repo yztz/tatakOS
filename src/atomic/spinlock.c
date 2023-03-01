@@ -55,7 +55,6 @@ acquire(struct spinlock *lk)
 
   // Record info about lock acquisition for holding() and debugging.
   lk->cpu = mycpu();
-  // lk->pid = myproc() ? myproc()->pid : -1;
 }
 
 // Release the lock.

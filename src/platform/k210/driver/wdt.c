@@ -80,7 +80,7 @@ void wdt_start()
     wdt_enable(0);
 }
 
-int wdt_irq_handler(void *ctx);
+void wdt_irq_handler(void *ctx);
 
 uint32_t wdt_init(uint64_t time_out_ms)
 {
@@ -105,10 +105,8 @@ void wdt_stop()
     wdt_disable(0);
 }
 
-int wdt_irq_handler(void *ctx) {
+void wdt_irq_handler(void *ctx) {
     
     printf("wdt QAQ\n");
     wdt_clear_interrupt(0);
-    // while(1);
-    return 0;
 }

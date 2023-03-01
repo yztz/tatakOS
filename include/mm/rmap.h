@@ -27,6 +27,8 @@ struct pte_chain {
 	// uint64_t	va[NRPTE];
 };
 
+typedef struct pte_chain pte_chain_t;
+
 
 #endif	/* _LINUX_RMAP_H */
 

@@ -17,6 +17,8 @@ struct list_head{
   struct list_head *next, *prev;
 };
 
+typedef struct list_head list_head_t;
+
 
 #define LIST_HEAD_INIT(name) {&(name), &(name)}
 

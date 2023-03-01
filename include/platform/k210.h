@@ -89,7 +89,7 @@
 #define CLINT CLINT_BASE_ADDR
 #define CLINT_MTIME (CLINT + 0xBFF8)
 
-enum _plic_irq {
+enum plic_irq {
     IRQN_NO_INTERRUPT        = 0, /*!< The non-existent interrupt */
     IRQN_SPI0_INTERRUPT      = 1, /*!< SPI0 interrupt */
     IRQN_SPI1_INTERRUPT      = 2, /*!< SPI1 interrupt */

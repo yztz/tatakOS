@@ -69,7 +69,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 #include "platform.h"
 
-
+typedef uint8_t pgref_t;
 
 struct page_t {
     atomic_t refcnt;        

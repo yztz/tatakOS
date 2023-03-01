@@ -4,7 +4,8 @@
 #include "types.h"
 #include "param.h"
 
-struct _device_t {
+
+struct device_t {
   int (*read)(int, uint64, int);
   int (*write)(int, uint64, int);
 };

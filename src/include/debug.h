@@ -19,6 +19,8 @@
 #define debug_if(condition, fmt, ...) {if(condition) debug(fmt, ##__VA_ARGS__)}
 #define debug_statement(statement) statement
 
+extern int first_user_pid;
+
 #else // DEBUG
 
 #define debug(fmt, ...)

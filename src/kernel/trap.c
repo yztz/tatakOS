@@ -36,17 +36,20 @@ void trapinithart(void) {
  * 
  */
 void usertrap(void) {
+    uint64 sstatus = read_csr(sstatus);
     uint64 scause = read_csr(scause);
+    uint64 sepc = read_csr(sepc);
+    uint64 stval = read_csr(stval);
 
-    if ((r_sstatus() & SSTATUS_SPP) != 0) {
+    if ((sstatus & SSTATUS_SPP) != 0) {
         printf("scause %p\n", scause);
-        printf("sepc=%p stval=%p\n", read_csr(sepc), read_csr(stval));
+        printf("sepc=%p stval=%p\n", sepc, stval);
         panic("usertrap: not from user mode");
     }
 
     if (intr_get() != 0) {
         printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
+        printf("sepc=%p stval=%p\n", sepc, stval);
         panic("utrap: interrupts enabled");
     }
 
@@ -57,7 +60,7 @@ void usertrap(void) {
     struct proc *p = current;
 
     // save user program counter.
-    p->trapframe->epc = read_csr(sepc);
+    p->trapframe->epc = sepc;
     tf_flstore(p->trapframe);
 
     if (scause == EXCP_SYSCALL) {
@@ -78,7 +81,7 @@ void usertrap(void) {
     } else if (handle_pagefault(scause) == 0) {
         // ok
     } else {
-        info("pid is %d sepc is %lx scause is "rd("%s(%d)")" stval is %lx", p->pid, r_sepc(), riscv_cause2str(scause), scause, r_stval());
+        info("pid is %d sepc is %lx scause is "rd("%s(%d)")" stval is %lx", p->pid, sepc, riscv_cause2str(scause), scause, stval);
         ER();
         p->killed = 1;
     }
@@ -101,13 +104,13 @@ void usertrap(void) {
  * 
  * @param trapfram user trapframe address
  */
-void userret(tf_t *);
+void userret(utf_t *);
 
 /**
  * @brief entry of user trap
  * 
  */
-void uservec();
+extern void uservec();
 
 void usertrapret(void) {
     struct proc *p = current;
@@ -116,25 +119,22 @@ void usertrapret(void) {
     // we're back in user space, where usertrap() is correct.
     intr_off();
 
-    // send syscalls, interrupts, and exceptions to trampoline.S
-    w_stvec((uint64)uservec);
+    // set user trap entry
+    write_csr(stvec, uservec);
 
     // set up trapframe values that uservec will need when
     // the process next re-enters the kernel.
     p->trapframe->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
     p->trapframe->kernel_trap = (uint64)usertrap;
-    p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+    p->trapframe->kernel_hartid = cpuid();         // hartid for cpuid()
     // restore float registers
     tf_flrestore(p->trapframe);
 
-    // set S Previous Privilege mode to User.
-    unsigned long x = r_sstatus();
-    x &= ~SSTATUS_SPP; // clear SPP to 0 for user mode
-    x |= SSTATUS_SPIE; // enable interrupts in user mode
-    w_sstatus(x);
+    clear_csr(sstatus, SSTATUS_SPP); // clear SPP to 0 for user mode
+    set_csr(sstatus, SSTATUS_SPIE); // enable interrupts in user mode
 
     // set S Exception Program Counter to the saved user pc.
-    w_sepc(p->trapframe->epc);
+    write_csr(sepc, p->trapframe->epc);
 
     assert(p->trapframe->proc != 0);
 
@@ -149,9 +149,10 @@ void usertrapret(void) {
  * @param context kernel trapframe on kernel stack
  */
 void kerneltrap(ktf_t *context) {
-    uint64 sepc = r_sepc();
-    uint64 sstatus = r_sstatus();
-    uint64 scause = r_scause();
+    uint64 scause = read_csr(scause);
+    uint64 sepc = read_csr(sepc);
+    uint64 sstatus = read_csr(sstatus);
+    uint64 stval = read_csr(stval);
     proc_t *p = current;
 
 
@@ -160,13 +161,13 @@ void kerneltrap(ktf_t *context) {
 
     if (intr_get() != 0) {
         printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
+        printf("sepc=%p stval=%p\n", sepc, stval);
         panic("kerneltrap: interrupts enabled");
     }
 
 #ifdef K210
     if (scause == EXCP_STORE_MISALIGNED) {
-        printf("sepc=%p ", r_sepc());
+        printf("sepc=%p ", sepc);
         panic("misaligned access is not support on K210 now.");
     }
 #endif
@@ -181,7 +182,7 @@ void kerneltrap(ktf_t *context) {
         // ok
     } else {
         printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
+        printf("sepc=%p stval=%p\n", sepc, stval);
         panic("kerneltrap");
     }
 
@@ -194,8 +195,8 @@ void kerneltrap(ktf_t *context) {
 
     // the yield() may have caused some traps to occur,
     // so restore trap registers for use by kernelvec.S's sepc instruction.
-    w_sepc(sepc);
-    w_sstatus(sstatus);
+    write_csr(sepc, sepc);
+    write_csr(sstatus, sstatus);
 }
 
 #include "kernel/time.h"

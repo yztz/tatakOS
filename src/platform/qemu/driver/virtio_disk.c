@@ -78,7 +78,7 @@ static struct disk {
   
 } __attribute__ ((aligned (PGSIZE))) disk;
 
-int virtio_disk_intr(void);
+void virtio_disk_intr(void);
 
 void
 virtio_disk_init(void)
@@ -300,7 +300,7 @@ virtio_disk_rw(bio_vec_t *bio_vec, int write)
   release(&disk.vdisk_lock);
 }
 
-int virtio_disk_intr() {
+void virtio_disk_intr() {
   // printf("virtual disk handler start!\n");
   acquire(&disk.vdisk_lock);
 
@@ -334,7 +334,6 @@ int virtio_disk_intr() {
   }
   // printf("virtual disk handle end!\n");
   release(&disk.vdisk_lock);
-  return 0;
 }
 
 void disk_io(bio_vec_t *bio_vec,  int write) {

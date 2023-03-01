@@ -149,7 +149,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
  * @return 不是对应的异常类型，返回-1，否则返回0，表示处理完成
  */
 int handle_pagefault(uint64_t scause) {
-    int ktrap = r_sstatus() & SSTATUS_SPP;
+    int ktrap = read_csr(sstatus) & SSTATUS_SPP;
     proc_t *p = current;
     uint64_t epc = read_csr(sepc);
     uint64_t stval = read_csr(stval);

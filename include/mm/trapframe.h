@@ -4,7 +4,7 @@
 #include "types.h"
 
 
-struct k_trapframe {
+struct ktrapframe {
     uint64_t ra;
     uint64_t sp;
     uint64_t gp;
@@ -38,7 +38,7 @@ struct k_trapframe {
     uint64_t t6;
 };
 
-struct trapframe {
+struct utrapframe {
   /*   0 */ uint64 proc;
   /*   8 */ uint64 kernel_sp;     ///< top of process's kernel stack
   /*  16 */ uint64 kernel_trap;   ///< usertrap()
@@ -110,18 +110,18 @@ struct trapframe {
   /* 536 */ uint64 f30;
   /* 544 */ uint64 f31;
   /* 552 */ uint64 fcsr;
-  struct trapframe *sigtf; ///< save copy when handling signals
+  struct utrapframe *sigtf; ///< save copy when handling signals
 };
 
 
-tf_t *tf_new(struct proc *p);
-tf_t *tf_new_clone(struct proc *p, tf_t *old);
-void tf_free(tf_t **pptf);
-void tf_backup(tf_t *self);
-void tf_restore(tf_t *self);
-void tf_reset(tf_t *self, uint64_t pc, uint64_t sp);
-void tf_print(tf_t *tf);
-void tf_flstore(tf_t *self);
-void tf_flrestore(tf_t *self);
+utf_t *tf_new(struct proc *p);
+utf_t *tf_new_clone(struct proc *p, utf_t *old);
+void tf_free(utf_t **pptf);
+void tf_backup(utf_t *self);
+void tf_restore(utf_t *self);
+void tf_reset(utf_t *self, uint64_t pc, uint64_t sp);
+void tf_print(utf_t *tf);
+void tf_flstore(utf_t *self);
+void tf_flrestore(utf_t *self);
 
 #endif

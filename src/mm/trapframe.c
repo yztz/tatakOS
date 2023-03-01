@@ -2,10 +2,10 @@
 #include "common.h"
 #include "mm/alloc.h"
 
-#define BACKUP_TF(tf) ((tf_t *)((uint64_t)tf + sizeof(tf_t)))
+#define BACKUP_TF(tf) ((utf_t *)((uint64_t)tf + sizeof(utf_t)))
 
-tf_t *tf_new(struct proc *p) {
-    tf_t *tf = (tf_t*)kzalloc(PGSIZE);
+utf_t *tf_new(struct proc *p) {
+    utf_t *tf = (utf_t*)kzalloc(PGSIZE);
     if(tf == NULL) {
         return NULL;
     }
@@ -16,14 +16,14 @@ tf_t *tf_new(struct proc *p) {
 }
 
 
-tf_t *tf_new_clone(struct proc *p, tf_t *old) {
-    tf_t *tf = (tf_t*)kzalloc(PGSIZE);
+utf_t *tf_new_clone(struct proc *p, utf_t *old) {
+    utf_t *tf = (utf_t*)kzalloc(PGSIZE);
     if(tf == NULL) {
         return NULL;
     }
 
     // inlcudes backup
-    memmove(tf, old, 2 * sizeof(tf_t));
+    memmove(tf, old, 2 * sizeof(utf_t));
 
     tf->proc = (uint64_t)p;
     
@@ -35,33 +35,33 @@ tf_t *tf_new_clone(struct proc *p, tf_t *old) {
     return tf;
 }
 
-void tf_backup(tf_t *self) {
-    tf_t *backup = BACKUP_TF(self);
+void tf_backup(utf_t *self) {
+    utf_t *backup = BACKUP_TF(self);
     *backup = *self;
     self->sigtf = backup;
 }
 
-void tf_restore(tf_t *self) {
+void tf_restore(utf_t *self) {
     if(self->sigtf == NULL)
         panic("whereis tf?");
     *self = *self->sigtf;
     self->sigtf = NULL;
 }
 
-void tf_reset(tf_t *self, uint64_t pc, uint64_t sp) {
+void tf_reset(utf_t *self, uint64_t pc, uint64_t sp) {
     uint64_t proc = self->proc;
-    memset(self, 0, sizeof(tf_t));
+    memset(self, 0, sizeof(utf_t));
     self->proc = proc;
     self->sp = sp;
     self->epc = pc;
 }
 
-void tf_free(tf_t **pptf) {
+void tf_free(utf_t **pptf) {
     kfree_safe(pptf);
 }
 
 
-void tf_flstore(tf_t *self) {
+void tf_flstore(utf_t *self) {
     __asm__ __volatile__ (
         "fsd f0,296(%0)\n\t"
         "fsd f1,304(%0)\n\t"
@@ -102,7 +102,7 @@ void tf_flstore(tf_t *self) {
         : "t0"
     );
 }
-void tf_flrestore(tf_t *self) {
+void tf_flrestore(utf_t *self) {
     __asm__ __volatile__ (
         "fld f0,296(%0)\n\t"
         "fld f1,304(%0)\n\t"
@@ -145,7 +145,7 @@ void tf_flrestore(tf_t *self) {
 }
 
 
-void tf_print(tf_t *tf) {
+void tf_print(utf_t *tf) {
     printf("Trapframe {\n");
     printf("    sp: %lx\n", tf->sp);
     printf("    fp: %lx\n", tf->s0);
