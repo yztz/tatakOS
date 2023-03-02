@@ -71,13 +71,7 @@ int luaO_log2(unsigned int x) {
     return l + log_2[x];
 }
 
-/* TODO */
-void TD(char* info, char* s, const char* s1, int d) {
-    printf(ylw("TODO INFO:\n"));
-    printf(bl("%s\n"), info);
-    printf(grn("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
-    // for(;;);
-}
+
 
 
 void error(char* info, char* s, const char* s1, int d) {
@@ -207,13 +201,6 @@ void print_zone_list(list_head_t* head) {
     list_for_each_entry(page, head, lru) {
         print_page_info(page);
     }
-}
-
-void print_zone_list_info(zone_t* zone) {
-    printf(grn("nr_inactive: %d\n"), zone->nr_inactive);
-    print_zone_list(&zone->inactive_list);
-    printf(grn("nr_active %d\n"), zone->nr_active);
-    print_zone_list(&zone->active_list);
 }
 
 

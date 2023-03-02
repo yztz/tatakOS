@@ -81,9 +81,7 @@ printptr(int fd, uint64 x) {
 }
 
 // Print to the given fd. Only understands %d, %x, %p, %s.
-void
-vprintf(int fd, const char *fmt, va_list ap)
-{
+void vprintf(int fd, const char *fmt, va_list ap) {
   char *s;
   int c, i, state;
 
@@ -127,27 +125,21 @@ vprintf(int fd, const char *fmt, va_list ap)
   }
 }
 
-void
-fprintf(int fd, const char *fmt, ...)
-{
+void fprintf(int fd, const char *fmt, ...) {
   va_list ap;
 
   va_start(ap, fmt);
   vprintf(fd, fmt, ap);
 }
 
-void
-printf(const char *fmt, ...)
-{
+void printf(const char *fmt, ...) {
   va_list ap;
 
   va_start(ap, fmt);
   vprintf(1, fmt, ap);
 }
 
-int
-strncmp(const char *p, const char *q, uint n)
-{
+int strncmp(const char *p, const char *q, uint n) {
   while(n > 0 && *p && *p == *q)
     n--, p++, q++;
   if(n == 0)

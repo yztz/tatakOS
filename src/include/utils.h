@@ -59,14 +59,12 @@ struct proc;
 struct zone;
 struct kmap;
 struct radix_tree_root;
-struct pages_be_found_head;
 
 
 void backtrace();
 void backtrace_fp(uint64 fp);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
-void print_page(int pgnum);
 void print_dir_item(struct dir_item *item);
 void print_block(uint8_t *b) ;
 void printf_radix_tree(struct radix_tree_root *root);
@@ -74,15 +72,9 @@ void print_bio_vec(struct bio *);
 void print_page_contents(char* pa);
 void __attribute__((noreturn)) error(char *info, char *s, const char *s1, int d);
 void print_argv(char **argv);
-void print_zone_list_info(struct zone *zone);
-void print_pages_be_found(struct pages_be_found_head *pg_head);
-void print_kmap(struct kmap map);
 void print_pagetable(pagetable_t pagetable);
 void print_mm_free();
 
-
-void TD(char *info, char *s, const char *s1, int d);
-#define todo(str)  TD(str, __FILE__, __func__, __LINE__)
 
 #define grn(str) 	"\e[32;1m"str"\e[0m"
 #define ylw(str) 	"\e[33;1m"str"\e[0m"
