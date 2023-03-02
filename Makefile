@@ -21,6 +21,19 @@ colorful_output ?= on
 #
 display_todo_info ?= off
 
+# compile output
+verbose ?= 1
+ifeq ($(verbose), 0)
+  V := @
+  I := @
+else ifeq ($(verbose), 1)
+  V := @
+  I := 
+else ifeq ($(verbose), 2)
+  V :=
+  I :=
+endif
+
 #==========================DIR INFO================================#
 ROOT 	:= $(shell pwd)
 SCRIPT	:= $(ROOT)/script
@@ -53,7 +66,7 @@ endif
 
 export ROOT SCRIPT OBJ_DIR U_OBJ_DIR U_PROG_DIR K U P BUILD_ROOT TOOL
 export CC AS LD OBJCOPY OBJDUMP SUDO
-export debug platform arch colorful_output
+export debug platform arch colorful_output V I
 
 #=============================FLAGS================================#
 # platform
@@ -122,32 +135,32 @@ syscall := $(GEN_HEADER_DIR)/syscall_gen.h
 
 kernel: $(syscall)
 	$(call make_echo_color_bold, white,\nCFLAGS = $(CFLAGS)\n)
-	@make -C $K
+	$(V)make -C $K
 	$(call make_echo_color_bold, green,\nKERNEL BUILD SUCCESSFUL!\n)
 
 $(syscall): entry/syscall.tbl
 	$(call make_echo_generate_file,syscall_tbl)
-	@mkdir -p $(GEN_HEADER_DIR)
-	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall_gen.h -t tbl
-	@python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall.h -t hdr
+	$(V)mkdir -p $(GEN_HEADER_DIR)
+	$(V)python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall_gen.h -t tbl
+	$(V)python3 $(SCRIPT)/sys_tbl.py $< -o $(GEN_HEADER_DIR)/syscall.h -t hdr
 
 
 SBI_TARGET_PATH := target/riscv64imac-unknown-none-elf/debug
 sbi-k210:
-	@cd bootloader/rustsbi-k210 && cargo make
-	cp bootloader/rustsbi-k210/$(SBI_TARGET_PATH)/rustsbi-k210 bootloader/$@
+	$(V)cd bootloader/rustsbi-k210 && cargo make
+	$(V)cp bootloader/rustsbi-k210/$(SBI_TARGET_PATH)/rustsbi-k210 bootloader/$@
 sbi-qemu:
-	@cd bootloader/rustsbi-qemu && cargo make
-	cp bootloader/rustsbi-qemu/$(SBI_TARGET_PATH)/rustsbi-qemu bootloader/$@
+	$(V)cd bootloader/rustsbi-qemu && cargo make
+	$(V)cp bootloader/rustsbi-qemu/$(SBI_TARGET_PATH)/rustsbi-qemu bootloader/$@
 
 clean: 
-	-@rm -rf $(BUILD_ROOT)
-	-@rm -rf $(SCRIPT)/mkfs
-	-@rm -rf $(GEN_HEADER_DIR)
-	-@rm -rf os.bin
-	-@rm -rf sbi-qemu
-	-@rm -rf kernel-qemu
-	-@rm -rf $K/include/generated
+	-$(V)rm -rf $(BUILD_ROOT)
+	-$(V)rm -rf $(SCRIPT)/mkfs
+	-$(V)rm -rf $(GEN_HEADER_DIR)
+	-$(V)rm -rf os.bin
+	-$(V)rm -rf sbi-qemu
+	-$(V)rm -rf kernel-qemu
+	-$(V)rm -rf $K/include/generated
 	$(call make_echo_color_bold, green,\nCLEAN DONE\n)
 
 fs.img = $(BUILD_ROOT)/fs.img
@@ -161,28 +174,28 @@ MNT_DIR := $(BUILD_ROOT)/mnt
 fs.img : $(fs.img)
 
 $(MNT_DIR):
-	@mkdir -p $(MNT_DIR)
+	$(V)mkdir -p $(MNT_DIR)
 
 
 # $(fs.img): user $(MNT_DIR)
-# 	@dd if=/dev/zero of=$@ bs=1M count=30
-# 	@mkfs.vfat -F 32 -s 8 $@
+# 	$(V)dd if=/dev/zero of=$@ bs=1M count=30
+# 	$(V)mkfs.vfat -F 32 -s 8 $@
 # 	$(SUDO) mount $@ $(MNT_DIR)
 # 	$(SUDO) cp -r $(U_PROG_DIR)/* $(MNT_DIR)/
 # 	$(SUDO) umount $(MNT_DIR)
 
 $(fs.img): user
-	@dd if=/dev/zero of=$@ bs=1M count=257
-	@mformat -i $@ -F -c 8 ::
-	@mcopy -i $@ $(U_PROG_DIR)/* ::
+	$(V)dd if=/dev/zero of=$@ bs=1M count=257
+	$(V)mformat -i $@ -F -c 8 ::
+	$(V)mcopy -i $@ $(U_PROG_DIR)/* ::
 # 似乎可以截断以减少体积...因为我们用不到后面的簇
-	@truncate $(fs.img) -s 30M
+	$(V)truncate $(fs.img) -s 30M
 
 
 user: $(syscall)
-	@mkdir -p $(U_PROG_DIR)
-	@make -C $U
-	@cp -r $U/raw/. $(U_PROG_DIR)
+	$(V)mkdir -p $(U_PROG_DIR)
+	$(V)make -C $U
+	$(V)cp -r $U/raw/. $(U_PROG_DIR)
 	$(call make_echo_color_bold, green,\nUSER EXE BUILD SUCCESSFUL!\n)
 
 mnt: $(fs.img)

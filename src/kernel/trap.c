@@ -208,7 +208,7 @@ extern void clockintr();
 int devintr(uint64 scause) {
     if (scause == INTR_SOFT) { // k210 ext passby soft
 #ifdef K210
-        if (r_stval() == 9) {
+        if (read_csr(stval) == 9) {
             int ret;
             ret = handle_ext_irq();
             clear_csr(sip, SIP_SSIP);

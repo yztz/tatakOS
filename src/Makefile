@@ -34,11 +34,11 @@ all: start_recursive_build  $(TARGET)
 .PHONY: start_recursive_build
 
 start_recursive_build:
-	@make -C ./ -f $(SCRIPT)/Makefile.build
+	$(V)make -C ./ -f $(SCRIPT)/Makefile.build
 
 # 生成内核程序
 $(TARGET): $(BUILD_DIR)/built-in.o
 	$(call make_echo_ld,kernel)
-	@$(LD) $(LDFLAGS) -L$(SCRIPT) -T $(SCRIPT)/kernel-$(platform).ld -o $(TARGET) $<
-	@$(OBJDUMP) -S $(TARGET) > $(TARGET).asm
-	@$(OBJDUMP) -t $(TARGET) | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(TARGET).sym
+	$(V)$(LD) $(LDFLAGS) -L$(SCRIPT) -T $(SCRIPT)/kernel-$(platform).ld -o $(TARGET) $<
+	$(V)$(OBJDUMP) -S $(TARGET) > $(TARGET).asm
+	$(V)$(OBJDUMP) -t $(TARGET) | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(TARGET).sym

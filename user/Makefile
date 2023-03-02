@@ -10,16 +10,25 @@ cmake_build_args += -DLAB_DES="$(call get_from_json,$(lab_config),description)"
 OBJCOPY := $(ARCH)-unknown-elf-objcopy
 OBJDUMP := $(ARCH)-unknown-elf-objdump
 
+ifdef I
+  CMAKE := cmake > /dev/null
+  MAKE := make > /dev/null
+else
+  CMAKE := cmake
+  MAKE := make
+endif
+
+
 makefile := $(U_OBJ_DIR)/Makefile
 
 
 binary: makefile
-	@cd $(U_OBJ_DIR) && make
+	@cd $(U_OBJ_DIR) && $(MAKE)
 	@cp -r $(U_OBJ_DIR)/riscv64/* $(U_PROG_DIR)
 
 makefile:
 	@mkdir -p $(U_OBJ_DIR)
-	@cd $(U_OBJ_DIR) && cmake $(cmake_build_args) $(shell pwd)
+	@cd $(U_OBJ_DIR) && $(CMAKE) $(cmake_build_args) $(shell pwd)
 
 all: binary
 

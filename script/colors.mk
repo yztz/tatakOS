@@ -1,17 +1,9 @@
-
-# Set echo based on $(shell uname)
-UNAME := $(shell uname)
-
-# ECHO = echo
-
-ifeq ($(VERBOSE),1)
-	at=
-else
-	at=@
-endif
-
 # Set shell to BASH: echo requires -e on mac and Linux
-ECHO := echo -e
+ifndef I
+  ECHO := echo -e
+else 
+  ECHO := echo -e > /dev/null
+endif
 # SHELL := /bin/bash
 
 define make_echo_color_bold
