@@ -56,23 +56,23 @@ __build : $(subdir-y) $(BUILD_DIR) $(BUILD_DIR)/built-in.o
 	
 # 优先编译 子目录的内容
 $(subdir-y):
-	@make -C $@ -f $(SCRIPT)/Makefile.build
+	$(V)make -C $@ -f $(SCRIPT)/Makefile.build
 
 # 链接成 目标 -r: --relocatable [partial linking]
 $(BUILD_DIR)/built-in.o : $(cur_objs) $(subdir_objs)
-	@$(LD) -r -o $@ $^
+	$(V)$(LD) -r -o $@ $^
 
 dep_file = $@.d
 
 # 生成 cur_objs 目标
 $(BUILD_DIR)/%.o : %.c
-	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
-	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
+	$(V)$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	$(V)sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
 	$(call make_echo_build_c_object)
 
 $(BUILD_DIR)/%.o : %.S
-	@$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
-	@sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
+	$(V)$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$<) -Wp,-MD,$(dep_file) -c -o $@ $<
+	$(V)sed -i -E 's,(.*)\.o[ :]*,$(BUILD_DIR)/\1.o: ,g' $@.d
 	$(call make_echo_build_asm_object)
 
 .PHONY : $(PHONY)
