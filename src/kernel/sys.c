@@ -52,24 +52,6 @@ uint64 sys_timetag(void) {
     return ticks;
 }
 
-uint64 sys_bio_cache(void) {
-    uint64_t addr;
-
-    if (argaddr(0, &addr) < 0)
-        return -1;
-
-#ifdef DEBUG
-    cache_rate_t rate;
-    extern uint64_t bio_cache_hit, bio_cache_miss;
-    rate.hit = bio_cache_hit;
-    rate.miss = bio_cache_miss;
-    return copyout(addr, (char*)&rate, sizeof(rate));
-#endif
-
-
-    return -1;
-}
-
 
 uint64_t sys_prlimit64(void) {
     int pid;

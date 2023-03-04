@@ -9,7 +9,7 @@
 #include "driver/disk.h"
 #include "mm/alloc.h"
 
-static bio_t *buf_to_bio(struct buf *b, int rw) {
+static bio_t *buf_to_bio(blk_buf_t *b, int rw) {
     bio_t *bio = kzalloc(sizeof(bio_t));
     bio_vec_t *bio_vec = kzalloc(sizeof(bio_vec_t));
 
@@ -28,32 +28,31 @@ static bio_t *buf_to_bio(struct buf *b, int rw) {
 
 struct {
     struct spinlock lock;
-    struct buf buf[NBUF];
+    blk_buf_t buf[NBUF];
 
     // Linked list of all buffers, through prev/next.
     // Sorted by how recently the buffer was used.
     // head.next is most recent, head.prev is least.
-    struct buf head;
+    // blk_buf_t head;
+    list_head_t lru_head;
 } bcache;
 
 
-void binit(void) {
-    struct buf *b;
+void bcache_init() {
+    blk_buf_t *b;
 
     initlock(&bcache.lock, "bcache");
 
     // Create linked list of buffers
-    bcache.head.prev = &bcache.head;
-    bcache.head.next = &bcache.head;
+    // bcache.head.prev = &bcache.head;
+    // bcache.head.next = &bcache.head;
+    INIT_LIST_HEAD(&bcache.lru_head);
     for (b = bcache.buf; b < bcache.buf + NBUF; b++) {
         b->refcnt = 0;
-        b->next = bcache.head.next;
-        b->prev = &bcache.head;
         b->blockno = 0;
         b->dev = -1;
         initsleeplock(&b->lock, "buffer");
-        bcache.head.next->prev = b;
-        bcache.head.next = b;
+        list_add(&b->lru, &bcache.lru_head);
     }
 }
 
@@ -62,17 +61,14 @@ void binit(void) {
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
 // In either case, return locked buffer.
-static struct buf *bget(uint dev, uint blockno) {
-    struct buf *b;
+static blk_buf_t *bget(uint dev, uint blockno) {
+    blk_buf_t *b;
 
     acquire(&bcache.lock);
 
     // Is the block already cached?
-    for (b = bcache.head.next; b != &bcache.head; b = b->next) {
+    list_for_each_entry(b, &bcache.lru_head, lru) {
         if (b->dev == dev && b->blockno == blockno) {
-#ifdef DEBUG
-            bio_cache_hit++;
-#endif
             b->refcnt++;
             release(&bcache.lock);
             acquiresleep(&b->lock);
@@ -82,7 +78,7 @@ static struct buf *bget(uint dev, uint blockno) {
 
     // Not cached.
     // Recycle the least recently used (LRU) unused buffer.
-    for (b = bcache.head.prev; b != &bcache.head; b = b->prev) {
+    list_for_each_entry_reverse(b, &bcache.lru_head, lru) {
         if (b->refcnt == 0) {
             b->dev = dev;
             b->blockno = blockno;
@@ -96,15 +92,13 @@ static struct buf *bget(uint dev, uint blockno) {
     panic("bget: no buffers");
 }
 
-// Return a locked buf with the contents of the indicated block.
-struct buf *bread(uint dev, uint blockno) {
-    struct buf *b;
+blk_buf_t *bread(uint dev, uint blockno) {
+    blk_buf_t *b;
 
     b = bget(dev, blockno);
 
     if (!b->valid) {
-        // disk_io(b, 0);
-        bio_t *bio = buf_to_bio(b, READ);
+        bio_t *bio = buf_to_bio(b, BIO_READ);
         submit_bio(bio);
 
         b->valid = 1;
@@ -113,24 +107,22 @@ struct buf *bread(uint dev, uint blockno) {
     return b;
 }
 
-// Write b's contents to disk.  Must be locked.
-void bwrite(struct buf *b) {
+void bwrite(blk_buf_t *b) {
     if (!holdingsleep(&b->lock))
         panic("bwrite");
     // disk_io(b, 1);
     b->dirty = 1;
 }
 
-// Release a locked buffer.
-// Move to the head of the most-recently-used list.
-void brelse(struct buf *b) {
+
+void brelse(blk_buf_t *b) {
     if (!holdingsleep(&b->lock))
         panic("brelse");
 
     if (b->dirty == 1) {
         // disk_io(b, 1);
 
-        bio_t *bio = buf_to_bio(b, WRITE);
+        bio_t *bio = buf_to_bio(b, BIO_WRITE);
         submit_bio(bio);
 
         b->dirty = 0;
@@ -142,12 +134,9 @@ void brelse(struct buf *b) {
     b->refcnt--;
     if (b->refcnt == 0) {
         // no one is waiting for it.
-        b->next->prev = b->prev;
-        b->prev->next = b->next;
-        b->next = bcache.head.next;
-        b->prev = &bcache.head;
-        bcache.head.next->prev = b;
-        bcache.head.next = b;
+        // delete from list and move to the first
+        list_del(&b->lru);
+        list_add(&b->lru, &bcache.lru_head);
     }
 
     release(&bcache.lock);
@@ -155,10 +144,10 @@ void brelse(struct buf *b) {
 
 
 void free_bio(bio_t *bio) {
-    bio_vec_t **cur_bio_vec = &bio->bi_io_vec;
-    while (*cur_bio_vec) {
-        bio_vec_t *t = *cur_bio_vec;
-        *cur_bio_vec = t->bv_next;
+    bio_vec_t *cur_bio_vec = bio->bi_io_vec;
+    while (cur_bio_vec) {
+        bio_vec_t *t = cur_bio_vec;
+        cur_bio_vec = t->bv_next;
         kfree(t);
     }
     kfree(bio);

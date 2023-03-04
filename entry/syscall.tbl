@@ -102,7 +102,6 @@
 177     getegid     sys_getegid
 #############TEST###############
 89     timetag        sys_timetag
-90     bio_cache      sys_bio_cache
 231    profile        sys_profile
 232    philosophy   sys_philosophy
 235    memuse       sys_memuse
