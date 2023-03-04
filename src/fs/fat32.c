@@ -50,13 +50,11 @@
 // 下一个空闲簇所在的fat扇区
 #define nextclussec(fat) clus2fatsec(fat, (fat)->fsinfo.next_free_cluster)
 
-typedef struct buf buf_t;
-
 // 目录遍历的元信息
 typedef struct travs_meta {
     int item_no;    // 当前扇区内的目录项号
     int nitem;      // 扇区内总共的目录项数
-    buf_t *buf;     // 当前扇区的buf
+    blk_buf_t *buf;     // 当前扇区的buf
     uint32_t offset; // 当前目录项在目录内的偏移量
 } travs_meta_t;
 
@@ -154,7 +152,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     fat->dev = dev;
     fat->cache_lock = INIT_SPINLOCK(fat_cache_lock);
     fat->lock = INIT_SPINLOCK(fat_lock);
-    buf_t *buffer = bread(dev, 0);
+    blk_buf_t *buffer = bread(dev, 0);
     // 解析fatDBR
     fat_parse_hdr(fat, (struct fat_boot_sector*)buffer->data);
     
@@ -172,7 +170,7 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
 uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
     if(IS_FAT_CLUS_END(cclus) || cclus == FAT_CLUS_FREE) return cclus;
 
-    buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
+    blk_buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
     uint32_t offset = clus2offset(fat, cclus);
     uint32_t next = *(uint32_t *)(buf->data + offset);
     brelse(buf);
@@ -186,7 +184,7 @@ FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
         panic("fat_append_cluster: new is free");
     }
 
-    buf_t *buf = bread(fat->dev, clus2fatsec(fat, prev));
+    blk_buf_t *buf = bread(fat->dev, clus2fatsec(fat, prev));
     uint32_t offset = clus2offset(fat, prev);
     uint32_t next = *(uint32_t *)(buf->data + offset);
     if(!IS_FAT_CLUS_END(next)) {
@@ -219,7 +217,7 @@ int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off,
         for(int i = nth_sect; i < SPC(fat) && rest > 0; i++) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
             int len = min((off_t)rest, BPS(fat) - off);
-            buf_t *b = bread(fat->dev, sect + i);
+            blk_buf_t *b = bread(fat->dev, sect + i);
             either_copyout(user, buffer, b->data + off, len);
             brelse(b);
             rest -= len;
@@ -266,7 +264,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
         for(int i = nth_sect; i < SPC(fat) && rest > 0; i++) {
             // 计算本扇区内需要写入的字节数（取剩余读取字节数与扇区内剩余字节数的较小值）
             int len = min((off_t)rest, BPS(fat) - off);
-            buf_t *b = bread(fat->dev, sect + i);
+            blk_buf_t *b = bread(fat->dev, sect + i);
             if(either_copyin(b->data + off, user, buffer, len) < 0) {
                 brelse(b);
                 return n - rest;
@@ -308,7 +306,7 @@ FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
 
     for(int i = 0; i < fat->fat_tbl_sectors; i++, sect++) {
         int changed = 0; // 用于标记当前的块是否被写
-        buf_t *b = bread(fat->dev, sect);
+        blk_buf_t *b = bread(fat->dev, sect);
         uint32_t *entry = (uint32_t *)b->data;
         for(int j = 0; j < entry_per_sect; j++) { // 遍历FAT项
             if(i == 0 && j < 2) continue; // 跳过第0,1号簇
@@ -362,13 +360,13 @@ FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
 
     int cnt = n;
 
-    buf_t *pb = NULL;    // previous block
+    blk_buf_t *pb = NULL;    // previous block
     uint32_t *pe = NULL; // previous entry
 
     // debug("i %d sect %d next freeclus %d", i, sect, fat->fsinfo.next_free_cluster);
 
     for(; i < fat->fat_tbl_sectors; i++, sect++) {
-        buf_t *b = bread(fat->dev, sect);
+        blk_buf_t *b = bread(fat->dev, sect);
         uint32_t *entry = (uint32_t *)b->data;
         for(int j = 0; j < entry_per_sect; j++) {   // 遍历FAT项
             if(i == 0 && j < 2) continue;           // 跳过第0,1号簇
@@ -420,7 +418,7 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
     while(!IS_FAT_CLUS_END(cclus)) {
         uint32_t *pclus;
 
-        buf_t *b = bread(fat->dev, clus2fatsec(fat, cclus));
+        blk_buf_t *b = bread(fat->dev, clus2fatsec(fat, cclus));
         // debug("cur bno is %d clus is %d", clus2fatsec(fat, cclus), cclus);
         pclus = (uint32_t *)(b->data + clus2offset(fat, cclus));
         cclus = *pclus; // 得到下一个簇
@@ -543,7 +541,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
         for(i = dir_offset / BPS(fat), dir_offset %= BPS(fat);  // 遍历簇内扇区
                 i < fat->sec_per_cluster;   i++  ) 
         { 
-            buf_t *b = bread(fat->dev, sec + i);
+            blk_buf_t *b = bread(fat->dev, sec + i);
             for(j = dir_offset / item_size, dir_offset = 0;     // 遍历扇区内目录项
                 j < item_per_sec;   j++  ) 
             { 
@@ -599,7 +597,7 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t 
 static void zero_clus(fat32_t *fat, uint32_t clus) {
     uint32_t start_sec = clus2datsec(fat, clus);
     for(int i = 0; i < SPC(fat); i++) {
-        buf_t *b = bread(fat->dev, start_sec + i);
+        blk_buf_t *b = bread(fat->dev, start_sec + i);
         memset(b->data, 0, BPS(fat));
         bwrite(b);
         brelse(b);
@@ -612,7 +610,7 @@ static void generate_dot(fat32_t *fat, uint32_t parent_clus, uint32_t curr_clus)
     uint32_t sect = clus2datsec(fat, curr_clus);
     item.attr = FAT_ATTR_DIR;
     // Note: .与..中只保存了簇号
-    buf_t *b = bread(fat->dev, sect);
+    blk_buf_t *b = bread(fat->dev, sect);
     strncpy((char *)item.name, DOT, FAT_SFN_LENGTH);
     item.startl = curr_clus & FAT_CLUS_LOW_MASK;
     item.starth = curr_clus >> 16;

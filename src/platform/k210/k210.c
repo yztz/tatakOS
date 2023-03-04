@@ -9,6 +9,7 @@
 #include "gpiohs.h"
 #include "dmac.h"
 #include "wdt.h"
+#include "riscv.h"
 
 #include "sdcard.h"
 

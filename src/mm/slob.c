@@ -6,6 +6,8 @@
 #define __MODULE_NAME__ SLOB
 #include "debug.h"
 
+#define MAX_KEEP_HOLD_PAGE 20
+
 // 16bits for an unit
 typedef int16_t slobidx_t;
 
@@ -24,16 +26,22 @@ typedef struct slob_page {
 	struct slob_page *next, *pre;
 } sp_t;
 
-extern void *__alloc_page();
+
+static atomic_t page_cnt = INIT_ATOMIC();
 
 static inline void *__alloc_one_page() {
+    extern void *__alloc_page();
 	debug("alloc new page");
 	void *new = __alloc_page();
+    if (new) {
+        atomic_inc(&page_cnt);
+    }
 	return new;
 }
 
 static inline void __free_one_page(void *addr) {
 	debug("page freed");
+    atomic_dec(&page_cnt);
 	put_page((uint64_t)addr);
 }
 
@@ -58,8 +66,7 @@ void slob_init() {
     initlock(&slob_lock, "slob_lock");
 }
 
-static inline void set_slob(slob_t *s, slobidx_t size, slob_t *next)
-{
+static inline void set_slob(slob_t *s, slobidx_t size, slob_t *next) {
 	slob_t *base = (slob_t *)((uint64_t)s & PGMASK);
 	slobidx_t offset = next - base;
 
@@ -85,8 +92,7 @@ static inline slobidx_t slob_units(slob_t *s) {
 	return s->units > 0 ? s->units : 1;
 }
 
-static int slob_last(slob_t *s)
-{
+static int slob_last(slob_t *s) {
 	return !((uint64_t)slob_next(s) & ~PGMASK);
 }
 
@@ -104,14 +110,11 @@ static void print_slob(sp_t *sp) {
 	// #endif
 }
 
-static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int align)
-{
+static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int align) {
 	slob_t *prev, *cur, *aligned = 0;
-	int delta = 0, units = SLOB_UNITS(size); // 计算需要多少单元（单元对齐）
+	int delta = 0, units = SLOB_UNITS(size);
 	debug("size: %d request units: %d", size, units);
-	debug("before alloc:");
-	// print_slob(sp);
-    // 遍历slob链表
+    // iterate slob list
 	for (prev = NULL, cur = sp->freelist; ; prev = cur, cur = slob_next(cur)) {
 		slobidx_t avail = slob_units(cur);
 
@@ -154,8 +157,7 @@ static void *slob_page_alloc(sp_t *sp, size_t size, size_t align_offset, int ali
 			if (!sp->units) { // 如果链表空了，就将freelist置NULL
 				sp->freelist = NULL;
 			}
-			debug("after alloc:");
-			// print_slob(sp);
+
 			return cur;
 		}
 		// 到末尾了还是找不到，算了
@@ -197,8 +199,7 @@ static sp_t *slob_new_page(sp_t *sp) {
 	return new;
 }
 
-static void do_slob_free(void *block, int size)
-{
+static void do_slob_free(void *block, int size) {
 	sp_t *sp;
 	slobidx_t units;
 	slob_t *b = (slob_t *)block;
@@ -214,7 +215,10 @@ static void do_slob_free(void *block, int size)
 	debug("free block@%p size: %d units: %d", block, size, units);
 	acquire(&slob_lock);
 	if(sp->units + units == SLOB_PAGE_UNITS) {
-		slob_free_page(sp);
+        if (atomic_get(&page_cnt) > MAX_KEEP_HOLD_PAGE) {
+            slob_free_page(sp);
+        }
+		
 		goto ret;
 	}
 
@@ -266,21 +270,21 @@ void slob_free(void* addr) {
 void *slob_alloc(size_t size) {
 	sp_t *sp, *sp0;
 	void *ret = NULL;
-	// 保证八字节对齐（自然对齐）
+	// minimum 8 bytes alignment
 	int minalign = sizeof(size_t);
 	int align = minalign;
-	// 计算空间单元数
+	// the number of slob units required.
 	slobidx_t units = SLOB_UNITS(size);
-	// 若超出一页
+	// more than one page.
 	if(unlikely(size >= PGSIZE)) 
 		panic("slob_alloc: unfit size");
 
-	// 超出实际可分配页大小
+	// exceeds the actual allocatable page size.
 	if(units + minalign >= SLOB_PAGE_UNITS) {
 		return __alloc_one_page();
 	}
 
-	// 选取slob链表
+	// select suitable slob page list
 	if(size <= SMALL_BREAK)
 		sp0 = &small_list;
 	else if(size <= LARGE_BREAK)
@@ -288,34 +292,40 @@ void *slob_alloc(size_t size) {
 	else 
 		sp0 = &large_list;
 
-	// 若为2幂次 保证自然对齐 ref: linux slot.c
+	// natural alignment (pow of 2). ref: linux slob.c
 	if(is_pow2(size))
 		align = max((size_t)align, size);
 	
 	debug("alloc size: %d minalign: %d align: %d", size, minalign, align);
 	
 	acquire(&slob_lock);
-	// zyy: is this is find from a set(list) of slob pages?
+
 	for(sp = sp0->next; sp != sp0; sp = sp->next) {
-		if(sp->units == 0 || sp->units < units)
-			continue;
-		// 存在可分配（空间足够）的slob
+		if(sp->units == 0 || sp->units < units) {
+            continue;
+        }
+		// find a suitable slob page!
 		ret = slob_page_alloc(sp, size + minalign, minalign, align);
-		if(!ret) // 分配失败，继续分配
-			continue;
+        // bad alloc, go on.
+		if(!ret) {
+			continue; 
+        }
 		break;
 	}
-	if(!ret) { // 找不到
-		// 分配新页
+    // no suitable page found
+	if(!ret) { 
+		// alloc a new page
 		sp = slob_new_page(sp0);
-		if(sp) { // 新页分配成功
+		if(sp) { 
+            // do alloc in new page
 			ret = slob_page_alloc(sp, size + minalign, minalign, align);
 		}
 	}
 	release(&slob_lock);
 	if(ret) {
-		// 将空间大小存到开始minialign的位置
+		// save the size info in the begining
 		*(size_t *)ret = size;
+        // add size offset
 		ret += minalign;
 	} 
 	return ret;

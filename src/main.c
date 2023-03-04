@@ -64,7 +64,7 @@ void main() {
     consoleinit();
 
     /* File System */
-    binit();          // buffer cache(or block cache) init
+    bcache_init();    // buffer cache(or block cache) init
     fs_init();        // pool of file entry in memory init
 
     userinit();       // first user process

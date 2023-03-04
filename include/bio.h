@@ -1,49 +1,90 @@
 #ifndef H_BIO
 #define H_BIO
 
-#include "common.h"
-#include "atomic/spinlock.h"
+#include "types.h"
+#include "atomic/sleeplock.h"
+#include "list.h"
 
-#define READ 0
-#define WRITE 1
+#define BIO_READ 0
+#define BIO_WRITE 1
 
-/*
- * main unit of I/O for the block layer and lower layers (ie drivers and
- * stacking drivers)
+
+struct block_buffer {
+    int valid;   // has data been read from disk?
+    int dirty;
+    uint dev;
+    uint blockno;
+    struct sleeplock lock;
+    uint refcnt;
+    /// @brief LRU cache list
+    list_head_t lru;
+    uchar data[BSIZE];
+};
+
+typedef struct block_buffer blk_buf_t;
+
+/**
+ * @brief bio is private to process, there must only one process access it
+ *        at a time, so no need lock protect list
+ * 
  */
+struct bio {
+    struct bio_vec *bi_io_vec;
+    uint8 bi_rw;
+    struct bio *bi_next;
+    uint bi_dev;
+} ;
 
-/* bio is private to process, there must only one process access it 
-at a time, so no need lock protect list */
-typedef struct bio {
-  struct bio_vec *bi_io_vec;
-  uint8 bi_rw;
-  struct bio *bi_next;
-  uint bi_dev;
-} bio_t;
-
+typedef struct bio bio_t;
 
 
 /**
  * @brief 描述了一个I/O操作的段（连续的sectors）
- * 
+ *
  */
 typedef struct bio_vec {
-  sector_t bv_start_num;/* the number of the first sector */
-  uint32 bv_count;/* the counts of sectors */
-  struct bio_vec *bv_next;/* the pointer of next bio segment */
-  void *bv_buff; /* the address to begin read/write */
-  int disk;
+    /// @brief the number of the first sector
+    sector_t bv_start_num;
+    /// @brief the counts of sectors
+    uint32 bv_count;
+    /// @brief the pointer of next bio segment
+    struct bio_vec *bv_next;
+    /// @brief the address to begin read/write
+    void *bv_buff;
+    int disk;
 } bio_vec_t;
 
+/**
+ * @brief Init block cache
+ * 
+ */
+void bcache_init();
 
-struct request_queue {
-  struct bio *rq_head, *rq_tail;
-  spinlock_t rq_lock;
-};
+/**
+ * @brief Submit a bio
+ * 
+ * @param bio 
+ */
+void submit_bio(bio_t *bio);
+/**
+ * @brief Return a locked buf with the contents of the indicated block.
+ * 
+ * @param dev 
+ * @param blockno 
+ * @return blk_buf_t* 
+ */
+blk_buf_t *bread(uint dev, uint blockno);
 
-typedef struct request_queue request_queue_t;
-
-void make_request();
-void submit_bio(struct bio *bio);
+/**
+ * @brief Write b's contents. Must be locked.
+ *        Its only function is to mark buffer dirty.
+ */
+void bwrite(blk_buf_t *buf);
+/**
+ * @brief Release a locked buffer. 
+ *        Move to the head of the most-recently-used list.
+ *        It will trigger writeback if it's marked dirty.
+ */
+void brelse(blk_buf_t *);
 
 #endif
