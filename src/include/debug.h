@@ -38,8 +38,4 @@ extern int first_user_pid;
 #define ERROR(str)    error(str, __FILE__, __func__, __LINE__)
 #define ER()    ERROR("")
 
-
-/* 调试选项 */
-// #define DEBUG_MM_RB
-
 #endif // _H_DEBUG_

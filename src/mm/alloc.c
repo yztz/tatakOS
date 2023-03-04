@@ -81,11 +81,11 @@ void mem_init() {
 }
 
 void free_page(page_t *page) {
-    zone_t *zone = &memory_zone;
-    spin_lock(&zone->lru_lock);
-    if(TestClearPageLRU(page))
-        del_page_from_lru(zone, page);
-    spin_unlock(&zone->lru_lock);
+    // zone_t *zone = &memory_zone;
+    // spin_lock(&zone->lru_lock);
+    // if(TestClearPageLRU(page))
+    //     del_page_from_lru(zone, page);
+    // spin_unlock(&zone->lru_lock);
     __free_page(page);
 }
 
