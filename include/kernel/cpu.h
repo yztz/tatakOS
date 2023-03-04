@@ -34,10 +34,6 @@ struct cpu {
     struct proc *proc;
     /// @brief swtch() here to enter scheduler().
     struct context context;
-    /// @brief 
-    struct pagevec inactive_pvec;
-    /// @brief 
-    struct pagevec active_pvec;
     /// @brief Depth of push_off() nesting.
     int noff;
     /// @brief Were interrupts enabled before push_off()?
@@ -49,14 +45,6 @@ typedef struct cpu cpu_t;
 void cpu_init();
 cpu_t *mycpu();
 
-
-static inline struct pagevec *my_inactive_pvec() {
-    return &mycpu()->inactive_pvec;
-}
-
-static inline struct pagevec *my_active_pvec() {
-    return &mycpu()->active_pvec;
-}
 
 extern struct cpu cpus[NUM_CORES];
 

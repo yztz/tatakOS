@@ -7,17 +7,11 @@
 
 struct cpu cpus[NUM_CORES];
 
-static inline void pvec_init(cpu_t *cpu){
-    pagevec_init(&cpu->active_pvec);
-    pagevec_init(&cpu->inactive_pvec);
-}
-
 void cpu_init() {
     for (int i = 0; i < NUM_CORES; i++) {
         cpus[i].intena = 0;
         cpus[i].noff = 0;
         cpus[i].proc = NULL;
-        pvec_init(&cpus[i]);
     }
 }
 

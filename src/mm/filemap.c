@@ -101,7 +101,7 @@ void add_to_page_cache_lru(page_t *page, struct address_space *mapping, pgoff_t 
   /* 添加到page cache */
   add_to_page_cache(page, mapping, index);
   /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
-  lru_cache_add(page);
+  // lru_cache_add(page);
 }
 
 /**
@@ -133,12 +133,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
       if (c_h == height)
       {
         page_t *page = (page_t *)(node->slots[i]);
-        // /* 是释放一整个物理页吗？ */
-        // printf(bl("walk free pa: %p\n"), pa);
-        // kfree(pa);
         put_page(page);
-        // printf("pa: %p\n", pa);
-        // print_buddy(); 
       }
       else
       {
@@ -147,9 +142,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
       }
     }
   }
-  // printf("free node %x\n", node);
   kfree((void *)node);
-  // printf("node freed\n");
 }
 
 /**
@@ -206,7 +199,7 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
       uint64_t cur_pa = (uint64_t)kmalloc(PGSIZE);
       page_t *page = ADDR_TO_PG(cur_pa);
       add_to_page_cache(page, entry->i_mapping, cur_index);
-      lru_cache_add(page);  
+      // lru_cache_add(page);  
       read_page->pa = cur_pa;
       // cur_pa += PGSIZE;
       read_page->pg_id = cur_index;
@@ -253,8 +246,6 @@ int cal_readahead_page_counts(int rest){
  */
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n)
 {
-      // if(user == 1)
-        // for(;;);
   uint index,  end_index;
   uint64 pa, pgoff;
   int rest, cur_off;
@@ -317,7 +308,6 @@ retry:
       pa = PG_TO_ADDR(page);
     }
 
-    mark_page_accessed(page);
     /* 当前页内读取字节数，取总剩余字节数和当前页可读字节数的最小值 */
     int len = min((uint64_t)rest, PGSIZE - pgoff);
     /* 文件最后一页 */
@@ -371,14 +361,11 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
       pa = PG_TO_ADDR(page);
     }
 
-    mark_page_accessed(page);
 
-    // SetPageDirect(page);
 
     len = min((uint64_t)rest, PGSIZE - pg_off);
     either_copyin((void* )(pa + pg_off), user, buff, len);
 
-    // ERROR("to handle the only index 0 set tag and clear tag");
     set_pg_rdt_dirty(page, &mapping->page_tree, pg_id, PAGECACHE_TAG_DIRTY);
 
     unlock_put_page(page);
@@ -417,9 +404,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
 
   page = find_get_page(mapping, pgoff);
 
-// TODO: 存在或不存在LRU链表是契税不确定的
   if(!page) {
-    // 不存在LRU
     pa = (uint64_t)kmalloc(PGSIZE);
     page = ADDR_TO_PG(pa);
 
@@ -427,46 +412,27 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     entry_t *entry = mapping->host;
     read_one_page(entry, pa, pgoff);
     add_to_page_cache(page, mapping, pgoff);
-    // lru_cache_add(page);
   } else {
-    // 存在/不存在LRU
     pa = PG_TO_ADDR(page);
-    if(TestClearPageLRU(page))
-      del_page_from_lru(&memory_zone, page);
   }
-  // mark_page_accessed(page);
 
   /**
    * private mmap和shared mmap
    */
   if(area->flags & MAP_PRIVATE){
     uint64_t pa0 = (uint64_t)kmalloc(PGSIZE);
-#ifdef SWAP
-    /* 页替换算法需要用到swap */
-    page_t *page0 = PG_TO_ADDR(pa0);
-    lru_cache_add(page0);
-    mark_page_accessed(page0);
-#endif
     memcpy((void *)pa0, (void *)pa, PGSIZE);
     
-    lru_cache_add(page);
     put_page(page);
 
     *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
-    sfence_vma_addr(address);
   }
   else if(area->flags & MAP_SHARED){
     /* shared */
-    /* 这里小心被页回收算法回收掉！要建立rmap，如果不支持rmap需要从lru上取下来，防止被回收 */
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
-    sfence_vma_addr(address);
-    /* 没有rmap，从lru链表上删除，不参与页回收 */
-//     lru_add_drain();
-// #ifndef RMAP
-//     del_page_from_lru(&memory_zone, page);
-// #endif
   }
 
+  sfence_vma_addr(address);
   return 0; 
 }
 
