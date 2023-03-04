@@ -16,22 +16,21 @@
  *      void __alloc_frag_init();
  * 
  * Currently, the underlying allocator implementation is 
- *  the Buddy allocator and the slob allocator 
- * (there may be a freelist implementation in the future).
+ *  the Buddy allocator, the Slob allocator and the Freelist allocator.
  * 
  * Of particular concern is the `kfree`:
  * In fact, for page allocation, it can be divided into single-page allocation 
- *  and (continuous) multi-page allocation. 
+ *  and (consecutive) multi-page allocation. 
  * Due to some implementation details of Buddy allocator, 
  *  we currently handle single-page and multi-page references in the same way, 
  *  which is also one of the main problems of allocator. 
- * So, there is no good way to distinguish between the two.
+ * So, there is no good way to distinguish between the two now.
  * 
  * The dependences of the modules(alloc buddy slob) are just like below:
  * 
  *           alloc  
- *           |  \
- *          |    \
+ *           /  \
+ *          /    \
  *      buddy <- slob
  * 
  * Another point to note is how `kfree` frees page units. 
@@ -81,11 +80,6 @@ void mem_init() {
 }
 
 void free_page(page_t *page) {
-    // zone_t *zone = &memory_zone;
-    // spin_lock(&zone->lru_lock);
-    // if(TestClearPageLRU(page))
-    //     del_page_from_lru(zone, page);
-    // spin_unlock(&zone->lru_lock);
     __free_page(page);
 }
 
@@ -116,16 +110,14 @@ void *kzalloc(size_t size) {
     return ret;
 }
 
-/**
- * @brief free memory
- * @note kfree does not check the legality of addr now,
- *       so never try to free an unallocated mem or try to free a truncated mem.
-*/
+
+#define is_frag(addr) ((uint64)addr & ~PGMASK)
+
 void kfree(void *addr) {
     //todo: do more checks...
     if(addr == NULL) return;
 
-    if((uint64)addr & ~PGMASK) { // piece
+    if(is_frag(addr)) { // from fragment allocator
         __free_frags(addr);
     } else {
         page_t *first_page = ADDR_TO_PG(addr);
