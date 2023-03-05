@@ -55,6 +55,11 @@
             "text": "OK:",
             "backgroundColor": "green",
             "color": "white"
+        },
+        {
+            "text": "TODO:",
+            "backgroundColor": "#005ba4",
+            "color": "white"
         }
     ],
     "C_Cpp.dimInactiveRegions": false,

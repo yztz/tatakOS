@@ -29,9 +29,7 @@ file_t *filealloc(void) {
 }
 
 // Increment ref count for file f.
-struct file*
-filedup(struct file *f)
-{
+struct file *filedup(struct file *f) {
   acquire(&f->f_lock);
   if(f->ref < 1)
     panic("filedup");
@@ -41,9 +39,7 @@ filedup(struct file *f)
 }
 
 // Close file f.  (Decrement ref count, close when reaches 0.)
-void
-fileclose(struct file *f)
-{
+void fileclose(struct file *f) {
   acquire(&f->f_lock);
   if(f->ref < 1)
     panic("fileclose");
@@ -159,9 +155,7 @@ int filestat(struct file *f, struct kstat *stat) {
 
 // Read from file f.
 // addr is a user virtual address.
-int
-fileread(struct file *f, uint64 addr, int n)
-{
+int fileread(struct file *f, uint64 addr, int n) {
   int r = -1;
 
   if(f->readable == 0)

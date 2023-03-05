@@ -39,7 +39,7 @@ typedef uint64 sector_t;
    to reduce duplicate declaration efforts and discover coupling.
 */
 typedef struct address_space address_space_t;
-typedef struct device_t device_t;
+typedef struct device device_t;
 typedef struct fat_entry entry_t;
 typedef struct fdtable fdtable_t;
 typedef struct file file_t;

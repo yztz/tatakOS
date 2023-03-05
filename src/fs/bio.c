@@ -30,10 +30,11 @@ struct {
     struct spinlock lock;
     blk_buf_t buf[NBUF];
 
-    // Linked list of all buffers, through prev/next.
-    // Sorted by how recently the buffer was used.
-    // head.next is most recent, head.prev is least.
-    // blk_buf_t head;
+    /**
+     * @brief Linked list of all buffers.
+     *  Sorted by how recently the buffer was used.
+     *  lru_head.next is most recent, lru_head.prev is least.
+     */
     list_head_t lru_head;
 } bcache;
 
@@ -43,9 +44,6 @@ void bcache_init() {
 
     initlock(&bcache.lock, "bcache");
 
-    // Create linked list of buffers
-    // bcache.head.prev = &bcache.head;
-    // bcache.head.next = &bcache.head;
     INIT_LIST_HEAD(&bcache.lru_head);
     for (b = bcache.buf; b < bcache.buf + NBUF; b++) {
         b->refcnt = 0;
@@ -110,7 +108,7 @@ blk_buf_t *bread(uint dev, uint blockno) {
 void bwrite(blk_buf_t *b) {
     if (!holdingsleep(&b->lock))
         panic("bwrite");
-    // disk_io(b, 1);
+
     b->dirty = 1;
 }
 
@@ -120,7 +118,6 @@ void brelse(blk_buf_t *b) {
         panic("brelse");
 
     if (b->dirty == 1) {
-        // disk_io(b, 1);
 
         bio_t *bio = buf_to_bio(b, BIO_WRITE);
         submit_bio(bio);
