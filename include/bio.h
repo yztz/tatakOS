@@ -10,7 +10,8 @@
 
 
 struct block_buffer {
-    int valid;   // has data been read from disk?
+    /// @brief Has data been read from disk?
+    int valid;
     int dirty;
     uint dev;
     uint blockno;
@@ -24,16 +25,16 @@ struct block_buffer {
 typedef struct block_buffer blk_buf_t;
 
 /**
- * @brief bio is private to process, there must only one process access it
+ * @note bio is private to process, there must only one process access it
  *        at a time, so no need lock protect list
  * 
  */
 struct bio {
     struct bio_vec *bi_io_vec;
-    uint8 bi_rw;
     struct bio *bi_next;
+    uint8 bi_rw;
     uint bi_dev;
-} ;
+};
 
 typedef struct bio bio_t;
 
@@ -42,7 +43,7 @@ typedef struct bio bio_t;
  * @brief 描述了一个I/O操作的段（连续的sectors）
  *
  */
-typedef struct bio_vec {
+struct bio_vec {
     /// @brief the number of the first sector
     sector_t bv_start_num;
     /// @brief the counts of sectors
@@ -51,17 +52,19 @@ typedef struct bio_vec {
     struct bio_vec *bv_next;
     /// @brief the address to begin read/write
     void *bv_buff;
-    int disk;
-} bio_vec_t;
+    // int disk;
+};
+
+typedef struct bio_vec bio_vec_t;
 
 /**
- * @brief Init block cache
+ * @brief Init block cache.
  * 
  */
 void bcache_init();
 
 /**
- * @brief Submit a bio
+ * @brief Submit a bio.
  * 
  * @param bio 
  */
@@ -80,11 +83,12 @@ blk_buf_t *bread(uint dev, uint blockno);
  *        Its only function is to mark buffer dirty.
  */
 void bwrite(blk_buf_t *buf);
+
 /**
  * @brief Release a locked buffer. 
  *        Move to the head of the most-recently-used list.
  *        It will trigger writeback if it's marked dirty.
  */
-void brelse(blk_buf_t *);
+void brelse(blk_buf_t *buf);
 
 #endif

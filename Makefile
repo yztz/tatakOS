@@ -102,6 +102,7 @@ export LDFLAGS CFLAGS
 QEMU = qemu-system-riscv64
 QEMUOPTS += -machine virt -bios bootloader/sbi-qemu -kernel $(BUILD_ROOT)/kernel -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=$(fs.img),if=none,format=raw,id=x0
+QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 #===========================RULES BEGIN============================#

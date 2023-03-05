@@ -5,7 +5,7 @@
 #include "param.h"
 
 
-struct device_t {
+struct device {
   int (*read)(int, uint64, int);
   int (*write)(int, uint64, int);
 };

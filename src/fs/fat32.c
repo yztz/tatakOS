@@ -140,8 +140,6 @@ static entry_t *get_root(fat32_t *fat) {
     initsleeplock(&root->lock, "root_lock");
     return root;
 }
-extern uint8_t (sd_write_sector_dma)(uint8_t *data_buff, uint32_t sector, uint32_t count);
-uint8_t buf[8 * 512]; //4KB
 
 /* 读取fat超级块并做解析 */
 FR_t fat_mount(uint dev, fat32_t **ppfat) {

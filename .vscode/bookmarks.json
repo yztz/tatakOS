@@ -9,6 +9,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "include/device.h",
+			"bookmarks": [
+				{
+					"line": 15,
+					"column": 49,
+					"label": ""
+				}
+			]
 		}
 	]
 }
