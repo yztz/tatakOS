@@ -30,8 +30,25 @@ void *kzalloc(size_t size);
 */
 void kfree(void *addr);
 
+/**
+ * @brief Get the total memory(page) count.
+ * 
+ * @return uint64_t 
+ */
 uint64_t get_total_mem();
+
+/**
+ * @brief Get the free memory(page) count.
+ * 
+ * @return uint64_t 
+ */
 uint64_t get_free_mem();
+
+/**
+ * @brief Get the used memory(page) count
+ * 
+ * @return uint64_t 
+ */
 uint64_t get_used_mem();
 
 void  _kfree_safe(void **paddr);
