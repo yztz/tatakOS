@@ -51,12 +51,8 @@
 
 #define __MODULE_NAME__ ALLOC
 #include "debug.h"
-#include "pagevec.h"
 
 #define JUNK 1
-
-extern void buddy_init();
-extern void slob_init();
 
 extern void *__alloc_frags(size_t size);
 extern void *__free_frags(void *addr);

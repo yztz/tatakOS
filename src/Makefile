@@ -23,7 +23,6 @@ obj-y += printf.o
 obj-y += console.o
 obj-y += nulldev.o
 obj-y += riscv.o
-obj-y += string.o
 obj-y += utils.o
 
 obj-y += zerodev.o
