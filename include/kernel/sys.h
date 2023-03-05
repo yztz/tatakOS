@@ -1,6 +1,7 @@
 #ifndef _H_SYS_
 #define _H_SYS_
-#include "common.h"
+
+#include "types.h"
 #include "kernel/time.h"
 
 uint64 sys_timetag(void);
