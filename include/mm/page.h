@@ -152,8 +152,6 @@ pgref_t __deref_page_paddr(uint64_t pa);
 void page_init(void);
 
 void pte_print(pte_t *pte);
-/* swap.c */
-void mark_page_accessed(page_t *page);
 
 void lock_page(page_t *page);
 void unlock_page(page_t *page);

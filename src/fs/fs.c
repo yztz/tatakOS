@@ -9,8 +9,6 @@
 // #define QUIET
 #define __MODULE_NAME__ FS
 #include "debug.h"
-#include "fs/mpage.h"
-#include "writeback.h"
 
 fat32_t *fat;
 

@@ -2,15 +2,16 @@
 #define _H_TIME_
 
 #include "types.h"
+#include "param.h"
 
 struct timespec {
-	uint64_t ts_sec;        /* 秒 */
-	uint64_t ts_nsec;       /* 纳秒 */
+	uint64_t ts_sec;        /* Seconds */
+	uint64_t ts_nsec;       /* Nanoseconds */
 };
 
 struct timeval {
-	uint64_t		tv_sec;		/* seconds */
-	uint64_t	tv_usec;	/* and microseconds */
+	uint64_t		tv_sec;	/* Seconds */
+	uint64_t	tv_usec;	/* Microseconds */
 };
 
 typedef struct timespec timespec_t;
@@ -46,8 +47,5 @@ static inline uint64_t ts2ticks(timespec_t *ts) {
 	return ts ? SEC2TICK(ts->ts_sec) + NS2TICK(ts->ts_nsec) : 0;
 }
 
-static inline void time_print(timespec_t *ts) {
-	printf("time: %lds %ldns\n", ts->ts_sec, ts->ts_nsec);
-}
 
 #endif

@@ -1,7 +1,6 @@
 #ifndef _H_TASKQUEUE_
 #define _H_TASKQUEUE_
 
-#include "common.h"
 #include "atomic/spinlock.h"
 #include "list.h"
 #include "kernel/proc.h"

@@ -8,8 +8,8 @@
 #include "utils.h"
 #include "str.h"
 
-/* 缓存空间描述符 */
-typedef struct _buf_desc_t {
+/// @brief Generic type to describe a buffer
+typedef struct buf_desc {
     char *buf;
     int size;
 } buf_desc_t;

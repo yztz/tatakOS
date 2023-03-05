@@ -2,7 +2,7 @@
 #define _H_CPU_
 
 #include "types.h"
-#include "pagevec.h"
+#include "platform.h"
 
 /**
  * @brief Saved registers for kernel context switches.

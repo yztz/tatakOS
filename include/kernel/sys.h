@@ -4,10 +4,6 @@
 #include "types.h"
 #include "kernel/time.h"
 
-uint64 sys_timetag(void);
-uint64 sys_ktest(void);
-
-
 struct utsname {
 	char sysname[65];
 	char nodename[65];

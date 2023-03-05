@@ -10,7 +10,6 @@
 #include "radix-tree.h"
 
 #include "fs/mpage.h"
-#include "swap.h"
 
 /**
  * 定义了关于file map相关的函数，函数声明在fs.h
@@ -75,7 +74,6 @@ page_t *find_get_page(struct address_space *mapping, unsigned long offset)
 }
 
 page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
-  // uint64_t pa = 0;
   page_t *page;
   page = find_get_page(mapping, offset);
   if(page)
