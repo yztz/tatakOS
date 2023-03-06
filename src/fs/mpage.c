@@ -305,7 +305,7 @@ void msync(uint64_t addr, uint64_t length, int flags){
 
     uint64_t vma_len_pg_cnts = vma->len >> PGSHIFT;
     uint64_t cnts = min(vma_len_pg_cnts, rest_cnts);
-    int begin_id = vma->offset;
+    int begin_id = vma->offset >> PGSHIFT;
     rw_page_list_t *rwlist = kzalloc(sizeof(rw_page_list_t));
 
     for(int i = 0; i < cnts; i++){

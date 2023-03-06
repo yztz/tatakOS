@@ -45,12 +45,11 @@ void kvmmap(uint64 va, uint64 pa, size_t sz, int prot, int spec) {
         panic("kvmmap: pgsize");
     if (nxt_mapid == MAX_MAP)
         panic("no map space");
-    if (__mappages(kernel_pagetable, va, sz, pa, riscv_map_prot(prot), spec) != 0)
+    if (__mappages(kernel_pagetable, va, sz, pa, prot, spec) != 0)
         panic("kvmmap");
 
     kmap[nxt_mapid++] = (kmap_t){ .va = va,.pa = pa,.size = sz,.pg_spec = spec,.prot = prot };
 }
-
 
 int setupkvm(pagetable_t pagetable) {
     if (!pagetable || pagetable == kernel_pagetable)
@@ -59,7 +58,7 @@ int setupkvm(pagetable_t pagetable) {
     int i;
     for (i = 0; i < nxt_mapid; i++) {
         map = &kmap[i];
-        if (__mappages(pagetable, map->va, map->size, map->pa, riscv_map_prot(map->prot), map->pg_spec) == -1)
+        if (__mappages(pagetable, map->va, map->size, map->pa, map->prot, map->pg_spec) == -1)
             goto bad;
     }
 
@@ -92,25 +91,31 @@ void erasekvm(pagetable_t pagetable) {
 // frees any allocated pages on failure.'
 int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma) {
     pte_t *pte;
-    uint64 pa, i;
-    uint prot;
+    uint64 va;
 
-    for (i = vma->addr; i < PGROUNDUP(vma->addr + vma->len); i += PGSIZE) {
-        if ((pte = walk(old, i, 0)) == 0)
+    for (va = vma->addr; va < vma->addr + vma->len; va += PGSIZE) {
+
+        if ((pte = walk(old, va, 0)) == 0)
             continue;
         if ((*pte & PTE_V) == 0)
             continue;
-        pa = PTE2PA(*pte);
+        uint64 pa = PTE2PA(*pte);
 
         *pte |= PTE_COW;  // mark cow
         *pte &= ~PTE_W; // read only
         /* IMPORTANT!
           We have changed origin pte, so we need to flash the TLB to make it effective */
-        sfence_vma_addr(i);
+        sfence_vma_addr(va);
+
         get_page(pa);
 
-        prot = PTE_FLAGS(*pte);
-        if (mappages(new, i, PGSIZE, pa, prot) != 0) {
+        // uint rprot = PTE_FLAGS(*pte);
+        // uint lprot = riscv_map_prot((vma->prot & ~PROT_WRITE) | PROT_COW);
+        // // 1 1101 1011
+        // //     11 1010
+        // assert(rprot == lprot);
+
+        if (mappages(new, va, PGSIZE, pa, (vma->prot & ~PROT_WRITE) | PROT_COW) != 0) {
             /* Free pa here is ok for COW, because we have added refcnt for it */
             kfree((void *)pa);
             goto err;
@@ -119,8 +124,8 @@ int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma) {
     return 0;
 
 err:
-    /* This is only to unmap the pages which have been mapped before(not include i(th)) */
-    uvmunmap(new, 0, i / PGSIZE, 1);
+    /* This is only to unmap the pages which have been mapped before */
+    uvmunmap(new, vma->addr, va / PGSIZE, 1);
     return -1;
 }
 
@@ -141,8 +146,7 @@ void freewalk(pagetable_t pagetable) {
             panic("freewalk: leaf");
         }
     }
-    /* memset 放在kfree前没事 */
-      // memset(pagetable, 0, PGSIZE);
+
     kfree((void *)pagetable);
 }
 

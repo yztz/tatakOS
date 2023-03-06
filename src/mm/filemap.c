@@ -391,9 +391,9 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
 
   /* address落在文件的pgoff页 */
   /* 之前area->offset的单位是字节，哪里会引发错误？ */
-  pgoff = ((address - area->addr) >> PAGE_CACHE_SHIFT) + area->offset;
+  pgoff = ((address - area->addr) >> PAGE_CACHE_SHIFT) + (area->offset >> PAGE_CACHE_SHIFT);
   /* area所包含的最后一页 */
-  endoff = (area->len >> PAGE_CACHE_SHIFT) + area->offset;
+  endoff = (area->len >> PAGE_CACHE_SHIFT) + (area->offset >> PAGE_CACHE_SHIFT);
   /* 文件的总页数， 页号为（0 ~ size-1）*/
   size = ROUNDUP(file->ep->size_in_mem, PAGE_CACHE_SIZE) >> PAGE_CACHE_SHIFT;
 
@@ -424,8 +424,7 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
     put_page(page);
 
     *pte = PA2PTE(pa0) | riscv_map_prot(area->prot) | PTE_V;
-  }
-  else if(area->flags & MAP_SHARED){
+  } else if (area->flags & MAP_SHARED) {
     /* shared */
     *pte = PA2PTE(pa) | riscv_map_prot(area->prot) | PTE_V;
   }

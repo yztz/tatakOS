@@ -58,7 +58,7 @@ static uint64_t loadinterp(mm_t *mm) {
         if (ph.memsz < ph.filesz) {
             goto bad;
         }
-        if (do_mmap(mm, NULL, 0, ph.vaddr + INTERP_BASE, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(mm, NULL, 0, ph.vaddr + INTERP_BASE, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
             goto bad;
         }
         if (loadseg(mm, ph.vaddr + INTERP_BASE, ep, ph.off, ph.filesz) < 0) {
@@ -87,18 +87,6 @@ int exec(char *path, char *argv[], char *envp[]) {
     struct proc *p = current;
     mm_t *newmm;
     mm_t *oldmm = p->mm;
-
-#ifdef SHARE_LOAD
-    extern struct proc proc[NPROC];
-    proc_t *same_proc = NULL, *cur = NULL;
-    for (cur = proc; cur < &proc[NPROC]; cur++) {
-        // if(cur->exe == p->exe && cur != p){
-        if (strncmp(cur->name, argv[0], 20) == 0 && cur != p) {
-            same_proc = cur;
-            break;
-        }
-    }
-#endif
 
     uint64_t aux[AUX_CNT][2];
     memset(aux, 0, sizeof(aux));
@@ -169,41 +157,11 @@ int exec(char *path, char *argv[], char *envp[]) {
             goto bad;
         }
 
-        if (do_mmap(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
             eunlock(ep);
             goto bad;
         }
 
-#ifdef SHARE_LOAD
-        if (same_proc) {
-            pagetable_t old = same_proc->mm->pagetable, new = p->mm->pagetable;
-            pte_t *pte;
-            uint64_t pa;
-            uint prot;
-            if (ph.flags & PF_W)
-                goto loadseg;
-            /* 复制uvmcopy代码，把va复制为i了。 */
-            for (int va = PGROUNDDOWN(ph.vaddr); va < ph.vaddr + ph.filesz; va += PGSIZE) {
-                if ((pte = walk(old, va, 0)) == 0)
-                    continue;
-
-                pa = PTE2PA(*pte);
-
-                sfence_vma_addr(va);
-                get_page(pa);
-
-                prot = PTE_FLAGS(*pte);
-                if (mappages(new, va, PGSIZE, pa, prot) != 0) {
-                    /* Free pa here is ok for COW, because we have added refcnt for it */
-                    kfree((void *)pa);
-                    ER();
-                }
-            }
-
-            continue;
-        }
-    loadseg:
-#endif
 
         if (loadseg(newmm, ph.vaddr, ep, ph.off, ph.filesz) < 0) {
             eunlock(ep);
@@ -212,7 +170,6 @@ int exec(char *path, char *argv[], char *envp[]) {
 
     }
     // debug("%s: loadseg done entry is %#lx", path, elfentry);
-    // mmap_print(newmm);
     eunlock(ep);
 
     // initcode has not exe
