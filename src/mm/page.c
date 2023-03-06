@@ -59,16 +59,15 @@ pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec) {
   return &pagetable[PX(pg_spec, va)];
 }
 
-// Create PTEs for virtual addresses starting at va that refer to
-// physical addresses starting at pa. va and size might not
-// be page-aligned. Returns 0 on success, -1 if walk() couldn't
-// allocate a needed page-table page.
+
 int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec) {
   uint64 start, a, last;
   pte_t *pte;
 
   if(size == 0)
     panic("mappages: size");
+
+  prot = riscv_map_prot(prot);
   
   start = a = PGROUNDDOWN_SPEC(va, spec);
   last = PGROUNDDOWN_SPEC(va + size - 1, spec);
@@ -93,9 +92,7 @@ int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int pro
   return -1;
 }
 
-// Remove npages of mappings starting from va. va must be
-// page-aligned. The mappings must exist.
-// Optionally free the physical memory.
+
 // IMPROVE ME: ASID
 void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec) {
   uint64 a;
@@ -108,7 +105,7 @@ void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, in
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*pgsize; a += pgsize){
-    // printf(ylw("a: %p\n"), a);
+    // No PTE found
     if((pte = __walk(pagetable, a, 0, spec)) == 0){
       continue;
     }

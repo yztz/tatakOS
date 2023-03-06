@@ -436,8 +436,8 @@ uint64_t sys_mmap(void) {
     // debug("addr is %#lx len is %#lx flags is %b prot is %b fd is %d",addr, len, flags, prot, fd);
 
     // 由于我们并没有实现mproctect所以如果按照它给的flag来设置会有后续访存问题
-    // if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
-    if((addr = do_mmap(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) {
+    // if((addr = mmap_map(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
+    if((addr = mmap_map(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) {
         debug("mmap failure");
         return -1;
     }
@@ -459,6 +459,6 @@ uint64_t sys_munmap(void) {
         ER();
     // debug("UNMAP addr is %#lx len is %#lx", addr, len);
     // mmap_print(p->mm);
-    do_unmap(p->mm, addr, 1);
+    mmap_unmap(p->mm, addr);
     return 0;
 }

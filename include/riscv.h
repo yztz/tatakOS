@@ -21,13 +21,6 @@
 
 #define IS_INTR(scause) ((scause) & INTERRUPT)
 
-char *riscv_cause2str(uint64 scause);
-
-static inline uint32_t riscv_map_prot(uint32_t linux_prot) {
-    return linux_prot << 1;
-}
-
-
 // Supervisor Status Register, sstatus
 
 #define SSTATUS_SPP (1L << 8)  // Previous mode, 1=Supervisor, 0=User
@@ -179,5 +172,13 @@ static void inline set_current(struct proc *p) {
     write_csr(sscratch, p);
 }
 
+char *riscv_cause2str(uint64 scause);
+/**
+ * @brief Convert system prot to riscv prot
+ * 
+ * @param linux_prot 
+ * @return uint32_t 
+ */
+uint32_t riscv_map_prot(uint32_t linux_prot);
 
 #endif

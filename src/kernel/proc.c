@@ -245,8 +245,8 @@ void userinit(void) {
 
     // debug("initcode size: %d", sizeof(initcode));
 
-    // if(do_mmap_alloc(p->mm, 0, USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
-    if (do_mmap_alloc(p->mm, PGSIZE, USER_SIZE, 0, PROT_WRITE | PROT_READ | PROT_EXEC | PROT_USER) == -1) {
+    // if(mmap_map_alloc(p->mm, 0, USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
+    if (mmap_map_alloc(p->mm, PGSIZE, USER_SIZE, 0, PROT_WRITE | PROT_READ | PROT_EXEC | PROT_USER) == -1) {
         panic("mmap1 failure");
     }
 

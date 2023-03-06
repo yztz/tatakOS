@@ -1,6 +1,6 @@
 // Mutual exclusion spin locks.
 
-
+#include "common.h"
 #include "atomic/spinlock.h"
 #include "kernel/proc.h"
 

@@ -83,7 +83,7 @@ int exec(char *path, char *argv[]) {
             goto bad;
         }
 
-        if (do_mmap(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
             eunlock(ep);
             goto bad;
         }
@@ -95,7 +95,6 @@ int exec(char *path, char *argv[]) {
 
     }
     // debug("%s: loadseg done entry is %#lx", path, elfentry);
-
     eunlock(ep);
 
     // initcode has not exe

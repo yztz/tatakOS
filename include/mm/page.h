@@ -126,13 +126,6 @@ extern page_t pages[PAGE_NUMS];
 #define pte_valid(pte)          (pte & PTE_V) 
 #define pte_write(pte)          (pte & PTE_W)
 
-#define PTE_VALID (0) // valid
-#define PTE_READ (1)
-#define PTE_WRITE (2)
-#define PTE_EXECUTE (3)
-#define PTE_USER (4) 
-
-
 pgref_t __get_page_pointer(page_t *page);
 pgref_t __get_page_paddr(uint64_t pa);
 #define get_page(param) _Generic((param), uint64_t: __get_page_paddr, page_t *: __get_page_pointer)(param)  
@@ -166,7 +159,32 @@ void print_page_info(page_t* page);
 void print_not_freed_pages();
 void reset_page(page_t *page);
 
+/**
+ * @brief Create PTEs for virtual addresses starting at va that refer to
+ *        physical addresses starting at pa. va and size might not
+ *        be page-aligned. Returns 0 on success, -1 if walk() couldn't
+ *        allocate a needed page-table page.
+ * 
+ * @param pagetable
+ * @param va vitrual address
+ * @param size 
+ * @param pa physical address
+ * @param prot protection
+ * @param spec page specification
+ * @return int 
+ */
 int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
+/**
+ * @brief Remove npages of mappings starting from va. va must be
+ *        page-aligned. The mappings must exist.
+ *        Optionally free the physical memory.
+ * 
+ * @param pagetable 
+ * @param va 
+ * @param npages 
+ * @param do_free free the memory
+ * @param spec page specification
+ */
 void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec);
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
 

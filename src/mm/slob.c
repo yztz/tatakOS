@@ -6,7 +6,7 @@
 #define __MODULE_NAME__ SLOB
 #include "debug.h"
 
-#define MAX_KEEP_HOLD_PAGE 20
+#define MAX_KEEP_HOLD_PAGE 16
 
 // 16bits for an unit
 typedef int16_t slobidx_t;
@@ -177,25 +177,28 @@ static void slob_free_page(sp_t *sp) {
 	__free_one_page(sp);
 }
 
+static inline void slob_init_page(sp_t *sp) {
+    slob_t *b = (slob_t *)((uint64_t)sp + sizeof(struct slob_page));
+    sp->units = SLOB_PAGE_UNITS;
+	sp->freelist = b;
+    set_slob(b, SLOB_PAGE_UNITS, (slob_t*)((uint64_t)(b + SLOB_PAGE_UNITS) & PGMASK));
+}
+
 // 申请一页新的slob_page
 static sp_t *slob_new_page(sp_t *sp) {
 	sp_t *new;
-	slob_t *b;
 
 	new = (sp_t *)__alloc_one_page();
 	if(!new) 
 		return NULL;
-	b = (slob_t *)((uint64_t)new + sizeof(struct slob_page));
 	
-	new->units = SLOB_PAGE_UNITS;
-	new->freelist = b;
+    slob_init_page(new);
 
 	new->next = sp->next;
 	new->next->pre = new;
 	new->pre = sp;
 	new->pre->next = new;
-	// 也就是下一页... todo:
-	set_slob(b, SLOB_PAGE_UNITS, (slob_t*)((uint64_t)(b + SLOB_PAGE_UNITS) & PGMASK));
+
 	return new;
 }
 
@@ -217,6 +220,8 @@ static void do_slob_free(void *block, int size) {
 	if(sp->units + units == SLOB_PAGE_UNITS) {
         if (atomic_get(&page_cnt) > MAX_KEEP_HOLD_PAGE) {
             slob_free_page(sp);
+        } else {
+            slob_init_page(sp);
         }
 		
 		goto ret;

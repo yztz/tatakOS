@@ -31,3 +31,12 @@ char *riscv_cause2str(uint64 scause) {
 }
 
 
+uint32_t riscv_map_prot(uint32_t linux_prot) {
+    uint32_t prot = 0;
+
+    if (linux_prot & PROT_COW) {
+        linux_prot &= ~PROT_COW;
+        prot |= PTE_COW;
+    }
+    return prot | linux_prot << 1;
+}

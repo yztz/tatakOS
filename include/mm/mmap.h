@@ -1,7 +1,8 @@
 #ifndef _H_MM_
 #define _H_MM_
+
+#include "types.h"
 #include "list.h"
-#include "common.h"
 #include "mm/page.h"
 #include "atomic/spinlock.h"
 
@@ -9,25 +10,6 @@
 
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
-
-/* 用于描述特定一段内存区域（段） */
-struct vma{
-  uint64 addr;
-  uint64 len;
-  uint64 rlen;
-  uint64_t pa;
-  /* 表示的是vma addr对应的page index，单位是页，而非字节 */
-  off_t offset;
-
-  uint flags;
-  uint prot;
-
-  uint64 raddr;
-  list_head_t head; /* 用于串联VMA结构 */
-
-  struct file *map_file;
-};
-
 
 // flags
 #define MAP_SHARED     0x01
@@ -57,37 +39,114 @@ struct vma{
 #define PROT_USER      8
 #define PROT_COW     16
 
-/* 描述进程的内存段 */
-struct mmlayout
-{
+
+/// @brief Process memory area (consecutive, page-aligned)
+struct vma {
+    /// @brief map address, page-aligned
+    uint64 addr;
+    /// @brief real map address
+    uint64 raddr;
+    /// @brief map length, page-aligned
+    uint64 len;
+    /// @brief real map length, <= len
+    uint64 rlen;
+    /// @brief page index offset, in pages
+    off_t offset;
+    /// @brief map flags
+    uint flags;
+    /// @brief map protection flags
+    uint prot;
+    /// @brief vma list head
+    list_head_t head;
+    /// @brief map file
+    struct file *map_file;
+    /// @brief vma belongs to
+    mm_t *mm;
+};
+
+
+/// @brief Process memory map
+struct mmlayout {
+    /// @brief 
     int ref;
+    /// @brief 
     spinlock_t mm_lock;
-    vma_t *ustack; /* 用户栈 */
-    vma_t *uheap;  /* 用户堆 */
-
-    list_head_t vma_head; /* 其他内存区域 */
-
-    pagetable_t pagetable;       // User page table
-    // proc_t *owner;
+    /// @brief user stack
+    vma_t *ustack;
+    /// @brief user heap
+    vma_t *uheap;
+    /// @brief vma list
+    list_head_t vma_head;
+    /// @brief user pagetable
+    pagetable_t pagetable;
 };
 
 
 
-vma_t *vma_new();
+vma_t *vma_new(mm_t *mm,
+        struct file *fp, 
+        off_t foff, 
+        uint64_t addr, 
+        uint64_t len, 
+        int flags, 
+        int prot);
 void vma_print(vma_t *vma);
 void vma_free(vma_t **vma);
+vma_t *vma_clone(mm_t *newmm, vma_t *vma);
 
-// int mmap_init(mm_t *mm);
 mm_t *mmap_new();
 void mmap_free(mm_t **pmm);
-uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot);
-uint64_t do_mmap_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot);
-void do_unmap(mm_t *mm, uint64_t addr, int do_free);
-vma_t *vma_find(mm_t *mm, uint64 addr);
+
+/**
+ * @brief Map a memory area with specific flags and prot.
+ * @note Mapped memory regions are lazily allocated,
+ *       in other words, not immediately allocated.
+ *
+ * @param mm
+ * @param fp file pointer that specifies this memory segment as a file map, NULL else
+ * @param off file offset, valid only after a file pointer has been passed
+ * @param addr map virtual address. If NULL, the system automatically specifies the value.
+ * @param len map length
+ * @param flags map flags
+ * @param prot  protection flags
+ * @return uint64_t map address
+ */
+uint64_t mmap_map(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot);
+uint64_t mmap_map_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot);
+void mmap_unmap(mm_t *mm, uint64_t addr);
 vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
 
 int mmap_ext_heap(mm_t *mm, uint64_t newsize);
 int mmap_ext_stack(mm_t *mm, uint64_t newsize);
+
+/**
+ * @brief Find the **first** vma whose **end** address is greater than addr.
+ * 
+ * @param mm 
+ * @param addr 
+ * @return vma_t* 
+ */
+vma_t *__vma_find_greater(mm_t *mm, uint64 addr);
+
+
+/**
+ * @brief Find the **last** vma whose **start** address is less than addr.
+ * 
+ * @param mm 
+ * @param addr 
+ * @return vma_t* 
+ */
+vma_t *__vma_find_less(mm_t *mm, uint64 addr);
+
+
+/**
+ * @brief Just like __vma_find_greater but require 
+ *        **start** address is less than or equal to addr.
+ * 
+ * @param mm 
+ * @param addr 
+ * @return vma_t* 
+ */
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
 int mmap_map_stack(mm_t *mm, uint64_t stacksize);
 

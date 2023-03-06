@@ -1,35 +1,19 @@
 #include "mm/mmap.h"
-#include "fs/fs.h"
-#include "fs/file.h"
-#include "str.h"
 #include "mm/vm.h"
 
 #define __MODULE_NAME__ MMAP
 #define QUIET
 #include "debug.h"
 
-#define VMA_LEN(vma) ((vma)->len)
-#define VMA_PAGES(vma) (((vma)->len) / PGSIZE)
-#define PAGETABLE(mm) ((mm)->owner->pagetable)
-
-#define KSTACK_VMA(mm) (&((mm)->kstack))
-
-
+/* 
 #define check_range(va, len, limit) \
   (((uint64_t)(va) + (uint64_t)(len) > (uint64_t)(va)) && \
   (((uint64_t)(va) + (uint64_t)(len) <= (uint64_t)(limit))))
+*/
 
+extern int vma_resize(vma_t *vma, uint64 newsize);
 
-static int check_flags(int flags1, int flags2) {
-    return flags1 == flags2;
-}
-
-// TODO: 检查flag是否兼容（目前只是简单的比较是否相等）
-static int check_prot(int prot1, int prot2) {
-    return prot1 == prot2;
-}
-
-vma_t *__vma_find(mm_t *mm, uint64 addr) {
+vma_t *__vma_find_greater(mm_t *mm, uint64 addr) {
     vma_t *ans;
     list_for_each_entry(ans, &mm->vma_head, head) {
         if(addr < ans->addr + ans->len) {
@@ -39,12 +23,24 @@ vma_t *__vma_find(mm_t *mm, uint64 addr) {
     return NULL;
 }
 
+vma_t *__vma_find_less(mm_t *mm, uint64 addr) {
+    vma_t *ans = NULL;
+    vma_t *vma;
+    list_for_each_entry(vma, &mm->vma_head, head) {
+        if(addr < vma->addr) {
+            break;
+        }
+        ans = vma;
+    }
+    return ans;
+}
+
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr) {
-    vma_t *ans = __vma_find(mm, addr);
+    vma_t *ans = __vma_find_greater(mm, addr);
     return ans && ans->addr <= addr ? ans : NULL;
 }
 
-void vma_remove(mm_t *mm, vma_t *vma) {
+static inline void vma_remove(mm_t *mm, vma_t *vma) {
     list_del(&vma->head);
 }
 
@@ -67,19 +63,26 @@ void vma_insert(mm_t *mm, vma_t *vma) {
 
 /* 包含查找 vma[...addr...addr+len...] */
 vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len) {
-    // if(!check_range(addr, len, USERSPACE_END)) return NULL;
     vma_t *ans = __vma_find_strict(mm, addr);
-    if(ans && addr -  ans->addr <= ans->len - len) {
+    if(ans && addr - ans->addr <= ans->len - len) {
         return ans;
     }
 
     return NULL;
 }
-/* 相交查找 addr vma[...addr+len */
-vma_t *vma_inter(mm_t *mm, uint64_t addr, uint64_t len) {
-    uint64_t end = addr + len;
-    vma_t *vma = __vma_find(mm, addr);
 
+/**
+ * @brief Find the intersecting vma.
+ * 
+ * @param mm 
+ * @param addr 
+ * @param len 
+ * @return vma_t* 
+ */
+static vma_t *vma_inter(mm_t *mm, uint64_t addr, uint64_t len) {
+    uint64_t end = addr + len;
+    vma_t *vma = __vma_find_greater(mm, addr);
+    // vma[...end
     if(vma && vma->addr < end) { // 当存在相交vma
         return vma;
     } else {
@@ -87,90 +90,91 @@ vma_t *vma_inter(mm_t *mm, uint64_t addr, uint64_t len) {
     }
 }
 
-// int __vmaS_merge(mm_t *mm, vma_t *start, vma_t *end) {
-//     if(start == NULL || end == NULL) return 0;
-//     vma_t *tmp = start;
-//     // 合并检查
-//     while(tmp != end) {
-//         vma_t *next = list_next_entry(tmp, head);
-//         if(!check_prot(tmp->prot, next->prot)) return -1;
-//         if(!check_flags(tmp->flags, next->flags)) return -1;
-//         tmp = next;
-//     }
-//     // 执行合并
-//     while(1) {
-//         vma_t *next = list_next_entry(tmp, head);
-//         start->len = next->addr + next->len - start->addr;
-//         vma_remove(mm, next);
-//         if(next == end) {
-//             vma_free(&next);
-//             break;
-//         }
-//         vma_free(&next);
-//     }
-//     return 0;
-// }
-
-
-void __do_mmap(mm_t *mm, struct file *fp, off_t foff, uint64_t addr, uint64_t len, int flags, int prot) {
-    uint64_t end = addr + len;
-    vma_t *vma;
-
-    if(fp)
-        filedup(fp);
-    // 不存在相交vma
-    vma = vma_new();
-    vma->raddr = addr;
-    vma->addr = PGROUNDDOWN(addr);
-    // vma->len = end - vma->addr;
-    vma->len = PGROUNDUP(end - vma->addr);
-    vma->rlen = len;
-    vma->flags = flags;
-    vma->map_file = fp;
-    vma->prot = prot;
-    /* 存储的是page index */
-    vma->offset = foff >> PGSHIFT;
-    vma_insert(mm, vma);
-
-//   merge:
-//     经过上述处理完，找到的vma布局如下所示：
-//     (addr) vma0] [vma1] [vma2 (end)
-//     debug("merge..");
-//     if(check_flags(vma->flags, flags) == 0 || check_prot(vma->prot, prot) == 0) return -1;
-//     if(__vmaS_merge(mm, vma, vma_end) == -1) return -1;
-//     if(vma->addr > addr) {
-//         vma->addr = PGROUNDDOWN(addr);
-//     }
-//     if(vma->addr + vma->len < end) {
-//         vma->len = end - vma->addr;
-//     }
-//     return 0;
-    return;
-}
-
-
 static uint64_t find_free_maparea(mm_t *mm, uint64_t len) {
     uint64_t va = MMAP_BASE;
-    vma_t *vma = __vma_find(mm, va);
-    // TODO: 不是很严谨
+    vma_t *vma = __vma_find_greater(mm, va);
+
     while(vma && vma->addr < va + len) {
         va = PGROUNDUP(vma->addr + vma->len) + PGSIZE;
-        vma = __vma_find(mm, va);
+        vma = __vma_find_greater(mm, va);
     }
 
     return va;
 }
 
+static int __mmap_map(
+        mm_t *mm, 
+        struct file *fp, 
+        off_t foff, 
+        uint64_t addr, 
+        uint64_t len, 
+        int flags, 
+        int prot) 
+{
+    vma_t *vma = vma_new(mm, fp, foff, addr, len, flags, prot);
+    if (vma) {
+        vma_insert(mm, vma);
+        return 0;
+    } else {
+        return -1;
+    }
+}
 
-uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot) {
+
+static inline int __mmap_map_fixed(
+    mm_t *mm, 
+    struct file *fp, 
+    off_t foff, 
+    uint64_t addr, 
+    uint64_t len, 
+    int flags, 
+    int prot,
+    vma_t *inter_vma) 
+{
+    // No overlay vma
+    if (inter_vma == NULL) {
+        return __mmap_map(mm, fp, foff, addr, len, flags, prot);
+    }
+
+    len = PGROUNDUP(len);
+    // IMPROVE ME: This part is hardcode for busybox, 
+    // so it is not completed or like shit.
+    if(addr + len != inter_vma->addr + inter_vma->len || addr < inter_vma->addr) {
+        debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
+        release(&mm->mm_lock);
+        return -1;
+    }
+    inter_vma->len = addr - inter_vma->addr;
+
+    return 0;
+}
+
+
+uint64_t mmap_map(
+    mm_t *mm, 
+    struct file *fp, 
+    off_t off, 
+    uint64_t addr, 
+    uint64_t len, 
+    int flags, 
+    int prot) 
+{
     vma_t *vma;
     
+    // Set MAP_ANONYMOUS flag when fp is not specified.
     flags = fp ? (flags & (~MAP_ANONYMOUS)) : (flags | MAP_ANONYMOUS);
 
+    // Zero length is not allowed.
+    if (len == 0) {
+        goto fail;
+    }
+
+    // Use default map address.
     if(addr == 0) {
         addr = find_free_maparea(mm, len);
     }
 
+    // Address should be page-aligned.
     uint64_t addr_align = PGROUNDDOWN(addr);
 
     acquire(&mm->mm_lock);
@@ -178,100 +182,90 @@ uint64_t do_mmap(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t l
     vma = vma_inter(mm, addr_align, len);
 
     if(flags & MAP_FIXED) {
-        // 对齐检查
-        if(addr != addr_align) return -1;
-        if(vma) {
-            // IMPROVE ME: 目前支持在存在的MMAP的后边界处做MAP_FIXED操作
-            if(addr + len != PGROUNDUP(vma->addr + vma->len) || addr < vma->addr) {
-                // vma_print(vma);
-                // mmap_print(mm);
-                #ifdef DEBUG
-                // vma_print(vma);
-                #endif
-                debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
-                release(&mm->mm_lock);
-                return -1;
-            }
-            vma->len = addr - vma->addr;
+        // Check Alignment
+        if(addr !=  addr_align) {
+            goto release_fail;
         }
-    } else if(vma != NULL) {
+        if (__mmap_map_fixed(mm, fp, off, addr, len, flags, prot, vma) == -1) {
+            goto release_fail;
+        }
+    } else if (vma == NULL){
+        if (__mmap_map(mm, fp, off, addr, len, flags, prot) == -1) {
+            goto release_fail;
+        }
+    } else {
         debug("vma remmapped");
-        release(&mm->mm_lock);
-        return -1;
+        goto release_fail;
     }
-
-    __do_mmap(mm, fp, off, addr, len, flags, prot);
     
     release(&mm->mm_lock);
 
     return addr;
-}
 
-void do_unmap(mm_t *mm, uint64_t addr, int do_free) {
+  release_fail:
+    release(&mm->mm_lock);
+  fail:
+    return -1;
+}   
+
+void mmap_unmap(mm_t *mm, uint64_t addr) {
     vma_t *vma = __vma_find_strict(mm, addr);
 
-    acquire(&mm->mm_lock);
-    if(vma) {
-        uvmunmap(mm->pagetable, vma->addr, ROUND_COUNT(vma->len), do_free);
+    if (vma) {
+        acquire(&mm->mm_lock);
         vma_remove(mm, vma);
-        if(vma->map_file) {
-            fileclose(vma->map_file);
-        }
+        release(&mm->mm_lock);
         vma_free(&vma);
     }
-    release(&mm->mm_lock);
+    
 }
 
-uint64_t do_mmap_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot) {
+uint64_t mmap_map_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot) {
     char *mem;
-    uint64_t a;
+    uint64_t va;
 
-    if(do_mmap(mm, NULL, 0, addr, len, flags, prot) == -1) {
-        return 0;
+    if(mmap_map(mm, NULL, 0, addr, len, flags, prot) == -1) {
+        goto bad;
     }
 
-    for(a = PGROUNDDOWN(addr); a < addr + len; a += PGSIZE){
+    for(va = PGROUNDDOWN(addr); va < addr + len; va += PGSIZE) {
         mem = kzalloc(PGSIZE);
-        if(mem == 0){
-            goto bad;
+        if (mem == 0) {
+            // Alloc failure
+            goto freebad;
         }
-        if(mappages(mm->pagetable, a, PGSIZE, (uint64)mem, riscv_map_prot(prot)) != 0){
+
+        if (mappages(mm->pagetable, va, PGSIZE, (uint64)mem, prot) != 0) {
+            // Page map failure
             kfree(mem);
-            goto bad;
+            goto freebad;
         }
     }
 
-    
     return addr;
 
+  freebad:
+    mmap_unmap(mm, addr);
   bad:
-    do_unmap(mm, addr, 0);
-    for(uint64_t i = PGROUNDDOWN(addr); i < a; i += PGSIZE) {
-        uvmunmap(mm->pagetable, i, 1, 1);
-    }
-    return 0;
+    return -1;
 }
 
 static void unmap_vmas(mm_t *mm) {
     vma_t *vma, *next;
-    list_for_each_entry_safe(vma, next, &mm->vma_head, head) {
-        uvmunmap(mm->pagetable, vma->addr, ROUND_COUNT(vma->len), 1);   
+    list_for_each_entry_safe(vma, next, &mm->vma_head, head) {   
         vma_remove(mm, vma);
-        if(vma->map_file) {
-            fileclose(vma->map_file);
-        }
         vma_free(&vma);
     }
+
 }
 
 
 
-static inline int mmap_init(mm_t *mm) {
+static int mmap_init(mm_t *mm) {
     initlock(&mm->mm_lock, "mmlock");
     mm->pagetable = kzalloc(PGSIZE);
     INIT_LIST_HEAD(&mm->vma_head);
     if(mm->pagetable == NULL) {
-        debug("stub1");
         return -1;
     }
     
@@ -302,12 +296,9 @@ void mmap_free(mm_t **pself) {
     if(self->ref == 0)
         panic("ref");
 
-    // 2 --> 1 --> 0
     mmap_deref(self);
     if(self->ref > 0)
         return;
-
-    // debug("FREED!!!");
 
     unmap_vmas(self);
     erasekvm(self->pagetable);
@@ -315,34 +306,18 @@ void mmap_free(mm_t **pself) {
     kfree_safe(pself);
 }
 
-static vma_t *vma_dup(vma_t *vma) {
-    vma_t *dup;
-    if((dup = vma_new()) == NULL) {
-        return NULL;
-    }
-    memcpy(dup, vma, sizeof(vma_t));
-    return dup;
-}
-
-static int mmap_dup(mm_t *mm, mm_t *newmm) {
+static int __mmap_clone(mm_t *mm, mm_t *newmm) {
     vma_t *vma;
     list_for_each_entry(vma, &mm->vma_head, head) {
-        vma_t *dup = vma_dup(vma);
+        vma_t *dup = vma_clone(newmm, vma);
         if(dup == NULL) {
-            unmap_vmas(newmm);
-            return -1;
+            goto fail;
         }
-        if(uvmcopy(mm->pagetable, newmm->pagetable, vma) == -1) {
-            vma_free(&dup);
-            unmap_vmas(newmm);
-            return -1;
-        }
+
+        // Add cloned vma to the vma list
         vma_insert(newmm, dup);
 
-        if(vma->map_file) {
-            filedup(vma->map_file);
-        }
-
+        // Record the special vma
         if(mm->ustack == vma)
             newmm->ustack = dup;
         if(mm->uheap == vma)
@@ -350,6 +325,10 @@ static int mmap_dup(mm_t *mm, mm_t *newmm) {
     }
 
     return 0;
+
+  fail:
+    unmap_vmas(newmm);
+    return -1;
 }
 
 mm_t *mmap_clone(mm_t *mm) {
@@ -358,10 +337,12 @@ mm_t *mmap_clone(mm_t *mm) {
         return NULL;
 
     acquire(&mm->mm_lock);
-    if(mmap_dup(mm, newmm) == -1) {
+
+    if(__mmap_clone(mm, newmm) == -1) {
         mmap_free(&newmm);
         return NULL;
     }
+
     release(&mm->mm_lock);
 
     return newmm;
@@ -371,18 +352,16 @@ mm_t *mmap_clone(mm_t *mm) {
 // called after load
 int mmap_map_stack(mm_t *mm, uint64_t stacksize) {
     // brk_addr = PGROUNDUP(brk_addr);
-    // if(do_mmap(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
+    // if(mmap_map(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
     //     return -1;
     // }
     mm->uheap = list_last_entry(&mm->vma_head, vma_t, head);
 
-    if(do_mmap(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
-    // if(do_mmap_alloc(mm, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == 0) {
-        // do_unmap(mm, brk_addr, 0);
+    if(mmap_map(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
         return -1;
     }
 
-    mm->ustack = __vma_find(mm, USERSPACE_END - stacksize);
+    mm->ustack = __vma_find_greater(mm, USERSPACE_END - stacksize);
     assert(mm->uheap != mm->ustack);
     return 0;
 }
@@ -392,47 +371,22 @@ int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
     if(newbreak <= mm->uheap->addr) return -1;
 
     uint64_t newsize = newbreak - mm->uheap->addr;
-    uint64_t cursize = mm->uheap->len;
-    if(cursize == newsize) {
-        return 0;
-    } else if(cursize > newsize) {
-        uvmunmap(mm->pagetable, 
-            PGROUNDUP(mm->uheap->addr + newsize), 
-            ROUND_COUNT(cursize) - ROUND_COUNT(newsize), 1);
-    } else {
-        vma_t *vma;
-        if((vma = __vma_find_strict(mm, mm->uheap->addr + newsize))) {
-            debug("uheap out of range newbreak is %#lx but encounter the vma: ", newbreak);
-            #ifdef DEBUG
-            vma_print(vma);
-            #endif
-            return -1;
-        }
-    }
-    // debug("uheap: %d -> %d", cursize, newsize);
-    // mmap_print(mm);
-    mm->uheap->len = newsize;
-    return 0;
+
+    acquire(&mm->mm_lock);
+    int ret = vma_resize(mm->uheap, newsize);
+    release(&mm->mm_lock);
+
+    return ret;
 }
 
 int mmap_ext_stack(mm_t *mm, uint64_t newsize) {
     if(mm->ustack == NULL) return -1;
-    uint64_t cursize = mm->ustack->len;
-    if(cursize == newsize) {
-        return 0;
-    } else if(cursize > newsize) {
-        uvmunmap(mm->pagetable, 
-            mm->ustack->addr, 
-            ROUND_COUNT(cursize) - ROUND_COUNT(newsize), 1);
-    } else {
-        vma_t *vma = __vma_find(mm, mm->ustack->addr - newsize);
-        if(vma != mm->ustack) {
-            return -1;
-        }
-    }
-    mm->ustack->addr = PGROUNDDOWN(USERSPACE_END - newsize);
-    mm->ustack->len = USERSPACE_END - mm->ustack->addr;
-    return 0;
+
+    acquire(&mm->mm_lock);
+    int ret = vma_resize(mm->ustack, newsize);
+    release(&mm->mm_lock);
+
+    return ret;
 }
 
 
@@ -447,7 +401,6 @@ void mmap_deref(mm_t *self) {
     self->ref--;
     release(&self->mm_lock);
 }
-
 
 
 void mmap_print(mm_t *mm) {
