@@ -33,26 +33,33 @@
 #include "bitops.h"
 
 struct pollfd {
-    int   fd;         /* file descriptor */
-    short events;     /* requested events */
-    short revents;    /* returned events */
+    /// @brief file descriptor
+    int   fd;
+    /// @brief requested events
+    short events;
+    /// @brief returned events
+    short revents;
 };
+
 typedef struct pollfd pollfd_t;
 
 #define FD_SETSIZE 1024
 
+/// @brief file descriptor set
 struct fdset {
+    /// @brief each set bit means a fd
     unsigned long fds_bits[FD_SETSIZE / (8 * sizeof(long))];
 };
+
 typedef struct fdset fdset_t;
 
 
 static inline void fdset_set(struct fdset* set, int nr) {
-  __set_bit(nr, (volatile unsigned long *)set);
+  set_bit(nr, (volatile unsigned long *)set);
 } 
 
 static inline void fdset_clear(struct fdset* set, int nr) {
-  __clear_bit(nr, (volatile unsigned long *)set);
+  clear_bit(nr, (volatile unsigned long *)set);
 } 
 
 static inline int fdset_test(struct fdset* set, int nr) {

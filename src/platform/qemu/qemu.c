@@ -7,9 +7,6 @@ extern void virtio_disk_init(void);
 extern void uartinit(void);
 
 void platform_early_init() {
-    // set_csr(sstatus, SSTATUS_FS);
-
-    // enable_sum();
 }
 
 void platform_early_init_hart() {

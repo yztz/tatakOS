@@ -63,7 +63,7 @@ void scheduler(void) {
 
     tq_t *rq = &runnable_queue;
 
-    c->proc = 0;
+    c->proc = NULL;
     for (;;) {
         // Avoid deadlock by ensuring that devices can interrupt.
         intr_on();
@@ -78,13 +78,17 @@ void scheduler(void) {
         tq_unlock(rq);
 
         p->__state = RUNNING;
+
         c->proc = p;
         set_current(p);
+
         switchuvm(p->mm);
         swtch(&c->context, &p->context);
         switchkvm();
+
+        c->proc = NULL;
         set_current(NULL);
-        c->proc = 0;
+
         release(&p->lock);
     }
 }
@@ -92,10 +96,12 @@ void scheduler(void) {
 void sched(void) {
     int intena;
     struct proc *p = current;
-    struct cpu *cpu = mycpu();
 
     if (!holding(&p->lock))
         panic("sched p->lock");
+
+    struct cpu *cpu = mycpu();
+
     if (cpu->noff != 1)
         panic("sched locks");
     if (p->state == RUNNING)
@@ -110,7 +116,11 @@ void sched(void) {
     intena = cpu->intena;
 
     swtch(&p->context, &cpu->context);
-    cpu->intena = intena;
+
+    /* !IMPORTANT 
+        call mycpu() again.
+        CPU may have changed */
+    mycpu()->intena = intena;
 }
 
 void yield(void) {
@@ -199,10 +209,12 @@ int wakeup(void *chan) {
 }
 
 
-void wake_up_process(proc_t *p) {
-    // if(p->state != SLEEPING)
-    //   ER();
-    acquire(&p->lock);
+void wake_up_process_nolock(proc_t *p) {
     pstate_migrate(p, RUNNABLE);
+}
+
+void wake_up_process(proc_t *p) {
+    acquire(&p->lock);
+    wake_up_process_nolock(p);
     release(&p->lock);
 }

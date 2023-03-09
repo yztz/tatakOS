@@ -36,10 +36,4 @@ void            pop_off(void);
 void bit_spin_lock(int bitnum, unsigned long *addr);
 void bit_spin_unlock(int bitnum, unsigned long *addr);
 
-#define pte_chain_lock(page)	bit_spin_lock(PG_chainlock, &(page->flags))
-#define pte_chain_unlock(page)	bit_spin_unlock(PG_chainlock, &(page->flags))
-
-#define page_spin_lock(page) bit_spin_lock(PG_spinlock, &(page->flags))
-#define page_spin_unlock(page) bit_spin_unlock(PG_spinlock, &(page->flags))
-
 #endif

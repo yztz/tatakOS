@@ -6,6 +6,7 @@
 #define __MODULE_NAME__ SLOB
 #include "debug.h"
 
+/* This value specifies the max number of pages that slob could hold. */
 #define MAX_KEEP_HOLD_PAGE 16
 
 // 16bits for an unit

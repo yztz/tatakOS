@@ -158,13 +158,21 @@
 #define XTABS  0014000
 #endif
 
+#include "types.h"
+
 struct termios {
-    uint c_iflag; /* 输入模式标志*/
-    uint c_oflag; /* 输出模式标志*/
-    uint c_cflag; /* 控制模式标志*/
-    uint c_lflag; /*区域模式标志或本地模式标志或局部模式*/
-    uint8 c_line; /*行控制line discipline */
-    uint8 c_cc[8]; /* 控制字符特性*/
+    /// @brief 输入模式标志
+    uint c_iflag;
+    /// @brief 输出模式标志
+    uint c_oflag;
+    /// @brief 控制模式标志
+    uint c_cflag;
+    /// @brief 区域模式标志或本地模式标志或局部模式
+    uint c_lflag;
+    /// @brief 行控制line discipline
+    uint8 c_line;
+    /// @brief 控制字符特性
+    uint8 c_cc[8];
 };
 
 

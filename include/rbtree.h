@@ -95,8 +95,7 @@ static inline struct page * rb_insert_page_cache(struct inode * inode,
 #define	_LINUX_RBTREE_H
 #include "types.h"
 
-struct rb_node
-{
+struct rb_node {
 	struct rb_node *rb_parent;
 	int rb_color;
 #define	RB_RED		0

@@ -8,7 +8,8 @@
 #define _weak_alias(name, aliasname) \
 extern __typeof(name) aliasname __attribute__((weak, alias(#name)));
 
-#define unused(x) x __attribute__((__unused__))
+#define _unused __attribute__((__unused__))
+#define unused(x) x _unused
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 

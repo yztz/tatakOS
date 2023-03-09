@@ -21,16 +21,17 @@
 #include "mm/io.h"
 
 void uartintr(void *ctx);
-void uarths_putchar(char c);
+void uarths_putchar_sync(char c);
 int uarths_getchar(void);
 
 volatile uarths_t * uarths = NULL;
 
+static spinlock_t uart_tx_lock;
 
 static console_io_op_t ioop = {
     .console_getchar = uarths_getchar,
-    .console_putchar = uarths_putchar,
-    .console_putchar_sync = uarths_putchar
+    .console_putchar = uarths_putchar_sync,
+    .console_putchar_sync = uarths_putchar_sync
 };
 
 void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
@@ -55,14 +56,16 @@ void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
 void uarths_puts(const char *s)
 {
     while (*s)
-        uarths_putchar(*s++);
+        uarths_putchar_sync(*s++);
 }
 
-void uarths_putchar(char c)
+void uarths_putchar_sync(char c)
 {
+    push_off();
     while (uarths->txdata.full)
-        continue;
+        ;
     uarths->txdata.data = (uint8_t)c;
+    pop_off();
 }
 
 int uarths_getchar(void)
@@ -119,6 +122,8 @@ void uarths_init(void)
     uarths->ip.rxwm = 1;
     uarths->ie.txwm = 0;
     uarths->ie.rxwm = 1;
+
+    initlock(&uart_tx_lock, "uarths");
 
     uarths_enable_irq(UARTHS_RECEIVE);
 

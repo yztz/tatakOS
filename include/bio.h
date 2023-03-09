@@ -8,17 +8,23 @@
 #define BIO_READ 0
 #define BIO_WRITE 1
 
-
+/// @brief block buffer
 struct block_buffer {
     /// @brief Has data been read from disk?
     int valid;
+    /// @brief Has block been dirty (be written).
     int dirty;
+    /// @brief dev_no
     uint dev;
+    /// @brief block no
     uint blockno;
+    /// @brief The lock to protect self field.
     struct sleeplock lock;
+    /// @brief reference count
     uint refcnt;
     /// @brief LRU cache list
     list_head_t lru;
+    /// @brief data buffer
     uchar data[BSIZE];
 };
 
@@ -30,19 +36,18 @@ typedef struct block_buffer blk_buf_t;
  * 
  */
 struct bio {
+    /// @brief the first bio_vec
     struct bio_vec *bi_io_vec;
-    struct bio *bi_next;
+    /// @brief bio's r/w type
     uint8 bi_rw;
+    /// @brief device number
     uint bi_dev;
 };
 
 typedef struct bio bio_t;
 
 
-/**
- * @brief 描述了一个I/O操作的段（连续的sectors）
- *
- */
+/// @brief describe a consecutive I/O segment
 struct bio_vec {
     /// @brief the number of the first sector
     sector_t bv_start_num;
@@ -52,7 +57,8 @@ struct bio_vec {
     struct bio_vec *bv_next;
     /// @brief the address to begin read/write
     void *bv_buff;
-    // int disk;
+    /// @brief bio transfer state
+    int disk;
 };
 
 typedef struct bio_vec bio_vec_t;

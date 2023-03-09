@@ -4,16 +4,11 @@
 #include "mm/page.h"
 #include "mm/alloc.h"
 #include "atomic/spinlock.h"
-#include "printf.h"
-#include "param.h"
+#include "atomic/sleeplock.h"
+#include "common.h"
 
 #define __MODULE_NAME__ PAGE
 #include "debug.h"
-
-#include "atomic/sleeplock.h"
-#include "utils.h"
-#include "page-flags.h"
-#include "list.h"
 
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;

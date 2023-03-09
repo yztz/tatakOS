@@ -259,7 +259,6 @@ void userinit(void) {
 
     enable_sum();
     memmove((void *)PGSIZE, initcode, sizeof(initcode));
-    // memmove((void *)0, initcode, sizeof(initcode));
     disable_sum();
 
     // prepare for the very first "return" from kernel to user.
@@ -344,8 +343,8 @@ void exit(int status) {
     // Give any children to init.
     reparent(p);
 
-    // Parent might be sleeping in wait().
     if (thrdcnt == 0) {
+        // Parent might be sleeping in wait().
         wakeup(p->parent);
         sig_send(p->parent, SIGCHLD);
     }
@@ -379,8 +378,6 @@ void sig_send(proc_t *p, int signum) {
     release(&p->lock);
 }
 
-
-extern void lru_add_drain();
 
 int freechild() {
     proc_t *p = myproc();
@@ -420,6 +417,12 @@ int waitpid(int cid, uint64 addr, int options) {
             if (np->parent == p) {
                 // Make sure the child isn't still in exit() or swtch().
                 acquire(&np->lock);
+                
+                // Not main thread
+                if (np->tg->tg_id != np->pid) {
+                    release(&np->lock);
+                    continue;
+                }
 
                 havekids = 1;
 
@@ -433,8 +436,6 @@ int waitpid(int cid, uint64 addr, int options) {
                 if (np->state == ZOMBIE) {
                     // Found one.
 
-                    /* 进程退出的时候，有些页还在pagevec中，没有释放，看上去好像内存泄露了，所以这里加上这句。 */
-                    // lru_add_drain();
                     if (addr != 0 && copyout(addr, (char *)&np->xstate,
                         sizeof(np->xstate)) < 0) {
                         release(&np->lock);

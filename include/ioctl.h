@@ -42,12 +42,16 @@
 #define TIOCMBIC	0x5417
 #define TIOCMSET	0x5418
 
-
+/// @brief window size
 struct winsize {
-    uint16 ws_row;		/* rows， in character */
-    uint16 ws_col; 		/* columns, in characters */
-    uint16 ws_xpixel;	/* horizontal size, pixels (unused) */
-    uint16 ws_ypixel;	/* vertical size, pixels (unused) */
+    /// @brief rows, in character
+    uint16 ws_row;
+    /// @brief columns, in characters
+    uint16 ws_col;
+    /// @brief horizontal size, pixels (unused)
+    uint16 ws_xpixel;
+    /// @brief vertical size, pixels (unused)
+    uint16 ws_ypixel;
 };
 
 

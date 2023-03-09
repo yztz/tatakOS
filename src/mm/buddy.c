@@ -204,7 +204,6 @@ void *buddy_alloc(size_t size) {
     return (void *)b;
 }
 
-extern zone_t memory_zone;
 
 /**
  * 当page->refcnt为0时调用，释放一个页，buddy_free的改版

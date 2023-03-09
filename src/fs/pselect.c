@@ -1,7 +1,7 @@
 #include "common.h"
-#include "fdtable.h"
 #include "fs/file.h"
 #include "fs/pipe.h"
+#include "kernel/fdtable.h"
 #include "kernel/proc.h"
 #include "kernel/signal.h"
 #include "kernel/syscall.h"

@@ -17,7 +17,6 @@ void main() {
     mkdirat(-100, "tmp");
     mkdirat(-100, "proc");
     mkdirat(-100, "proc/mounts");
-    close(openat(-100, "/var/tmp/lmbench", 0100));
 
     memuse();
     shell();

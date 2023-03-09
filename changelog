@@ -187,3 +187,16 @@
     2. 将保护映射移动到mappages内部
     3. 删除部分无用机制/文件（memory.c, _plic.h）
     4. 修复slob潜在的内存泄露问题
+
+2023/3/9
+    1. 格式化了大量文件，完善了部分注释
+    2. 增加Doxyfile辅助生成文档（尚粗糙）
+    3. 增加integer.h，用于整型比特位操作
+    4. 删减了部分无用的page-flags
+    5. 删除rmap（待重构）
+    6. 修复了sched中cpu的严重访问bug（b705949）
+    7. 优化trap处理逻辑
+    8. 修复了waitqueue潜在的bug
+    9. 新增irq.c用于处理外部/软件中断
+    10.修复了futex潜在bug
+    11.修复了waitpid线程触发的bug

@@ -4,23 +4,6 @@
 #include "types.h"
 #include "platform.h"
 
-#define INTERRUPT 0x8000000000000000UL
-#define EXCEPTION 0x0000000000000000UL
-
-#define INTR_SOFT   (INTERRUPT  + 1)
-#define INTR_TIMER  (INTERRUPT  + 5)
-#define INTR_EXT    (INTERRUPT  + 9) // NOT SUPPORT ON K210
-
-#define EXCP_LOAD_FAULT (EXCEPTION + 5)
-#define EXCP_STORE_MISALIGNED (EXCEPTION + 6)
-#define EXCP_STORE_FAULT (EXCEPTION + 7)
-#define EXCP_SYSCALL (EXCEPTION  + 8)
-#define EXCP_INSTR_PAGE_FAULT (EXCEPTION  + 12)
-#define EXCP_LOAD_PAGE_FAULT (EXCEPTION  + 13)
-#define EXCP_STORE_PAGE_FAULT (EXCEPTION  + 15)
-
-#define IS_INTR(scause) ((scause) & INTERRUPT)
-
 // Supervisor Status Register, sstatus
 
 #define SSTATUS_SPP (1L << 8)  // Previous mode, 1=Supervisor, 0=User
@@ -180,5 +163,52 @@ char *riscv_cause2str(uint64 scause);
  * @return uint32_t 
  */
 uint32_t riscv_map_prot(uint32_t linux_prot);
+
+
+/* TRAP */
+#define INTERRUPT 0x8000000000000000UL
+#define EXCEPTION 0x0000000000000000UL
+
+#define INTR_SOFT   (INTERRUPT  + 1)
+#define INTR_TIMER  (INTERRUPT  + 5)
+#define INTR_EXT    (INTERRUPT  + 9) // NOT SUPPORT ON K210
+
+#define EXCP_LOAD_MISALIGNED (EXCEPTION + 4)
+#define EXCP_LOAD_FAULT (EXCEPTION + 5)
+#define EXCP_STORE_MISALIGNED (EXCEPTION + 6)
+#define EXCP_STORE_FAULT (EXCEPTION + 7)
+#define EXCP_SYSCALL (EXCEPTION  + 8)
+#define EXCP_INSTR_PAGE_FAULT (EXCEPTION  + 12)
+#define EXCP_LOAD_PAGE_FAULT (EXCEPTION  + 13)
+#define EXCP_STORE_PAGE_FAULT (EXCEPTION  + 15)
+
+#define IS_INTR(scause) ((scause) & INTERRUPT)
+
+#define when_pagefault \
+    case EXCP_LOAD_FAULT: \
+    case EXCP_LOAD_PAGE_FAULT: \
+    case EXCP_STORE_FAULT: \
+    case EXCP_STORE_PAGE_FAULT:
+
+#define when_softirq \
+    case INTR_SOFT:
+
+#define when_hardirq \
+    case INTR_EXT: 
+
+#define when_clock \
+    case INTR_TIMER:
+
+#define when_irq \
+    when_hardirq \
+    when_softirq \
+    when_clock
+
+#define when_syscall \
+    case EXCP_SYSCALL:
+
+#define when_misalign \
+    case EXCP_LOAD_MISALIGNED: \
+    case EXCP_STORE_MISALIGNED: 
 
 #endif

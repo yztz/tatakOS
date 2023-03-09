@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "fpioa.h"
 #include "mm/io.h"
+#include "bit.h"
 
 #define GPIOHS_MAX_PINNO 32
 

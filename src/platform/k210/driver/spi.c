@@ -18,11 +18,10 @@
 #include "common.h"
 #include "gpiohs.h"
 #include "sysctl.h"
-#include "types.h"
 #include "atomic/spinlock.h"
 #include "mm/io.h"
 #include "mm/vm.h"
-#include "printf.h"
+#include "bit.h"
 
 uint64_t spi_pa[4] =
 {
@@ -94,7 +93,7 @@ static void spi_set_tmod(uint8_t spi_num, uint32_t tmod)
             tmod_offset = 10;
             break;
     }
-    set_bit(&spi_handle->ctrlr0, 3 << tmod_offset, tmod << tmod_offset);
+    set_bit_mask(&spi_handle->ctrlr0, 3 << tmod_offset, tmod << tmod_offset);
 }
 
 void spi_io_init(spi_device_num_t spi_num) {

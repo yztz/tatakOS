@@ -249,9 +249,7 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
     disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;
     disk.desc[idx[0]].next = idx[1];
 
-    // disk.desc[idx[1]].addr = (uint64) b->data;
     disk.desc[idx[1]].addr = (uint64)bio_vec->bv_buff;
-    // disk.desc[idx[1]].len = BSIZE;
     disk.desc[idx[1]].len = BSIZE * bio_vec->bv_count;
     if (write)
         disk.desc[idx[1]].flags = 0; // device reads b->data
@@ -267,8 +265,7 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
     disk.desc[idx[2]].next = 0;
 
     // record blk_buf_t for virtio_disk_intr().
-    // b->disk = 1;
-    // bio_vec->disk = 1;
+    bio_vec->disk = 1;
     disk.info[idx[0]].bio_vec = bio_vec;
 
     // tell the device the first index in our chain of descriptors.
@@ -284,9 +281,9 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
 
     // Wait for virtio_disk_intr() to say request has finished.
-    // while (bio_vec->disk == 1) {
+    while (bio_vec->disk == 1) {
         sleep(bio_vec, &disk.vdisk_lock);
-    // }
+    }
 
     disk.info[idx[0]].bio_vec = 0;
     free_chain(idx[0]);
@@ -321,7 +318,7 @@ void virtio_disk_intr() {
             panic("virtio_disk_intr status");
 
         bio_vec_t *bio_vec = disk.info[id].bio_vec;
-        // bio_vec->disk = 0;   // disk is done with buf
+        bio_vec->disk = 0;   // disk is done with buf
         wakeup(bio_vec);
 
         disk.used_idx += 1;

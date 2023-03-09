@@ -126,10 +126,10 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
     /* 如果valid位不存在，意味着对应的页没有被map过（entry为0），或者不存在内存中（swap） */
     if (!pte_valid(entry)) {
         if (pte_none(entry)) {
-            if (vma->map_file)
+            if (vma->map_file)  // file map
                 return do_filemap_page(pte, vma, rva);
-            /* lazy allocation */
-            return do_anonymous_page(pte, vma, rva);
+            else // lazy allocation
+                return do_anonymous_page(pte, vma, rva);
         }
         return do_swap_page();
     }

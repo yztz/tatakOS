@@ -1,6 +1,7 @@
 #include "driver/plic.h"
 #include "riscv.h"
 #include "mm/io.h"
+#include "bit/integer.h"
 
 #define __MODULE_NAME__ PLIC
 #include "debug.h"

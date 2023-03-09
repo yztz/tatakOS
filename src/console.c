@@ -26,24 +26,14 @@
 #define __MODULE_NAME__ CONSOLE
 #include "debug.h"
 
-// static int __wrapper_sbi_getchar() {
-//     return sbi_getchar();
-// }
+console_io_op_t console_op = {
+    .console_getchar = __sbi_getchar_wrapper,
+    .console_putchar = __sbi_putchar_wrapper,
+    .console_putchar_sync = __sbi_putchar_wrapper,
+};
 
-// static void __wrapper_sbi_putchar(char c) {
-//     sbi_putchar(c);
-// }
-
-// static console_io_op_t sbi_ioop = {
-//     .console_getchar = __wrapper_sbi_getchar,
-//     .console_putchar_sync = __wrapper_sbi_putchar,
-//     .console_putchar = __wrapper_sbi_putchar
-// };
-
-static console_io_op_t *ioop = NULL;
-
-void console_register(console_io_op_t *console) {
-    ioop = console;
+void console_register(console_io_op_t *ioop) {
+    console_op = *ioop;
 }
 
 struct termios term = {
@@ -63,7 +53,7 @@ static inline void putchar(char c) {
     if (panicked) {
         LOOP();
     }
-    ioop->console_putchar(c);
+    console_op.console_putchar(c);
 }
 
 
@@ -81,15 +71,20 @@ void consputc(int c) {
     }
 }
 
+/// @brief console I/O buffer
 struct console {
+    /// @brief protect buffer
     struct spinlock lock;
 
-    // input
 #define INPUT_BUF 128
+    /// @brief buffer
     char buf[INPUT_BUF];
-    uint r;  // Read index
-    uint w;  // Write index
-    uint e;  // Edit index
+    /// @brief Read index
+    uint r;
+    /// @brief Write index
+    uint w;
+    /// @brief Edit index
+    uint e;
 } cons;
 
 //
@@ -98,18 +93,6 @@ struct console {
 int consolewrite(int user_src, uint64 src, int n) {
     int i;
 
-    // enable_sum();
-    // if(src == 0x60000000){
-    //   printf(grn("src: %p \n"), src);
-    //   // for(;;);
-    //   char c;
-    //   for(int i=0; i < 50; i++)
-    //     printf(rd("char: %c\n"), c);
-    //     // printf(grn("%c"), *(char*)((void*)0x60000000 + i));
-    //   // printf(grn("pa content: %c\n"), *(char*)va);
-    //   printf("\n");
-    // }
-    // disable_sum();
     for (i = 0; i < n; i++) {
         char c;
         if (either_copyin(&c, user_src, src + i, 1) == -1)

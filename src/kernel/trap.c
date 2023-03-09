@@ -9,37 +9,34 @@
 #include "debug.h"
 
 extern int handle_pagefault(uint64_t scause);
+extern int handle_irq(uint64_t scause);
+extern void kernelvec();
 
-void kernelvec();
-int devintr();
-
-extern pagetable_t kernel_pagetable;
 void trapinit(void) {
     init_timer();
 }
 
 /**
  * @brief Set up to take exceptions and traps while in the kernel.
- * 
  */
 void trapinithart(void) {
-    // 设置中断向量
+    // setup trap vector
     write_csr(stvec, (uint64)kernelvec);
-    // 使能中断
+    // enable interrupt
     write_csr(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
-    // 重置计时器
+    // reset timer
     reset_timer();
 }
 
 /**
  * @brief handle an interrupt, exception, or system call from user space.
- * 
  */
 void usertrap(void) {
     uint64 sstatus = read_csr(sstatus);
     uint64 scause = read_csr(scause);
     uint64 sepc = read_csr(sepc);
     uint64 stval = read_csr(stval);
+    struct proc *p = current;
 
     if ((sstatus & SSTATUS_SPP) != 0) {
         printf("scause %p\n", scause);
@@ -57,42 +54,53 @@ void usertrap(void) {
     // since we're now in the kernel.
     write_csr(stvec, (uint64)kernelvec);
 
-    struct proc *p = current;
     p->u_time += ticks - p->stub_time;
     // save user program counter.
     p->trapframe->epc = sepc;
     tf_flstore(p->trapframe);
 
-    if (scause == EXCP_SYSCALL) {
-        if (p->killed) {
-            exit(-1);
-        }
-        // sepc points to the ecall instruction,
-        // but we want to return to the next instruction.
-        p->trapframe->epc += 4;
-        // an interrupt will change sstatus &c registers,
-        // so don't enable until done with those registers.
-        p->stub_time = ticks;
-        intr_on();
-        syscall();
-        p->s_time += ticks - p->stub_time;
-    } else if (devintr(scause) == 0) {
-        // ok
-    } else if (handle_pagefault(scause) == 0) {
-        // ok
-    } else {
-        info("pid is %d sepc is %lx scause is "rd("%s(%d)")" stval is %lx", p->pid, sepc, riscv_cause2str(scause), scause, stval);
-        ER();
-        p->killed = 1;
-    }
-
-    if (p->killed) {
+    if (p->killed)
         exit(-1);
+
+    switch (scause) {
+        when_syscall {
+            // sepc points to the ecall instruction,
+            // but we want to return to the next instruction.
+            p->trapframe->epc += 4;
+            // an interrupt will change sstatus &c registers,
+            // so don't enable until done with those registers.
+            p->stub_time = ticks;
+            intr_on();
+            syscall();
+            p->s_time += ticks - p->stub_time;
+            break;
+        }
+        when_misalign {
+            warn("software misaligned access is not support now. sepc is %lx\n", sepc);
+            goto kill;
+        }
+        when_pagefault {
+            if (p == NULL || handle_pagefault(scause) != 0) {
+                goto kill;
+            }
+            break;
+        }
+        when_irq {
+            if (handle_irq(scause) == -1) {
+                goto kill;
+            }
+            break;
+        }
+        default: {
+          kill:
+            info("pid is %d sepc is %lx scause is "rd("%s(%d)")" stval is %lx", p->pid, sepc, riscv_cause2str(scause), scause, stval);
+            p->killed = 1;
+        }
+
     }
 
-    if (scause == INTR_TIMER) {
-        yield();
-    }
+    if (p->killed)
+        exit(-1);
 
     sig_handle(p->signal);
 
@@ -156,8 +164,7 @@ void kerneltrap(ktf_t *context) {
     uint64 sepc = read_csr(sepc);
     uint64 sstatus = read_csr(sstatus);
     uint64 stval = read_csr(stval);
-    proc_t *p = current;
-
+    proc_t *p = myproc();
 
     if ((sstatus & SSTATUS_SPP) == 0)
         panic("kerneltrap: not from supervisor mode");
@@ -168,72 +175,41 @@ void kerneltrap(ktf_t *context) {
         panic("kerneltrap: interrupts enabled");
     }
 
-#ifdef K210
-    if (scause == EXCP_STORE_MISALIGNED) {
-        printf("sepc=%p ", sepc);
-        panic("misaligned access is not support on K210 now.");
-    }
-#endif
-
     if (p) {
         p->k_trapframe = context;
     }
 
-    if (devintr(scause) == 0) {
-        // ok
-    } else if (handle_pagefault(scause) == 0) {
-        // ok
-    } else {
-        printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", sepc, stval);
-        panic("kerneltrap");
-    }
-
-    if (scause == INTR_TIMER) {
-        // give up the CPU if this is a timer interrupt.
-        if (p && p->state == RUNNING) {
-            yield();
+    switch (scause) {
+        when_misalign {
+            printf("sepc=%p ", sepc);
+            panic("software misaligned access is not support now.");
         }
+        when_pagefault {
+            if (p == NULL || handle_pagefault(scause) != 0) {
+                goto fail;
+            }
+            break;
+        }
+        when_irq {
+            if (handle_irq(scause) == -1) {
+                goto fail;
+            }
+            break;
+        }
+        default: goto fail;
     }
 
     // the yield() may have caused some traps to occur,
     // so restore trap registers for use by kernelvec.S's sepc instruction.
     write_csr(sepc, sepc);
     write_csr(sstatus, sstatus);
+    return;
+
+  fail:
+    printf("scause %s\n", riscv_cause2str(scause));
+    printf("sepc=%p stval=%p\n", sepc, stval);
+    panic("kerneltrap");
 }
 
-#include "kernel/time.h"
-
-// for ext
-extern int handle_ext_irq();
-extern void clockintr();
-
-int devintr(uint64 scause) {
-    if (scause == INTR_SOFT) { // k210 ext passby soft
-#ifdef K210
-        if (read_csr(stval) == 9) {
-            int ret;
-            ret = handle_ext_irq();
-            clear_csr(sip, SIP_SSIP);
-            sbi_set_mext();
-            return ret;
-        }
-        panic("handle fail?");
-#endif
-    } else if (scause == INTR_EXT) { // only qemu
-#ifdef QEMU
-        if (handle_ext_irq() != 0) return -1;
-#endif
-    } else if (scause == INTR_TIMER) {
-        if (cpuid() == 0) {
-            // debug("clock...\n");
-            clockintr();
-        }
-        reset_timer();
-    } else { // unknow
-        return -1;
-    }
-    return 0;
-}
 
 

@@ -22,6 +22,7 @@
 #include "mm/io.h"
 #include "kernel/proc.h"
 #include "mm/vm.h"
+#include "bit/integer.h"
 
 volatile dmac_t *dmac;
 

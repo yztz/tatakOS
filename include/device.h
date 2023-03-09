@@ -4,10 +4,15 @@
 #include "types.h"
 #include "param.h"
 
-
+/**
+ * @brief coarse implementation for **char** device
+ * @note need refactor
+ */
 struct device {
-  int (*read)(int, uint64, int);
-  int (*write)(int, uint64, int);
+    /// @brief read dev
+    int (*read)(int, uint64, int);
+    /// @brief write dev
+    int (*write)(int, uint64, int);
 };
 
 #define CONSOLE 1

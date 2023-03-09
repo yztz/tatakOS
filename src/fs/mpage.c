@@ -64,7 +64,7 @@ int rw_one_page(entry_t *entry, uint64 buff, uint32 index, int rw){
  */
 void bio_vec_buff_assignment(bio_vec_t *first_bio_vec, uint64 buff, uint32_t bps){
   bio_vec_t *cur_bio_vec = first_bio_vec;
-  while(cur_bio_vec != NULL){
+  while (cur_bio_vec != NULL) {
     cur_bio_vec->bv_buff = (void *)buff;
     buff += cur_bio_vec->bv_count * bps;
 

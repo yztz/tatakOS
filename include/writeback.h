@@ -1,20 +1,20 @@
 #ifndef WRITEBACK_H
 #define WRITEBACK_H
 
-/*
- * A control structure which tells the writeback code what to do.  These are
+
+/**
+ * @brief A control structure which tells the writeback code what to do.  These are
  * always on the stack, and hence need no locking.  They are always initialised
  * in a manner such that unspecified fields are set to zero.
+ * 
  */
 struct writeback_control {
-	// struct backing_dev_info *bdi;	/* If !NULL, only write back this
-	// 				   queue */
-	// enum writeback_sync_modes sync_mode;
-	// unsigned long *older_than_this;	/* If !NULL, only write back inodes
-					  //  older than this */
-	long nr_to_write;		/* Write this many pages, and decrement
-					              this for each page written
-                        要写的数量，每次写一页后减去1 */
+    /**
+     * @brief Write this many pages, and decrease
+	 *        this when each page written
+     * 
+     */
+	long nr_to_write;
 	// long pages_skipped;		/* Pages which were not written */
 
 	// /*
