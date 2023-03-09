@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include "param.h"
+#include "memlayout.h"
 #include "sys/error.h"
 #include "types.h"
 #include "utils.h"

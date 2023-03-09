@@ -50,21 +50,21 @@ static inline int root_tag_get(radix_tree_root_t *root, uint tag){
 
 
 static inline void root_tag_set(radix_tree_root_t *root, uint tag){
-	return __set_bit(tag, &root->tags);
+	return set_bit(tag, &root->tags);
 }
 
 static inline void root_tag_clear(radix_tree_root_t *root, uint tag){
-	return __clear_bit(tag, &root->tags);
+	return clear_bit(tag, &root->tags);
 }
 
 static inline void tag_set(radix_tree_node_t *node, uint32_t tag_type, int offset){
-	__set_bit(offset, node->tags[tag_type]);
+	set_bit(offset, node->tags[tag_type]);
 }
 
 static inline void tag_clear(struct radix_tree_node *node, unsigned int tag,
 		int offset)
 {
-	__clear_bit(offset, node->tags[tag]);
+	clear_bit(offset, node->tags[tag]);
 }
 
 static inline int tag_get(struct radix_tree_node *node, unsigned int tag, int offset)

@@ -21,7 +21,6 @@ static bio_t *buf_to_bio(blk_buf_t *b, int rw) {
     bio->bi_dev = b->dev;
     bio->bi_io_vec = bio_vec;
     bio->bi_rw = rw;
-    bio->bi_next = NULL;
 
     return bio;
 }

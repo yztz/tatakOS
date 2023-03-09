@@ -23,11 +23,14 @@
 #define __MODULE_NAME__ CONS
 #include "debug.h"
 
+console_io_op_t console_op = {
+    .console_getchar = __sbi_getchar_wrapper,
+    .console_putchar = __sbi_putchar_wrapper,
+    .console_putchar_sync = __sbi_putchar_wrapper,
+};
 
-static console_io_op_t *ioop = NULL;
-
-void console_register(console_io_op_t *console) {
-    ioop = console;
+void console_register(console_io_op_t *ioop) {
+    console_op = *ioop;
 }
 
 #define BACKSPACE 0x100
@@ -37,7 +40,7 @@ static inline void putchar(char c) {
     if (panicked) {
         LOOP();
     }
-    ioop->console_putchar(c);
+    console_op.console_putchar(c);
 }
 
 
@@ -55,15 +58,20 @@ void consputc(int c) {
     }
 }
 
+/// @brief console I/O buffer
 struct console {
+    /// @brief protect buffer
     struct spinlock lock;
 
-    // input
 #define INPUT_BUF 128
+    /// @brief buffer
     char buf[INPUT_BUF];
-    uint r;  // Read index
-    uint w;  // Write index
-    uint e;  // Edit index
+    /// @brief Read index
+    uint r;
+    /// @brief Write index
+    uint w;
+    /// @brief Edit index
+    uint e;
 } cons;
 
 //

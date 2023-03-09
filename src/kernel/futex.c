@@ -46,33 +46,46 @@ int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim)
     debug_statement(proc_t *me = current);
     struct proc *p;
     wq_entry_t *entry;
-    int i = 0;
     debug("PID %d start wake %#lx", me->pid, chan);
+    
+    int wakeup_num = 0;
+    
+  find_next_one:
     acquire(&futex_queue.wq_lock);
-    list_for_each_entry_condition(entry, &futex_queue.head, head, i < n) {
+    list_for_each_entry_condition(entry, &futex_queue.head, head, wakeup_num < n) {
         p = entry->private;
-
+        acquire(&p->lock);
         if(p->futex_chan == chan) {
+            // release futex queue lock to avoid deadlock
+            release(&futex_queue.wq_lock);
             p->futex_chan = 0;
-            wake_up_process(p);
-            i++;
+            // remove from queue
+            list_del_init(&entry->head);
+            // wake up
+            wake_up_process_nolock(p);
             debug("PID %d woken", p->pid);
+            // release process lock and continue to find next one.
+            release(&p->lock);
+            wakeup_num++;
+            goto find_next_one;
         }
+        release(&p->lock);
     }
     release(&futex_queue.wq_lock);
+
     debug("PID %d wake end", me->pid);
     if(requeue) {
         debug("PID %d start requeue", me->pid);
-        int num = 0;
-        
+        int requeue_num = 0;
+
         acquire(&futex_queue.wq_lock);
-        list_for_each_entry_condition(entry, &futex_queue.head, head, num < requeue_lim) {
+        list_for_each_entry_condition(entry, &futex_queue.head, head, requeue_num < requeue_lim) {
             p = entry->private;
             acquire(&p->lock);
             if(p->futex_chan == chan) {
                 if(p->futex_chan == chan) {
                     p->futex_chan = newaddr;
-                    num++;
+                    requeue_num++;
                     debug("PID %d requeued to %#lx", p->pid, newaddr);
                 }
             }
@@ -82,7 +95,7 @@ int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim)
         debug("PID %d requeue end", me->pid);
     }
     
-    return i;
+    return wakeup_num;
 }
 
 int futex_wake(void *chan, int n) {

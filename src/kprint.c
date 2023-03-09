@@ -1,11 +1,18 @@
 #include "utils.h"
+#include "driver/console.h"
 
 volatile int panicked = 0;
 
+/* console.c */
+extern console_io_op_t console_op;
+
 /* used by printf */
 void _putchar(char c) {
-    /* Always use sbi */
-    sbi_putchar(c);
+    if (panicked) {
+        LOOP();
+    }
+    
+    console_op.console_putchar_sync(c);
 }
 
 

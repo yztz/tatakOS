@@ -12,6 +12,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 
 #include "bitops.h"
 #include "list.h"
+#include "platform.h"
 #include "atomic/spinlock.h"
 #include "atomic/atomic.h"
 #include "page-flags.h"
@@ -67,7 +68,6 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define PTE_U (1L << 4) // 1 -> user can access
 #define PTE_COW (1L << 8) // cow
 
-#include "platform.h"
 
 typedef uint8_t pgref_t;
 
@@ -207,71 +207,13 @@ static inline pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
 /*
  * Return true if this page is mapped into pagetables.
  */
-static inline int page_mapped(page_t *page)
-{
+static inline int page_mapped(page_t *page) {
     return page->pte.direct != 0;
 }
 #endif
 
-/* mmzone.h */
-struct zone{
-
-    /* Fields commonly accessed by the page reclaim scanner */
-    spinlock_t lru_lock;
-    list_head_t active_list;        /* 活跃页链表 */
-    list_head_t inactive_list;      /* 非活跃页链表 */
-    uint64_t nr_active;             /* 活跃页数量 */
-    uint64_t nr_inactive;           /* 非活跃页数量 */
-    // uint64_t pages_scanned;
-};
-
-typedef struct zone zone_t;
-
-extern zone_t memory_zone;
-
-/* mm_inline.h */
-static inline void
-add_page_to_active_list(struct zone *zone, page_t *page)
-{
-	list_add(&page->lru, &zone->active_list);
-	zone->nr_active++;
-}
-
-static inline void
-add_page_to_inactive_list(struct zone *zone, page_t *page)
-{
-	list_add(&page->lru, &zone->inactive_list);
-	zone->nr_inactive++;
-}
-
-static inline void
-del_page_from_active_list(struct zone *zone, page_t *page)
-{
-	list_del(&page->lru);
-	zone->nr_active--;
-}
-
-static inline void
-del_page_from_inactive_list(struct zone *zone, page_t *page)
-{
-	list_del(&page->lru);
-	zone->nr_inactive--;
-}
-
-static inline void
-del_page_from_lru(struct zone *zone, page_t *page)
-{
-	list_del(&page->lru);
-	if (PageActive(page)) {
-		ClearPageActive(page);
-		zone->nr_active--;
-	} else {
-		zone->nr_inactive--;
-	}
-}
+#define page_spin_lock(page) bit_spin_lock(PG_spinlock, &(page->flags))
+#define page_spin_unlock(page) bit_spin_unlock(PG_spinlock, &(page->flags))
 
 
-
-// static inline  int ptep_test_and_clear_valid(pte_t *ptep)	{ return test_and_clear_bit(PTE_VALID, ptep);}
-#define DEF_PRIORITY 5
 #endif

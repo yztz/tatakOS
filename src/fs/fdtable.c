@@ -1,4 +1,4 @@
-#include "fdtable.h"
+#include "kernel/fdtable.h"
 #include "fs/file.h"
 #include "mm/alloc.h"
 

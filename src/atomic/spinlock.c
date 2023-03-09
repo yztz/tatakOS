@@ -32,9 +32,7 @@ int try_acquire(struct spinlock *lk) {
 
 // Acquire the lock.
 // Loops (spins) until the lock is acquired.
-void
-acquire(struct spinlock *lk)
-{
+void acquire(struct spinlock *lk) {
   push_off(); // disable interrupts to avoid deadlock.
   if(holding(lk))
     panic("acquire");
@@ -43,7 +41,6 @@ acquire(struct spinlock *lk)
   //   a5 = 1
   //   s1 = &lk->locked
   //   amoswap.w.aq a5, a5, (s1)
-  // printf("lock state: %d\n", lk->locked);
   while(__sync_lock_test_and_set(&lk->locked, 1) != 0)
     ;
 

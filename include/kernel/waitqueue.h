@@ -3,6 +3,7 @@
 
 #include "atomic/spinlock.h"
 #include "riscv.h"
+#include "list.h"
 
 struct proc;
 

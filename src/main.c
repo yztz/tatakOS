@@ -56,7 +56,7 @@ void main() {
     platform_plic_init(); // platform enable required source
     plic_init_hart();     // disable all interrupts and set ctx threshould to 0 for hart
     platform_plic_init_hart(); // enable required interrupts for current hart 
-    
+
     /* Driver */
     platform_dirver_init();
 

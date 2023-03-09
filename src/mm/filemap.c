@@ -376,7 +376,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
 }
 
 /**
- * @brief read file into memory when page fault hapened
+ * @brief read file into page where pagefault hapened
  * mmap file 的pagefault处理函数。
  * 类似于do_generic_mapping_read
  */
@@ -407,7 +407,11 @@ int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
 
     get_page(page);
     entry_t *entry = mapping->host;
+    
+    elock(entry);
     read_one_page(entry, pa, pgoff);
+    eunlock(entry);
+
     add_to_page_cache(page, mapping, pgoff);
   } else {
     pa = PG_TO_ADDR(page);

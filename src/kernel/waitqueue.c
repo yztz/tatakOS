@@ -32,22 +32,24 @@ void wq_sleep(wq_t *self, wq_entry_t* entry) {
         panic("Sleep without preparing. Wakeup may be lost.");
 
     proc_t *p = entry->private;
-    acquire(&p->lock);
 
+    acquire(&p->lock);
     offer(self, entry);
-    p->wait_channel = self;
-    pstate_migrate(p, SLEEPING);
     release(&self->wq_lock);
 
+    p->wait_channel = self;
+    p->__state = SLEEPING;
+
     sched();
+
+    p->wait_channel = NULL;
 
     // remove self from waitqueue
     acquire(&self->wq_lock);
     list_del_init(&entry->head);
-    release(&self->wq_lock);
-
-    p->wait_channel = NULL;
     release(&p->lock);
+
+    release(&self->wq_lock);
 }
 
 int wq_sleep_timeout(wq_t *self, wq_entry_t* entry, int timeout) {
@@ -59,7 +61,7 @@ int wq_sleep_timeout(wq_t *self, wq_entry_t* entry, int timeout) {
 
     offer(self, entry);
     p->wait_channel = self;
-    pstate_migrate(p, SLEEPING);
+    p->__state = SLEEPING;
     release(&self->wq_lock);
 
     int is_timeout = sched_timeout(timeout);

@@ -60,6 +60,14 @@ static inline char sbi_getchar() {
     return SBI_CALL_0(CONSOLE_GET_CHAR_EXT, 0).error;
 }
 
+static inline int __sbi_getchar_wrapper() {
+    return sbi_getchar();
+}
+
+static inline void __sbi_putchar_wrapper(char c) {
+    sbi_putchar(c);
+}
+
 static inline struct sbiret sbi_set_mext() {
     return SBI_CALL_0(0x0A000009, 0x210);
 }
