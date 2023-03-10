@@ -54,7 +54,8 @@ void consputc(int c) {
         // if the user typed backspace, overwrite with a space.
         putchar('\b'); putchar(' '); putchar('\b');
     } else {
-        putchar(c);
+        char ch = c;
+        putchar(ch);
     }
 }
 

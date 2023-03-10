@@ -66,8 +66,6 @@ void usertrap(void) {
             // sepc points to the ecall instruction,
             // but we want to return to the next instruction.
             p->trapframe->epc += 4;
-            // an interrupt will change sstatus &c registers,
-            // so don't enable until done with those registers.
             p->stub_time = ticks;
             intr_on();
             syscall();
@@ -160,7 +158,7 @@ void kerneltrap(ktf_t *context) {
     uint64 sepc = read_csr(sepc);
     uint64 sstatus = read_csr(sstatus);
     uint64 stval = read_csr(stval);
-    proc_t *p = myproc();
+    proc_t *p = current;
 
     if ((sstatus & SSTATUS_SPP) == 0)
         panic("kerneltrap: not from supervisor mode");

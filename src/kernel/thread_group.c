@@ -68,6 +68,10 @@ int tg_quit(tg_t *self) {
     return rest;
 }
 
+int tg_pid(tg_t *self) {
+    return self->tg_id;
+}
+
 void tg_free(tg_t **pself) {
     if(pself == NULL || *pself == NULL)
         return;

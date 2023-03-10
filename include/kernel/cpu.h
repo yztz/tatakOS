@@ -33,7 +33,7 @@ struct cpu {
     /// @brief The process running on this cpu, or null.
     struct proc *proc;
     /// @brief swtch() here to enter scheduler().
-    struct context context;
+    struct context scheduler;
     /// @brief Depth of push_off() nesting.
     int noff;
     /// @brief Were interrupts enabled before push_off()?
