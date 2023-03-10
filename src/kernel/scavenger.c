@@ -12,7 +12,7 @@ void scavenger_routine(proc_t *me) {
         for(p = proc; p < &proc[NPROC]; p++) {
             if(p == me) continue;
             if(try_acquire(&p->lock)) {
-                if(p->state != ZOMBIE || p->tg->tg_id == p->pid) {
+                if(p->state != ZOMBIE || tg_pid(p->tg) == p->pid) {
                     release(&p->lock);
                     continue;
                 }

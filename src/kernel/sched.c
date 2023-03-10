@@ -83,7 +83,7 @@ void scheduler(void) {
         set_current(p);
 
         switchuvm(p->mm);
-        swtch(&c->context, &p->context);
+        swtch(&c->scheduler, &p->context);
         switchkvm();
 
         c->proc = NULL;
@@ -115,7 +115,7 @@ void sched(void) {
     // break in the few places where a lock is held but there's no process.
     intena = cpu->intena;
 
-    swtch(&p->context, &cpu->context);
+    swtch(&p->context, &cpu->scheduler);
 
     /* !IMPORTANT 
         call mycpu() again.
@@ -134,11 +134,6 @@ void yield(void) {
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
-/**
- * 可能有时候不需要再sleep前释放掉某个spinlock，如lock_page，
- * 所以新增了:
- * if(lk != NULL)
- */
 void sleep(void *chan, struct spinlock *lk) {
     struct proc *p = myproc();
 

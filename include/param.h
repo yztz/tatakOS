@@ -30,7 +30,7 @@
 /* maximum file name length */
 #define MAX_FILE_NAME 64
 /* user stack size */
-#define USTACKSIZE (4096 * 10)
+#define USTACKSIZE (4096 * 20)
 /* clock IRQ interval (ms) */
 #define TICK_GRANULARITY 10L
 /* percentage of the maximum readahead pages to the free */

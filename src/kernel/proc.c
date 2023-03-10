@@ -419,7 +419,7 @@ int waitpid(int cid, uint64 addr, int options) {
                 acquire(&np->lock);
                 
                 // Not main thread
-                if (np->tg->tg_id != np->pid) {
+                if (tg_pid(np->tg) != np->pid) {
                     release(&np->lock);
                     continue;
                 }

@@ -23,7 +23,7 @@
 #include "mm/vm.h"
 #include "termios.h"
 
-#define __MODULE_NAME__ CONSOLE
+#define __MODULE_NAME__ CONS
 #include "debug.h"
 
 console_io_op_t console_op = {
@@ -67,7 +67,8 @@ void consputc(int c) {
         // if the user typed backspace, overwrite with a space.
         putchar('\b'); putchar(' '); putchar('\b');
     } else {
-        putchar(c);
+        char ch = c;
+        putchar(ch);
     }
 }
 
@@ -123,9 +124,6 @@ int consoleread(int user_dst, uint64 dst, int n) {
 
     uint lflag = term.c_lflag;
     uint8 vmin = term.c_cc[VMIN];
-
-    // debug("reading %d bytes", n);
-    // debug("lflag is %d", lflag);
 
     target = n;
     acquire(&cons.lock);
@@ -200,9 +198,7 @@ void console_intr_callback(char c) {
     uint16_t lflag = term.c_lflag;
     acquire(&cons.lock);
 
-    //   #ifdef DEBUG
     interactive_debug_info(c);
-    //   #endif
 
       // not cookmode
     if ((lflag & ICANON) == 0) {
