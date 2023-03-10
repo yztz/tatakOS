@@ -101,9 +101,6 @@ int consoleread(int user_dst, uint64 dst, int n) {
     uint target;
     char c;
 
-    // debug("reading %d bytes", n);
-    // debug("lflag is %d", lflag);
-
     target = n;
     acquire(&cons.lock);
     while (n > 0) {
