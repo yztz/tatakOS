@@ -31,6 +31,8 @@ extern char *logo;
 void main() {
   if(cpuid() == 0){
     clear_bss();
+
+    cpu_init();
     
     platform_early_init();
     platform_early_init_hart();

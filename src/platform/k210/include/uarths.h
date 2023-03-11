@@ -202,7 +202,7 @@ void uarths_init(void);
  * @param[in]   c       The char to put
  *
  */
-void uarths_putchar(char c);
+void uarths_putchar_sync(char c);
 
 /**
  * @brief       Get a byte from UART
@@ -230,7 +230,7 @@ void uarths_puts(const char *s);
  *     - Byte   The character read as an unsigned char cast to an int
  *     - EOF    EOF on end of file or error, no enough byte to read
  */
-int uarths_getc(void);
+int uarths_getchar(void);
 
 /**
  * @brief       Set uarths interrupt callback

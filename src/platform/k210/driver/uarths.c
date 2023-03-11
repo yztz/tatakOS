@@ -15,27 +15,22 @@
 
 #include "driver/console.h"
 #include "driver/plic.h"
-#include <stdint.h>
+#include "types.h"
 #include "uarths.h"
 #include "sysctl.h"
 #include "mm/io.h"
+#include "mm/page.h"
+#include "atomic/spinlock.h"
 
 void uartintr(void *ctx);
 void uarths_putchar_sync(char c);
 int uarths_getchar(void);
 
-volatile uarths_t * uarths = NULL;
+volatile uarths_t * uarths = (volatile uarths_t *)UARTHS_BASE_ADDR;
 
-static spinlock_t uart_tx_lock;
+// static spinlock_t uart_tx_lock;
 
-static console_io_op_t ioop = {
-    .console_getchar = uarths_getchar,
-    .console_putchar = uarths_putchar_sync,
-    .console_putchar_sync = uarths_putchar_sync
-};
-
-void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
-{
+void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode) {
     switch(interrupt_mode)
     {
         case UARTHS_SEND:
@@ -53,14 +48,12 @@ void uarths_enable_irq(uarths_interrupt_mode_t interrupt_mode)
     }
 }
 
-void uarths_puts(const char *s)
-{
+void uarths_puts(const char *s) {
     while (*s)
         uarths_putchar_sync(*s++);
 }
 
-void uarths_putchar_sync(char c)
-{
+void uarths_putchar_sync(char c) {
     push_off();
     while (uarths->txdata.full)
         ;
@@ -68,8 +61,7 @@ void uarths_putchar_sync(char c)
     pop_off();
 }
 
-int uarths_getchar(void)
-{
+int uarths_getchar(void) {
     /* while not empty */
     uarths_rxdata_t recv = uarths->rxdata;
 
@@ -80,34 +72,8 @@ int uarths_getchar(void)
 }
 
 
-// size_t uarths_receive_data(uint8_t *buf, size_t buf_len)
-// {
-//     size_t i;
-//     for(i = 0; i < buf_len; i++)
-//     {
-//         uarths_rxdata_t recv = uarths->rxdata;
-//         if(recv.empty)
-//             break;
-//         else
-//             buf[i] = (recv.data & 0xFF);
-//     }
-//     return i;
-// }
 
-// size_t uarths_send_data(const uint8_t *buf, size_t buf_len)
-// {
-//     size_t write = 0;
-//     while (write < buf_len)
-//     {
-//         uarths_putchar(*buf++);
-//         write++;
-//     }
-//     return write;
-// }
-
-void uarths_init(void)
-{
-    uarths = (volatile uarths_t *)ioremap(UARTHS_BASE_ADDR, PGSIZE);
+void uarths_init0(void) {
 
     uint32_t freq = sysctl_clock_get_freq(SYSCTL_CLOCK_CPU);
     uint16_t div = freq / 115200 - 1;
@@ -123,27 +89,30 @@ void uarths_init(void)
     uarths->ie.txwm = 0;
     uarths->ie.rxwm = 1;
 
-    initlock(&uart_tx_lock, "uarths");
+    // initlock(&uart_tx_lock, "uarths");
 
+}
+
+void uarths_init1(void) {
+    uarths = (volatile uarths_t *)ioremap(UARTHS_BASE_ADDR, PGSIZE);
+    
     uarths_enable_irq(UARTHS_RECEIVE);
 
     plic_register_handler(IRQN_UARTHS_INTERRUPT, uartintr, NULL);
 
-    console_register(&ioop);
-    uarths_puts("switch to UARTHS driver\n");
+    uarths_puts("uarths init successfully\n");
 }
 
 
-void uartintr(void *ctx)
-{
-  // read and process incoming characters.
-  while (1)
-  {
-    int c = uarths_getchar();
-    if (c == -1)
-      break;
-    console_intr_callback(c);
-  }
+void uartintr(void *ctx) {
+    // read and process incoming characters.
+    while (1)
+    {
+        int c = uarths_getchar();
+        if (c == -1)
+        break;
+        console_intr_callback(c);
+    }
 
 }
 
@@ -155,3 +124,14 @@ void uartintr(void *ctx)
 //     uarths->txctrl.nstop = stopbit;
 // }
 
+void console_putchar(char c) {
+    uarths_putchar_sync(c);
+}
+
+void console_putchar_sync(char c) {
+    uarths_putchar_sync(c);
+}
+
+int console_getchar() {
+    return uarths_getchar();
+}

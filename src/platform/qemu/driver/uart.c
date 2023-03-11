@@ -14,7 +14,7 @@
 // the UART control registers are memory-mapped
 // at address UART0. this macro returns the
 // address of one of the registers.
-static uint64 uart_base_address;
+static uint64 uart_base_address = UART0;
 #define Reg(reg) ((volatile unsigned char *)(uart_base_address + reg))
 
 // the UART control registers.
@@ -54,17 +54,9 @@ void uartputc(char c);
 void uartputc_sync(char c);
 void uartintr(void *ctx);
 
-static console_io_op_t ioop = {
-    .console_getchar = uartgetc,
-    .console_putchar = uartputc,
-    // .console_putchar = uartputc_sync,
-    .console_putchar_sync = uartputc_sync};
-
 void uartstart();
 
-void uartinit(void)
-{
-  uart_base_address = ioremap(UART0, PGSIZE);
+void uartinit0(void) {
   // disable interrupts.
   WriteReg(IER, 0x00);
 
@@ -88,10 +80,11 @@ void uartinit(void)
   WriteReg(IER, IER_TX_ENABLE | IER_RX_ENABLE);
 
   initlock(&uart_tx_lock, "uart");
+}
 
-  plic_register_handler(UART0_IRQ, uartintr, NULL);
-
-  console_register(&ioop);
+void uartinit1() {
+    uart_base_address = ioremap(uart_base_address, PGSIZE);
+    plic_register_handler(UART0_IRQ, uartintr, NULL);
 }
 
 // add a character to the output buffer and tell the
@@ -100,8 +93,7 @@ void uartinit(void)
 // because it may block, it can't be called
 // from interrupts; it's only suitable for use
 // by write().
-void uartputc(char c)
-{
+void uartputc(char c) {
   acquire(&uart_tx_lock);
 
   while (uart_tx_w == uart_tx_r + UART_TX_BUF_SIZE)
@@ -120,8 +112,7 @@ void uartputc(char c)
 // use interrupts, for use by kernel printf() and
 // to echo characters. it spins waiting for the uart's
 // output register to be empty.
-void uartputc_sync(char c)
-{
+void uartputc_sync(char c) {
   push_off();
 
   // wait for Transmit Holding Empty to be set in LSR.
@@ -136,8 +127,7 @@ void uartputc_sync(char c)
 // in the transmit buffer, send it.
 // caller must hold uart_tx_lock.
 // called from both the top- and bottom-half.
-void uartstart()
-{
+void uartstart() {
   while (1)
   {
     if (uart_tx_w == uart_tx_r)
@@ -166,8 +156,7 @@ void uartstart()
 
 // read one input character from the UART.
 // return -1 if none is waiting.
-int uartgetc(void)
-{
+int uartgetc(void) {
   if (ReadReg(LSR) & 0x01) {
     // input data is ready.
     return ReadReg(RHR);
@@ -195,3 +184,16 @@ void uartintr(void *ctx)
   uartstart();
   release(&uart_tx_lock);
 }
+
+void console_putchar(char c) {
+    uartputc(c);
+}
+
+void console_putchar_sync(char c) {
+    uartputc_sync(c);
+}
+
+int console_getchar() {
+    return uartgetc();
+}
+

@@ -23,15 +23,6 @@
 #define __MODULE_NAME__ CONS
 #include "debug.h"
 
-console_io_op_t console_op = {
-    .console_getchar = __sbi_getchar_wrapper,
-    .console_putchar = __sbi_putchar_wrapper,
-    .console_putchar_sync = __sbi_putchar_wrapper,
-};
-
-void console_register(console_io_op_t *ioop) {
-    console_op = *ioop;
-}
 
 #define BACKSPACE 0x100
 #define C(x)  ((x)-'@')  // Control-x
@@ -40,7 +31,7 @@ static inline void putchar(char c) {
     if (panicked) {
         LOOP();
     }
-    console_op.console_putchar(c);
+    console_putchar(c);
 }
 
 

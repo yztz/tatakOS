@@ -4,9 +4,11 @@
 #include "riscv.h"
 
 extern void virtio_disk_init(void);
-extern void uartinit(void);
+extern void uartinit0(void);
+extern void uartinit1(void);
 
 void platform_early_init() {
+    uartinit0();
 }
 
 void platform_early_init_hart() {
@@ -24,6 +26,6 @@ void platform_plic_init_hart() {
 }
 
 void platform_dirver_init() {
+    uartinit1();
     virtio_disk_init(); // emulated hard disk
-    uartinit();
 }
