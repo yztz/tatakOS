@@ -1,4 +1,3 @@
-#include "memlayout.h"
 #include "common.h"
 #include "kernel/sched.h"
 #include "kernel/taskqueue.h"
@@ -54,7 +53,6 @@ static inline void procstate_init() {
 
 // initialize the proc table at boot time.
 void procinit() {
-    cpu_init();
     initlock(&wait_lock, "wait_lock");
     procstate_init();
 }
