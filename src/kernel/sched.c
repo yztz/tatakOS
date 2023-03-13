@@ -1,4 +1,5 @@
 #include "kernel/sched.h"
+#include "mm/vm.h"
 
 #define __MODULE_NAME__ SCHED
 #include "debug.h"

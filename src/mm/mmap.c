@@ -1,8 +1,26 @@
+/**
+ * @file mmap.c
+ * @author YangZongzhen
+ * @brief about mmap
+ * @note
+ * We use `mm_t` (Memory Layout) to represent the process memory space
+ * and the memory region is divided as `vma_t` (virtual memory area).
+ * It should be emphasized that the memory region we are talking about doesn't
+ * include the kernel space(I/O remap, Kernel identity map...) which will be decribed
+ * in `public_map`
+ * 
+ * @version 0.1
+ * @date 2023-03-12
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include "mm/mmap.h"
 #include "mm/vm.h"
 
-#define __MODULE_NAME__ MMAP
 #define QUIET
+#define __MODULE_NAME__ MMAP
 #include "debug.h"
 
 /* 
@@ -11,7 +29,21 @@
   (((uint64_t)(va) + (uint64_t)(len) <= (uint64_t)(limit))))
 */
 
+/* vma */
 extern int vma_resize(vma_t *vma, uint64 newsize);
+extern vma_t *vma_new(mm_t *mm,
+        struct file *fp, 
+        off_t foff, 
+        uint64_t addr, 
+        uint64_t len, 
+        int flags, 
+        int prot, 
+        int page_spec);
+extern void vma_free(vma_t **vma);
+extern vma_t *vma_clone(mm_t *newmm, vma_t *vma);
+extern void vma_print(vma_t *vma);
+
+
 
 vma_t *__vma_find_greater(mm_t *mm, uint64 addr) {
     vma_t *ans;
@@ -61,7 +93,6 @@ void vma_insert(mm_t *mm, vma_t *vma) {
 }
 
 
-/* 包含查找 vma[...addr...addr+len...] */
 vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len) {
     vma_t *ans = __vma_find_strict(mm, addr);
     if(ans && addr - ans->addr <= ans->len - len) {
@@ -102,26 +133,27 @@ static uint64_t find_free_maparea(mm_t *mm, uint64_t len) {
     return va;
 }
 
-static int __mmap_map(
+static vma_t *__mmap_map(
         mm_t *mm, 
         struct file *fp, 
         off_t foff, 
         uint64_t addr, 
         uint64_t len, 
         int flags, 
-        int prot) 
+        int prot,
+        int pg_spec) 
 {
-    vma_t *vma = vma_new(mm, fp, foff, addr, len, flags, prot);
+    vma_t *vma = vma_new(mm, fp, foff, addr, len, flags, prot, pg_spec);
     if (vma) {
         vma_insert(mm, vma);
-        return 0;
+        return vma;
     } else {
-        return -1;
+        return NULL;
     }
 }
 
 
-static inline int __mmap_map_fixed(
+static vma_t *__mmap_map_fixed(
     mm_t *mm, 
     struct file *fp, 
     off_t foff, 
@@ -129,28 +161,29 @@ static inline int __mmap_map_fixed(
     uint64_t len, 
     int flags, 
     int prot,
+    int pg_spec,
     vma_t *inter_vma) 
 {
     // No overlay vma
     if (inter_vma == NULL) {
-        return __mmap_map(mm, fp, foff, addr, len, flags, prot);
+        return __mmap_map(mm, fp, foff, addr, len, flags, prot, pg_spec);
     }
 
     len = PGROUNDUP(len);
     // IMPROVE ME: This part is hardcode for busybox, 
-    // so it is not completed or like shit.
+    // so it is not completed, just like shit.
     if(addr + len != inter_vma->addr + inter_vma->len || addr < inter_vma->addr) {
         debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
         release(&mm->mm_lock);
-        return -1;
+        return NULL;
     }
     inter_vma->len = addr - inter_vma->addr;
 
-    return 0;
+    return inter_vma;
 }
 
 
-uint64_t mmap_map(
+vma_t *mmap_map(
     mm_t *mm, 
     struct file *fp, 
     off_t off, 
@@ -159,7 +192,7 @@ uint64_t mmap_map(
     int flags, 
     int prot) 
 {
-    vma_t *vma;
+    vma_t *vma, *ret;
     
     // Set MAP_ANONYMOUS flag when fp is not specified.
     flags = fp ? (flags & (~MAP_ANONYMOUS)) : (flags | MAP_ANONYMOUS);
@@ -186,11 +219,13 @@ uint64_t mmap_map(
         if(addr !=  addr_align) {
             goto release_fail;
         }
-        if (__mmap_map_fixed(mm, fp, off, addr, len, flags, prot, vma) == -1) {
+        ret = __mmap_map_fixed(mm, fp, off, addr, len, flags, prot, PGSPEC_NORMAL, vma);
+        if (ret == NULL) {
             goto release_fail;
         }
     } else if (vma == NULL){
-        if (__mmap_map(mm, fp, off, addr, len, flags, prot) == -1) {
+        ret = __mmap_map(mm, fp, off, addr, len, flags, prot, PGSPEC_NORMAL);
+        if (ret == NULL) {
             goto release_fail;
         }
     } else {
@@ -200,12 +235,12 @@ uint64_t mmap_map(
     
     release(&mm->mm_lock);
 
-    return addr;
+    return ret;
 
   release_fail:
     release(&mm->mm_lock);
   fail:
-    return -1;
+    return NULL;
 }   
 
 void mmap_unmap(mm_t *mm, uint64_t addr) {
@@ -220,34 +255,54 @@ void mmap_unmap(mm_t *mm, uint64_t addr) {
     
 }
 
-uint64_t mmap_map_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot) {
-    char *mem;
-    uint64_t va;
 
-    if(mmap_map(mm, NULL, 0, addr, len, flags, prot) == -1) {
-        goto bad;
+static vma_t *__mmap_map_io(
+        mm_t *mm, 
+        void *pa, 
+        uint64_t addr, 
+        uint64_t len, 
+        int flags, 
+        int prot,
+        int pg_spec) 
+{
+    vma_t *vma = vma_new(mm, NULL, 0, addr, len, flags, prot, pg_spec);
+    if (vma) {
+        vma->io_addr = pa;
+        vma_insert(mm, vma);
+        return vma;
+    } else {
+        return NULL;
+    }
+}
+
+
+vma_t *mmap_map_io(mm_t *mm, uint64_t addr, uint64_t len, uint64_t pa, int prot, int pg_spec) {
+    vma_t *ret;
+    uint64_t rlen = PGROUNDUP_SPEC(len, pg_spec);
+
+    acquire(&mm->mm_lock);
+
+    if (vma_inter(mm, addr, len)) {
+        goto fail;
     }
 
-    for(va = PGROUNDDOWN(addr); va < addr + len; va += PGSIZE) {
-        mem = kzalloc(PGSIZE);
-        if (mem == 0) {
-            // Alloc failure
-            goto freebad;
-        }
-
-        if (mappages(mm->pagetable, va, PGSIZE, (uint64)mem, prot) != 0) {
-            // Page map failure
-            kfree(mem);
-            goto freebad;
-        }
+    ret = __mmap_map_io(mm, (void *)pa, addr, rlen, 0, prot, pg_spec);
+    if (ret == NULL) {
+        goto fail;
     }
 
-    return addr;
+    if (__map_pages(mm->pagetable, addr, rlen, pa, prot, pg_spec) == -1) {
+        __unmap_pages(mm->pagetable, addr, rlen, 0, pg_spec);
+        goto fail;
+    }
+    
+    release(&mm->mm_lock);
 
-  freebad:
-    mmap_unmap(mm, addr);
-  bad:
-    return -1;
+    return ret;
+
+  fail:
+    release(&mm->mm_lock);
+    return NULL;
 }
 
 static void unmap_vmas(mm_t *mm) {
@@ -256,35 +311,38 @@ static void unmap_vmas(mm_t *mm) {
         vma_remove(mm, vma);
         vma_free(&vma);
     }
-
 }
 
 
 
-static int mmap_init(mm_t *mm) {
-    initlock(&mm->mm_lock, "mmlock");
-    mm->pagetable = kzalloc(PGSIZE);
-    INIT_LIST_HEAD(&mm->vma_head);
-    if(mm->pagetable == NULL) {
-        return -1;
-    }
-    
-    if(setupkvm(mm->pagetable) == -1) {
-        kfree_safe(&mm->pagetable);
-        return -1;
-    }
-    
-    return 0;
-}
-
-mm_t *mmap_new() {
+mm_t *__mmap_new() {
     mm_t *mm = (mm_t *)kzalloc(sizeof(mm_t));
-    if(mm == NULL) 
+    if (mm == NULL) {
         return NULL;
-    if(mmap_init(mm) == -1) {
+    }
+    mm->pagetable = kzalloc(PGSIZE);
+    if (mm->pagetable == NULL) {
         kfree(mm);
         return NULL;
     }
+    initlock(&mm->mm_lock, "mmlock");
+    INIT_LIST_HEAD(&mm->vma_head);
+
+    return mm;
+}
+
+mm_t *mmap_new() {
+    mm_t *mm = __mmap_new();
+
+    if(mm == NULL) 
+        return NULL;
+
+    if(setupkvm(mm->pagetable) == -1) {
+        kfree_safe(&mm->pagetable);
+        kfree_safe(&mm);
+        return NULL;
+    }
+
     return mm;
 }
 
@@ -348,22 +406,29 @@ mm_t *mmap_clone(mm_t *mm) {
     return newmm;
 }
 
-
-// called after load
-int mmap_map_stack(mm_t *mm, uint64_t stacksize) {
-    // brk_addr = PGROUNDUP(brk_addr);
-    // if(mmap_map(mm, NULL, 0, brk_addr, heapsize, 0, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
-    //     return -1;
-    // }
-    mm->uheap = list_last_entry(&mm->vma_head, vma_t, head);
-
-    if(mmap_map(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER) == -1) {
-        return -1;
+vma_t *mmap_map_heap(mm_t *mm) {
+#define HEAP_OFFSET 0x200000UL // 2MB
+#define HEAP_INIT_SIZE 0x800000UL // 8MB
+    assert(mm->ustack == NULL);
+    assert(mm->uheap == NULL);
+    vma_t *last = list_last_entry(&mm->vma_head, vma_t, head);
+    uint64_t heap_start = last->addr + last->len + HEAP_OFFSET;
+    mm->uheap = mmap_map(mm, NULL, 0, heap_start, HEAP_INIT_SIZE, MAP_ANONYMOUS, PROT_READ|PROT_WRITE|PROT_USER);
+    if (mm->uheap == NULL) {
+        return NULL;
     }
 
-    mm->ustack = __vma_find_greater(mm, USERSPACE_END - stacksize);
-    assert(mm->uheap != mm->ustack);
-    return 0;
+    return mm->uheap;
+}
+
+vma_t *mmap_map_stack(mm_t *mm, uint64_t stacksize) {
+    assert(mm->ustack == NULL);
+    mm->ustack = mmap_map(mm, NULL, 0, USERSPACE_END - stacksize, stacksize, MAP_STACK, PROT_READ|PROT_WRITE|PROT_EXEC|PROT_USER);
+    if(mm->ustack == NULL) {
+        return NULL;
+    }
+
+    return mm->ustack;
 }
 
 int mmap_ext_heap(mm_t *mm, uint64_t newbreak) {
@@ -410,21 +475,6 @@ void mmap_print(mm_t *mm) {
         printf("%d. ", id++);
         vma_print(vma);
     }
-}
-
-
-void switchuvm(mm_t *mm) {
-  if(mm->pagetable == 0)
-    panic("switchuvm: no pgdir");
-
-  set_pgtbl(mm->pagetable);
-  sfence_vma();
-}
-
-extern pagetable_t kernel_pagetable;
-void switchkvm() {
-  set_pgtbl(kernel_pagetable);
-//   sfence_vma();
 }
 
 

@@ -83,7 +83,7 @@ int exec(char *path, char *argv[]) {
             goto bad;
         }
 
-        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == NULL) {
             eunlock(ep);
             goto bad;
         }
@@ -107,7 +107,11 @@ int exec(char *path, char *argv[]) {
     //////////////STACK & HEAP////////////////
     uint64 ustack, ustackbase;
 
-    if (mmap_map_stack(newmm, oldmm->ustack->len) == -1) {
+    if (mmap_map_heap(newmm) == NULL) {
+        goto bad;
+    }
+
+    if (mmap_map_stack(newmm, oldmm->ustack->len) == NULL) {
         goto bad;
     }
 
