@@ -175,12 +175,6 @@ void freeproc(struct proc *p) {
     atomic_dec(&proc_cnt);
 }
 
-/// @brief a user program that calls exec("/init"): od -t xC initcode
-uchar initcode[] = {
-    #include "generated/initcode_bin.h"
-};
-
-
 static void init_std(proc_t *p) {
     struct file *stdin = filealloc();
     struct file *stdout = filealloc();
@@ -201,7 +195,7 @@ static void init_std(proc_t *p) {
 
 
 static void __userinit(proc_t *p) {
-    extern void forkret(proc_t *p);
+    extern int exec(char *path, char *argv[], char *envp[]);
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
@@ -211,18 +205,20 @@ static void __userinit(proc_t *p) {
     p->cwd = namee(NULL, "/");
 
 #ifdef DEBUG
-    // record the first user pid for the debug convenience
+    // save the first user pid for the debug convenience
     first_user_pid = atomic_get(&nextpid);
 #endif
 
-    // copy text & data
+    // load init0
     // this procedure cannot move to `userinit` 
     // because it will trigger demand paging
-    if (copy_to_user(PGSIZE, initcode, sizeof(initcode)) == -1) {
-        panic("user0 copy");
+    char *argv[] = {"init0", NULL};
+    char *envp[] = {NULL};
+    if (exec("init0", argv, envp) != 0) {
+        panic("init0 load");
     }
-    
-    forkret(p);
+
+    usertrapret();
 }
 
 // Set up first user process.
@@ -255,22 +251,6 @@ void userinit(void) {
     proc_settg(p, tg);
     proc_settf(p, tf);
 
-    const int USER_SIZE = 4 * PGSIZE;
-
-    if (sizeof(initcode) >= USER_SIZE)
-        panic("inituvm: too large");
-
-    // debug("initcode size: %d", sizeof(initcode));
-
-    if (mmap_map(p->mm, NULL, 0, PGSIZE, USER_SIZE, 0, PROT_WRITE | PROT_READ | PROT_EXEC | PROT_USER) == NULL) {
-        panic("mmap1 failure");
-    }
-
-    // only map stack, heap is unused for her
-    if (mmap_map_stack(p->mm, USTACKSIZE) == NULL) {
-        panic("mmap2 failure");
-    }
-
     // prepare for the very first "return" from kernel to user.
     proc_get_tf(p)->epc = PGSIZE;      // user program counter
     proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
@@ -298,9 +278,6 @@ uint64 growproc(uint64_t newbreak) {
 
 
 int kthread_create(char *name, kthread_callback_t callback) {
-    if (initproc == NULL)
-        panic("initproc required");
-
     struct proc *np = proc_new(callback);
 
     if (np == NULL)

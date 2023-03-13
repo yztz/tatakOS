@@ -283,3 +283,5 @@
 #define SYS_mailread 401
 #define SYS_mailwrite 402
 #define SYS_mkdir 1030
+#define SYS_halt 234
+#define SYS_memuse 235

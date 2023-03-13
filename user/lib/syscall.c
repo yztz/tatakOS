@@ -221,3 +221,12 @@ int umount(const char *special)
         return syscall(SYS_umount2, special, 0);
 }
 
+void halt() 
+{
+    syscall(SYS_halt);
+}
+
+void memuse() 
+{
+    syscall(SYS_memuse);
+}

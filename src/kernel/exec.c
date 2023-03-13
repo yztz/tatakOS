@@ -186,13 +186,14 @@ int exec(char *path, char *argv[], char *envp[]) {
         goto bad;
     }
 
-    if (mmap_map_stack(newmm, oldmm->ustack->len) == NULL) {
+    uint64 ustack_size = oldmm->ustack ? oldmm->ustack->len : USTACKSIZE;
+    if (mmap_map_stack(newmm, ustack_size) == NULL) {
         goto bad;
     }
 
 
     ustackbase = newmm->ustack->addr;
-    ustack = ustackbase + newmm->ustack->len;
+    ustack = ustackbase + ustack_size;
 
 
     // 环境变量数目
