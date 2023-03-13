@@ -5,18 +5,6 @@
 
 
 /**
- * @brief Kernel memory map
- * 
- */
-typedef struct kmap {
-    uint64_t va;
-    uint64_t pa;
-    size_t   size;
-    int      pg_spec;
-    int      prot;
-} kmap_t;
-
-/**
  * @brief Initialize the one kernel_pagetable
  * 
  */
@@ -29,19 +17,17 @@ void kvminit(void);
 void kvminithart(void);
 
 /**
- * @brief Add a mapping to the kernel page table only called when booting.
- * @warning Does not flush TLB or enable paging.
+ * @brief Given a parent process's page table, copy
+ * its memory into a child's page table.
+ * Copies both the page table and the
+ * physical memory with cow.
  * 
- * @param va virtual address
- * @param pa physical address
- * @param sz size
- * @param prot protection flags
- * @param pg_spec page specification
+ * @param old 
+ * @param new 
+ * @param vma 
+ * @return int 0 on success, -1 on failure.
  */
-void kvmmap(uint64 va, uint64 pa, size_t sz, int prot, int pg_spec);
-
-int         uvmcopy(pagetable_t old, pagetable_t new, struct vma *vma);
-void        freewalk(pagetable_t pagetable);
+int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma);
 
 /**
  * @brief Copy from kernel to user.
@@ -88,10 +74,12 @@ int copy_from_user(void *to, uint64 from, size_t len) _section(.copy_from_user);
  */
 int copy_to_user(uint64 to, void *from, uint64 len) _section(.copy_to_user);
 
-int         either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
-int         either_copyin(void *dst, int user_src, uint64 src, uint64 len);
-int         setupkvm(pagetable_t pagetable);
-void        erasekvm(pagetable_t pagetable);
+int either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
+int either_copyin(void *dst, int user_src, uint64 src, uint64 len);
+int setupkvm(pagetable_t pagetable);
+void erasekvm(pagetable_t pagetable);
+void switchuvm(mm_t *mm);
+void switchkvm();
 
 #include "mm/alloc.h"
 

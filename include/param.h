@@ -16,9 +16,7 @@
 /* maximum exec env nr */
 #define MAXENV       32  
 /* size of disk block cache */
-#define NBUF         30
-/* io map nr */
-#define MAX_MAP      15    
+#define NBUF         30   
 /* maximum file descriptor */
 #define MAX_FD       256
 /* block size */

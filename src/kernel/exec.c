@@ -58,7 +58,7 @@ static uint64_t loadinterp(mm_t *mm) {
         if (ph.memsz < ph.filesz) {
             goto bad;
         }
-        if (mmap_map(mm, NULL, 0, ph.vaddr + INTERP_BASE, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(mm, NULL, 0, ph.vaddr + INTERP_BASE, ph.memsz, 0, elf_map_prot(ph.flags)) == NULL) {
             goto bad;
         }
         if (loadseg(mm, ph.vaddr + INTERP_BASE, ep, ph.off, ph.filesz) < 0) {
@@ -157,7 +157,7 @@ int exec(char *path, char *argv[], char *envp[]) {
             goto bad;
         }
 
-        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == -1) {
+        if (mmap_map(newmm, NULL, 0, ph.vaddr, ph.memsz, 0, elf_map_prot(ph.flags)) == NULL) {
             eunlock(ep);
             goto bad;
         }
@@ -182,7 +182,11 @@ int exec(char *path, char *argv[], char *envp[]) {
     //////////////STACK & HEAP////////////////
     uint64 ustack, ustackbase;
 
-    if (mmap_map_stack(newmm, oldmm->ustack->len) == -1) {
+    if (mmap_map_heap(newmm) == NULL) {
+        goto bad;
+    }
+
+    if (mmap_map_stack(newmm, oldmm->ustack->len) == NULL) {
         goto bad;
     }
 

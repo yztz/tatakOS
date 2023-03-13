@@ -6,8 +6,7 @@
 #include "mm/page.h"
 #include "atomic/spinlock.h"
 
-#define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
-
+// wtf??? why it is defined here
 #define PAGECACHE_TAG_DIRTY 0
 #define PAGECACHE_TAG_WRITEBACK 1
 
@@ -56,10 +55,14 @@ struct vma {
     uint flags;
     /// @brief map protection flags
     uint prot;
+    /// @brief page specification
+    int page_spec;
     /// @brief vma list head
     list_head_t head;
     /// @brief map file
     struct file *map_file;
+    /// @brief for ioremap
+    void *io_addr;
     /// @brief vma belongs to
     mm_t *mm;
 };
@@ -81,22 +84,6 @@ struct mmlayout {
     pagetable_t pagetable;
 };
 
-
-
-vma_t *vma_new(mm_t *mm,
-        struct file *fp, 
-        off_t foff, 
-        uint64_t addr, 
-        uint64_t len, 
-        int flags, 
-        int prot);
-void vma_print(vma_t *vma);
-void vma_free(vma_t **vma);
-vma_t *vma_clone(mm_t *newmm, vma_t *vma);
-
-mm_t *mmap_new();
-void mmap_free(mm_t **pmm);
-
 /**
  * @brief Map a memory area with specific flags and prot.
  * @note Mapped memory regions are lazily allocated,
@@ -109,15 +96,27 @@ void mmap_free(mm_t **pmm);
  * @param len map length
  * @param flags map flags
  * @param prot  protection flags
- * @return uint64_t map address
+ * @return vma_t * new vma
  */
-uint64_t mmap_map(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot);
-uint64_t mmap_map_alloc(mm_t *mm, uint64_t addr, uint64_t len, int flags, int prot);
-void mmap_unmap(mm_t *mm, uint64_t addr);
-vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
+vma_t *mmap_map(mm_t *mm, struct file *fp, off_t off, uint64_t addr, uint64_t len, int flags, int prot);
 
-int mmap_ext_heap(mm_t *mm, uint64_t newsize);
-int mmap_ext_stack(mm_t *mm, uint64_t newsize);
+/**
+ * @brief unmap a vm area
+ * 
+ * @param mm 
+ * @param addr 
+ */
+void mmap_unmap(mm_t *mm, uint64_t addr);
+
+/**
+ * @brief check if a given address range exists, that is @vma[...addr...addr+len...]
+ * 
+ * @param mm 
+ * @param addr 
+ * @param len 
+ * @return vma_t* 
+ */
+vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
 
 /**
  * @brief Find the **first** vma whose **end** address is greater than addr.
@@ -127,7 +126,6 @@ int mmap_ext_stack(mm_t *mm, uint64_t newsize);
  * @return vma_t* 
  */
 vma_t *__vma_find_greater(mm_t *mm, uint64 addr);
-
 
 /**
  * @brief Find the **last** vma whose **start** address is less than addr.
@@ -148,15 +146,35 @@ vma_t *__vma_find_less(mm_t *mm, uint64 addr);
  * @return vma_t* 
  */
 vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
-int mmap_map_stack(mm_t *mm, uint64_t stacksize);
 
+/**
+ * @brief map heap (program break)
+ * @note called after load, but before mapping stack
+ * @param mm 
+ * @return vma_t* 
+ */
+vma_t *mmap_map_heap(mm_t *mm);
+
+/**
+ * @brief map stack
+ * @note called after load
+ * @param mm 
+ * @param stacksize 
+ * @return vma_t* 
+ */
+vma_t *mmap_map_stack(mm_t *mm, uint64_t stacksize);
+
+mm_t *mmap_new();
+void mmap_free(mm_t **pmm);
 mm_t *mmap_clone(mm_t *mm);
-void mmap_print(mm_t *mm);
+int mmap_ext_heap(mm_t *mm, uint64_t newsize);
+int mmap_ext_stack(mm_t *mm, uint64_t newsize);
 
+void mmap_print(mm_t *mm);
 void mmap_ref(mm_t *self);
 void mmap_deref(mm_t *self);
 
-void switchuvm(mm_t *mm);
-void switchkvm();
+
+#define PROGRAM_BREAK(mm) ((mm)->uheap->addr + (mm)->uheap->len)
 
 #endif

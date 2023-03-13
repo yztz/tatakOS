@@ -15,11 +15,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            // "logging": {
+            //     "engineLogging":"verbose"
+            // },
             // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
-            // "miDebuggerPath": "/home/yztz/musl-cross-make/riscv64-unknown-elf-gdb",
             "miDebuggerPath": "gdb-multiarch",
             "miDebuggerServerAddress": "localhost:26000",
             "setupCommands": [
+                // {
+                //     "description": "寄存器显示修复",
+                //     "text": "set tdesc filename gdb-riscv64.xml"
+                // },
                 {
                     "description": "riscv",
                     "text": "set architecture riscv:rv64",
@@ -50,7 +56,7 @@
             "MIMode": "gdb",
             // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
             "miDebuggerPath": "gdb-multiarch",
-            "miDebuggerServerAddress": "192.168.137.100:26000",
+            "miDebuggerServerAddress": "localhost:26000",
             "setupCommands": [
                 {
                     "description": "riscv",

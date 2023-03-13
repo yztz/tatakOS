@@ -50,6 +50,7 @@ void main() {
     kvminit();       // kernel page table init
     kvminithart();   // turn on paging
 
+/* !Note: output is unavailable here */
     /* Trap */
     trapinit();      // trap vectors
     trapinithart();  // install kernel trap vector
@@ -59,6 +60,7 @@ void main() {
     platform_plic_init(); // platform enable required source
     plic_init_hart();     // disable all interrupts and set ctx threshould to 0 for hart
     platform_plic_init_hart(); // enable required interrupts for current hart 
+/* !Note: output is available here */
 
     /* Driver */
     platform_dirver_init();
@@ -82,8 +84,8 @@ void main() {
 
     #ifdef K210
     for (int i = 1; i < NUM_CORES; i++) {
-			unsigned long mask = 1 << i;
-			sbi_send_ipi(mask, 0);
+        unsigned long mask = 1 << i;
+        sbi_send_ipi(mask, 0);
     }
     #endif
 

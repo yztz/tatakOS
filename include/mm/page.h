@@ -173,28 +173,30 @@ void reset_page(page_t *page);
  * @param spec page specification
  * @return int 
  */
-int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
+int __map_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
 /**
- * @brief Remove npages of mappings starting from va. va must be
+ * @brief Remove mappings starting from va. va must be
  *        page-aligned. The mappings must exist.
  *        Optionally free the physical memory.
  * 
  * @param pagetable 
  * @param va 
- * @param npages 
+ * @param size 
  * @param do_free free the memory
  * @param spec page specification
  */
-void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec);
+void __unmap_pages(pagetable_t pagetable, uint64 va, uint64 size, int do_free, int spec);
+
+
+/**
+ * @brief Recursively free page-table pages.
+ * All leaf mappings must already have been removed.
+ * 
+ * @param pagetable 
+ */
+void freewalk(pagetable_t pagetable);
+
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
-
-static inline int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot) {
-    return __mappages(pagetable, va, size, pa, prot, PGSPEC_NORMAL);
-}
-
-static inline void uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free) {
-  __uvmunmap(pagetable, va, npages, do_free, PGSPEC_NORMAL);
-}
 
 static inline pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
     return __walk(pagetable, va, alloc, PGSPEC_NORMAL);

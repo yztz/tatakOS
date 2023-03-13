@@ -38,86 +38,110 @@ void page_init(void) {
 
 
 pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec) {
-  if(va >= MAXVA)
-    panic("walk");
-
-  for(int level = 2; level > pg_spec; level--) {
-    pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
-      pagetable = (pagetable_t)PTE2PA(*pte);
-    } else {
-      if(!alloc || (pagetable = (pde_t*)kzalloc(PGSIZE)) == 0)
-        return 0;
-      *pte = PA2PTE(pagetable) | PTE_V;
+    if(va >= MAXVA) {
+        panic("walk");
     }
-  }
-  return &pagetable[PX(pg_spec, va)];
+
+    // end level just equals pg_spec...
+    // so it's so tricky way
+    for(int level = 2; level > pg_spec; level--) {
+        pte_t *pte = &pagetable[PX(level, va)];
+        if(*pte & PTE_V) {
+            pagetable = (pagetable_t)PTE2PA(*pte);
+        } else {
+            if(!alloc || (pagetable = (pde_t*)kzalloc(PGSIZE)) == 0) {
+                return 0;
+            }
+                
+            *pte = PA2PTE(pagetable) | PTE_V;
+        }
+    }
+
+    return &pagetable[PX(pg_spec, va)];
+}
+
+void freewalk(pagetable_t pagetable) {
+    // there are 2^9 = 512 PTEs in a page table.
+    for (int i = 0; i < 512; i++) {
+        pte_t pte = pagetable[i];
+        if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0) { // 目录节点
+            // this PTE points to a lower-level page table.
+            uint64 child = PTE2PA(pte);
+            freewalk((pagetable_t)child);
+            pagetable[i] = 0;
+        } else if (pte & PTE_V) { // 叶子节点
+            printf("pa: %p\n", PTE2PA(pte));
+            panic("freewalk: leaf");
+        }
+    }
+
+    kfree((void *)pagetable);
 }
 
 
-int __mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec) {
-  uint64 start, a, last;
-  pte_t *pte;
+int __map_pages(pagetable_t pagetable, uint64 __va, uint64 size, uint64 pa, int prot, int spec) {
+    prot = riscv_map_prot(prot);
+    
+    uint64 begin = PGROUNDDOWN_SPEC(__va, spec);
+    uint64 end = PGROUNDUP_SPEC(__va + size, spec);
+    uint64 pagesize = PGSIZE_SPEC(spec);
 
-  if(size == 0)
-    panic("mappages: size");
+    uint64 va;
+    for(va = begin; va < end; va+=pagesize, pa+=pagesize) {
+        pte_t *pte;
+        // No PTE found
+        if((pte = __walk(pagetable, va, 1, spec)) == 0) {
+            goto bad;
+        }
 
-  prot = riscv_map_prot(prot);
-  
-  start = a = PGROUNDDOWN_SPEC(va, spec);
-  last = PGROUNDDOWN_SPEC(va + size - 1, spec);
-  for(;;){
-    if((pte = __walk(pagetable, a, 1, spec)) == 0)
-      goto bad;
-    if(*pte & PTE_V) {
-      pte_print(pte);
-      panic("mappages: remap");
+        if(*pte & PTE_V) {
+            pte_print(pte);
+            panic("remap");
+        }
+        *pte = PA2PTE_SPEC(pa, spec) | prot | PTE_V;
     }
-    *pte = PA2PTE_SPEC(pa, spec) | prot | PTE_V;
-    if(a == last)
-      break;
-    a += PGSIZE_SPEC(spec);
-    pa += PGSIZE_SPEC(spec);
-  }
-  return 0;
 
-  bad:
-  debug("mappages fail");
-  __uvmunmap(pagetable, start, (a-start)/PGSIZE_SPEC(spec), 0, spec);
-  return -1;
+    return 0;
+
+    bad:
+    warn("mappages fail");
+    __unmap_pages(pagetable, begin, va-begin, 0, spec);
+    
+    return -1;
 }
 
 
 // IMPROVE ME: ASID
-void __uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free, int spec) {
-  uint64 a;
-  pte_t *pte;
-  int pgsize = PGSIZE_SPEC(spec);
+void __unmap_pages(pagetable_t pagetable, uint64 __va, uint64 size, int do_free, int spec) {
+    uint64 begin = PGROUNDDOWN_SPEC(__va, spec);
+    uint64 end = PGROUNDUP_SPEC(__va + size, spec);
+    uint64 pagesize = PGSIZE_SPEC(spec);
+    int need_flush = get_pgtbl() == pagetable;
 
-  int need_flush = get_pgtbl() == pagetable;
+    uint64 va;
+    for(va = begin; va < end; va+=pagesize) {
+        pte_t *pte;
+        // No PTE found
+        if((pte = __walk(pagetable, va, 0, spec)) == 0){
+            continue;
+        }
+        if((*pte & PTE_V) == 0) {
+            continue;
+        }
+        if((*pte & (PTE_R | PTE_W | PTE_X)) == 0) {
+            panic("uvmunmap: not a leaf");
+        }
+        if(do_free){
+            uint64 pa = PTE2PA(*pte);
+            put_page(pa);
+        }
 
-  if((va % pgsize) != 0)
-    panic("uvmunmap: not aligned");
+        *pte = 0;
 
-  for(a = va; a < va + npages*pgsize; a += pgsize){
-    // No PTE found
-    if((pte = __walk(pagetable, a, 0, spec)) == 0){
-      continue;
+        if(need_flush) {
+            sfence_vma_addr(va);
+        } 
     }
-    if((*pte & PTE_V) == 0) {
-      continue;
-    }
-    if((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
-      panic("uvmunmap: not a leaf");
-    if(do_free){
-      uint64 pa = PTE2PA(*pte);
-      put_page(pa);
-    }
-    *pte = 0;
-
-    if(need_flush)
-      sfence_vma_addr(a);
-  }
 }
 
 void pte_print(pte_t *pte) {

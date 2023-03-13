@@ -1,5 +1,8 @@
 /**
- * This file defines the interface to the memory request module. 
+ * @file alloc.c
+ * @author YangZongzhen
+ * @brief This file defines the interface to the memory request module. 
+ * @note 
  * Currently, page allocation and small memory allocation are supported. 
  * The real allocator interface is as follows:
  * 
@@ -17,7 +20,6 @@
  * 
  * Currently, the underlying allocator implementation is 
  *  the Buddy allocator, the Slob allocator and the Freelist allocator.
- * 
  * Of particular concern is the `kfree`:
  * In fact, for page allocation, it can be divided into single-page allocation 
  *  and (consecutive) multi-page allocation. 
@@ -44,7 +46,12 @@
  * 
  * In fact, `kfree` is just a more general wrapper for `put_page` for page free.
  * 
-*/
+ * @version 0.1
+ * @date 2023-03-12
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #include "mm/alloc.h"
 #include "common.h"
@@ -109,7 +116,8 @@ void *kzalloc(size_t size) {
 
 #define is_frag(addr) ((uint64)addr & ~PGMASK)
 
-void kfree(void *addr) {
+void 
+kfree(void *addr) {
     //todo: do more checks...
     if(addr == NULL) return;
 

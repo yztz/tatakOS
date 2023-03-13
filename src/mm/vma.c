@@ -4,19 +4,16 @@
 #include "mm/vm.h"
 
 
-static vma_t *__vma_new() {
-    return (vma_t *)kzalloc(sizeof(vma_t));
-}
-
 vma_t *vma_new(mm_t *mm,
     struct file *fp,
     off_t foff,
     uint64_t addr,
     uint64_t len,
     int flags,
-    int prot) 
+    int prot,
+    int page_spec) 
 {
-    vma_t *vma = __vma_new();
+    vma_t *vma = (vma_t *)kzalloc(sizeof(vma_t));
 
     if (vma) {
         uint64_t addr_align = PGROUNDDOWN(addr);
@@ -31,17 +28,33 @@ vma_t *vma_new(mm_t *mm,
         if (fp) {
             filedup(fp);
         }
+        vma->page_spec = page_spec;
         vma->map_file = fp;
         vma->prot = prot;
         vma->offset = foff;
     }
+    
     return vma;
+}
+
+void vma_free(vma_t **_vma) {
+    if (*_vma) {
+        vma_t *vma = *_vma;
+        mm_t *mm = vma->mm;
+        // Unmap area
+        __unmap_pages(mm->pagetable, vma->addr, vma->len, 1, vma->page_spec);
+        // Close file map
+        if (vma->map_file) {
+            fileclose(vma->map_file);
+        }
+    }
+    kfree_safe(_vma);
 }
 
 
 vma_t *vma_clone(mm_t *newmm, vma_t *vma) {
     vma_t *dup;
-    if ((dup = __vma_new()) == NULL) {
+    if ((dup = (vma_t *)kzalloc(sizeof(vma_t))) == NULL) {
         return NULL;
     }
 
@@ -61,30 +74,17 @@ vma_t *vma_clone(mm_t *newmm, vma_t *vma) {
     return dup;
 }
 
-void vma_free(vma_t **_vma) {
-    if (*_vma) {
-        vma_t *vma = *_vma;
-        mm_t *mm = vma->mm;
-        // Unmap area
-        uvmunmap(mm->pagetable, vma->addr, vma->len / PGSIZE, 1);
-        // Close file map
-        if (vma->map_file) {
-            fileclose(vma->map_file);
-        }
-    }
-    kfree_safe(_vma);
-}
 
 
 static int __vma_resize_reverse(vma_t *vma, uint64 newsize) {
     uint64_t cursize = vma->len;
     mm_t *mm = vma->mm;
-    newsize = PGROUNDUP(vma->raddr + newsize) - vma->addr;
+    newsize = PGROUNDUP_SPEC(vma->raddr + newsize, vma->page_spec) - vma->addr;
     int64_t delta = newsize - cursize;
     if (delta == 0) {
         return 0;
     } else if (delta < 0) {
-        uvmunmap(mm->pagetable, vma->addr, (-delta) / PGSIZE, 1);
+        __unmap_pages(mm->pagetable, vma->addr, -delta, 1, vma->page_spec);
     } else {
         if (__vma_find_greater(mm, vma->addr - delta) != vma) {
             return -1;
@@ -98,11 +98,11 @@ static int __vma_resize_reverse(vma_t *vma, uint64 newsize) {
 static int __vma_resize(vma_t *vma, uint64 newsize) {
     uint64_t cursize = vma->len;
     mm_t *mm = vma->mm;
-    newsize = PGROUNDUP(vma->raddr + newsize) - vma->addr;
+    newsize = PGROUNDUP_SPEC(vma->raddr + newsize, vma->page_spec) - vma->addr;
     if (cursize == newsize) {
         return 0;
     } else if (cursize > newsize) {
-        uvmunmap(mm->pagetable, vma->addr + newsize, (cursize - newsize) / PGSIZE, 1);
+        __unmap_pages(mm->pagetable, vma->addr + newsize, cursize - newsize, 1, vma->page_spec);
     } else {
         if (__vma_find_less(mm, vma->addr + newsize) != vma) {
             return -1;
@@ -141,7 +141,11 @@ void vma_print(vma_t *vma) {
         perm[3] = vma->prot & PROT_USER ? 'u' : '-';
         if (vma->map_file) {
             filename = vma->map_file->ep->name;
+            printf("vma@%#lx: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
+        } else if (vma->io_addr){
+            printf("vma@%#lx: %#lx--%#lx len: %#lx %s io@%lx\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, vma->io_addr);
+        } else {
+            printf("vma@%#lx: %#lx--%#lx len: %#lx %s anonymous\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm);
         }
-        printf("vma@%#lx: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
     }
 }

@@ -43,9 +43,6 @@ void plic_init(void) {
     for (i = 1; i < IRQN_MAX; i++) {
         plic_set_priority(i, 0);
     }
-
-    debug("init success!");
-    
 }
 
 void _plic_irq_disable(plic_irq_t source, plic_irq_mode_t mode);

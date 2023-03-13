@@ -820,13 +820,13 @@ uint64_t sys_mmap(void) {
 
     // 由于我们并没有实现mproctect所以如果按照它给的flag来设置会有后续访存问题
     // if((addr = mmap_map(p->mm, fp, offset, addr, len, flags, prot | PROT_USER))== -1) {
-    if((addr = mmap_map(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC))== -1) {
+    vma_t *vma = mmap_map(p->mm, fp, offset, addr, len, flags, prot | PROT_USER | PROT_READ | PROT_WRITE | PROT_EXEC);
+    if(vma == NULL) {
         debug("mmap failure");
         return -1;
     }
-
     
-    return addr;
+    return vma->addr;
 }
 
 uint64_t sys_munmap(void) {

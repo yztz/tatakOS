@@ -126,8 +126,13 @@ proc_t *proc_new(kthread_callback_t callback) {
     // and the real callback should be passed as a param.
     // Out of a0 is not a callee-saved register, so we do it with the help of s1.
     // An asm routine(newproc_callback_stage0 in Swtch.S) is written to help us pass the param
+    // call chain:
+    // (sched) -> newproc_callback_stage0 -> newproc_callback_stage1 -> callback
+    //             (pass the `callback`)     (release process lock)     (finally)
     p->context.ra = (uint64)newproc_callback_stage0;
     p->context.s1 = (uint64)callback;
+
+    // kernel stack
     p->context.sp = p->kstack + KSTACK_SZ;
 
     atomic_inc(&proc_cnt);
@@ -194,8 +199,9 @@ static void init_std(proc_t *p) {
     stdout->dev = &devs[CONSOLE];
 }
 
-extern void forkret(proc_t *p);
+
 static void __userinit(proc_t *p) {
+    extern void forkret(proc_t *p);
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
@@ -203,9 +209,19 @@ static void __userinit(proc_t *p) {
     debug("mount fs");
     fat_mount(ROOTDEV, &fat);
     p->cwd = namee(NULL, "/");
+
 #ifdef DEBUG
+    // record the first user pid for the debug convenience
     first_user_pid = atomic_get(&nextpid);
 #endif
+
+    // copy text & data
+    // this procedure cannot move to `userinit` 
+    // because it will trigger demand paging
+    if (copy_to_user(PGSIZE, initcode, sizeof(initcode)) == -1) {
+        panic("user0 copy");
+    }
+    
     forkret(p);
 }
 
@@ -246,18 +262,14 @@ void userinit(void) {
 
     // debug("initcode size: %d", sizeof(initcode));
 
-    // if(mmap_map_alloc(p->mm, 0, USER_SIZE, 0, PROT_WRITE|PROT_READ|PROT_EXEC|PROT_USER) == -1) {
-    if (mmap_map_alloc(p->mm, PGSIZE, USER_SIZE, 0, PROT_WRITE | PROT_READ | PROT_EXEC | PROT_USER) == -1) {
+    if (mmap_map(p->mm, NULL, 0, PGSIZE, USER_SIZE, 0, PROT_WRITE | PROT_READ | PROT_EXEC | PROT_USER) == NULL) {
         panic("mmap1 failure");
     }
 
-    if (mmap_map_stack(p->mm, USTACKSIZE) == -1) {
+    // only map stack, heap is unused for her
+    if (mmap_map_stack(p->mm, USTACKSIZE) == NULL) {
         panic("mmap2 failure");
     }
-
-    enable_sum();
-    memmove((void *)PGSIZE, initcode, sizeof(initcode));
-    disable_sum();
 
     // prepare for the very first "return" from kernel to user.
     proc_get_tf(p)->epc = PGSIZE;      // user program counter
@@ -294,7 +306,9 @@ int kthread_create(char *name, kthread_callback_t callback) {
     if (np == NULL)
         return -1;
 
-    proc_setmm(np, initproc->mm);
+    extern mm_t *public_map;
+
+    proc_setmm(np, public_map);
     strncpy(np->name, name, 20);
     pstate_migrate(np, RUNNABLE);
 
