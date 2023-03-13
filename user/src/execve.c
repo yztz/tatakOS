@@ -14,7 +14,7 @@ void test_execve(void){
     char *newenviron[] = {NULL};
     execve("test_echo", newargv, newenviron);
     printf("  execve error.\n");
-    //
+
 }
 
 int main(void){

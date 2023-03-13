@@ -71,11 +71,11 @@ void main() {
     bcache_init();    // buffer cache(or block cache) init
     fs_init();        // pool of file entry in memory init
 
-    userinit();       // first user process
-
     /* Kthread */
     pdflush_init();   // thread for page writeback
     kthread_create("scavenger", scavenger_routine); // thread for cleaning dangling trheads
+    
+    userinit();       // first user process
 
     #ifdef K210
     for (int i = 1; i < NUM_CORES; i++) {
