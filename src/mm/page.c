@@ -15,8 +15,9 @@ struct spinlock reflock;
 
 extern void wakeup(void *chan);
 extern void sleep(void *chan, struct spinlock *lk);
+extern void __free_pages(page_t *first_page);
 
-void reset_page(page_t *page){
+void reset_page(page_t *page) {
   page->flags = 0;
   INIT_LIST_HEAD(&page->lru);
   page->mapping = 0;
@@ -159,11 +160,11 @@ void pte_print(pte_t *pte) {
 }
 
 
-pgref_t __page_refcnt_pointer(page_t *page){
+pgref_t __page_refcnt_pointer(page_t *page) {
   return atomic_get(&page->refcnt);
 }
 
-pgref_t __page_refcnt_paddr(uint64_t pa){
+pgref_t __page_refcnt_paddr(uint64_t pa) {
   return __page_refcnt_pointer(ADDR_TO_PG(pa));
 }
 
@@ -176,17 +177,16 @@ pgref_t __deref_page_paddr(uint64_t pa) {
   return __deref_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
-pgref_t __get_page_pointer(page_t *page){
+pgref_t __get_page_pointer(page_t *page) {
   return atomic_inc(&page->refcnt) + 1;
 }
 
-pgref_t __get_page_paddr(uint64_t pa){
+pgref_t __get_page_paddr(uint64_t pa) {
   return __get_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
-extern void free_page(page_t *page);
 
-pgref_t __put_page_pointer(page_t *page){
+pgref_t __put_page_pointer(page_t *page) {
   pgref_t ret;
 
   if(page_refcnt(page) <= 0)
@@ -194,20 +194,20 @@ pgref_t __put_page_pointer(page_t *page){
 
   ret = atomic_dec(&page->refcnt) - 1;
   if(ret == 0) {
-    free_page(page);
+    __free_pages(page);
   }
   return ret; 
 
 }
 
-pgref_t __put_page_padder(uint64_t pa){
+pgref_t __put_page_padder(uint64_t pa) {
   return __put_page_pointer(&pages[PG_TO_NR(pa)]);
 }
 
 /**
  * 使用类睡眠锁实现的lock page。
  */
-void lock_page(page_t *page){
+void lock_page(page_t *page) {
   page_spin_lock(page);
   while(unlikely(TestSetPageLocked(page))){
     while(PageLocked(page))
@@ -217,7 +217,7 @@ void lock_page(page_t *page){
 }
 
 
-void unlock_page(page_t *page){
+void unlock_page(page_t *page) {
   page_spin_lock(page);
   if (!TestClearPageLocked(page))
     ER();
@@ -225,12 +225,12 @@ void unlock_page(page_t *page){
   page_spin_unlock(page);
 }
 
-void get_lock_page(page_t *page){
+void get_lock_page(page_t *page) {
   get_page(page);
   lock_page(page);
 }
 
-void unlock_put_page(page_t *page){
+void unlock_put_page(page_t *page) {
   unlock_page(page);
   put_page(page);
 }
@@ -239,7 +239,7 @@ void unlock_put_page(page_t *page){
  * @brief 之前flag位是带移位的，原PG_diry = 1 << 现PG_diry 
  * 
  */
-void set_page_dirty(uint64_t pa){
+void set_page_dirty(uint64_t pa) {
   page_t *page = &pages[PG_TO_NR(pa)];
 
   // page->flags |= PG_dirty;
@@ -247,16 +247,14 @@ void set_page_dirty(uint64_t pa){
 }
 
 
-void clear_page_dirty(uint64_t pa){
+void clear_page_dirty(uint64_t pa) {
   page_t *page = &pages[PG_TO_NR(pa)];
 
-  // page->flags &= ~PG_dirty;
   ClearPageDirty(page);
 }
 
-int page_is_dirty(uint64_t pa){
+int page_is_dirty(uint64_t pa) {
   page_t *page = &pages[PG_TO_NR(pa)];
 
-  // return page->flags & PG_dirty;
   return PageDirty(page);
 }

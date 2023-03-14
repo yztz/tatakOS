@@ -1,32 +1,25 @@
 #ifndef _H_FS_
 #define _H_FS_
 
-#include "common.h"
-#include "mm/page.h"
+#include "types.h"
 #include "atomic/sleeplock.h"
 #include "atomic/spinlock.h"
-#include "atomic/atomic.h"
-#include "radix-tree.h"
-#include "fs/fat.h"
-#include "fs/stat.h"
-#include "bio.h"
-#include "radix-tree.h"
 #include "list.h"
+#include "radix-tree.h"
 
 #define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
 #define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
 #define E_FILESIZE(entry) ((entry)->raw.size)
 
 typedef struct address_space {
-	struct fat_entry *host;		/* owner: inode, block_device */
-	struct radix_tree_root	page_tree;	/* radix tree of all pages */
-	spinlock_t		tree_lock;	/* and spinlock protecting it */
-	// unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
-	// struct prio_tree_root	i_mmap;		/* tree of private and shared mappings */
-	// spinlock_t		i_mmap_lock;	/* protect tree, count, list */
-	// unsigned int		truncate_count;	/* Cover race condition with truncate */
-	unsigned long		nrpages;	/* number of total pages */
-	// spinlock_t		page_lock;	
+	/// @brief owner: entry
+	struct fat_entry *host;
+	/// @brief radix tree of all pages 
+	struct radix_tree_root	page_tree;
+	/// @brief lock
+	spinlock_t tree_lock;
+	/// @brief number of total pages
+	unsigned long nrpages;
 } address_space_t;
 
 
@@ -40,31 +33,35 @@ struct linux_dirent64 {
 
 //IN RAM
 struct fat_entry {
-    // uint        dev;        /* 所属设备号 */
-    int    ref;        /* 引用数 */
-
-    // struct hlist_node node;
+    /// @brief reference count
+    int ref;
+    /// @brief copy of file attr
     dir_item_t raw;
-    fat32_t *fat;       /* fat对象引用 */
+    /// @brief reference of fat object
+    fat32_t *fat;
+    /// @brief filename
     char name[MAX_FILE_NAME];
+    /// @brief link count: always 1 in fat
     uint nlink;
-    // uint32_t    file_size;  /* 文件大小 */
-    uint32_t    clus_start; /* 数据起始簇号 */
-    
-    struct fat_entry* parent; /* 父目录 */
-    uint32_t    clus_offset; /* 簇内字节偏移量(在父目录中的偏移量) */
-
-    sleeplock_t  lock;       /* io */
-
-    /* 在entry读到内存中时，分配对象 */
+    /// @brief data cluster begin
+    uint32_t clus_start;
+    /// @brief parent entry
+    struct fat_entry* parent;
+    /// @brief offset in parent's data cluster 簇内字节偏移量(在父目录中的偏移量)
+    uint32_t    clus_offset;
+    /// @brief used for I/O
+    sleeplock_t  lock;
+    /// @brief pagecache
     struct address_space *i_mapping;
-    uint32_t    clus_end; /* 数据结束簇号(下一个簇为FAT_CLUS_END) */
-    uint64_t    clus_cnt; /* 总数据簇号 */
-    uint32_t    size_in_mem; /* 内存中保留的当前文件的大小，在文件写回时，如果和磁盘上的不一致，则更新磁盘 */
-
-    int dirty; /* 脏位 */
-
-    /* 链表，串进超级块的dirty链表或者io链表中 */
+    /// @brief data cluster end (NOT means FAT_CLUS_END) 数据结束簇号(下一个簇为FAT_CLUS_END)
+    uint32_t    clus_end;
+    /// @brief cluster count
+    uint64_t    clus_cnt;
+    /// @brief file real size (need sync) 内存中保留的当前文件的大小，在文件写回时，如果和磁盘上的不一致，则更新磁盘
+    uint32_t    size_in_mem;
+    /// @brief is dirty?
+    int dirty;
+    /// @brief used by fat dirty list
     list_head_t e_list;
 };
 
@@ -88,11 +85,7 @@ int read_dents(entry_t *entry, off_t *offset, char *buf, int n);
 void estat(entry_t *entry, struct kstat *stat);
 void sych_entry_in_disk(entry_t *entry);
 
-#define ROOTINO  1   // root i-number
-
-
 page_t *find_get_page(address_space_t *mapping, unsigned long offset);
-// int filemap_nopage(uint64 address);
 void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset);
 void free_mapping(entry_t *entry);
 int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n);

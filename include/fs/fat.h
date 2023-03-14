@@ -27,52 +27,94 @@
 // 获取目录项中的簇号
 #define FAT_FETCH_CLUS(item) (((item)->starth << 16) | (item)->startl)
 
-/* 引导扇区 JUMP + BPB + EXT-BPB */
+
+/// @brief 引导扇区 JUMP + BPB + EXT-BPB
 struct fat_boot_sector {
-	uint8_t	ignored[3];	    /* Boot strap short or near jump 引导程序短跳或近跳 */
-	uint8_t	system_id[8];	/* Name - can be used to special case partition manager volumes 名称——可以用于特殊情况下分区管理器的卷*/
-	uint16_t sector_size;	/* bytes per logical sector 每个逻辑扇区字节数 */
-	uint8_t	sec_per_clus;	/* sectors/cluster 扇区/簇 */
-	uint16_t	reserved;	/* reserved sectors 保留扇区  */
-	uint8_t	fats;		    /* number of FATs 文件分配表的数量 */
-	uint8_t	dir_entries[2];	/* root directory entries  根目录条目 fat32必须为0*/
-	uint8_t	sectors[2];	    /* number of sectors 小扇区数 fat32必须为0*/
-	uint8_t	media;		    /* media code 媒体码 */
-	uint16_t	fat_length;	/* sectors/FAT 扇区/分配表 扇区数 fat32必须为0*/
-	uint16_t	secs_track;	/* sectors per track 每磁轨扇区数 */
-	uint16_t	heads;		/* number of heads 磁头数量 */
-	uint32_t	hidden;		/* hidden sectors (unused) 隐藏扇区数 */
-	uint32_t	total_sect;	/* number of sectors (if sectors == 0) 总扇区数量  */
+	/// @brief Boot strap short or near jump 引导程序短跳或近跳
+	uint8_t	ignored[3];
+	/// @brief Name - can be used to special case partition manager volumes 名称——可以用于特殊情况下分区管理器的卷
+	uint8_t	system_id[8];
+	/// @brief bytes per logical sector 每个逻辑扇区字节数
+	uint16_t sector_size;
+	/// @brief sectors/cluster 扇区/簇
+	uint8_t	sec_per_clus;
+	/// @brief reserved sectors 保留扇区
+	uint16_t	reserved;
+	/// @brief number of FATs 文件分配表的数量
+	uint8_t	fats;
+	/// @brief root directory entries  根目录条目 fat32必须为0
+	uint8_t	dir_entries[2];
+	/// @brief number of sectors 小扇区数 fat32必须为0
+	uint8_t	sectors[2];
+	/// @brief media code 媒体码
+	uint8_t	media;
+	/// @brief sectors/FAT 扇区/分配表 扇区数 fat32必须为0
+	uint16_t	fat_length;
+	/// @brief sectors per track 每磁轨扇区数
+	uint16_t	secs_track;
+	/// @brief number of heads 磁头数量
+	uint16_t	heads;
+	/// @brief hidden sectors (unused) 隐藏扇区数
+	uint32_t	hidden;
+	/// @brief number of sectors (if sectors == 0) 总扇区数量
+	uint32_t	total_sect;
 
 	union {
 		struct {
 			/*  Extended BPB Fields for FAT16 为FAT16扩展了BPB字段 */
-			uint8_t	drive_number;	        /* Physical drive number 物理驱动编号*/
-			uint8_t	state;		            /* undocumented, but used for mount state.  没有记录，但用于(嵌入式)*/
-			uint8_t	signature;              /* extended boot signature 延长启动签名*/
-			uint8_t	vol_id[4];	            /* volume ID 卷ID*/
-			uint8_t	vol_label[MSDOS_NAME];	/* volume label 卷表*/
-			uint8_t	fs_type[8];		        /* file system type 文件系统类型*/
+            
+			/// @brief Physical drive number 物理驱动编号
+			uint8_t	drive_number;
+			/// @brief undocumented, but used for mount state.  没有记录，但用于(嵌入式)
+			uint8_t	state;
+			/// @brief extended boot signature 延长启动签名
+			uint8_t	signature;
+			/// @brief volume ID 卷ID
+			uint8_t	vol_id[4];
+			/// @brief volume label 卷表
+			uint8_t	vol_label[MSDOS_NAME];
+			/// @brief file system type 文件系统类型
+			uint8_t	fs_type[8];
+
 			/* other fields are not added here */
 		} fat16;
 
 		struct {
 			/* only used by FAT32 仅仅用于FAT32 */
-			uint32_t	length;		        /* sectors/FAT 扇区/簇 长度 */
-			uint16_t	flags;		        /* bit 8: fat mirroring, 簇镜像
-						   		            low 4: active fat    活跃簇 */ 
-			uint8_t	version[2];	            /* major, minor filesystem version version[0]:主 version[1]:次文件系统版本 */
-			uint32_t	root_cluster;	    /* first cluster in root directory 在根目录第一个簇 */
-			uint16_t	info_sector;	    /* filesystem info sector 文件系统信息扇区 */
-			uint16_t	backup_boot;	    /* backup boot sector 备份引导扇区 */
-			uint16_t	reserved2[6];	    /* Unused */
+
+			/// @brief sectors/FAT 扇区/簇 长度
+			uint32_t	length;
+			/**
+			 * @brief bit 8: fat mirroring, 簇镜像
+			 *	      low 4: active fat    活跃簇
+			 */
+			uint16_t	flags;
+			/// @brief major, minor filesystem version version[0]:主 version[1]:次文件系统版本 
+			uint8_t	version[2];
+			/// @brief first cluster in root directory 在根目录第一个簇
+			uint32_t	root_cluster;
+			/// @brief filesystem info sector 文件系统信息扇区
+			uint16_t	info_sector;
+			/// @brief backup boot sector 备份引导扇区
+			uint16_t	backup_boot;
+			/// @brief Unused
+			uint16_t	reserved2[6];
+
 			/* Extended BPB Fields for FAT32 为FAT32扩展了BPB字段*/
-			uint8_t	drive_number;           /* Physical drive number */
-			uint8_t    state;       	    /* undocumented, but used for mount state. */
-			uint8_t	signature;              /* extended boot signature */
-			uint8_t	vol_id[4];	            /* volume ID */
-			uint8_t	vol_label[MSDOS_NAME];	/* volume label */
-			uint8_t	fs_type[8];		        /* file system type */
+
+			/// @brief Physical drive number
+			uint8_t	drive_number;
+			/// @brief undocumented, but used for mount state.
+			uint8_t    state;
+			/// @brief extended boot signature
+			uint8_t	signature;
+			/// @brief volume ID
+			uint8_t	vol_id[4];
+			/// @brief volume label
+			uint8_t	vol_label[MSDOS_NAME];
+			/// @brief file system type
+			uint8_t	fs_type[8];
+
 			/* other fields are not added here */
 		} fat32;
 	};
@@ -87,73 +129,103 @@ struct fat_fsinfo {
 
 
 typedef struct _entry_date_t {
-    uint16_t day : 5;                  // 日
-    uint16_t month : 4;                // 月
-    uint16_t year_from_1980 : 7;       // 年
+    /// @brief day
+    uint16_t day : 5;
+    /// @brief month
+    uint16_t month : 4;
+    /// @brief year
+    uint16_t year_from_1980 : 7;
 } entry_date_t;
 
 
 typedef struct _entry_time_t {
-    uint16_t second_2 : 5;             // 2秒
-    uint16_t minute : 6;               // 分
-    uint16_t hour : 5;                 // 时
+    /// @brief `2` seconds
+    uint16_t second_2 : 5;
+    /// @brief minutes
+    uint16_t minute : 6;
+    /// @brief hours
+    uint16_t hour : 5;
 } entry_time_t;
 
-/* 短文件名目录项 */ 
+/// @brief diritem of short filename 
 struct dir_item {
-	uint8_t	name[MSDOS_NAME];   /* name and extension 名称和扩展 */
-	uint8_t	attr;		        /* attribute bits 属性位 */
-	uint8_t    lcase;		    /* Case for base and extension 基础和扩展的案例 */
-	uint8_t	ctime_cs;	        /* Creation time, centiseconds (0-199) 创建时间 毫秒 */
-	entry_time_t	ctime;		/* Creation time 创建时间 */
-	entry_date_t	cdate;		/* Creation date 创建日期 */
-	entry_date_t	adate;		/* Last access date 最后访问日期 */
-	uint16_t	starth;	        /* High 16 bits of cluster in FAT32 FAT32簇高16位 */
-	entry_time_t	mtime;		/* 修改时间 */
-	entry_date_t	mdate;		/* 修改日期 */
-	uint16_t	startl;		    /* High 16 bits of cluster in FAT32 FAT32簇低16位 */
-	uint32_t	size;		    /* file size (in bytes) 文件大小 */
+	/// @brief name and extension 名称和扩展
+	uint8_t	name[MSDOS_NAME];
+	/// @brief attribute bits 属性位
+	uint8_t	attr;
+	/// @brief Case for base and extension 基础和扩展的案例
+	uint8_t    lcase;
+	/// @brief Creation time, centiseconds (0-199) 创建时间 毫秒
+	uint8_t	ctime_cs;
+	/// @brief Creation time 创建时间
+	entry_time_t	ctime;
+	/// @brief Creation date 创建日期
+	entry_date_t	cdate;
+	/// @brief Last access date 最后访问日期
+	entry_date_t	adate;
+	/// @brief High 16 bits of cluster in FAT32 FAT32簇高16位
+	uint16_t	starth;
+	/// @brief Modify time 修改时间
+	entry_time_t	mtime;
+	/// @brief Modify date 修改日期
+	entry_date_t	mdate;
+	/// @brief High 16 bits of cluster in FAT32 FAT32簇低16位
+	uint16_t	startl;
+	/// @brief file size (in bytes) 文件大小
+	uint32_t	size;
 } __attribute__ ((packed));
 
 typedef struct dir_item dir_item_t;
 
-/* 长文件名插槽 */
+/// @brief long filename slot
 struct dir_slot {
-	uint8_t    id;		        /* sequence number for slot 槽序列号 */
-	uint8_t    name0_4[10];	    /* first 5 characters in name 名称的前5个字符 */
-	uint8_t    attr;		    /* attribute byte 属性类型 */
-	uint8_t    reserved;	    /* always 0 */
-	uint8_t    alias_checksum;	/* checksum for 8.3 alias 8.3别名校验和 */
-	uint8_t    name5_10[12];	/* 6 more characters in name 姓名中多6个字符 */
-	uint16_t   start;		    /* starting cluster number, 0 in long slots 起始簇编号，长槽为0*/
-	uint8_t    name11_12[4];	/* last 2 characters in name 名称的最后2个字符 */
+	/// @brief sequence number for slot 槽序列号
+	uint8_t    id;
+	/// @brief first 5 characters in name 名称的前5个字符
+	uint8_t    name0_4[10];
+	/// @brief attribute byte 属性类型
+	uint8_t    attr;
+	/// @brief always 0
+	uint8_t    reserved;
+	/// @brief checksum for 8.3 alias 8.3别名校验和
+	uint8_t    alias_checksum;
+	/// @brief 6 more characters in name 姓名中多6个字符
+	uint8_t    name5_10[12];
+	/// @brief starting cluster number, 0 in long slots 起始簇编号，长槽为0
+	uint16_t   start;
+	/// @brief last 2 characters in name 名称的最后2个字符
+	uint8_t    name11_12[4];
 } __attribute__ ((packed));
 
 typedef struct dir_slot dir_slot_t;
 
-struct fat_entry;
 typedef struct _fat32_t {
-	uint dev;	                /* 设备号 */
-	struct fat_entry *root;		/* 根目录 */
-	spinlock_t lock;            /* 保护字段 */
-
-	uint32_t fat_start_sector; 	/* FAT起始扇区号 */
-	uint32_t fat_tbl_sectors; 	/* FAT表扇区数 */
-	uint32_t fat_tbl_num;		/* FAT表数目 */
-
-	uint32_t sec_per_cluster;	/* 每簇扇区数 */
-	uint32_t bytes_per_sec;		/* 扇区字节数 */
-	uint32_t bytes_per_cluster;	/* 每簇字节数 */
-
-	uint32_t root_cluster;		/* 根目录扇区号 */
-
-	spinlock_t cache_lock;		/* 保护缓存 */
-
+	/// @brief dev no
+	uint dev;
+	/// @brief root entry
+	struct fat_entry *root;
+	/// @brief protect own fields
+	spinlock_t lock;
+	/// @brief fat begin sector
+	uint32_t fat_start_sector;
+	/// @brief the num of sectors of fat table
+	uint32_t fat_tbl_sectors;
+	/// @brief the num of fat tables
+	uint32_t fat_tbl_num;
+	/// @brief the num of sectors per cluster
+	uint32_t sec_per_cluster;
+	/// @brief the num of bytes per sector
+	uint32_t bytes_per_sec;
+	/// @brief the num of bytes per cluster
+	uint32_t bytes_per_cluster;
+	/// @brief root sector no
+	uint32_t root_cluster;
+	/// @brief lock to protect entry cache
+	spinlock_t cache_lock;
+	/// @brief fat32 fsinfo
 	struct fat_fsinfo fsinfo;
-
-	/* added for entry write back to disk */
-	list_head_t fat_dirty;   	/* 所有dirty的entry的链表 */
-	// list_head_t fat_io;		/* 所有进行io的entry的链表 */
+	/// @brief list of dirty entry
+	list_head_t fat_dirty;
 } fat32_t;
 
 typedef enum _FAT_RESULT_t{
@@ -164,13 +236,27 @@ typedef enum _FAT_RESULT_t{
 
 typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset, void *state);
 
-/* 读取fat超级块并做解析 */
-FR_t fat_mount(uint dev, fat32_t **ppfat);
-/* 获取下一个簇号 */
-uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
+
 /**
- * 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项
- * todo: 不是本函数的TODO！主要是上层函数调用时，可能还要增加父entry的文件大小？
+ * @brief read, parse fat superblock, and mount it
+ * 
+ * @param dev 
+ * @param ppfat 
+ * @return FR_t 
+ */
+FR_t fat_mount(uint dev, fat32_t **ppfat);
+
+/**
+ * @brief index next cluster
+ * 
+ * @param fat 
+ * @param cclus current cluster
+ * @return uint32_t 
+ */
+uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
+
+/**
+ * @brief 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项
  * @dir_clus: 目录簇号
  * @cname: 目录项名称
  * @attr: 目录项属性
@@ -178,16 +264,7 @@ uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
  */
 FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_t attr, dir_item_t *item, uint32_t *offset);
 
-FR_t __fat_alloc_cluster_reversed_order(fat32_t *fat, uint32_t *news, int n);
-FR_t __fat_alloc_cluster_order(fat32_t *fat, uint32_t *news, int n);
-/**
- * 实现了两类簇申请策略：反向申请与正向申请
- * 正向分配更加利于多块连读与连写
- */ 
-static inline FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
-	return __fat_alloc_cluster_order(fat, news, n);
-	// return __fat_alloc_cluster_reversed_order(fat, news, n);
-}
+
 /**
  * @brief 文件扩大了，在写回磁盘之前，预先分配新的簇。
  * 

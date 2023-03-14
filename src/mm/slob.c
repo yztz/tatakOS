@@ -27,13 +27,14 @@ typedef struct slob_page {
 	struct slob_page *next, *pre;
 } sp_t;
 
+extern void *__alloc_pages(int pgnum);
 
 static atomic_t page_cnt = INIT_ATOMIC();
 
 static inline void *__alloc_one_page() {
-    extern void *__alloc_page();
+
 	debug("alloc new page");
-	void *new = __alloc_page();
+	void *new = __alloc_pages(1);
     if (new) {
         atomic_inc(&page_cnt);
     }

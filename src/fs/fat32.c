@@ -241,6 +241,18 @@ FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
     return FR_OK;
 }
 
+FR_t __fat_alloc_cluster_reversed_order(fat32_t *fat, uint32_t *news, int n);
+FR_t __fat_alloc_cluster_order(fat32_t *fat, uint32_t *news, int n);
+/**
+ * 实现了两类簇申请策略：反向申请与正向申请
+ * 正向分配更加利于多块连读与连写
+ */ 
+static inline FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
+	return __fat_alloc_cluster_order(fat, news, n);
+	// return __fat_alloc_cluster_reversed_order(fat, news, n);
+}
+
+
 int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
     if(cclus == 0 || n == 0) // todo:空文件怎么办？
         return 0;

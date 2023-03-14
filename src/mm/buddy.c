@@ -277,17 +277,11 @@ void __alloc_page_init() {
     buddy_init();
 }
 
-void *__alloc_page() {
-    return buddy_alloc(PGSIZE);
-}
 
 void *__alloc_pages(int pgnum) {
     return buddy_alloc(pgnum * PGSIZE);
 }
 
-void __free_page(page_t *page) {
-    buddy_free(page);
-}
 
 void __free_pages(page_t *first_page) {
     buddy_free(first_page);

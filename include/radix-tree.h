@@ -4,11 +4,7 @@
 #include "types.h"
 #include "atomic/sleeplock.h"
 #include "atomic/atomic.h"
-#include "hlist.h"
 #include "fs/fat.h"
-#include "fs/stat.h"
-#include "param.h"
-// #include "utils.h" //循环引用了
 
 /*** radix-tree API starts here ***/
 
