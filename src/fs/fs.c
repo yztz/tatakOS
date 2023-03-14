@@ -1,8 +1,8 @@
+#include "common.h"
 #include "fs/fs.h"
+#include "fs/stat.h"
 #include "fs/mpage.h"
 #include "writeback.h"
-#include "printf.h"
-#include "common.h"
 #include "kernel/proc.h"
 #include "mm/alloc.h"
 
@@ -147,7 +147,6 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
 
 }
 
-extern uint64 ticks;
 // caller holds lock
 void estat(entry_t *entry, struct kstat *stat) {
 
@@ -196,7 +195,6 @@ static void unlink(entry_t *entry) {
 
 extern void background_writeout(uint64_t min_pages);
 extern int pdflush_operation(void (*fn)(uint64_t), unsigned long arg0);
-extern void buddy_print_free();
 // 递归地解引用
 // under lock
 static void __eput(entry_t *entry) {
@@ -210,7 +208,7 @@ static void __eput(entry_t *entry) {
     if(entry == entry->fat->root) 
       panic("eput: root?");
 
-    if(entry->nlink <= 0) {
+    if(entry->nlink <= 0) { // deleted
       acquiresleep(&entry->lock);
       release(&entry->fat->cache_lock);
 
@@ -218,9 +216,11 @@ static void __eput(entry_t *entry) {
       
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
-      /* 忘加了，造成内存泄漏 */
-      if(entry->raw.attr == FAT_ATTR_FILE)
+
+      if(entry->raw.attr == FAT_ATTR_FILE) {
         free_mapping(entry);
+      }
+        
       goto no_writeback;
     }
 

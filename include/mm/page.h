@@ -72,34 +72,41 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 typedef uint8_t pgref_t;
 
 struct page_t {
+    /// @brief reference count
     atomic_t refcnt;        
-    
+    /// @brief allocator-specific fields
     union {
-        // Buddy
+        /// @brief buddy info
         struct {
-            uint8_t order : 4; // for BUDDY use lowest 4 bits only, max 14 (15 as invaild)
-            uint8_t alloc : 2; // for BUDDY, acutally we use only one bit
+            /// @brief max 14 (15 is used as invaild)
+            uint8_t order : 4;
+            /// @brief is page allocated?
+            uint8_t alloc : 2;
+            /// @brief reserved
             uint8_t resv  : 2;
         };
-        // Freelist
+        /// @brief freelist info
         struct {
+            /// @brief consecutive page nums
             uint8_t pgnum;
         };
     };
-    
-
-    uint64_t flags;      /* bit操作时将指针转化为int型，设置为uint8_t类型会不会有问题？ */
-    list_head_t lru; /* 串联页，active/inactive list */
-    struct address_space *mapping;
+    /// @brief page flags
+    uint64_t flags;
+    /// @brief active/inactive list
+    list_head_t lru;
+    /// @brief pagecache belongs to
+    address_space_t *mapping;
+    /// @brief pagecache index
     uint32_t index;
 
-#ifdef RMAP
-    union {
-		struct pte_chain *chain;/* Reverse pte mapping pointer.
-					 * protected by PG_chainlock */
-		pte_addr_t direct;
-	} pte;
-#endif
+// #ifdef RMAP
+//     union {
+// 		struct pte_chain *chain;/* Reverse pte mapping pointer.
+// 					 * protected by PG_chainlock */
+// 		pte_addr_t direct;
+// 	} pte;
+// #endif
 };
 
 /* 页的数量 */

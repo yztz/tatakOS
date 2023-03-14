@@ -38,6 +38,7 @@ typedef uint64 sector_t;
    The structures that only need to be declared will be defined here,
    to reduce duplicate declaration efforts and discover coupling.
 */
+
 typedef struct address_space address_space_t;
 typedef struct device device_t;
 typedef struct fat_entry entry_t;

@@ -116,17 +116,11 @@ void __alloc_page_init() {
     freelist_init();
 }
 
-void *__alloc_page() {
-    return freelist_alloc(1);
-}
 
 void *__alloc_pages(int pgnum) {
     return freelist_alloc(pgnum);
 }
 
-void __free_page(page_t *page) {
-    freelist_free(page);
-}
 
 void __free_pages(page_t *first_page) {
     freelist_free(first_page);

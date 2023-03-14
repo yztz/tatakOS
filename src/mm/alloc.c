@@ -8,9 +8,7 @@
  * 
  *      void *__alloc_frags(size_t size)
  *      void *__free_frags(void *addr)
- *      void *__alloc_page()
  *      void *__alloc_pages(int pgnum)
- *      void __free_page(page_t *page)
  *      void __free_pages(page_t *first_page)
  *      int __page_count(page_t *first_page)
  *      int __page_gettotal()
@@ -20,13 +18,6 @@
  * 
  * Currently, the underlying allocator implementation is 
  *  the Buddy allocator, the Slob allocator and the Freelist allocator.
- * Of particular concern is the `kfree`:
- * In fact, for page allocation, it can be divided into single-page allocation 
- *  and (consecutive) multi-page allocation. 
- * Due to some implementation details of Buddy allocator, 
- *  we currently handle single-page and multi-page references in the same way, 
- *  which is also one of the main problems of allocator. 
- * So, there is no good way to distinguish between the two now.
  * 
  * The dependences of the modules(alloc buddy slob) are just like below:
  * 
@@ -35,8 +26,8 @@
  *          /    \
  *      buddy <- slob
  * 
- * Another point to note is how `kfree` frees page units. 
- * As mentioned above, we currently handle references to pages in the same way 
+ * Another point to note is how `kfree` frees page units.
+ * As mentioned above, we currently handle references to pages in the same way
  *  (whether single page or multiple page).
  * So we simply call `put_page` in the free page branch in `kfree`. 
  * Then decide if call `free_page` for true free.
@@ -65,10 +56,7 @@ extern void *__alloc_frags(size_t size);
 extern void *__free_frags(void *addr);
 extern void __alloc_page_init();
 extern void __alloc_frag_init();
-extern void *__alloc_page();
 extern void *__alloc_pages(int pgnum);
-extern void __free_page(page_t *page);
-extern void __free_pages(page_t *first_page);
 extern int __page_count(page_t *first_page);
 extern int __page_gettotal();
 extern int __page_getfree();
@@ -82,13 +70,6 @@ void mem_init() {
     debug("init success");
 }
 
-void free_page(page_t *page) {
-    __free_page(page);
-}
-
-void free_pages(page_t *first_page) {
-    __free_pages(first_page);
-}
 
 void *kmalloc(size_t size) {
     void *ret = NULL;
@@ -116,8 +97,7 @@ void *kzalloc(size_t size) {
 
 #define is_frag(addr) ((uint64)addr & ~PGMASK)
 
-void 
-kfree(void *addr) {
+void  kfree(void *addr) {
     //todo: do more checks...
     if(addr == NULL) return;
 
