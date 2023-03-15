@@ -1,4 +1,3 @@
-#include "printf.h"
 #include "utils.h"
 #include "mm/page.h"
 #include "fs/fat.h"
@@ -14,7 +13,7 @@ void backtrace() {
     fp = r_fp();
     top = PGROUNDUP(fp);
     while (fp < top) {
-        printf("%p\n", *(uint64*)(fp - 8));
+        kprintf("%p\n", *(uint64*)(fp - 8));
         fp = *(uint64*)(fp - 16);
     }
 }
@@ -23,34 +22,34 @@ void backtrace_fp(uint64 fp) {
     uint64 top;
     top = PGROUNDUP(fp);
     while (fp < top) {
-        printf("%p\n", *(uint64*)(fp - 8));
+        kprintf("%p\n", *(uint64*)(fp - 8));
         fp = *(uint64*)(fp - 16);
     }
 }
 
 void print_block(uint8_t* b) {
     for (int i = 0; i < BSIZE; i++) {
-        if (i != 0 && i % 16 == 0) printf("\n");
-        printf("%02x ", b[i]);
+        if (i != 0 && i % 16 == 0) kprintf("\n");
+        kprintf("%02x ", b[i]);
     }
 }
 
 
 
 void print_sbiret(sbiret_t ret) {
-    printf("sbiret{err: %d, val: %d}\n", ret.error, ret.value);
+    kprintf("sbiret{err: %d, val: %d}\n", ret.error, ret.value);
 }
 
 
 void print_dir_item(struct dir_item* item) {
     if (!item) {
-        printf("bad item\n");
+        kprintf("bad item\n");
         return;
     }
     char name[FAT_SFN_LENGTH + 1];
     name[FAT_SFN_LENGTH] = '\0';
     strncpy(name, (char*)item->name, FAT_SFN_LENGTH);
-    printf("[file: %s] attr: %b filesize: %d cluster: %d\n", name, item->attr, item->size, FAT_FETCH_CLUS(item));
+    kprintf("[file: %s] attr: %b filesize: %d cluster: %d\n", name, item->attr, item->size, FAT_FETCH_CLUS(item));
 }
 
 // ref: lua fast get order 打表+快速移位x8
@@ -75,9 +74,9 @@ int luaO_log2(unsigned int x) {
 
 
 void error(char* info, char* s, const char* s1, int d) {
-    printf(rd("ERROR INFO:\n"));
-    printf(rd("%s\n"), info);
-    printf(rd("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
+    kprintf(rd("ERROR INFO:\n"));
+    kprintf(rd("%s\n"), info);
+    kprintf(rd("file: %s\t func: %s\t line: %d\r\n"), s, s1, d);
     enable_sum();
     for (;;);
 }
@@ -91,43 +90,43 @@ void print_pa(pagetable_t pagetable, uint64_t start, uint64_t end) {
         pte_t* pte;
         pte = walk(pagetable, i, 1);
         uint64_t pa = PTE2PA(*pte);
-        printf("va: %p\tpa: %p\n", i, pa);
+        kprintf("va: %p\tpa: %p\n", i, pa);
     }
 
 }
 
-void _printf_radix_tree(struct radix_tree_node* node, uint8 height, uint8 c_h) {
-    printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
+void _kprintf_radix_tree(struct radix_tree_node* node, uint8 height, uint8 c_h) {
+    kprintf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
     for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++) {
         if (node->slots[i] != NULL) {
             for (int j = 0; j < c_h; j++) {
-                printf(".. ");
+                kprintf(".. ");
             }
             /* the leaf node */
             if (c_h == height) {
-                printf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
+                kprintf("%-3d  "grn("pa: %p\n"), i, node->slots[i]);
             } else {
-                printf("%-3d  ", i);
-                // printf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
-                _printf_radix_tree((struct radix_tree_node*)node->slots[i], height, c_h + 1);
+                kprintf("%-3d  ", i);
+                // kprintf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
+                _kprintf_radix_tree((struct radix_tree_node*)node->slots[i], height, c_h + 1);
             }
         }
     }
 }
 
-void printf_radix_tree(struct radix_tree_root* root) {
-    printf(rd("root:  "));
-    // printf(bl("count: %-3d, dirty tags: %5p"), root->rnode->count, root->rnode->tags[0][0]);
-    printf("\n");
-    _printf_radix_tree(root->rnode, root->height, 1);
-    printf("\n");
+void kprintf_radix_tree(struct radix_tree_root* root) {
+    kprintf(rd("root:  "));
+    // kprintf(bl("count: %-3d, dirty tags: %5p"), root->rnode->count, root->rnode->tags[0][0]);
+    kprintf("\n");
+    _kprintf_radix_tree(root->rnode, root->height, 1);
+    kprintf("\n");
 }
 
 
 void print_bio_vec(struct bio* cur_bio) {
     struct bio_vec* cur_bio_vec = cur_bio->bi_io_vec;
     while (cur_bio_vec != NULL) {
-        printf(ylw("bio_vec start: %d, bio_vec counts: %d\n"),
+        kprintf(ylw("bio_vec start: %d, bio_vec counts: %d\n"),
             cur_bio_vec->bv_start_num, cur_bio_vec->bv_count);
 
         cur_bio_vec = cur_bio_vec->bv_next;
@@ -138,12 +137,12 @@ void print_bio_vec(struct bio* cur_bio) {
 void print_page_contents(char* pa) {
     for (int i = 0; i < PGSIZE; i++) {
         if (i % BSIZE == 0) {
-            printf(rd("\n%d\n"), i);
+            kprintf(rd("\n%d\n"), i);
         }
-        printf(grn("%c"), *pa);
+        kprintf(grn("%c"), *pa);
         pa++;
     }
-    printf("\n");
+    kprintf("\n");
 }
 
 /**
@@ -153,7 +152,7 @@ void print_page_contents(char* pa) {
 void print_argv(char** argv) {
     int i = 0;
     while (argv[i] != NULL) {
-        printf(ylw("argv[%d]: %s\n"), i, argv[i]);
+        kprintf(ylw("argv[%d]: %s\n"), i, argv[i]);
         i++;
     }
 }
@@ -162,7 +161,7 @@ void print_argv(char** argv) {
  * 打印页信息
  */
 void print_page_info(page_t* page) {
-    printf("refcnt: %d\tpgnum: %d\taddr: 0x%x\tflags: 0x%x\tpg_pointer: 0x%x\n",
+    kprintf("refcnt: %d\tpgnum: %d\taddr: 0x%x\tflags: 0x%x\tpg_pointer: 0x%x\n",
         page->refcnt, page - pages, NR_TO_ADDR(page - pages), page->flags, page);
 }
 
@@ -174,11 +173,11 @@ void print_not_freed_pages() {
     // int pgnum;
     // uint64_t p;
 
-    printf(rd("pages not be freed:\n"));
+    kprintf(rd("pages not be freed:\n"));
     // for(p = (uint64_t)end; p < MEM_END; p += PGSIZE){
       // pgnum = PG_TO_NR(p);
       // if(pages[pgnum].refcnt > 0)
-        // printf("pgnum: %d\taddr: %p\n", pgnum, p);
+        // kprintf("pgnum: %d\taddr: %p\n", pgnum, p);
     // }
     for (int i = 0; i < PAGE_NUMS; i++) {
         if (page_refcnt(&pages[i]) > 0)
@@ -207,7 +206,7 @@ void print_zone_list(list_head_t* head) {
 void print_rw_page_list(struct rw_page_list* pg_list) {
     rw_page_t* pg = pg_list->head;
     while (pg) {
-        printf(bl("\npa:%p\tpg_id:%d\n"), pg->pa, pg->pg_id);
+        kprintf(bl("\npa:%p\tpg_id:%d\n"), pg->pa, pg->pg_id);
         // print_page_contents((char*)pg->pa);
         pg = pg->next;
     }
@@ -215,8 +214,8 @@ void print_rw_page_list(struct rw_page_list* pg_list) {
 
 void print_chars(char* c, int n) {
     for (int i = 0; i < n; i++) {
-        printf(grn("%c"), *c);
+        kprintf(grn("%c"), *c);
         c++;
-        printf("\n");
+        kprintf("\n");
     }
 }

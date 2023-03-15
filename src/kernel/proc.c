@@ -1,11 +1,10 @@
 #include "common.h"
+#include "driver/timer.h"
 #include "kernel/sched.h"
 #include "kernel/taskqueue.h"
+#include "kernel/futex.h"
 #include "mm/alloc.h"
 #include "mm/vm.h"
-#include "driver/timer.h"
-
-
 #include "fs/fcntl.h"
 #include "fs/stat.h"
 #include "fs/fs.h"
@@ -15,9 +14,9 @@
 #define __MODULE_NAME__ PROC
 #include "debug.h"
 
-struct proc proc[NPROC];
+proc_t proc[NPROC];
 
-struct proc *initproc;
+proc_t *initproc;
 
 atomic_t proc_cnt = INIT_ATOMIC();
 
@@ -52,7 +51,7 @@ static inline void procstate_init() {
 }
 
 // initialize the proc table at boot time.
-void procinit() {
+void process_init() {
     initlock(&wait_lock, "wait_lock");
     procstate_init();
 }
@@ -100,15 +99,14 @@ proc_t *proc_new(kthread_callback_t callback) {
     acquire(&p->lock);
     pstate_list_unlock(UNUSED);
 
-    // printf("kill is %d and kill addr is %#lx\n", p->killed, &p->killed);
     p->pid = get_next_pid();
-    // p->tid = alloctid();
     p->killed = 0;
     p->sig_pending = 0;
     p->sig_mask = 0;
     p->signaling = 0;
     p->set_tid_addr = 0;
     p->clear_tid_addr = 0;
+    p->parent = NULL;
 
     INIT_LIST_HEAD(&p->thrd_head);
 
@@ -191,8 +189,7 @@ static void init_std(proc_t *p) {
 }
 
 
-static void __userinit(proc_t *p) {
-    extern int exec(char *path, char *argv[], char *envp[]);
+static void __user0_init(proc_t *p) {
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
@@ -209,26 +206,26 @@ static void __userinit(proc_t *p) {
     // load init0
     // this procedure cannot move to `userinit` 
     // because it will trigger demand paging
-    char *argv[] = {"init0", NULL};
+    extern int exec(char *path, char *argv[], char *envp[]);
+    char *argv[] = {USER0, NULL};
     char *envp[] = {NULL};
-    if (exec("init0", argv, envp) != 0) {
-        panic("init0 load");
+    if (exec(USER0, argv, envp) != 0) {
+        panic(USER0 " load");
     }
 
     usertrapret();
 }
 
 // Set up first user process.
-void userinit(void) {
-    struct proc *p;
+void user0_init() {
+    proc_t *p;
     mm_t *mm;
     fdtable_t *fdtable;
     signal_t *sig;
     tg_t *tg;
     utf_t *tf;
 
-    p = proc_new(__userinit);
-    initproc = p;
+    initproc = p = proc_new(__user0_init);
 
     if (p == NULL) {
         panic("alloc");
@@ -248,11 +245,8 @@ void userinit(void) {
     proc_settg(p, tg);
     proc_settf(p, tf);
 
-    // prepare for the very first "return" from kernel to user.
-    proc_get_tf(p)->epc = PGSIZE;      // user program counter
-    proc_get_tf(p)->sp = USERSPACE_END;  // user stack pointer
-
-    safestrcpy(p->name, "initcode", sizeof(p->name));
+    // We need not set sp, pc for her
+    // because they will be set in the next stage `__user0_init:exec`
 
     init_std(p);
 
@@ -274,11 +268,11 @@ uint64 growproc(uint64_t newbreak) {
 }
 
 
-int kthread_create(char *name, kthread_callback_t callback) {
+proc_t *kthread_create(char *name, kthread_callback_t callback) {
     struct proc *np = proc_new(callback);
 
     if (np == NULL)
-        return -1;
+        return NULL;
 
     extern mm_t *public_map;
 
@@ -288,13 +282,13 @@ int kthread_create(char *name, kthread_callback_t callback) {
 
     release(&np->lock);
 
-    return 0;
+    return np;
 }
 
 // Pass p's abandoned children to init.
 // Caller must hold wait_lock.
 void reparent(struct proc *p) {
-    struct proc *pp;
+    proc_t *pp;
 
     for (pp = proc; pp < &proc[NPROC]; pp++) {
         if (pp->parent == p) {
@@ -304,10 +298,9 @@ void reparent(struct proc *p) {
     }
 }
 
-#include "kernel/futex.h"
 
 void exit(int status) {
-    proc_t *p = myproc();
+    proc_t *p = current;
     int thrdcnt = tg_quit(p->tg);
 
     if (p == initproc) {
@@ -326,7 +319,7 @@ void exit(int status) {
 
     acquire(&wait_lock);
 
-    // Give any children to init.
+    // Give any children to user0.
     reparent(p);
 
     if (thrdcnt == 0) {
@@ -389,20 +382,19 @@ int freechild() {
 
 
 int waitpid(int cid, uint64 addr, int options) {
-    struct proc *np;
-    int havekids, pid, haveckid;
-    struct proc *p = myproc();
+    proc_t *p = current;
 
     acquire(&wait_lock);
 
     for (;;) {
         // Scan through table looking for exited children.
-        havekids = 0; // 表示子进程存在
-        haveckid = 0; // 表示指定的cid存在
-        for (np = proc; np < &proc[NPROC]; np++) {
+        int havekids = 0; // 表示子进程存在
+        int haveckid = 0; // 表示指定的cid存在
+        for (proc_t *np = proc; np < &proc[NPROC]; np++) {
             if (np->parent == p) {
                 // Make sure the child isn't still in exit() or swtch().
                 acquire(&np->lock);
+                int pid = np->pid;
                 
                 // Not main thread
                 if (tg_pid(np->tg) != np->pid) {
@@ -412,7 +404,6 @@ int waitpid(int cid, uint64 addr, int options) {
 
                 havekids = 1;
 
-                pid = np->pid;
                 if (cid != -1 && cid != pid) {
                     release(&np->lock);
                     continue;
@@ -515,7 +506,7 @@ void procdump(void) {
     struct proc *p;
     char *state;
 
-    printf("\n");
+    kprintf("\n");
     for (p = proc; p < &proc[NPROC]; p++) {
         if (p->state == UNUSED)
             continue;
@@ -523,6 +514,6 @@ void procdump(void) {
             state = states[p->state];
         else
             state = "???";
-        printf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
+        kprintf("%d %s %s chan %#lx futex %#lx\n", p->pid, state, p->name, p->chan, p->futex_chan);
     }
 }

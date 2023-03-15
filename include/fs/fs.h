@@ -66,7 +66,6 @@ struct fat_entry {
 };
 
 
-void fs_init();
 entry_t *namee(entry_t *from, char *path);
 entry_t *nameeparent(entry_t *from, char *path, char *name);
 void etrunc(entry_t *entry, off_t size);

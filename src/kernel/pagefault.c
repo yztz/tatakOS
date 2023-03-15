@@ -139,7 +139,7 @@ int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
         return do_cow_page(rva, pte);
 
     /* 未知页错误 */
-    printf("pf: va is %#lx\n", rva);
+    kprintf("pf: va is %#lx\n", rva);
     pte_print(pte);
     ER();
     return -1;
@@ -214,7 +214,6 @@ int handle_pagefault(uint64_t scause) {
 
 kernel_fail:
     info(rd("[Kernel] %s")" PID %d: epc %#lx va %#lx ra %#lx", riscv_cause2str(scause), p->pid, epc, read_csr(stval), p->k_trapframe->ra);
-    info("pagefault handle fault");
     // replace instruction in sepc with a loop [0x0000006f]
     pte_t *pte = walk(p->mm->pagetable, epc, 0);
     if (!pte) panic("no pte found");

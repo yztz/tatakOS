@@ -132,5 +132,5 @@ uint64_t get_used_mem() {
 void print_mm_free() {
     int u = get_used_mem();
     int t = get_total_mem();
-    printf("page usage: %d%% ( %d used | %d total )\n", u * 100 / t, u, t);
+    kprintf("page usage: %d%% ( %d used | %d total )\n", u * 100 / t, u, t);
 }

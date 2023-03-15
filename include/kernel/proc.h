@@ -92,8 +92,6 @@ void            exit(int);
 
 uint64          growproc(uint64_t n);
 
-void            procinit(void);
-void            userinit(void);
 int             wakeup(void *);
 
 void            proc_setmm(proc_t *p, mm_t *mm);
@@ -102,10 +100,10 @@ void            proc_settg(proc_t *p, tg_t *tg);
 void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
 void            proc_settf(proc_t *p, utf_t *tf);
 
-proc_t *        proc_new(kthread_callback_t callback);
+proc_t *        proc_new(kthread_callback_t);
 void            proc_switchmm(proc_t *p, mm_t *newmm);
-utf_t *          proc_get_tf(proc_t *p);
-int             kthread_create(char *name, kthread_callback_t);
+utf_t *         proc_get_tf(proc_t *p);
+proc_t*         kthread_create(char *name, kthread_callback_t);
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
 void            wake_up_process(proc_t *p);

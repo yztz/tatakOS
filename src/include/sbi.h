@@ -4,8 +4,6 @@
 #include "types.h"
 #include "gcc_attr.h"
 
-extern void panic(char *s);
-
 #define BASE_EXT 0x10L
 #define TIMER_EXT 0x54494D45L
 #define HSM_EXT 0x48534DL

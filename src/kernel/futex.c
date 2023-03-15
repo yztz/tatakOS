@@ -28,7 +28,7 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     if(time) {
         int timeout = time->ts_sec * 1000 + time->ts_nsec / 1000000;
         if(wq_sleep_timeout(&futex_queue, &entry, timeout)) {
-            printf("Futex end beacause of TIMEOUT\n");
+            info("Futex end beacause of TIMEOUT\n");
             res = -ETIMEDOUT;
         }
     } else {

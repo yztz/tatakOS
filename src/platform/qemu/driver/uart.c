@@ -109,7 +109,7 @@ void uartputc(char c) {
 }
 
 // alternate version of uartputc() that doesn't
-// use interrupts, for use by kernel printf() and
+// use interrupts, for use by kernel kprintf() and
 // to echo characters. it spins waiting for the uart's
 // output register to be empty.
 void uartputc_sync(char c) {

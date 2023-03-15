@@ -18,14 +18,10 @@
             // "logging": {
             //     "engineLogging":"verbose"
             // },
-            // "miDebuggerPath": "/opt/kendryte-toolchain/bin/riscv64-unknown-elf-gdb",
+            // "miDebuggerPath": "/opt/riscv-gdb/bin/riscv-gdb",
             "miDebuggerPath": "gdb-multiarch",
             "miDebuggerServerAddress": "localhost:26000",
             "setupCommands": [
-                // {
-                //     "description": "寄存器显示修复",
-                //     "text": "set tdesc filename gdb-riscv64.xml"
-                // },
                 {
                     "description": "riscv",
                     "text": "set architecture riscv:rv64",
@@ -35,6 +31,10 @@
                     "description": "为 gdb 启用整齐打印",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "寄存器显示修复",
+                    "text": "set tdesc filename gdb-riscv64.xml"
                 },
                 // {
                 //     "description":  "将反汇编风格设置为 Intel",

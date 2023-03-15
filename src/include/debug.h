@@ -1,12 +1,11 @@
 #ifndef _H_DEBUG_
 #define _H_DEBUG_
 
-#include "printf.h"
 #include "str.h"
 #include "common.h"
 
 
-#define assert_s(conditon, fmt, ...) if(!(conditon)) {printf(fmt"\n", ##__VA_ARGS__);panicked=1;LOOP()}
+#define assert_s(conditon, fmt, ...) if(!(conditon)) {kprintf(fmt"\n", ##__VA_ARGS__);panicked=1;LOOP()}
 #define assert(condition) assert_s(condition, "assert fail: "#condition)
 
 #if defined DEBUG && !defined QUIET
@@ -15,7 +14,7 @@
 #define __MODULE_NAME__ OTHER
 #endif // __MODULE_NAME__
 
-#define debug(fmt, ...) printf("[DEBUG]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
+#define debug(fmt, ...) kprintf("[DEBUG]["STR(__MODULE_NAME__)": %s] "fmt"\n",__FUNCTION__ ,##__VA_ARGS__);
 #define debug_if(condition, fmt, ...) {if(condition) debug(fmt, ##__VA_ARGS__)}
 #define debug_statement(statement) statement
 
@@ -33,8 +32,8 @@ extern int first_user_pid;
 #define ylw(str) 	"\e[33;1m"str"\e[0m"
 #define rd(str) 	"\e[31;1m"str"\e[0m"
 
-#define info(fmt, ...) printf("[INFO] "fmt"\n", ##__VA_ARGS__);
-#define warn(fmt, ...) printf("[WARN] "ylw(fmt)"\n", ##__VA_ARGS__);
+#define info(fmt, ...) kprintf("[INFO] "fmt"\n", ##__VA_ARGS__);
+#define warn(fmt, ...) kprintf("[WARN] "ylw(fmt)"\n", ##__VA_ARGS__);
 #define ERROR(str)    error(str, __FILE__, __func__, __LINE__)
 #define ER()    ERROR("")
 

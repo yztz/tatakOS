@@ -67,12 +67,12 @@ static int __pdflush(pdflush_work_t *my_work) {
     /* my_work仍在pdflush_list上，说明没有任务（被安排了任务会从pdflush_list上取下，见
     pdflush_operation）*/
     if (!list_empty(&my_work->list)) {
-			printf("pdflush: bogus wakeup!\n");
+			kprintf("pdflush: bogus wakeup!\n");
 			my_work->fn = NULL;
 			continue;
 		}
 		if (my_work->fn == NULL) {
-			printf("pdflush: NULL work function\n");
+			kprintf("pdflush: NULL work function\n");
 			continue;
 		}
 		spin_unlock(&pdflush_lock);
@@ -148,11 +148,10 @@ static void start_one_pdflush_thread(int no)
 	kthread_create(name, pdflush);
 }
 
-int pdflush_init(void)
+void pdflush_init(void)
 {
 	int i;
 
 	for (i = 0; i < PDFLUSH_THREADS_CNTS; i++)
 		start_one_pdflush_thread(i);
-	return 0;
 }

@@ -191,18 +191,6 @@ uint64_t sys_rt_sigreturn(void) {
     }
 
     debug("PID %d sig return", p->pid);
-
-    // struct start_args args;
-    // pte_t *pte = walk(p->mm->pagetable, 0xF00022B00, 0);
-    // if(copy_from_user(&args, 0xF00022B00, sizeof(struct start_args)) >= 0)
-    //     debug("func %#lx param %#lx", args.start_func, args.start_arg);
-    // // short code[8];
-    // uint64_t pa = PTE2PA(*pte);
-    // debug("now pa is %#lx", pa);
-    // copy_from_user(code, 0x35288, 16);
-    // for(int i = 0; i < 8; i++) {
-    //     printf("code %#x\n", code[i]);
-    // }
     
 
     ucontext_t *context = kmalloc(sizeof(ucontext_t));
@@ -222,9 +210,6 @@ uint64_t sys_rt_sigreturn(void) {
 
     tf_restore(tf);
 
-    // if(tf->epc == 0)
-    //     panic("0?");
-    
     if(context->uc_mcontext.__gregs[0]) {
         debug("switch? %#lx", context->uc_mcontext.__gregs[0]);
         tf->epc = context->uc_mcontext.__gregs[0];

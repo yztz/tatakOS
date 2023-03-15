@@ -2,7 +2,7 @@
 #include "mm/alloc.h"
 #include "fs/file.h"
 #include "mm/vm.h"
-
+#include "common.h"
 
 vma_t *vma_new(mm_t *mm,
     struct file *fp,
@@ -131,7 +131,7 @@ void vma_print(vma_t *vma) {
     char *filename = "";
 
     if (vma == NULL) {
-        printf("vma: NULL\n");
+        kprintf("vma: NULL\n");
     } else {
         char perm[5];
         perm[4] = '\0';
@@ -141,11 +141,11 @@ void vma_print(vma_t *vma) {
         perm[3] = vma->prot & PROT_USER ? 'u' : '-';
         if (vma->map_file) {
             filename = vma->map_file->ep->name;
-            printf("vma@%#lx: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
+            kprintf("vma@%#lx: %#lx--%#lx len: %#lx %s %s\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, filename);
         } else if (vma->io_addr){
-            printf("vma@%#lx: %#lx--%#lx len: %#lx %s io@%lx\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, vma->io_addr);
+            kprintf("vma@%#lx: %#lx--%#lx len: %#lx %s io@%lx\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm, vma->io_addr);
         } else {
-            printf("vma@%#lx: %#lx--%#lx len: %#lx %s anonymous\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm);
+            kprintf("vma@%#lx: %#lx--%#lx len: %#lx %s anonymous\n", vma, vma->addr, vma->addr + vma->len, vma->len, perm);
         }
     }
 }

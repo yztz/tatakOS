@@ -64,12 +64,6 @@ struct bio_vec {
 typedef struct bio_vec bio_vec_t;
 
 /**
- * @brief Init block cache.
- * 
- */
-void bcache_init();
-
-/**
  * @brief Submit a bio.
  * 
  * @param bio 

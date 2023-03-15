@@ -3,7 +3,6 @@
 #include "fpioa.h"
 #include "spi.h"
 #include "sbi.h"
-#include "printf.h"
 #include "uarths.h"
 #include "sysctl.h"
 #include "gpiohs.h"
@@ -22,9 +21,9 @@ extern void uarths_init1(void);
 
 void platform_early_init() {
     /* 开启8M内存 */
-    sysctl_pll_enable(SYSCTL_PLL1);
-    sysctl_clock_enable(SYSCTL_CLOCK_PLL1);
-
+    // sysctl_pll_enable(SYSCTL_PLL1);
+    // sysctl_clock_enable(SYSCTL_CLOCK_PLL1);
+    /* uart init */
     uarths_init0();
 }
 

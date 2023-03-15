@@ -1,7 +1,6 @@
 #ifndef _H_UTILS_
 #define _H_UTILS_
 
-#include "printf.h"
 #include "sbi.h"
 #include "bio.h"
 #include "str.h"
@@ -81,5 +80,7 @@ void print_mm_free();
 #define rd(str) 	"\e[31;1m"str"\e[0m"
 #define bl(str) 	"\e[34;1m"str"\e[0m"
 
+extern int kprintf(const char *format, ...);
+extern void panic(char *s) _noret;
 
 #endif

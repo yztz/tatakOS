@@ -5,8 +5,9 @@
 #include "debug.h"
 
 extern proc_t proc[];
+proc_t *scavenger;
 
-void scavenger_routine(proc_t *me) {
+static void scavenger_routine(proc_t *me) {
     proc_t *p;
     for(;;) {
         for(p = proc; p < &proc[NPROC]; p++) {
@@ -25,4 +26,13 @@ void scavenger_routine(proc_t *me) {
         }
         yield();
     }
+    
+}
+
+void scavenger_init() {
+    scavenger = kthread_create("scavenger", scavenger_routine); // thread for cleaning dangling threads
+    if (scavenger == NULL) {
+        panic("scavenger init");
+    }
+    debug("scavenger init successfully");
 }

@@ -1,5 +1,5 @@
 #include "driver/plic.h"
-#include "riscv.h"
+#include "kernel/cpu.h"
 #include "mm/io.h"
 #include "bit/integer.h"
 
@@ -173,7 +173,7 @@ int handle_ext_irq() {
         plic_instances[int_num].callback(plic_instances[int_num].ctx);
         ret = 0;
     } else {
-        printf("no handler for IRQ: %d...\n", int_num);
+        warn("no handler for IRQ: %d...\n", int_num);
         ret = -1;
     }
 

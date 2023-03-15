@@ -17,7 +17,6 @@
 // #include <math.h>
 // #include <stdio.h>
 #include "sysctl.h"
-#include "printf.h"
 #include "mm/io.h"
 // #include "string.h"
 // #include "encoding.h"

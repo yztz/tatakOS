@@ -71,7 +71,7 @@ void freewalk(pagetable_t pagetable) {
             freewalk((pagetable_t)child);
             pagetable[i] = 0;
         } else if (pte & PTE_V) { // 叶子节点
-            printf("pa: %p\n", PTE2PA(pte));
+            kprintf("pa: %p\n", PTE2PA(pte));
             panic("freewalk: leaf");
         }
     }
@@ -156,7 +156,7 @@ void pte_print(pte_t *pte) {
   rwxuvc[5] = *pte & PTE_COW ? 'c' : '-';
   rwxuvc[6] = '\0';
   
-  printf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
+  kprintf("pte %#lx pa %#lx %s\n", *pte, pa, rwxuvc);
 }
 
 

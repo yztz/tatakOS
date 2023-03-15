@@ -60,20 +60,17 @@ page_t *find_page(struct address_space *mapping, unsigned long offset){
  * a rather lightweight function, finding and getting a reference to a
  * hashed page atomically.
  */
-page_t *find_get_page(struct address_space *mapping, unsigned long offset)
-{
-  // uint64 pa = 0;
+page_t *find_get_page(struct address_space *mapping, unsigned long offset) {
   page_t *page;
 
   page = find_page(mapping, offset);
-  // printf(rd("pa: %p\n"), pa);
   /* increase the ref counts of the page that pa belongs to*/
   if (page)
     get_page(page);
   return page;
 }
 
-page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
+page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset) {
   page_t *page;
   page = find_get_page(mapping, offset);
   if(page)
@@ -81,8 +78,7 @@ page_t *find_get_lock_page(struct address_space *mapping, unsigned long offset){
   return page;
 }
 
-void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset)
-{
+void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offset) {
   page->mapping = mapping;
   page->index = offset;
 
@@ -94,7 +90,7 @@ void add_to_page_cache(page_t *page, struct address_space *mapping, pgoff_t offs
   release(&mapping->tree_lock);
 }
 
-void add_to_page_cache_lru(page_t *page, struct address_space *mapping, pgoff_t index){
+void add_to_page_cache_lru(page_t *page, struct address_space *mapping, pgoff_t index) {
   /* 添加到page cache */
   add_to_page_cache(page, mapping, index);
   /* 添加到 inactive list(因为是先缓存到cache里的，素以执行mark_page_accessed的时候可能还不在inactive list上) */
@@ -119,8 +115,7 @@ char tab[][10] = {
 
 extern void print_buddy();
 
-void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
-{
+void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h) {
   /* 下面的i小于表达式右边不用-1，这里之前少释放了最后一个页 */
   for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++)
   {
@@ -154,8 +149,7 @@ void walk_free_rdt(struct radix_tree_node *node, uint8 height, uint8 c_h)
  * 
  */
 /*文件回收了，页必须回收 */
-void free_mapping(entry_t *entry)
-{
+void free_mapping(entry_t *entry) {
   struct radix_tree_root *root = &(entry->i_mapping->page_tree);
   void *addr;
 
@@ -180,7 +174,7 @@ void free_mapping(entry_t *entry)
 /**
  * 从entry的index页开始，读取pg_cnt个页，加入到pagecache和lru
  */
-void readahead(entry_t *entry, uint64_t index, int pg_cnt){
+void readahead(entry_t *entry, uint64_t index, int pg_cnt) {
   int i;
   rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
   assert(pg_list);
@@ -221,7 +215,7 @@ void readahead(entry_t *entry, uint64_t index, int pg_cnt){
 /**
  * 预读的页数最大为READ_AHEAD_RATE%
  */
-int cal_readahead_page_counts(int rest){
+int cal_readahead_page_counts(int rest) {
       /* 剩余的页数 */
       uint remain = ROUND_COUNT(rest);
       /* 最大连读设置为空余内存的10% */
@@ -241,8 +235,7 @@ int cal_readahead_page_counts(int rest){
  * @param n 
  * @return int 
  */
-int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n)
-{
+int do_generic_mapping_read(struct address_space *mapping, int user, uint64_t buff, int off, int n) {
   uint index,  end_index;
   uint64 pa, pgoff;
   int rest, cur_off;
@@ -310,7 +303,6 @@ retry:
     /* 文件最后一页 */
     len = min((uint64_t)len, file_size - pgoff);
 
-    // printf(ylw("buff: %p pa: %p\n"), buff, pa);
     either_copyout(user, buff, (void *)(pa + pgoff), len);
 
     put_page(page);
@@ -324,7 +316,7 @@ retry:
 }
 
 /* this function is models on generic_file_aio_write_nolock in linux 2.6.0*/
-uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n){
+uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint64_t buff, int off, int n) {
   uint32_t pg_id, pg_off, rest, cur_off;
   uint64_t pa;
   page_t *page;
@@ -380,7 +372,7 @@ uint64_t do_generic_mapping_write(struct address_space *mapping, int user, uint6
  * mmap file 的pagefault处理函数。
  * 类似于do_generic_mapping_read
  */
-int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address){
+int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address) {
   uint64 pgoff, endoff, size;
   page_t *page;
   uint64 pa;
@@ -445,8 +437,7 @@ void init_pg_head(rw_page_list_t *pg_list){
 /**
  * @brief find all pages in the mapping with tag
  */
-rw_page_list_t *
-find_pages_tag(address_space_t *mapping, uint32_t tag){
+rw_page_list_t *find_pages_tag(address_space_t *mapping, uint32_t tag) {
   rw_page_list_t *pg_list = kzalloc(sizeof(rw_page_list_t));
   
   init_pg_head(pg_list);

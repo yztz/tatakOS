@@ -107,6 +107,6 @@ void wdt_stop()
 
 void wdt_irq_handler(void *ctx) {
     
-    printf("wdt QAQ\n");
+    kprintf("wdt QAQ\n");
     wdt_clear_interrupt(0);
 }

@@ -5,18 +5,6 @@
 
 
 /**
- * @brief Initialize the one kernel_pagetable
- * 
- */
-void kvminit(void);
-
-/**
- * @brief  Switch h/w page table register to the kernel's page table, and enable paging.
- * 
- */
-void kvminithart(void);
-
-/**
  * @brief Given a parent process's page table, copy
  * its memory into a child's page table.
  * Copies both the page table and the

@@ -146,17 +146,17 @@ void tf_flrestore(utf_t *self) {
 
 
 void tf_print(utf_t *tf) {
-    printf("Trapframe {\n");
-    printf("    sp: %lx\n", tf->sp);
-    printf("    fp: %lx\n", tf->s0);
-    printf("    pc: %lx\n", tf->epc);
-    printf("    ra: %lx\n", tf->ra);
-    printf("    a0: %lx\n", tf->a0);
-    printf("    a1: %lx\n", tf->a1);
-    printf("    a2: %lx\n", tf->a2);
-    printf("    a3: %lx\n", tf->a3);
-    printf("    a4: %lx\n", tf->a4);
-    printf("    a5: %lx\n", tf->a5);
-    printf("    s3: %lx\n", tf->s3);
-    printf("}\n");
+    kprintf("Trapframe {\n");
+    kprintf("    sp: %lx\n", tf->sp);
+    kprintf("    fp: %lx\n", tf->s0);
+    kprintf("    pc: %lx\n", tf->epc);
+    kprintf("    ra: %lx\n", tf->ra);
+    kprintf("    a0: %lx\n", tf->a0);
+    kprintf("    a1: %lx\n", tf->a1);
+    kprintf("    a2: %lx\n", tf->a2);
+    kprintf("    a3: %lx\n", tf->a3);
+    kprintf("    a4: %lx\n", tf->a4);
+    kprintf("    a5: %lx\n", tf->a5);
+    kprintf("    s3: %lx\n", tf->s3);
+    kprintf("}\n");
 }

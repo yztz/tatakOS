@@ -472,7 +472,7 @@ void mmap_print(mm_t *mm) {
     vma_t *vma;
     int id = 1;
     list_for_each_entry(vma, &mm->vma_head, head) {
-        printf("%d. ", id++);
+        kprintf("%d. ", id++);
         vma_print(vma);
     }
 }
@@ -491,11 +491,11 @@ static void __print_pagetable(pagetable_t pagetable, int level, int ignore_level
         pte_t pte = pagetable[i];
         if(pte & PTE_V){  // 存在
             if((pte & (PTE_R|PTE_W|PTE_X)) > 0) { // 打印叶节点
-                // printf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA(pte));
-                printf("%s %-3d[LEAF]: ", indent, i);
+                // kprintf("%s %-3d: pte[LEAF] %p pa %p\n", indent, i, pte, PTE2PA(pte));
+                kprintf("%s %-3d[LEAF]: ", indent, i);
                 pte_print(&pte);
             } else {// 打印下级页表地址 
-                printf("%s %-3d: ", indent, i);
+                kprintf("%s %-3d: ", indent, i);
                 pte_print(&pte);
                 __print_pagetable((pagetable_t) PTE2PA(pte), level - 1, ignore_level);
             }
@@ -505,7 +505,7 @@ static void __print_pagetable(pagetable_t pagetable, int level, int ignore_level
 
 
 void print_pagetable(pagetable_t pagetable) {
-  printf("page table %p\n", pagetable);
+  kprintf("page table %p\n", pagetable);
   __print_pagetable(pagetable, 2, -1);
 }
 

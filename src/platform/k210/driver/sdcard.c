@@ -174,7 +174,7 @@ uint8_t (sd_get_dataresponse)(void)
 	/*!< Mask unused bits */
 	response &= 0x1F;
 	if (response != 0x05) {
-		printf("status %b", or);
+		kprintf("status %b", or);
 		return 0xFF;
 	}
 	/*!< Wait null data */
@@ -374,8 +374,8 @@ sd_transaction_t *tran;
 
 
 static void sd_error(char *CMD) {
-	char buf[255];
-	sprintf(buf, "error: %s\n", CMD);
+	char buf[64];
+	snprintf(buf, 64,"error: %s\n", CMD);
 	panic(buf);
 }
 
@@ -493,7 +493,7 @@ uint8_t sd_read_sector_dma(uint8_t *data_buff, bio_vec_t *vec)
 	while (count) {
 		uint8_t res;
 		if ((res = sd_get_response()) != SD_START_DATA_SINGLE_BLOCK_READ) {
-			printf("warnning: res %x\n", res);
+			kprintf("warnning: res %x\n", res);
 			break;
 		}
 		/*!< Read the SD block data : read NumByteToRead data */
