@@ -35,7 +35,9 @@
 #define READ_AHEAD_RATE 10
 /* maximum order for buddy */
 #define BUDDY_ORDER_NUM 10
-
-
+/* serialize kernel ouput (kprintf), output maybe out of order if zero */
+#define KERNEL_OUTPUT_LOCK 1
+/* first user program name */
+#define USER0 "init0"
 
 #endif

@@ -162,7 +162,7 @@ enum plic_irq {
 #define configASSERT(x)                                 \
     if ((x) == 0)                                       \
     {                                                   \
-        printf("(%s:%d) %s\r\n", __FILE__, __LINE__, #x); \
+        kprintf("(%s:%d) %s\r\n", __FILE__, __LINE__, #x); \
         for (;;)                                        \
             ;                                           \
     }

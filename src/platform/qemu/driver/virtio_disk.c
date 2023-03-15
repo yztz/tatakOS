@@ -292,7 +292,6 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
 }
 
 void virtio_disk_intr() {
-    // printf("virtual disk handler start!\n");
     acquire(&disk.vdisk_lock);
 
     // the device won't raise another interrupt until we tell it
@@ -311,7 +310,6 @@ void virtio_disk_intr() {
     while (disk.used_idx != disk.used->idx) {
         __sync_synchronize();
         int id = disk.used->ring[disk.used_idx % NUM].id;
-        // printf("used_idx: %d\n", disk.used_idx);
 
         /* 如果为0，说明操作成功，否则失败，见前面的赋值为ff */
         if (disk.info[id].status != 0)
@@ -323,7 +321,6 @@ void virtio_disk_intr() {
 
         disk.used_idx += 1;
     }
-    // printf("virtual disk handle end!\n");
     release(&disk.vdisk_lock);
 }
 

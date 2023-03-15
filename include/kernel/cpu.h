@@ -43,9 +43,30 @@ struct cpu {
 typedef struct cpu cpu_t;
 
 void cpu_init();
-cpu_t *mycpu();
-
 
 extern struct cpu cpus[NUM_CORES];
+extern void panic(char *s);
+
+/**
+ * @brief get current cpu id
+ * @note called after intr_off
+ * 
+ * @return int 
+ */
+static inline int cpuid() {
+    return r_tp();
+}
+
+/**
+ * @brief return this CPU's cpu struct.
+ * @note called after intr_off
+ * 
+ * @return cpu_t* 
+ */
+static inline cpu_t *mycpu() {
+    return &cpus[cpuid()];
+}
+
+
 
 #endif

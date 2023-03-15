@@ -122,10 +122,7 @@ static inline uint64 r_tp() {
   return x;
 }
 
-// called with intr_off
-#define cpuid() (r_tp())
-
-static inline void  w_tp(uint64 x) {
+static inline void w_tp(uint64 x) {
   asm volatile("mv tp, %0" : : "r" (x));
 }
 

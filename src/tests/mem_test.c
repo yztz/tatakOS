@@ -1,5 +1,5 @@
 #include "mm/alloc.h"
-#include "riscv.h"
+#include "kernel/cpu.h"
 #include "common.h"
 
 #define __MODULE_NAME__ MEMTEST
@@ -36,7 +36,7 @@ typedef struct mm_info {
 
 void mm_test() {
     push_off();
-    printf("---MM_TEST---\n");
+    kprintf("---MM_TEST---\n");
     int tid = cpuid();
     int rand = tid + 1;
     int i = rand % NELEM(blk_sizes);

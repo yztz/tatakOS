@@ -38,9 +38,9 @@ static inline int is_vaild_order(int order) {
 }
 
 void print_order(int order) {
-    printf(grn("[order %d head: %p] "), order, &lists[order].head);
+    kprintf(grn("[order %d head: %p] "), order, &lists[order].head);
     for (buddy_t *cur = lists[order].head.next; cur != &lists[order].head; cur = cur->next) {
-        printf(bl("-> %p"), cur);
+        kprintf(bl("-> %p"), cur);
     }
 }
 
@@ -48,7 +48,7 @@ void print_order(int order) {
 void print_buddy() {
     for (int i = 0; i < BUDDY_ORDER_NUM; i++) {
         print_order(i);
-        printf("\n");
+        kprintf("\n");
     }
     print_not_freed_pages();
 }
@@ -143,12 +143,12 @@ void *buddy_alloc(size_t size) {
 
         // ER();
         /* 这里里要修改，否则有重复循环执行的可能 */
-        // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
+        // kprintf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
         // buddy_print_free();
         // free_more_memory();
         // buddy_print_free();
-        // // printf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
-        // printf("\n");
+        // // kprintf(ylw("size: %d\tpgnums: %d\torder: %d\toorder: %d\n"), size, pgnums, order, oorder); 
+        // kprintf("\n");
 
         // /* 释放后重试 */
         // goto retry;

@@ -12,14 +12,14 @@ extern int handle_pagefault(uint64_t scause);
 extern int handle_irq(uint64_t scause);
 extern void kernelvec();
 
-void trapinit(void) {
+void trap_init(void) {
     init_timer();
 }
 
 /**
  * @brief Set up to take exceptions and traps while in the kernel.
  */
-void trapinithart(void) {
+void trap_init_hart(void) {
     // setup trap vector
     write_csr(stvec, (uint64)kernelvec);
     // enable interrupt
@@ -39,14 +39,14 @@ void usertrap(void) {
     struct proc *p = current;
 
     if ((sstatus & SSTATUS_SPP) != 0) {
-        printf("scause %p\n", scause);
-        printf("sepc=%p stval=%p\n", sepc, stval);
+        kprintf("scause %p\n", scause);
+        kprintf("sepc=%p stval=%p\n", sepc, stval);
         panic("usertrap: not from user mode");
     }
 
     if (intr_get() != 0) {
-        printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", sepc, stval);
+        kprintf("scause %s\n", riscv_cause2str(scause));
+        kprintf("sepc=%p stval=%p\n", sepc, stval);
         panic("utrap: interrupts enabled");
     }
 
@@ -168,8 +168,8 @@ void kerneltrap(ktf_t *context) {
         panic("kerneltrap: not from supervisor mode");
 
     if (intr_get() != 0) {
-        printf("scause %s\n", riscv_cause2str(scause));
-        printf("sepc=%p stval=%p\n", sepc, stval);
+        kprintf("scause %s\n", riscv_cause2str(scause));
+        kprintf("sepc=%p stval=%p\n", sepc, stval);
         panic("kerneltrap: interrupts enabled");
     }
 
@@ -179,7 +179,7 @@ void kerneltrap(ktf_t *context) {
 
     switch (scause) {
         when_misalign {
-            printf("sepc=%p ", sepc);
+            kprintf("sepc=%p ", sepc);
             panic("software misaligned access is not support now.");
         }
         when_pagefault {
@@ -204,8 +204,8 @@ void kerneltrap(ktf_t *context) {
     return;
 
   fail:
-    printf("scause %s\n", riscv_cause2str(scause));
-    printf("sepc=%p stval=%p\n", sepc, stval);
+    kprintf("scause %s\n", riscv_cause2str(scause));
+    kprintf("sepc=%p stval=%p\n", sepc, stval);
     panic("kerneltrap");
 }
 

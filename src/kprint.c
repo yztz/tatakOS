@@ -1,5 +1,7 @@
-#include "utils.h"
+#include "atomic/spinlock.h"
 #include "driver/console.h"
+#include "printf.h"
+#include "utils.h"
 
 volatile int panicked = 0;
 
@@ -10,6 +12,29 @@ void _putchar(char c) {
     }
     
     console_putchar_sync(c);
+}
+
+#if KERNEL_OUTPUT_LOCK == 1
+static SPINLOCK_INIT(kout_lock);
+#endif
+
+int kprintf(const char *format, ...) {
+    va_list va;
+    va_start(va, format);
+
+#if KERNEL_OUTPUT_LOCK == 1
+    acquire(&kout_lock);
+#endif
+
+    const int ret = vprintf(format, va);
+
+#if KERNEL_OUTPUT_LOCK == 1
+    release(&kout_lock);
+#endif
+
+    va_end(va);
+
+    return ret;
 }
 
 

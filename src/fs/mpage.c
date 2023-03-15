@@ -120,7 +120,6 @@ bio_t *get_rw_pages_bio(entry_t *entry, uint64 buff, uint32 pg_id, int pg_cnt, i
   // int sect_num = 0;
   uint32 bps = entry->fat->bytes_per_sec;
 
-  // printf(grn("pg_id: %d\tpg_cnt: %d\n"), pg_id, pg_cnt);
   first_bio_vec = fat_get_sectors(entry->fat, entry->clus_start, pg_id*PGSIZE, pg_cnt*PGSIZE);
   // cur_bio_vec = first_bio_vec;
   // while(cur_bio_vec != NULL){

@@ -109,7 +109,7 @@ uint64_t sys_prlimit64(void) {
 extern char* philosophy;
 
 uint64_t sys_philosophy(void) {
-    printf("\n%s\n", philosophy);
+    kprintf("\n%s\n", philosophy);
     return 0;
 }
 

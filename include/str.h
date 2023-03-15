@@ -37,7 +37,8 @@ static inline int isspace(int c) {
 	return c == ' ' || (unsigned)c-'\t' < 5;
 }
 
-
+#define snprintf snprintf_
+extern int snprintf_(char* buffer, size_t count, const char* format, ...);
 
 
 #endif

@@ -187,11 +187,11 @@ int fileread(struct file *f, uint64 addr, int n) {
 
 void file_print(file_t *self) {
   if(self == NULL) {
-    printf("file: NULL\n");
+    kprintf("file: NULL\n");
     return;
   }
   char rw[3] = {0};
   rw[0] = self->readable ? 'r' : '-';
   rw[1] = self->writable ? 'w' : '-';
-  printf("file@%#lx: type %d ref %d %s\n", self, self->type, self->ref, rw);
+  kprintf("file@%#lx: type %d ref %d %s\n", self, self->type, self->ref, rw);
 }

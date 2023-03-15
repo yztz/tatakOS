@@ -181,7 +181,7 @@ void fdtbl_print(fdtable_t *self) {
         file_t *f= fdtbl_getfile(self, fd);
         file_print(f);
     }
-    printf("all: %d\n", self->nfd);
+    kprintf("all: %d\n", self->nfd);
 }
 
 // lock hold

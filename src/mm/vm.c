@@ -26,7 +26,7 @@ void switchkvm() {
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 extern uint64_t mmap_map_io(mm_t *mm, uint64_t addr, uint64_t len, uint64_t pa, int prot, int pg_spec);
 
-void kvminit(void) {
+void kvm_init(void) {
     extern mm_t *__mmap_new();
     public_map = __mmap_new();
     if (!public_map) {
@@ -42,7 +42,7 @@ void kvminit(void) {
 }
 
 
-void kvminithart() {
+void kvm_init_hart() {
     switchkvm();
     sfence_vma();
 }

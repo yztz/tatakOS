@@ -5,9 +5,6 @@
 
 typedef void (*plic_irq_callback_t)(void *ctx);
 
-void plic_init(void);
-void plic_init_hart(void);
-
 /* 设置中断源的优先级 */
 void plic_set_priority(plic_irq_t source, uint32_t priority);
 

@@ -106,7 +106,7 @@ void syscall(void) {
     // debug_if(p->pid >= first_user_pid, "PID %d syscall " grn("%s = %ld") " from %#lx", p->pid, syscall_name(num), ret, epc);
     proc_get_tf(p)->a0 = ret;
   } else {
-    printf("PID %d %s: "rd("unknown sys call %d")" sepc %lx\n",
+    kprintf("PID %d %s: "rd("unknown sys call %d")" sepc %lx\n",
             p->pid, p->name, num, epc);
     proc_get_tf(p)->a0 = -ENOSYS;
     panic("");

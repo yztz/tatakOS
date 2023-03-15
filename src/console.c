@@ -167,7 +167,6 @@ int consoleread(int user_dst, uint64 dst, int n) {
 
 
 static void interactive_debug_info(char c) {
-    // printf("%d\n", c);
     switch (c) {
     case C('P'):  // Print process list.
         procdump();
@@ -249,7 +248,7 @@ void console_intr_callback(char c) {
 }
 
 
-void consoleinit(void) {
+void console_init() {
     initlock(&cons.lock, "cons");
     // plic_register_handler(UART_IRQ, cons_irq_callback, NULL);
     // console_init(consoleintr, NULL);

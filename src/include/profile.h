@@ -1,5 +1,4 @@
 #include "types.h"
-#include "printf.h"
 #include "driver/timer.h"
 
 #ifdef profile
@@ -18,8 +17,10 @@
 #undef profile_time_delta
 #endif
 
+extern int kprintf(const char *format, ...);
+
 #ifdef PROFILE_PER_CALL
-#define profile_time_delta(func, t1, t2) {printf("-"#func" used %ld\n", t2-t1);}
+#define profile_time_delta(func, t1, t2) {kprintf("-"#func" used %ld\n", t2-t1);}
 #else
 #define profile_time_delta(func, t1, t2)
 #endif
