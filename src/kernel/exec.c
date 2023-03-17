@@ -15,6 +15,15 @@
 #include "kernel/proc.h"
 
 static inline uint32_t elf_map_prot(uint32_t prot) {
+    /*
+        Why I comment the things below?
+        Because we load data with demend-paging mechanism,
+        which ask us to make it privileged(means writable).
+        A important task to do is to implement mprotect to 
+        change map protection dynamicly, so we can change it 
+        after loading...
+    */
+
     // uint32 ans = 0;
     // if(prot & PF_R) ans |= PROT_READ;
     // if(prot & PF_W) ans |= PROT_WRITE;
