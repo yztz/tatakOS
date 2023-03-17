@@ -1,3 +1,13 @@
+/**
+ * @file signal.c
+ * @author YangZongzhen
+ * @brief It's a rough implementation of signal now, we have yet lots of things to do...
+ * @version 0.1
+ * @date 2023-03-18
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #include "kernel/proc.h"
 #include "kernel/syscall.h"
 #include "kernel/signal.h"

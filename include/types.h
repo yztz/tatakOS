@@ -14,7 +14,7 @@ typedef unsigned short ushort;
 typedef unsigned short uint16;
 typedef unsigned int uint;
 typedef unsigned int uint32;
-typedef unsigned long uint64;
+typedef unsigned long long uint64;
 
 typedef long off_t;
 
@@ -28,7 +28,6 @@ typedef uint64 pgoff_t;
 typedef uint64 sector_t;
 
 #define BITS_PER_LONG 64
-// #define pgoff_t unsigned long
 
 /* Coupled Types 
    That is, when a structure is nested within another structure, 

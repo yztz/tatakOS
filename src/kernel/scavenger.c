@@ -1,3 +1,19 @@
+/**
+ * @file scavenger.c
+ * @author YangZongzhen
+ * @brief 
+ *  Why do we need it?
+ *    In fact, I don't know the free time of a thread very clearly, 
+ *    (maybe it will quit when process' exiting?).
+ *    So I set up such a kthread with a brutal name
+ *    to help us to recycle these dangling threads.
+ * @version 0.1
+ * @date 2023-03-18
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include "common.h"
 #include "kernel/sched.h"
 

@@ -8,16 +8,12 @@
 #define __MODULE_NAME__ FUTEX
 #include "debug.h"
 
-extern proc_t proc[];
-
-
-// TODO: 为futex设置单独的等待队列
 WAIT_QUEUE_INIT(futex_queue);
 
 
 uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
     uint64_t res = 0;
-    struct proc *p = myproc();
+    proc_t *p = myproc();
     sig_handle(p->signal);
     
     DECLARE_WQ_ENTRY(entry);
@@ -44,7 +40,7 @@ uint64_t futex_sleep(void *chan, spinlock_t *futex_lock, timespec_t *time) {
 
 int __futex_wake(void *chan, int n, int requeue, void *newaddr, int requeue_lim) {
     debug_statement(proc_t *me = current);
-    struct proc *p;
+    proc_t *p;
     wq_entry_t *entry;
     debug("PID %d start wake %#lx", me->pid, chan);
     
