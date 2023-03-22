@@ -7,12 +7,9 @@
 #include "mm/alloc.h"
 #include "fs/fs.h"
 
-
 // #define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
-#include "fs/fcntl.h"
-#include "kernel/proc.h"
 
 static inline uint32_t elf_map_prot(uint32_t prot) {
     /*
@@ -36,6 +33,10 @@ static inline uint32_t elf_map_prot(uint32_t prot) {
     return PROT_READ | PROT_WRITE | PROT_EXEC | PROT_USER;
 }
 
+static inline int is_elf(struct elfhdr *hdr) {
+    return strncmp((char *)hdr->ident, ELF_MAGIC, ELF_MAGIC_SIZE) == 0;
+}
+
 static int loadseg(mm_t *mm, uint64 va, entry_t *ip, uint offset, uint sz) {
     if (reade(ip, 1, va, offset, sz) != sz)
         return -1;
@@ -54,7 +55,7 @@ static uint64_t loadinterp(mm_t *mm) {
     }
     elock(ep);
 
-    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || elf.magic != ELF_MAGIC) {
+    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || !is_elf(&elf)) {
         goto bad;
     }
 
@@ -129,7 +130,7 @@ int exec(char *path, char *argv[], char *envp[]) {
     elock(ep);
 
     // 检查ELF文件头部
-    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || elf.magic != ELF_MAGIC) {
+    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || !is_elf(&elf)) {
         eunlock(ep);
         goto bad;
     }

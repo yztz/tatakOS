@@ -3,27 +3,28 @@
 
 // Format of an ELF executable file
 
-#define ELF_MAGIC 0x464C457FU  // "\x7FELF" in little endian
+#define ELF_MAGIC "\177ELF"  // "\x7FELF" in little endian
+#define	ELF_MAGIC_SIZE  4
 #include "types.h"
+
+#define EI_NIDENT (16)
 
 /// @brief ELF header
 struct elfhdr {
-    /// @brief magic number, must equal ELF_MAGIC
-    uint magic;
-    uchar elf[12];
-    ushort type;
-    ushort machine;
-    uint version;
-    uint64 entry;
-    uint64 phoff;
-    uint64 shoff;
-    uint flags;
-    ushort ehsize;
-    ushort phentsize;
-    ushort phnum;
-    ushort shentsize;
-    ushort shnum;
-    ushort shstrndx;
+    uchar ident[EI_NIDENT];
+    uint16_t type;
+    uint16_t machine;
+    uint32_t version;
+    uint64_t entry;
+    uint64_t phoff;
+    uint64_t shoff;
+    uint32_t flags;
+    uint16_t ehsize;
+    uint16_t phentsize;
+    uint16_t phnum;
+    uint16_t shentsize;
+    uint16_t shnum;
+    uint16_t shstrndx;
 };
 
 /// @brief rogram section header
