@@ -2,7 +2,7 @@
 #include "str.h"
 
 void *memset(void *dst, int c, uint n) {
-  char *cdst = (char *) dst;
+  uint8_t *cdst = (uint8_t *) dst;
   int i;
   for(i = 0; i < n; i++){
     cdst[i] = c;
@@ -11,7 +11,7 @@ void *memset(void *dst, int c, uint n) {
 }
 
 int memcmp(const void *v1, const void *v2, uint n) {
-  const uchar *s1, *s2;
+  const uint8_t *s1, *s2;
 
   s1 = v1;
   s2 = v2;
@@ -25,8 +25,8 @@ int memcmp(const void *v1, const void *v2, uint n) {
 }
 
 void *memmove(void *dst, const void *src, uint n) {
-  const char *s;
-  char *d;
+  const uint8_t *s;
+  uint8_t *d;
 
   if(n == 0)
     return dst;

@@ -7,12 +7,9 @@
 #include "mm/alloc.h"
 #include "fs/fs.h"
 
-
 // #define QUIET
 #define __MODULE_NAME__ EXEC
 #include "debug.h"
-#include "fs/fcntl.h"
-#include "kernel/proc.h"
 
 static inline uint32_t elf_map_prot(uint32_t prot) {
     /*
@@ -34,6 +31,10 @@ static inline uint32_t elf_map_prot(uint32_t prot) {
     // If we do not set prot PROT_WRITE, we could not write data to this memory region, even if SUM is set.
     // Another solution is that we can map twice: writeable first, and then turn to readonly
     return PROT_READ | PROT_WRITE | PROT_EXEC | PROT_USER;
+}
+
+static inline int is_elf(struct elfhdr *hdr) {
+    return strncmp((char *)hdr->ident, ELF_MAGIC, ELF_MAGIC_SIZE) == 0;
 }
 
 static int loadseg(mm_t *mm, uint64 va, entry_t *ip, uint offset, uint sz) {
@@ -70,7 +71,7 @@ int exec(char *path, char *argv[]) {
     elock(ep);
 
     // 检查ELF文件头部
-    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || elf.magic != ELF_MAGIC) {
+    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || !is_elf(&elf)) {
         eunlock(ep);
         goto bad;
     }
