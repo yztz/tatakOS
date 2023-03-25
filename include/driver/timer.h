@@ -20,6 +20,14 @@ uint64_t get_time();
  */
 void reset_timer();
 
+/**
+ * @brief sleep for usec
+ * 
+ * @param usec 
+ * @return int 
+ */
+int usleep(uint64_t usec);
+
 typedef void (*timer_callback_t)(void *param);
 
 /**

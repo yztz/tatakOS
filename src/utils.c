@@ -27,6 +27,16 @@ void backtrace_fp(uint64 fp) {
     }
 }
 
+extern proc_t proc[NPROC];
+void backtrace_proc(int pid) {
+    for (proc_t *p = &proc[0]; p < &proc[NPROC]; p++) {
+        if (p->pid == pid) {
+            backtrace_fp(p->context.s0);
+            break;
+        }
+    }
+}
+
 void print_block(uint8_t* b) {
     for (int i = 0; i < BSIZE; i++) {
         if (i != 0 && i % 16 == 0) kprintf("\n");
@@ -219,3 +229,8 @@ void print_chars(char* c, int n) {
         kprintf("\n");
     }
 }
+
+// Empty implentation
+uint64_t __sys_dummy(void) {
+    return 0;
+} 

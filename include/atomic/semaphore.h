@@ -5,7 +5,7 @@
 #include "kernel/waitqueue.h"
 
 typedef struct semaphore {
-    spinlock_t lock;
+    // spinlock_t lock;
     int count;
     wq_t waitqueue;
 } sem_t;

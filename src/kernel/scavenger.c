@@ -16,6 +16,7 @@
 
 #include "common.h"
 #include "kernel/sched.h"
+#include "kernel/thread_group.h"
 
 #define __MODULE_NAME__ SCAVENGER
 #include "debug.h"
@@ -34,7 +35,7 @@ static void scavenger_routine(proc_t *me) {
                     continue;
                 }
 
-                debug(grn("SCAVENGER: PID %d freed\n"), p->pid);
+                // debug(grn("SCAVENGER: PID %d freed\n"), p->pid);
 
                 freeproc(p);
                 release(&p->lock);

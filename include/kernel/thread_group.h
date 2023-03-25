@@ -4,14 +4,17 @@
 #include "types.h"
 #include "atomic/spinlock.h"
 #include "list.h"
+#include "kernel/waitqueue.h"
 
-typedef struct tg {
+struct thread_group {
     int tg_id;
     int ref;
     int thrdcnt;
+    wq_t futex_wq;
     spinlock_t lock;
     list_head_t member;
-} tg_t;
+};
+
 
 /**
  * @brief create a new thread group

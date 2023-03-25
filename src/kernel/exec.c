@@ -1,11 +1,13 @@
-#include "riscv.h"
-#include "atomic/spinlock.h"
-#include "kernel/proc.h"
-#include "elf.h"
 #include "common.h"
+#include "elf.h"
+#include "fs/fs.h"
+#include "kernel/proc.h"
+#include "kernel/signal.h"
 #include "mm/vm.h"
 #include "mm/alloc.h"
-#include "fs/fs.h"
+#include "mm/mmap.h"
+#include "mm/trapframe.h"
+#include "riscv.h"
 
 // #define QUIET
 #define __MODULE_NAME__ EXEC

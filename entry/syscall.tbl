@@ -1,7 +1,7 @@
-############说明###############
-# 请在此文件中添加新的系统调用
-# 格式如下（注意请勿添加空行）：
-# id   name      impl_name
+########### Note ##############
+# add syscall here 
+# (`__sys_dummy` means unimplemented)
+# id   name      impl_name 
 ############Proc###############
  1     fork      sys_fork
  3     wait      sys_wait
@@ -20,14 +20,14 @@
 135    rt_sigprocmask   sys_rt_sigprocmask
 137    rt_sigtimedwait  sys_rt_sigtimedwait
 139    rt_sigreturn  sys_rt_sigreturn
-144    setgid    sys_setgid
-146    setuid    sys_setuid
-154    setpgid   sys_setpgid
-155    getpgid   sys_getpgid
+144    setgid    __sys_dummy
+146    setuid    __sys_dummy
+154    setpgid   __sys_dummy
+155    getpgid   __sys_dummy
 172    getpid    sys_getpid 
 173    getppid   sys_getppid
-174    getuid    sys_getuid
-176    getgid    sys_getgid
+174    getuid    __sys_dummy
+176    getgid    __sys_dummy
 178    gettid    sys_gettid
 220    clone     sys_clone
 221    exec      sys_exec
@@ -45,7 +45,7 @@
 #39     umount2   sys_umount
 #40     mount     sys_mount
 46     ftruncate sys_ftruncate
-48     faccessat sys_faccessat
+48     faccessat __sys_dummy
 49     chdir     sys_chdir  
 56     openat    sys_openat
 57     close     sys_close
@@ -80,10 +80,10 @@
 214     brk       sys_brk  
 215     munmap    sys_munmap
 222     mmap      sys_mmap
-226     mprotect  sys_mprotect
+226     mprotect  __sys_dummy
 #227     msync     sys_msync
 ##############Sys###############
-43      statfs64  sys_statfs64
+43      statfs64        sys_statfs64
 96      set_tid_address sys_set_tid_address
 103     setitimer       sys_setitimer
 113     clock_gettime   sys_clock_gettime
@@ -98,8 +98,8 @@
 #278     getrandom       sys_getrandom
 #283     membarrier      sys_membarrier
 #############MISC###############
-175     geteuid     sys_geteuid
-177     getegid     sys_getegid
+175     geteuid     __sys_dummy
+177     getegid     __sys_dummy
 #############TEST###############
 89     timetag        sys_timetag
 231    profile        sys_profile

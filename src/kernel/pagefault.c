@@ -3,7 +3,10 @@
 #include "fs/fs.h"
 #include "mm/alloc.h"
 #include "mm/vm.h"
+#include "mm/mmap.h"
+#include "mm/trapframe.h"
 #include "kernel/proc.h"
+#include "kernel/signal.h"
 
 #define __MODULE_NAME__ PAGEFAULT
 

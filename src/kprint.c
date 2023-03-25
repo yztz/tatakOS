@@ -23,13 +23,15 @@ int kprintf(const char *format, ...) {
     va_start(va, format);
 
 #if KERNEL_OUTPUT_LOCK == 1
-    acquire(&kout_lock);
+    // TODO: re-entry lock
+    int held = holding(&kout_lock);
+    if (!held) acquire(&kout_lock);
 #endif
 
     const int ret = vprintf(format, va);
 
 #if KERNEL_OUTPUT_LOCK == 1
-    release(&kout_lock);
+    if (!held) release(&kout_lock);
 #endif
 
     va_end(va);

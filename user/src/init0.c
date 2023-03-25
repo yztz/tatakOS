@@ -16,8 +16,6 @@ void main() {
 
     memuse();
     shell();
-    // printf("Hello World\n");
-    // run("qjs");
     memuse();
     halt();
     for(;;);

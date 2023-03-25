@@ -58,8 +58,7 @@ void consputc(int c) {
         // if the user typed backspace, overwrite with a space.
         putchar('\b'); putchar(' '); putchar('\b');
     } else {
-        char ch = c;
-        putchar(ch);
+        putchar((char)c);
     }
 }
 
@@ -83,16 +82,19 @@ struct console {
 // user write()s to the console go here.
 //
 int consolewrite(int user_src, uint64 src, int n) {
+#define CONS_OUT_BUF 128
+    char buf[CONS_OUT_BUF];
     int i;
 
-    for (i = 0; i < n; i++) {
-        char c;
-        if (either_copyin(&c, user_src, src + i, 1) == -1)
+    for (i = 0; i < n; i+=CONS_OUT_BUF) {
+        int cnt = min(CONS_OUT_BUF, n - i);
+        if (either_copyin(buf, user_src, src + i, cnt) == -1)
             break;
-        consputc(c);
+        for (int j = 0; j < cnt; j++)
+            consputc(buf[j]);
     }
 
-    return i;
+    return min(i, n);
 }
 
 

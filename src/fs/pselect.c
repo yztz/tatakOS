@@ -89,7 +89,7 @@ uint64_t sys_pselect(void) {
         if(timeout == -1) continue;
 
         if(timeout) {
-            wait_tick();
+            usleep(1000);
             timeout--;
         } else {
             break;
@@ -151,7 +151,7 @@ uint64 sys_ppoll(void) {
 
         if(timeout == -1) continue;
         if(timeout) {
-            wait_tick();
+            usleep(TICK2US(1));
             timeout--;
         } else {
             break;

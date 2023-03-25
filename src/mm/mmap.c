@@ -509,7 +509,3 @@ void print_pagetable(pagetable_t pagetable) {
   __print_pagetable(pagetable, 2, -1);
 }
 
-uint64_t sys_mprotect(void) {
-    return 0;
-}
-

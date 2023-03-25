@@ -5,6 +5,7 @@
 #include "writeback.h"
 #include "kernel/proc.h"
 #include "mm/alloc.h"
+#include "mm/mmap.h"
 
 // #define QUIET
 #define __MODULE_NAME__ FS

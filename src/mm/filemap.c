@@ -7,6 +7,7 @@
 #include "kernel/proc.h"
 #include "debug.h"
 #include "mm/page.h"
+#include "mm/mmap.h"
 #include "radix-tree.h"
 // #include "mm/mm.h"
 

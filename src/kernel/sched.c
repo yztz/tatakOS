@@ -136,7 +136,7 @@ void yield(void) {
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
 void sleep(void *chan, struct spinlock *lk) {
-    struct proc *p = myproc();
+    proc_t *p = current;
 
     // sig_handle(p->signal);
     // Must acquire p->lock in order to
@@ -147,6 +147,9 @@ void sleep(void *chan, struct spinlock *lk) {
     // so it's okay to release lk.
     if (lk != &p->lock) {
         acquire(&p->lock);
+        // change state before release the lock
+        // or else it may cause race condition
+        pstate_migrate(p, SLEEPING);
 
         if (lk != NULL)
             release(lk);
@@ -154,10 +157,11 @@ void sleep(void *chan, struct spinlock *lk) {
             page_t *page = (page_t *)chan;
             page_spin_unlock(page);
         }
+    } else {
+        pstate_migrate(p, SLEEPING);
     }
 
     p->chan = chan;
-    pstate_migrate(p, SLEEPING);
 
     sched();
 
@@ -187,17 +191,16 @@ int wakeup(void *chan) {
 
     pstate_list_lock(SLEEPING);
     list_for_each_entry_safe(p, tmp, &sleep_queue.head, state_head) {
-        if (p != me) {
-            int hold = holding(&p->lock);
+        assert(p != me);
+        int hold = holding(&p->lock);
 
-            if (!hold) acquire(&p->lock);
-            if (p->chan == chan) {
-                pstate_list_delete(SLEEPING, p);
-                pstate_set(p, RUNNABLE);
-                ans++;
-            }
-            if (!hold) release(&p->lock);
+        if (!hold) acquire(&p->lock);
+        if (p->chan == chan) {
+            pstate_list_delete(SLEEPING, p);
+            pstate_set(p, RUNNABLE);
+            ans++;
         }
+        if (!hold) release(&p->lock);
     }
     pstate_list_unlock(SLEEPING);
 
@@ -205,12 +208,14 @@ int wakeup(void *chan) {
 }
 
 
-void wake_up_process_nolock(proc_t *p) {
-    pstate_migrate(p, RUNNABLE);
+void wake_up_process_locked(proc_t *p) {
+    if (p->state == SLEEPING) {
+        pstate_migrate(p, RUNNABLE);
+    }
 }
 
 void wake_up_process(proc_t *p) {
     acquire(&p->lock);
-    wake_up_process_nolock(p);
+    wake_up_process_locked(p);
     release(&p->lock);
 }

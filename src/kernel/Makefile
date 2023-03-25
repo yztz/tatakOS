@@ -14,6 +14,5 @@ obj-y += sysfile.o
 obj-y += sysproc.o
 obj-y += thread_group.o
 obj-y += trap.o
-obj-y += waitqueue.o
 
 obj-y += asm/

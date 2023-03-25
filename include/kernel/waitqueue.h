@@ -1,15 +1,28 @@
+/**
+ * @file waitqueue.h
+ * @author YangZongzhen
+ * @brief ref: https://elixir.bootlin.com/linux/v2.6.39.4/source/include/linux/wait.h
+ * @version 0.1
+ * @date 2023-03-24
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #ifndef _H_WAITQUEUE_
 #define _H_WAITQUEUE_
 
 #include "atomic/spinlock.h"
 #include "riscv.h"
 #include "list.h"
+#include "kernel/sched.h"
+#include "sys/error.h"
 
-struct proc;
+typedef void (*wakeup_callback_t)(wq_t *wq, wq_entry_t *entry);
 
 struct wq_entry {
-    struct proc *private;
+    proc_t *private;
     list_head_t head;
+    wakeup_callback_t func;
 };
 
 struct waitqueue {
@@ -17,31 +30,138 @@ struct waitqueue {
     list_head_t head;
 };
 
-typedef struct waitqueue wq_t;
-typedef struct wq_entry wq_entry_t;
+static inline void __add_to_waitqueue(wq_t *self, wq_entry_t *entry) {
+    list_add_tail(&entry->head, &self->head);
+}
 
-/**
- * @brief Call before calling wq_sleep, sometimes it is used to avoid "Lost wakeup".
- *        What is "Lost Wakeup" ? If A are going to sleep but the state hasn't changed, 
- *        B wakes up it at same time so nothing happened. The key problem here is that 
- *        there is no mechanism for atomically putting a process to sleep while it is sleeping.
- *          
- *        For example, a concurrent access to a disk block, when process A requests access to the disk block, 
- *        because the cache block is already held by process B, so process A is ready to go to sleep, 
- *        and while A is entering the state, process B releases the disk block cache, 
- *        triggering the wake-up signal of the block cache sleep queue. 
- *        However, because A does not enter the sleep state absolutely, it loses the wake-up signal and falls into sleep forever.
- * 
- * @param self 
- */
-void wq_prepare(wq_t *self);
-void wq_sleep(wq_t *self, wq_entry_t* entry);
-int wq_sleep_timeout(wq_t *self, wq_entry_t* entry, int timeout);
-void wq_wakeup(wq_t *self);
-void wq_wakeup_all(wq_t *self);
+static inline void __rm_from_waitqueue(wq_t *self, wq_entry_t *entry) {
+    list_del_init(&entry->head);
+}
+extern int kprintf(const char *format, ...);
+extern void wake_up_process(proc_t *p);
+extern void wake_up_process_locked(proc_t *p);
+
+static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
+    proc_t *p = entry->private;
+    if (list_empty(&entry->head)) {
+        kprintf("bad1\n");
+        for(;;);
+    }
+    __rm_from_waitqueue(wq, entry);
+    acquire(&p->lock);
+    if(entry->private->state == RUNNING) {
+        kprintf("bad2\n");
+        for(;;);
+    }
+    wake_up_process_locked(p);
+    release(&p->lock);
+    // wake_up_process(entry->private);
+}
 
 #define INIT_WAIT_QUEUE(name) {.wq_lock=INIT_SPINLOCK((name).wq_lock), .head=LIST_HEAD_INIT((name).head)}
 #define WAIT_QUEUE_INIT(name) wq_t name = INIT_WAIT_QUEUE(name)
-#define DECLARE_WQ_ENTRY(name) wq_entry_t name = {.private=current, .head=LIST_HEAD_INIT((name).head)}
+#define DECLARE_WQ_ENTRY(name) wq_entry_t name = {.private=current, .head=LIST_HEAD_INIT((name).head), .func=auto_remove_callback}
+
+
+#define __wait_event_timeout(wq, condition, interruptible, locked, timeout) ({ \
+    __label__ out;      \
+    int __ret = timeout;      \
+                        \
+    DECLARE_WQ_ENTRY(__entry);          \
+    proc_t *p = current;                \
+    if (!(locked))              \
+        acquire(&(wq)->wq_lock);    \
+                                        \
+    do {                                \
+        acquire(&p->lock);              \
+        if ((interruptible) && p->sig_pending) {           \
+            release(&p->lock);          \
+            __ret = -EINTR;         \
+            goto out;                   \
+        }                               \
+        p->wait_channel = (wq);         \
+        p->__state = SLEEPING;          \
+        if (list_empty(&__entry.head))  \
+            __add_to_waitqueue(wq, &__entry); \
+        release(&(wq)->wq_lock);        \
+        __ret = sched_timeout(__ret); \
+        p->wait_channel = NULL;         \
+        release(&p->lock);              \
+        acquire(&(wq)->wq_lock);        \
+        if (__ret <= 0) {         \
+            __ret = -ETIMEDOUT; \
+            goto out;                   \
+        } \
+    } while (!(condition) && __ret > 0);  \
+    out: \
+    __rm_from_waitqueue(wq, &__entry); \
+    if (!(locked))              \
+        release(&(wq)->wq_lock);    \
+    __ret;         \
+})
+
+#define __wait_event(wq, condition, interruptible, locked) ({ \
+    __label__ out;      \
+    int __ret = 0;      \
+                        \
+                        \
+    DECLARE_WQ_ENTRY(__entry);          \
+    proc_t *p = current;                \
+    if (!(locked))              \
+        acquire(&(wq)->wq_lock);    \
+                                        \
+    do {                                \
+        acquire(&p->lock);              \
+        if ((interruptible) && p->sig_pending) {           \
+            release(&p->lock);          \
+            __ret = -EINTR;             \
+            goto out;                   \
+        }                               \
+        p->wait_channel = (wq);         \
+        p->__state = SLEEPING;          \
+        if (list_empty(&__entry.head))  \
+            __add_to_waitqueue(wq, &__entry); \
+        release(&(wq)->wq_lock);        \
+        sched();                        \
+        p->wait_channel = NULL;         \
+        release(&p->lock);              \
+        acquire(&(wq)->wq_lock);        \
+    } while (!(condition));             \
+    out: \
+    __rm_from_waitqueue(wq, &__entry); \
+    if (!(locked))              \
+        release(&(wq)->wq_lock);    \
+    __ret;         \
+})
+
+
+#define wait_event_interruptible_locked(wq, condition) \
+    ((condition) ? 0 : (__wait_event(wq, condition, 1, 1)));
+
+#define wait_event_timeout_interruptible_locked(wq, condition, timeout) \
+    ((condition) ? 0 : (__wait_event_timeout(wq, condition, 1, 1, timeout)));
+
+#define wait_event_locked(wq, condition) \
+    ((condition) ? 0 : (__wait_event(wq, condition, 0, 1)));
+
+#define wait_event_timeout_locked(wq, condition) \
+    ((condition) ? 0 : (__wait_event_timeout(wq, condition, 0, 1, timeout)));
+
+static inline void __wq_wakeup(wq_t *self) {
+    wq_entry_t *entry, *tmp;
+
+    list_for_each_entry_safe(entry, tmp, &self->head, head) {
+        (entry->func)(self, entry);
+    }
+}
+
+
+#define wq_wakeup_locked(wq) __wq_wakeup(wq)
+
+#define wq_wakeup(wq) do {      \
+    acquire(&(wq)->wq_lock);    \
+    wq_wakeup_locked(wq);       \
+    release(&(wq)->wq_lock);    \
+} while (0);
 
 #endif
