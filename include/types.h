@@ -47,8 +47,11 @@ typedef struct page_t page_t;
 typedef struct proc proc_t;
 typedef struct signal signal_t;
 typedef uint64_t sigset_t;
+typedef struct thread_group tg_t;
 typedef struct utrapframe utf_t;
 typedef struct vma vma_t;
+typedef struct waitqueue wq_t;
+typedef struct wq_entry wq_entry_t;
 
 typedef void (*kthread_callback_t)(proc_t *);
 

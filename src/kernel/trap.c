@@ -1,8 +1,10 @@
 #include "common.h"
+#include "driver/timer.h"
 #include "kernel/proc.h"
 #include "kernel/sched.h"
 #include "kernel/syscall.h"
-#include "driver/timer.h"
+#include "kernel/signal.h"
+#include "mm/trapframe.h"
 
 // #define QUIET
 #define __MODULE_NAME__ TRAP

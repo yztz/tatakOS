@@ -36,6 +36,8 @@ tg_t *tg_new(proc_t *p) {
     newtg->tg_id = p->pid;
     tg_join(newtg, p);
 
+    newtg->futex_wq = (wq_t)INIT_WAIT_QUEUE(newtg->futex_wq);
+
     return newtg;
 }
 

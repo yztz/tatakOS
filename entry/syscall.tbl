@@ -1,6 +1,7 @@
-############说明###############
-# 请在此文件中添加新的系统调用
-# id   name      impl_name
+########### Note ##############
+# add syscall here 
+# (`__sys_dummy` means unimplemented)
+# id   name      impl_name 
 ############Proc###############
  1     fork      sys_fork
  3     wait      sys_wait

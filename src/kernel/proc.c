@@ -1,9 +1,13 @@
 #include "common.h"
 #include "driver/timer.h"
 #include "kernel/sched.h"
+#include "kernel/signal.h"
 #include "kernel/taskqueue.h"
+#include "kernel/thread_group.h"
 #include "kernel/futex.h"
 #include "mm/alloc.h"
+#include "mm/mmap.h"
+#include "mm/trapframe.h"
 #include "mm/vm.h"
 #include "fs/fcntl.h"
 #include "fs/stat.h"
@@ -88,6 +92,17 @@ void newproc_callback_stage1(kthread_callback_t callback) {
     panic("bad ret");
 }
 
+static uint64_t alloc_kstack() {
+    void *kstack = kmalloc(KSTACK_SZ);
+    if (kstack == NULL) {
+        return 0;
+    }
+
+    // *(uint32_t *)kstack = KSTACK_CANARIES_COOKIE;
+
+    return (uint64_t)kstack;
+}
+
 proc_t *proc_new(kthread_callback_t callback) {
     struct proc *p;
 
@@ -107,10 +122,11 @@ proc_t *proc_new(kthread_callback_t callback) {
     p->set_tid_addr = 0;
     p->clear_tid_addr = 0;
     p->parent = NULL;
+    p->futex_chan = NULL;
 
     INIT_LIST_HEAD(&p->thrd_head);
 
-    if ((p->kstack = (uint64)kmalloc(KSTACK_SZ)) == 0) {
+    if ((p->kstack = alloc_kstack()) == 0) {
         debug("kstack alloc failure");
         goto bad;
     }
@@ -269,7 +285,7 @@ uint64 growproc(uint64_t newbreak) {
 
 
 proc_t *kthread_create(char *name, kthread_callback_t callback) {
-    struct proc *np = proc_new(callback);
+    proc_t *np = proc_new(callback);
 
     if (np == NULL)
         return NULL;
@@ -336,10 +352,14 @@ void exit(int status) {
     release(&wait_lock);
 
     if (p->clear_tid_addr) {
-        acquire(&p->tg->lock);
+        // clear tid addr and futex wake
+extern int __futex_wake(wq_t *, void *, int, int, void *, int);
+
+        wq_t *futex_queue = &current->tg->futex_wq;
+        acquire(&futex_queue->wq_lock);
         memset_user(p->clear_tid_addr, 0, sizeof(int));
-        futex_wake((void *)p->clear_tid_addr, 1);
-        release(&p->tg->lock);
+        __futex_wake(futex_queue, (void *)p->clear_tid_addr, 1, 0, 0, 0);
+        release(&futex_queue->wq_lock);
     }
 
     // Jump into the scheduler, never to return.
@@ -353,8 +373,17 @@ void sig_send(proc_t *p, int signum) {
         p->killed = 1;
     }
     p->sig_pending |= (1L << (signum - 1));
-    if (p->state == SLEEPING) pstate_migrate(p, RUNNABLE);
-    release(&p->lock);
+    // wakeup
+    if (p->wait_channel) {
+        release(&p->lock);
+        wq_wakeup(p->wait_channel);
+    } else if (p->state == SLEEPING) { // maybe delete in future
+        wake_up_process_locked(p);
+        release(&p->lock);
+    } else {
+        release(&p->lock);
+    }
+    
 }
 
 
@@ -468,21 +497,21 @@ utf_t *proc_get_tf(proc_t *p) {
 }
 
 
-
-
 static void process_timeout(void *p) {
     proc_t *proc = (proc_t *)p;
     wake_up_process(proc);
 }
 
 int sched_timeout(int timeout) {
+    assert(timeout >= 0);
+
     timer_t timer;
-    set_timer(&timer, process_timeout, timeout, myproc());
+    set_timer(&timer, process_timeout, timeout, current);
     sched();
     // May not be woken because of timeout, so we need clear the timer
     remove_timer(&timer);
 
-    return timer.expires == 0;
+    return timer.expires;
 }
 
 

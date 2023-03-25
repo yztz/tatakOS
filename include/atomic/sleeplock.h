@@ -4,23 +4,24 @@
 #include "atomic/spinlock.h"
 #include "kernel/waitqueue.h"
 
-// Long-term locks for processes
 struct sleeplock {
-  int locked;       // Is the lock held?
-  spinlock_t lk; // spinlock protecting this sleep lock
-  wq_t waitqueue;
-  
-  // For debugging:
-  char *name;        // Name of lock.
-  int pid;           // Process holding lock
+    /// @brief Is the lock held?
+    int locked;
+    wq_t waitqueue;
+
+    // For debugging:
+
+    /// @brief Name of lock.
+    char *name;
+    /// @brief Process holding lock
+    proc_t *process;
 };
 
 typedef struct sleeplock sleeplock_t;
 
-
-void            acquiresleep(struct sleeplock*);
-void            releasesleep(struct sleeplock*);
-int             holdingsleep(struct sleeplock*);
-void            initsleeplock(struct sleeplock*, char*);
+void acquiresleep(struct sleeplock *);
+void releasesleep(struct sleeplock *);
+int holdingsleep(struct sleeplock *);
+void initsleeplock(struct sleeplock *, char *);
 
 #endif

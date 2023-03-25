@@ -1,29 +1,17 @@
 #include "atomic/semaphore.h"
 
 void sem_down(sem_t *sem) {
-    acquire(&sem->lock);
-
-    while (sem->count <= 0) {
-        DECLARE_WQ_ENTRY(entry);
-        wq_prepare(&sem->waitqueue);
-
-        release(&sem->lock);
-        wq_sleep(&sem->waitqueue, &entry);
-        acquire(&sem->lock);
-    };
-
+    acquire(&sem->waitqueue.wq_lock);
+    wait_event_locked(&sem->waitqueue, sem->count > 0);
     sem->count--;
-
-    release(&sem->lock);
+    release(&sem->waitqueue.wq_lock);
 }
 
 
 void sem_up(sem_t *sem) {
-    acquire(&sem->lock);
-
+    acquire(&sem->waitqueue.wq_lock);
     if (++sem->count > 0) {
         wq_wakeup(&sem->waitqueue);
     }
-
-    release(&sem->lock);
+    release(&sem->waitqueue.wq_lock);
 }

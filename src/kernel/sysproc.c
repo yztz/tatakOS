@@ -5,6 +5,7 @@
 #include "kernel/proc.h"
 #include "kernel/sched.h"
 #include "kernel/syscall.h"
+#include "kernel/thread_group.h"
 #include "kernel/time.h"
 #include "mm/vm.h"
 

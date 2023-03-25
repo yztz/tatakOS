@@ -1,13 +1,10 @@
 #ifndef _H_PROC_
 #define _H_PROC_
 
+#include "types.h"
 #include "atomic/spinlock.h"
-#include "mm/mmap.h"
-#include "mm/trapframe.h"
 #include "kernel/fdtable.h"
-#include "kernel/signal.h"
-#include "kernel/thread_group.h"
-#include "kernel/waitqueue.h"
+#include "list.h"
 #include "kernel/cpu.h"
 
 /// @brief process state
@@ -107,14 +104,15 @@ proc_t*         kthread_create(char *name, kthread_callback_t);
 void            freeproc(struct proc *p);
 int             get_proc_cnt();
 void            wake_up_process(proc_t *p);
-void            wake_up_process_nolock(proc_t *p);
+void            wake_up_process_locked(proc_t *p);
 void            sig_send(proc_t *p, int signum);
 int             freechild();
 
 
 /**
  * @brief sleep
- * @see wq_prepare
+ * @deprecated Use waitqueue instead.
+ *             It's just like shit and MUST be refactored!!!
  * 
  * @param chan the chan the proc is sleeping on
  * @param lock lock to release before schedule

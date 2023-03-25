@@ -1,6 +1,12 @@
 #include "kernel/clone.h"
 #include "mm/vm.h"
 #include "fs/fs.h"
+#include "mm/trapframe.h"
+#include "mm/mmap.h"
+#include "kernel/thread_group.h"
+#include "kernel/signal.h"
+
+#define __MODULE_NAME__ CLONE
 #include "debug.h"
 
 extern struct spinlock wait_lock;

@@ -4,8 +4,6 @@
 // user code, and calls into file.c and fs.c.
 //
 
-#include "atomic/sleeplock.h"
-#include "atomic/spinlock.h"
 #include "fs/fcntl.h"
 #include "fs/file.h"
 #include "fs/fs.h"
@@ -114,7 +112,7 @@ uint64_t sys_write(void) {
         return -1;
 
     int ret = filewrite(f, p, n);
-    // assert(ret == n);
+
     return ret;
 }
 
@@ -257,7 +255,6 @@ uint64_t sys_openat(void) {
     else
         f->off = 0;
 
-    // assert((oflags & O_TRUNC )== 0);
 
     eunlock(ep);
     return fd;

@@ -99,14 +99,6 @@ struct page_t {
     address_space_t *mapping;
     /// @brief pagecache index
     uint32_t index;
-
-// #ifdef RMAP
-//     union {
-// 		struct pte_chain *chain;/* Reverse pte mapping pointer.
-// 					 * protected by PG_chainlock */
-// 		pte_addr_t direct;
-// 	} pte;
-// #endif
 };
 
 /* 页的数量 */

@@ -1,6 +1,7 @@
 #ifndef _H_SCHED_
 #define _H_SCHED_
 
+#include "kernel/proc.h"
 #include "kernel/taskqueue.h"
 
 extern tq_t *pstatelist[MAXPSTATE];

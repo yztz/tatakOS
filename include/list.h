@@ -292,6 +292,11 @@ static inline void list_move(struct list_head *list, struct list_head *head)
 	     &pos->member != (head);					\
 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
 
+#define list_for_each_entry_safe_condition(pos, n, head, member, condition)			\
+	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+		n = list_entry(pos->member.next, typeof(*pos), member);	\
+	     (condition) && &pos->member != (head);					\
+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
 
 /**
  * list_for_each_entry_reverse - iterate backwards over list of given type.

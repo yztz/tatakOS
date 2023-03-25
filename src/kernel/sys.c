@@ -1,5 +1,7 @@
 #include "kernel/sys.h"
 #include "mm/vm.h"
+#include "mm/mmap.h"
+#include "mm/trapframe.h"
 #include "kernel/proc.h"
 #include "kernel/syscall.h"
 #include "sys/resource.h"

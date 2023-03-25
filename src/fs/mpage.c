@@ -9,6 +9,7 @@
 #include "mm/page.h"
 #include "radix-tree.h"
 #include "bio.h"
+#include "mm/mmap.h"
 
 #include "fs/mpage.h"
 /**

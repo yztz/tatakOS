@@ -29,6 +29,8 @@
 #define MAX_FILE_NAME 64
 /* user stack size */
 #define USTACKSIZE (4096 * 20)
+/* kernel stack size */
+#define KSTACK_SZ (PGSIZE * 4)
 /* clock IRQ interval (ms) */
 #define TICK_GRANULARITY 10L
 /* percentage of the maximum readahead pages to the free */

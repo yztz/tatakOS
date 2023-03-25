@@ -13,7 +13,7 @@ static uint64_t *clint_mtime;
 struct spinlock tickslock;
 uint64 ticks;
 
-WAIT_QUEUE_INIT(timer_waiters);
+// WAIT_QUEUE_INIT(timer_waiters);
 
 
 SPINLOCK_INIT(timer_lock);
@@ -35,12 +35,22 @@ void reset_timer() {
     sbi_legacy_set_timer(get_time() + CLOCK_FREQ * TICK_GRANULARITY / 1000);
 }
 
-
-void wait_tick() {
-    DECLARE_WQ_ENTRY(entry);
-    wq_prepare(&timer_waiters);
-    wq_sleep(&timer_waiters, &entry);
+int usleep(uint64_t usec) {
+    uint64_t cycle = get_time();
+    uint64_t nop_all = usec * CLOCK_FREQ / 1000000UL;
+    while(1) {
+        if(get_time() - cycle >= nop_all)
+            break;
+    }
+    return 0;
 }
+
+// void wait_tick() {
+//     uint64_t now = get_time();
+//     acquire(&timer_waiters.wq_lock);
+//     wait_event_locked(&timer_waiters, get_time() > now);
+//     release(&timer_waiters.wq_lock);
+// }
 
 
 void set_timer(timer_t *timer, timer_callback_t callback, int timeout, void *param) {
@@ -66,7 +76,7 @@ void clockintr() {
     acquire(&tickslock);
     ticks++;
     // wakeup(&ticks);
-    wq_wakeup_all(&timer_waiters);
+    // wq_wakeup(&timer_waiters);
 
     acquire(&timer_lock);
     timer_t *cur, *n;

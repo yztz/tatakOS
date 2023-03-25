@@ -92,13 +92,6 @@ static inline void disable_sum() {
 
 
 
-static inline uint64 r_fp() {
-  uint64 x;
-  asm volatile("mv %0, s0" : "=r" (x) );
-  return x;
-}
-
-
 // enable device interrupts
 static inline void intr_on() {
     set_csr(sstatus, SSTATUS_SIE);
@@ -119,6 +112,18 @@ static inline int intr_get() {
 static inline uint64 r_tp() {
   uint64 x;
   asm volatile("mv %0, tp" : "=r" (x) );
+  return x;
+}
+
+static inline uint64 r_sp() {
+  uint64 x;
+  asm volatile("mv %0, sp" : "=r" (x) );
+  return x;
+}
+
+static inline uint64 r_fp() {
+  uint64 x;
+  asm volatile("mv %0, fp" : "=r" (x) );
   return x;
 }
 

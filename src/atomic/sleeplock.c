@@ -6,11 +6,10 @@
 #include "atomic/spinlock.h"
 
 void initsleeplock(struct sleeplock *lk, char *name) {
-    initlock(&lk->lk, "sleep lock");
     lk->waitqueue = (wq_t)INIT_WAIT_QUEUE(lk->waitqueue);
     lk->name = name;
     lk->locked = 0;
-    lk->pid = 0;
+    lk->process = NULL;
 }
 
 /**
@@ -20,37 +19,30 @@ void initsleeplock(struct sleeplock *lk, char *name) {
  *
  * @param slk
  */
-void acquiresleep(struct sleeplock *slk) {
-    DECLARE_WQ_ENTRY(entry);
-    acquire(&slk->lk);
-    for (;;) {
-        if (!slk->locked)
-            break;
-        wq_prepare(&slk->waitqueue);
-        release(&slk->lk);
-        wq_sleep(&slk->waitqueue, &entry);
-        acquire(&slk->lk);
-    }
+void acquiresleep(struct sleeplock *lk) {
+    acquire(&lk->waitqueue.wq_lock);
+    
+    wait_event_locked(&lk->waitqueue, lk->locked == 0);
+    lk->locked = 1;
+    lk->process = current;
 
-    slk->locked = 1;
-    slk->pid = current->pid;
-    release(&slk->lk);
+    release(&lk->waitqueue.wq_lock);
 }
 
 void releasesleep(struct sleeplock *lk) {
-    acquire(&lk->lk);
+    acquire(&lk->waitqueue.wq_lock);
     lk->locked = 0;
-    lk->pid = 0;
-    wq_wakeup(&lk->waitqueue);
-    release(&lk->lk);
+    lk->process = NULL;
+    wq_wakeup_locked(&lk->waitqueue);
+    release(&lk->waitqueue.wq_lock);
 }
 
 int holdingsleep(struct sleeplock *lk) {
     int r;
 
-    acquire(&lk->lk);
-    r = lk->locked && (lk->pid == myproc()->pid);
-    release(&lk->lk);
+    acquire(&lk->waitqueue.wq_lock);
+    r = lk->locked && (lk->process == current);
+    release(&lk->waitqueue.wq_lock);
     return r;
 }
 

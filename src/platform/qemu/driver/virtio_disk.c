@@ -62,7 +62,8 @@ static struct disk {
     // one-for-one with descriptors, for convenience.
     struct virtio_blk_req ops[NUM];
 
-    struct spinlock vdisk_lock;
+    // struct spinlock vdisk_lock;
+    wq_t vdisk_queue;
 
 } disk;
 
@@ -71,7 +72,8 @@ void virtio_disk_intr(void);
 void virtio_disk_init(void) {
     uint32 status = 0;
 
-    initlock(&disk.vdisk_lock, "virtio_disk");
+    // initlock(&disk.vdisk_lock, "virtio_disk");
+    disk.vdisk_queue = (wq_t)INIT_WAIT_QUEUE(disk.vdisk_queue);
     // we need to remap io to virt addr
     virtio_base_address = ioremap(VIRTIO0, PGSIZE);
 
@@ -183,7 +185,8 @@ static void free_desc(int i) {
     disk.desc[i].flags = 0;
     disk.desc[i].next = 0;
     disk.free[i] = 1;
-    wakeup(&disk.free[0]);
+    // wakeup(&disk.free[0]);
+    wq_wakeup_locked(&disk.vdisk_queue);
 }
 
 // free a chain of descriptors.
@@ -217,7 +220,7 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
 
     uint64_t sector = bio_vec->bv_start_num;
 
-    acquire(&disk.vdisk_lock);
+    acquire(&disk.vdisk_queue.wq_lock);
 
     // the spec's Section 5.2 says that legacy block operations use
     // three descriptors: one for type/reserved/sector, one for the
@@ -225,12 +228,9 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
 
     // allocate the three descriptors.
     int idx[3];
-    while (1) {
-        if (alloc3_desc(idx) == 0) {
-            break;
-        }
-        sleep(&disk.free[0], &disk.vdisk_lock);
-    }
+
+    wait_event_locked(&disk.vdisk_queue, alloc3_desc(idx) == 0);
+
 
     // format the three descriptors.
     // qemu's virtio-blk.c reads them.
@@ -281,18 +281,17 @@ void virtio_disk_rw(bio_vec_t *bio_vec, int write) {
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
 
     // Wait for virtio_disk_intr() to say request has finished.
-    while (bio_vec->disk == 1) {
-        sleep(bio_vec, &disk.vdisk_lock);
-    }
+    wait_event_locked(&disk.vdisk_queue, bio_vec->disk == 0);
 
     disk.info[idx[0]].bio_vec = 0;
     free_chain(idx[0]);
 
-    release(&disk.vdisk_lock);
+    // release(&disk.vdisk_lock);
+    release(&disk.vdisk_queue.wq_lock);
 }
 
 void virtio_disk_intr() {
-    acquire(&disk.vdisk_lock);
+    acquire(&disk.vdisk_queue.wq_lock);
 
     // the device won't raise another interrupt until we tell it
     // we've seen this interrupt, which the following line does.
@@ -317,11 +316,11 @@ void virtio_disk_intr() {
 
         bio_vec_t *bio_vec = disk.info[id].bio_vec;
         bio_vec->disk = 0;   // disk is done with buf
-        wakeup(bio_vec);
+        wq_wakeup_locked(&disk.vdisk_queue);
 
         disk.used_idx += 1;
     }
-    release(&disk.vdisk_lock);
+    release(&disk.vdisk_queue.wq_lock);
 }
 
 void disk_io(bio_vec_t *bio_vec, int write) {

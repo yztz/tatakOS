@@ -12,9 +12,7 @@
 
 page_t pages[PAGE_NUMS];
 struct spinlock reflock;
-
-extern void wakeup(void *chan);
-extern void sleep(void *chan, struct spinlock *lk);
+ 
 extern void __free_pages(page_t *first_page);
 
 void reset_page(page_t *page) {

@@ -1,5 +1,7 @@
 #include "types.h"
 #include "mm/vm.h"
+#include "mm/mmap.h"
+#include "mm/trapframe.h"
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
@@ -69,32 +71,28 @@ int argstr(int n, char *buf, int max) {
   return fetchstr(addr, buf, max);
 }
 
+// Syscall Declaration
 #define __SYS_CALL(NUM, NAME, FUNC) extern uint64 FUNC(void);
 #include "generated/syscall_gen.h"
 #undef __SYS_CALL
 
-
+// Syscall Table
 #define __SYS_CALL(NUM, NAME, FUNC) [NUM] FUNC,
 static uint64 (*syscalls[])(void) = {
   #include "generated/syscall_gen.h"
 };
 #undef __SYS_CALL
 
-
-#ifdef DEBUG
+// Syscall Name Map
 #define __SYS_CALL(NUM, NAME, FUNC) [NUM] #NAME,
 static char *__syscall_names[] = {
   #include "generated/syscall_gen.h"
 };
 #undef __SYS_CALL
+
 char *syscall_name(int num) {
   return __syscall_names[num];
 }
-#else
-char *syscall_name(int num) {
-  return "syscall name: debug mode required";
-}
-#endif
 
 void syscall(void) {
   struct proc *p = current;
