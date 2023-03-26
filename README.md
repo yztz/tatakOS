@@ -1,6 +1,8 @@
 # 你好❤️
 
 > 本项目基于mit-xv6-riscv
+>
+> ***[项目变更日志](changelog)***
 
 <img src="./doc/assets/logo1.png" alt="image-20220411160525296" width=300 />
 
@@ -37,7 +39,7 @@ $ ./run-k210.sh # k210
 ### 文件系统构建
 
 ```shell
-$ make sdcard # 注意：默认ttyUSB0
+$ make sdcard # 注意：默认/dev/sdd
 ```
 
 ### 构建选项
@@ -57,7 +59,6 @@ $ make sdcard # 注意：默认ttyUSB0
 - 概要文档
 - 详细文档
 - 测试日志
-- 变更日志
 
 ## 调试
 
