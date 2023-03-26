@@ -231,11 +231,19 @@ typedef struct _fat32_t {
 typedef enum _FAT_RESULT_t{
 	FR_OK,
 	FR_ERR,
-	FR_CONTINUE, // 用于目录继续遍历的标识
+	FR_CONTINUE, // indicates to continue
 } FR_t;
 
-typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset, void *state);
-
+/**
+ * @brief The handler used to traverse a directory.
+ *        It will receive 4 params: 
+ *          1. item    - current dir entry
+ *          2. name    - current dir entry name
+ *          3. offset  - current dir entry offset in directory
+ *          4. __state - used to save state in this round of traversal
+ *        Returning FR_OK/FR_ERR means end, or FR_CONTINUE to continue.
+ */
+typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset, void *__state);
 
 /**
  * @brief read, parse fat superblock, and mount it
@@ -245,15 +253,6 @@ typedef FR_t (*travs_handler_t)(dir_item_t *item, const char *name, off_t offset
  * @return FR_t 
  */
 FR_t fat_mount(uint dev, fat32_t **ppfat);
-
-/**
- * @brief index next cluster
- * 
- * @param fat 
- * @param cclus current cluster
- * @return uint32_t 
- */
-uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus);
 
 /**
  * @brief 在指定目录簇下创建一个新的（空的）目录项，无论长短文件名，都将创建长目录项
@@ -276,8 +275,19 @@ FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_
  * @return int 
  */
 FR_t fat_alloc_append_clusters(fat32_t *fat, uint32_t clus_start, uint32_t *clus_end, uint64_t *clus_cnt, uint32_t size_in_mem);
-FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, struct dir_item *ret_item, uint32_t *offset);
-FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
+FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *name, dir_item_t *ret_item, uint32_t *offset);
+
+/**
+ * @brief a utility to 
+ * 
+ * @param fat 
+ * @param dir_clus 
+ * @param dir_offset 
+ * @param handler 
+ * @param state 
+ * @return FR_t 
+ */
+FR_t fat_travs_logical_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state);
 FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);
 int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n);

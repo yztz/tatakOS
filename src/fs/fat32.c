@@ -1,9 +1,42 @@
+/**
+ * @file fat32.c
+ * @author YangZongzhen
+ * @brief FAT32 Implementation.
+ * 
+ *        The main body is the directory traversal, we use functional programming method.
+ *        The whole traversal is divided into three layers:
+ * 
+ *                  1. abstract function
+ *                            ↓
+ *                  2. logical traversal
+ *                            ↓
+ *                  3. physical traversal
+ *        
+ *        Abstract function is about `dirlookup`, `readdent`...which are base on logical directory traversal.
+ * 
+ *        Logical traversal implements the logical directory entry traversal, and ignores the details 
+ *        about fat32 entry like LFN, SFN...
+ * 
+ *        Physical traversal is the most basic traversal, it traverses at the granularity of FAT32 directory entries,
+ *        that means it will show the details about SFN, LFN, FAT32 entry flags...
+ * 
+ *        To do that, I set some handler to carry on the function of the lower layer, such as `entry_handler_t`,
+ *        `travs_handler_t` which will help us improve the abstract level.
+ * 
+ * 
+ * @version 0.1
+ * @date 2023-03-26
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 /* 
-    此模块的设计思想在于，尽可能地减少与上层的耦合，尽可能的独立，为后续VFS加入提供可能性。
-    此外，许多接口函数的参数使用的都是基本的数据类型，且尽可能地仅与fat32协议相关，提供了移植的可能性。
+    此模块的设计原则，尽可能地减少与上层的耦合，尽可能的独立，为后续VFS加入提供便捷性。
 */
 #include "fs/fs.h"
 #include "fs/blk_device.h"
+#include "fs/fat_helper.h"
 #include "mm/alloc.h"
 #include "mm/vm.h"
 #include "common.h"
@@ -50,43 +83,47 @@
 // 下一个空闲簇所在的fat扇区
 #define nextclussec(fat) clus2fatsec(fat, (fat)->fsinfo.next_free_cluster)
 
-// 目录遍历的元信息
+/// @brief metadata for a round of traversal
 typedef struct travs_meta {
-    int item_no;    // 当前扇区内的目录项号
-    int nitem;      // 扇区内总共的目录项数
-    blk_buf_t *buf;     // 当前扇区的buf
-    uint32_t offset; // 当前目录项在目录内的偏移量
+    /// @brief the number of the directory entry in the current sector
+    int item_no;
+    /// @brief total number of directory entries in a sector
+    int nitem;
+    /// @brief the block buffer of sector
+    blk_buf_t *buf;
+    /// @brief the offset of the current directory entry within the directory
+    uint32_t offset;
 } travs_meta_t;
 
 
-/* 遍历目录项处理接口，不能在其中释放buf，最多可附带两个参数 */
-typedef FR_t (*entry_handler_t)(dir_item_t *item, travs_meta_t *meta, void *param, void *ret);
+/**
+ * @brief The handler to handle fat entry.
+ *        There are 4 params given:
+ *          1. item - raw dir entry item
+ *          2. meta - metadata
+ *          3. p1   - first custom param
+ *          4. p2   - second custom param
+ *        Returning FR_OK/FR_ERR means end, or FR_CONTINUE to continue.
+ */
+typedef FR_t (*entry_handler_t)(dir_item_t *item, travs_meta_t *meta, void *param);
 
-static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, 
+/**
+ * @brief The utility to traverse the directory
+ * 
+ * @param fat fat obj
+ * @param dir_clus the begining cluster of directory
+ * @param dir_offset the offset of the directory entry to start traversing
+ * @param handler the directory entry handler
+ * @param alloc whether to alloc for a new cluster when traversing to the end
+ * @param offset [OUT] the offset of the last traversed directory entry
+ * @param param param to be passed to handler
+ * @return FR_t 
+ */
+static FR_t fat_travs_phy_dir(fat32_t *fat, uint32_t dir_clus, 
                           uint32_t dir_offset,
-                          entry_handler_t handler, 
                           int alloc, uint32_t *offset,
-                          void *p1, void *p2);
-
-/* 用于目录项查找的辅助结构状态信息 */
-typedef struct lookup_param {
-    int   is_shortname;
-    char *longname;     // 长文件名
-    char *top;          // 栈顶
-    char *p;            // 名称栈指针（满栈）
-    uint8_t checksum;   // 当前校验和
-    int next;           // 下一个序号
-
-    void *state;        // 其他状态信息
-} lp_t;
-
-typedef struct alloc_param {
-    char *longname;
-    int length;
-    dir_item_t *item;
-    uint8_t checksum;
-    int entry_num;
-} ap_t;
+                          entry_handler_t handler, 
+                          void *param);
 
 
 char *DOT = ".          ";
@@ -164,8 +201,14 @@ FR_t fat_mount(uint dev, fat32_t **ppfat) {
     return FR_OK;
 }
 
-/* 获取下一个簇号 */
-uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
+/**
+ * @brief follow the next cluster
+ * 
+ * @param fat 
+ * @param cclus curent cluster
+ * @return uint32_t next cluster
+ */
+static uint32_t fat_next_cluster(fat32_t *fat, uint32_t cclus) {
     if(IS_FAT_CLUS_END(cclus) || cclus == FAT_CLUS_FREE) return cclus;
 
     blk_buf_t *buf = bread(fat->dev, clus2fatsec(fat, cclus));
@@ -176,8 +219,15 @@ uint32_t (fat_next_cluster)(fat32_t *fat, uint32_t cclus) {
     return next;
 }
 
-
-FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
+/**
+ * @brief join two clusters
+ * 
+ * @param fat 
+ * @param prev 
+ * @param new 
+ * @return FR_t 
+ */
+static FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
     if(new == FAT_CLUS_FREE) {
         panic("fat_append_cluster: new is free");
     }
@@ -195,7 +245,6 @@ FR_t fat_append_cluster(fat32_t *fat, uint32_t prev, uint32_t new) {
     return FR_OK;
 }
 
-/* 读取簇 */
 int fat_read(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
     if(cclus == 0 || n == 0)
         return 0;
@@ -448,28 +497,36 @@ FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
     return FR_OK;
 }
 
-
-
 /**
- * 寻找短文件名下一序号：|1|2|3|4|5|6|~|?|E|X|T| 
- * @startwith 要比较的前缀
- * @ret 返回的序号，传入的时候务必确保初始化为1
+ * @brief 寻找短文件名下一序号：|1|2|3|4|5|6|~|?|E|X|T| 
+ * 
+ * @param item 
+ * @param meta 
+ * @param startwith 要比较的前缀
+ * @param ret 返回的序号，传入的时候务必确保初始化为1
+ * @return FR_t 
  */
-static FR_t get_next_shortname_order(dir_item_t *item, travs_meta_t *meta, void *startwith, void *ret) {
-    int *order = (int *) ret;
+static FR_t get_next_shortname_order(dir_item_t *item, travs_meta_t *meta, void *__short_name) {
+    char *order = (char *) __short_name + 7;
+    
     if(item->name[0] == FAT_NAME_END){ // 没找到了就返回
         return FR_OK;
     } else if(item->name[0] == FAT_NAME_FREE) {
         return FR_CONTINUE;
     } else {
-        if(strncmp((char *)startwith, (char *)item->name, 7) == 0)
+        if(strncmp((char *)__short_name, (char *)item->name, 7) == 0)
             (*order)++;
+                   // 目前还没有设计好后续ID生成策略
+        if(*order > '5')
+            panic("sn: id > 5");
         return FR_CONTINUE;
     }
 }
 
 /**
- * 假设扩展名是合法的，否则将被截断
+ * @brief generate shortname for the given name
+ * 
+ * @note 假设扩展名是合法的，否则将被截断
  * @param shortname: 生成的短文件名
  * @param name     : 输入原始文件名
  * @return 若文件名是合法短文件名则返回1，否则返回0
@@ -494,14 +551,11 @@ int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *n
     // 拷贝
     int len = strlen(name);
     if(len > 8) {
-        int id = 1;
         strncpy(shortname, name, 6);
         *(shortname + 6) = '~';
-        fat_travs_dir(fat, dir_clus, 0, get_next_shortname_order, 0 , NULL, shortname, &id);
-        // 目前还没有设计好后续ID生成策略
-        if(id > 5)
-            panic("sn: id > 5");
-        *(shortname + 7) = '0' + id;
+        *(shortname + 7) = '1';
+        fat_travs_phy_dir(fat, dir_clus, 0, 0, NULL, get_next_shortname_order, shortname);
+        // *(shortname + 7) = '0' + id;
         ret = 0;
     } else {
         strncpy(shortname, name, len);
@@ -515,22 +569,11 @@ int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *n
 }
 
 
-static uint8_t cal_checksum(char* shortname) {
-    uint8_t sum = 0;
-    for (int i = FAT_SFN_LENGTH; i != 0; i--) {
-        sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *shortname++;
-    }
-    return sum;
-}
 
-
-/**
- * 用于遍历目录的通用方法 
- */
-static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
-                          entry_handler_t handler, 
+static FR_t fat_travs_phy_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
                           int alloc, uint32_t *offset,
-                          void *p1, void *p2) 
+                          entry_handler_t handler, 
+                          void *param) 
 {
     const int item_size = sizeof(dir_item_t);
     const int item_per_sec = fat->bytes_per_sec/item_size;
@@ -560,7 +603,7 @@ static FR_t fat_travs_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset,
                 uint32_t ofst = (clus_cnt * SPC(fat) + i) * BPS(fat) + j * item_size;
                 dir_item_t *item = (dir_item_t *)(b->data) + j;
                 travs_meta_t meta = {.buf = b, .item_no = j, .nitem = item_per_sec,.offset = ofst};
-                if((res = handler(item, &meta, p1, p2)) != FR_CONTINUE) {
+                if((res = handler(item, &meta, param)) != FR_CONTINUE) {
                     brelse(b);
                     if(offset) // 计算当前目录项在当前目录数据簇中的偏移量
                         *offset = ofst;
@@ -633,31 +676,6 @@ static void generate_dot(fat32_t *fat, uint32_t parent_clus, uint32_t curr_clus)
     brelse(b);
 }
 
-static int extractname(dir_slot_t *slot, char *buf) {
-    uint8_t *n = slot->name0_4;
-    int p = 0;
- 
-    while(p < 5) {
-        buf[p] = n[2*p];
-        if(buf[p] == '\0') return p - 1;
-        p++;
-    }
-    n = slot->name5_10;
-    while(p < 11) {
-        buf[p] = n[2*(p - 5)];
-        if(buf[p] == '\0') return p - 1;
-        p++;
-    }
-    n = slot->name11_12;
-    while(p < 13) {
-        buf[p] = n[2*(p - 11)];
-        if(buf[p] == '\0') return p - 1;
-        p++;
-    }
-
-    return p - 1;
-}
-
 static void fillname(dir_slot_t *slot, char *buf, int len) {
     static char fill[] = {0xff, 0xff, 0xff, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
     uint8_t *n;
@@ -692,9 +710,10 @@ static void fillname(dir_slot_t *slot, char *buf, int len) {
 }
 
 
-static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *p2) {
-    ap_t *ap = (ap_t *)p1;
-    int *cnt = (int *)p2;
+static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) {
+    alloc_helper_t *helper = (alloc_helper_t *)__helper;
+    const int need = helper->entry_need;
+    int *cnt = &helper->entry_cnt;
     // 我们在设计上强行要求长文件名目录项必须创建一个扇区上
     // 主要原因是怕出现下面情况(假设我们需要的entry数目为5)
     // F: free  E: end  U: used
@@ -703,7 +722,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
     // 这样可能会出现跨扇区写入的问题
 
     // 当前扇区剩下的item(假设都是free的)小于剩余所需的item数
-    if(meta->nitem - meta->item_no < ap->entry_num - *cnt) {
+    if(meta->nitem - meta->item_no < need - *cnt) {
         debug("No space, skipped entry");
         debug("item_no: %d all: %d", meta->item_no, meta->nitem);
         debug("entry num: %d, found slot(exclude curr): %d", ap->entry_num, *cnt);
@@ -721,21 +740,21 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
     // 一个空的目录项
     if(item->name[0] == FAT_NAME_END || item->name[0] == FAT_NAME_FREE) {
         (*cnt)++;
-        if(*cnt == ap->entry_num) { // 满足我们的写入需求了
-            int end = meta->item_no - ap->entry_num + 1;
-            dir_slot_t *slot_end = (dir_slot_t *)item - ap->entry_num + 1;
+        if(*cnt == need) { // 满足我们的写入需求了
+            int end = meta->item_no - need + 1;
+            dir_slot_t *slot_end = (dir_slot_t *)item - need + 1;
             if(end < 0) panic("entry_alloc: item no");
             assert((uint64)slot_end >= (uint64)meta->buf->data);
             // 复制短目录项
             debug("copy short item");
-            *item = *ap->item; 
+            *item = *helper->item; 
             // 复制长目录项
-            char *p = (char *)ap->longname;
+            char *p = (char *)helper->longname;
             int id = 1;
-            int len = ap->length;
+            int len = helper->length;
             for(dir_slot_t *slot = (dir_slot_t *)item - 1; slot >= slot_end; slot--) {
                 debug("copy long item id: %d rest text: %s", id, p);
-                slot->alias_checksum = ap->checksum;
+                slot->alias_checksum = helper->checksum;
                 slot->id = id++;
                 slot->attr = 0xf;
                 if(slot == slot_end) { // 最后一个
@@ -764,24 +783,25 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *p1, 
 static FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *item, uint32_t *offset) {
     char name[MAX_FILE_NAME];
     
-    int len = strlen(cname);
-    int entry_num = (len + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1;
+    int len = strlen(cname) + 1;
+    int entry_need = (len + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1;
     strncpy(name, cname, MAX_FILE_NAME);
     int unused(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name);
     debug("short name gened: %s", item->name);
+    uint8_t checksum = cal_checksum((char *)item->name);
+    
+    DEFINE_ALLOC_HELPER(helper, cname, len, entry_need, item, checksum);
 
-    int cnt = 0;
-    ap_t ap = {.checksum = cal_checksum((char *)item->name), .entry_num = entry_num, .item = item, .longname = (char *)cname, .length = len + 1};
-
-    if(fat_travs_dir(fat, dir_clus, 0, entry_alloc_handler, 1, offset, &ap, &cnt) == FR_ERR)
+    if(fat_travs_phy_dir(fat, dir_clus, 0, 1, offset, entry_alloc_handler, &helper) == FR_ERR)
         panic("fat_alloc_entry: fail");
 
     return FR_OK;
 }
 
-static FR_t entry_free_handler(dir_item_t *item, travs_meta_t *meta, void *checkson, void *ofst) {
-    uint8_t checksum = *(uint8_t *)checkson;
-    uint32_t offset = *(uint32_t *)ofst;
+static FR_t entry_free_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) {
+    lookup_helper_t *helper = (lookup_helper_t *)__helper;
+    uint32_t offset = *(helper->offset);
+    uint32_t checksum = helper->checksum;
 
     if(meta->offset > offset) return FR_ERR;
 
@@ -808,8 +828,10 @@ static FR_t entry_free_handler(dir_item_t *item, travs_meta_t *meta, void *check
 }
 
 static FR_t fat_free_entry(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item) {
-    uint32_t checksum = cal_checksum((char *)item->name);
-    return fat_travs_dir(fat, dir_clus, 0, entry_free_handler, 0, NULL, &checksum, &dir_offset);
+    char *name = (char *)item->name;
+    uint8_t checksum = cal_checksum(name);
+    DEFINE_LOOKUP_HELPER(helper, name, checksum, item, &dir_offset);
+    return fat_travs_phy_dir(fat, dir_clus, 0, 0, NULL, entry_free_handler, &helper);
 }
 
 FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t *item) {
@@ -842,170 +864,9 @@ FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_
     return ret;
 }
 
-
-
-static int match_long_name(lp_t *lp, dir_slot_t *slot) {
-    char buf[14];
-    char *p = lp->p;
-
-    int pos = extractname(slot, buf);
-
-    while(p >= lp->longname && pos >= 0) {
-        if(buf[pos] != *p) {
-            return 0;
-        }
-        pos--;
-        p--; 
-    }
-    // 全部匹配完了
-    if(pos == -1) {
-        lp->p = p;
-        return 1;
-    }
-
-    return 0;
-}
-    
-
-static int match_short_name(lp_t *lp, const char *format_name) {
-    if (!lp->is_shortname) {
-        return 0;
-    }
-    const char *name = lp->longname;
-    // match main name
-    int i = 0;
-    int ext_flag = 0;
-    int nul_flag = 0;
-    do {
-        char c2 = *format_name++;
-        if (nul_flag || ext_flag) {
-            if (c2 != ' ') {
-                return 0;
-            }
-            continue;
-        }
-        
-        char c1 = *name++;
-
-        if (c1 == '.')  {
-            ext_flag = 1;
-            continue;
-        }
-
-        if (c1 == 0) {
-            nul_flag = 1;
-            continue;
-        }
-        c1 = toupper(c1);
-
-        if (c1 != c2) { 
-            return 0; 
-        }
-    } while (++i < 8);
-
-    do {
-        char c2 = *format_name++;
-        if (nul_flag) {
-            if (c2 != ' ') {
-                return 0;
-            }
-            continue;
-        }
-        
-        char c1 = *name++;
-        assert(c1 != '.');
-        if (c1 == 0)  {
-            nul_flag = 1;
-            continue;
-        }
-        c1 = toupper(c1);
-
-        if (c1 != c2) return 0;
-    } while (++i < FAT_SFN_LENGTH);
-
-    return 1;
-}
-
-static FR_t lookup_handler(dir_item_t *item, travs_meta_t *meta, void *param, void *ret) {
-    lp_t *lp = (lp_t *)param;
-    if(item->name[0] == FAT_NAME_END) {
-        return FR_ERR; // 找不到了
-    } else if(item->name[0] == FAT_NAME_FREE) {
-        // JUST a free entry
-    } else {
-        if(FAT_IS_LFN(item->attr)) { // 长文件名标识
-            char buf[20];
-            dir_slot_t *slot = (dir_slot_t *)item;
-            extractname(slot, buf);
-            if(FAT_LFN_END(slot->id)) { // 找到最后一段了
-                if(match_long_name(lp, slot)) { // 名称匹配
-                    lp->next = FAT_LFN_ID(slot->id) - 1;
-                    lp->checksum = slot->alias_checksum;
-                }
-            } else { // 不是最后一段
-                if(lp->next != FAT_LFN_ID(slot->id) || lp->checksum != slot->alias_checksum) { // 不匹配
-                    goto orphan;
-                }
-
-                if(match_long_name(lp, slot)) { // 名称匹配
-                    lp->next--;
-                    return FR_CONTINUE;
-                }
-                orphan:
-                lp->p = lp->top;
-                lp->checksum = 0;
-                lp->next = 0;
-                return FR_CONTINUE;
-            }
-           
-            // debug("slot id: %d eof: %d checksum: %d", FAT_LFN_ID(slot->id), FAT_LFN_END(slot->id), slot->alias_checksum);
-        } else { // 短文件
-            // debug("lpcheckis: %d, mychecksum is: %d", lp->checksum,cal_checksum((char *)item->name));
-            if(lp->next != 0) { // 短文件名没有紧随？文件系统错误了
-                warn("long entry not continous current next is %d", lp->next);
-            }
-
-            if(lp->checksum == 0) { // 之前没有碰到长文件目录项
-                if(match_short_name(lp, (char *)item->name)) {
-                    goto found;
-                }
-            }
-
-            if(lp->p == lp->longname - 1) { // 长文件名匹配完毕
-                if(lp->checksum == cal_checksum((char *)item->name)) { // 确认校验和
-                    goto found;
-                }
-            }
-
-            lp->p = lp->top;
-            lp->checksum = 0;
-            lp->next = 0;
-            return FR_CONTINUE;
-
-            found:
-            *(dir_item_t *)ret = *item;
-            debug("find target %s start cluster %d", item->name, FAT_FETCH_CLUS(item));
-            return FR_OK;
-        }
-    }
-    return FR_CONTINUE;
-}
-
-
-
 FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t* item, const char *newname, uint32_t *offset) {
     if(fat_free_entry(fat, dir_clus, dir_offset, item) != FR_OK) panic("free fail");
     return fat_alloc_entry(fat, dir_clus, newname, item, offset);
-}
-
-
-/* 在指定目录簇下寻找名为name的目录项 */
-FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *ret, uint32_t *offset) {
-    char *name = (char *)cname;
-    int len = strlen(name);
-    lp_t lp = {.is_shortname = len <= FAT_SFN_LENGTH + 1, .longname = name, .p = name + len - 1, .top = name + len - 1, .next = 0, .checksum = 0};
-
-    return fat_travs_dir(fat, dir_clus, 0, lookup_handler, 0, offset, &lp, ret);
 }
 
 
@@ -1043,13 +904,11 @@ static inline void copy_shotname(char *dst, dir_item_t *item) {
     *dst = '\0';
 }
 
-/* 用于目录遍历（加了一层封装） */
-static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *p2) {
-    travs_handler_t *handler = (travs_handler_t *)p1;
-    lp_t *lp = (lp_t *)p2;
+static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) {
+    travs_helper_t *helper = (travs_helper_t *)__helper;
     // 结束遍历 
     if(item->name[0] == FAT_NAME_END) {
-        return FR_OK;
+        return FR_ERR;
     }
     if(item->name[0] == FAT_NAME_FREE) {
         return FR_CONTINUE;
@@ -1058,50 +917,63 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *p1, void *
         dir_slot_t *slot = (dir_slot_t *)item;
         int id = FAT_LFN_ID(slot->id);
         if(FAT_LFN_END(slot->id)) { // 找到最后一段了
-            lp->next = id - 1;
-            lp->checksum = slot->alias_checksum;
-            char *buf = lp->longname + lp->next * FAT_LFN_LENGTH;
-            lp->p = buf + extractname(slot, buf) + 1; //  使p指向文件名末尾
+            helper->next = id - 1;
+            helper->checksum = slot->alias_checksum;
+            char *buf = helper->buf + helper->next * FAT_LFN_LENGTH;
+            helper->p = buf + extractname(slot, buf) + 1; //  使p指向文件名末尾
         } else { // 不是最后一段
-            if(lp->next != FAT_LFN_ID(slot->id) || lp->checksum != slot->alias_checksum) { // 不匹配
-                lp->p = lp->longname;
-                lp->next = 0;
-                lp->checksum = 0;
+            if(helper->next != FAT_LFN_ID(slot->id) || helper->checksum != slot->alias_checksum) { // 不匹配
+                travs_helper_reset(helper);
                 return FR_CONTINUE;
             }
-            lp->next--;
-            extractname(slot, lp->longname + lp->next * FAT_LFN_LENGTH);
+            helper->next--;
+            extractname(slot, helper->buf + helper->next * FAT_LFN_LENGTH);
         }
         
         return FR_CONTINUE;
     } else { // 短文件
-        if(lp->next != 0) { // 短文件名没有紧随？文件系统错误了
-            warn("long entry not continous current next is %d", lp->next);
+        if(helper->next != 0) { // 短文件名没有紧随？文件系统错误了
+            warn("long entry not continous current next is %d", helper->next);
         }
 
-        if(lp->checksum == 0) { // 之前没有碰到长文件目录项
-            copy_shotname(lp->longname, item);
-            lp->is_shortname = 1;
+        if(helper->checksum == 0) { // 之前没有碰到长文件目录项
+            copy_shotname(helper->buf, item);
+            helper->is_shortname = 1;
         } else {
-            assert(lp->p);
-            *(lp->p) = '\0';
+            assert(helper->p);
+            *(helper->p) = '\0';
         }
 
-        lp->p = lp->longname;
-        lp->checksum = 0;
-        lp->next = 0;
+        travs_helper_reset(helper);
         
-        return (*handler)(item, lp->longname, meta->offset, lp->state);
+        return (helper->callback)(item, helper->buf, meta->offset, helper->param);
     }
 
 }
 
-/* 这里的state是用来保存handler的状态的 */
-FR_t fat_traverse_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state) {
-    char buf[MAX_FILE_NAME];
-    // 复用一下lp
-    lp_t lp = {.checksum = 0, .longname = buf, .p = buf, .state = state};
-    return fat_travs_dir(fat, dir_clus, dir_offset, travs_handler, 0, NULL, &handler, &lp);
+
+FR_t fat_travs_logical_dir(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, travs_handler_t handler, void *state) {
+    DEFINE_TRAVS_HELPER(helper, handler, state);
+    return fat_travs_phy_dir(fat, dir_clus, dir_offset, 0, NULL, travs_handler, &helper);
+}
+
+static FR_t lookup_handler(dir_item_t *item, const char *name, off_t offset, void *__helper) {
+    lookup_helper_t *helper = (lookup_helper_t *)__helper;
+    if (strncmp(name, helper->name, MAX_FILE_NAME) == 0) {
+        if (helper->item)
+            *helper->item = *item;
+        if (helper->offset)
+            *helper->offset = offset;
+        return FR_OK;
+    }
+
+    return FR_CONTINUE;
+}
+
+/* 在指定目录簇下寻找名为name的目录项 */
+FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_t *ret, uint32_t *offset) {
+    DEFINE_LOOKUP_HELPER(helper, cname, 0, ret, offset);
+    return fat_travs_logical_dir(fat, dir_clus, 0, lookup_handler, &helper);
 }
 
 
