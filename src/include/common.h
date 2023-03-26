@@ -9,12 +9,6 @@
 #include "utils.h"
 #include "str.h"
 
-/// @brief Generic type to describe a buffer
-typedef struct buf_desc {
-    char *buf;
-    int size;
-} buf_desc_t;
-
 extern volatile int panicked;
 
 #endif

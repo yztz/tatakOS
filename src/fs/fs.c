@@ -60,9 +60,9 @@ struct dents_state {
   off_t *offset;
 };
 
-FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
+FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *__state) {
   const int dirent_size = sizeof(struct linux_dirent64);
-  struct dents_state *state = (struct dents_state *) s;
+  struct dents_state *state = (struct dents_state *) __state;
   struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
 
   if(strncmp(name, ". ", 2) == 0 || strncmp(name, "..  ", 4) == 0)
@@ -90,7 +90,7 @@ FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *s) {
 // caller holds lock
 int read_dents(entry_t *entry, off_t *offset, char *buf, int n) {
   struct dents_state state = {{.buf = buf, .size = n}, .offset = offset};
-  fat_traverse_dir(fat, entry->clus_start, *offset, dents_handler, &state);
+  fat_travs_logical_dir(fat, entry->clus_start, *offset, dents_handler, &state);
   return n - state.desc.size;
 }
 

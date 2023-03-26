@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2023
  * 
  */
+
 #ifndef _H_WAITQUEUE_
 #define _H_WAITQUEUE_
 
@@ -64,74 +65,74 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
 
 
 #define __wait_event_timeout(wq, condition, interruptible, locked, timeout) ({ \
-    __label__ out;      \
-    int __ret = timeout;      \
-                        \
-    DECLARE_WQ_ENTRY(__entry);          \
-    proc_t *p = current;                \
-    if (!(locked))              \
-        acquire(&(wq)->wq_lock);    \
-                                        \
-    do {                                \
-        acquire(&p->lock);              \
-        if ((interruptible) && p->sig_pending) {           \
-            release(&p->lock);          \
-            __ret = -EINTR;         \
-            goto out;                   \
-        }                               \
-        p->wait_channel = (wq);         \
-        p->__state = SLEEPING;          \
-        if (list_empty(&__entry.head))  \
-            __add_to_waitqueue(wq, &__entry); \
-        release(&(wq)->wq_lock);        \
-        __ret = sched_timeout(__ret); \
-        p->wait_channel = NULL;         \
-        release(&p->lock);              \
-        acquire(&(wq)->wq_lock);        \
-        if (__ret <= 0) {         \
-            __ret = -ETIMEDOUT; \
-            goto out;                   \
-        } \
-    } while (!(condition) && __ret > 0);  \
-    out: \
-    __rm_from_waitqueue(wq, &__entry); \
-    if (!(locked))              \
-        release(&(wq)->wq_lock);    \
-    __ret;         \
+    __label__ out;                                              \
+    int __ret = timeout;                                        \
+                                                                \
+    DECLARE_WQ_ENTRY(__entry);                                  \
+    proc_t *p = current;                                        \
+    if (!(locked))                                              \
+        acquire(&(wq)->wq_lock);                                \
+                                                                \
+    do {                                                        \
+        acquire(&p->lock);                                      \
+        if ((interruptible) && p->sig_pending) {                \
+            release(&p->lock);                                  \
+            __ret = -EINTR;                                     \
+            goto out;                                           \
+        }                                                       \
+        p->wait_channel = (wq);                                 \
+        p->__state = SLEEPING;                                  \
+        if (list_empty(&__entry.head))                          \
+            __add_to_waitqueue(wq, &__entry);                   \
+        release(&(wq)->wq_lock);                                \
+        __ret = sched_timeout(__ret);                           \
+        p->wait_channel = NULL;                                 \
+        release(&p->lock);                                      \
+        acquire(&(wq)->wq_lock);                                \
+        if (__ret <= 0) {                                       \
+            __ret = -ETIMEDOUT;                                 \
+            goto out;                                           \
+        }                                                       \
+    } while (!(condition) && __ret > 0);                        \
+    out:                                                        \
+    __rm_from_waitqueue(wq, &__entry);                          \
+    if (!(locked))                                              \
+        release(&(wq)->wq_lock);                                \
+    __ret;                                                      \
 })
 
-#define __wait_event(wq, condition, interruptible, locked) ({ \
-    __label__ out;      \
-    int __ret = 0;      \
-                        \
-                        \
-    DECLARE_WQ_ENTRY(__entry);          \
-    proc_t *p = current;                \
-    if (!(locked))              \
-        acquire(&(wq)->wq_lock);    \
-                                        \
-    do {                                \
-        acquire(&p->lock);              \
-        if ((interruptible) && p->sig_pending) {           \
-            release(&p->lock);          \
-            __ret = -EINTR;             \
-            goto out;                   \
-        }                               \
-        p->wait_channel = (wq);         \
-        p->__state = SLEEPING;          \
-        if (list_empty(&__entry.head))  \
-            __add_to_waitqueue(wq, &__entry); \
-        release(&(wq)->wq_lock);        \
-        sched();                        \
-        p->wait_channel = NULL;         \
-        release(&p->lock);              \
-        acquire(&(wq)->wq_lock);        \
-    } while (!(condition));             \
-    out: \
-    __rm_from_waitqueue(wq, &__entry); \
-    if (!(locked))              \
-        release(&(wq)->wq_lock);    \
-    __ret;         \
+#define __wait_event(wq, condition, interruptible, locked) ({   \
+    __label__ out;                                              \
+    int __ret = 0;                                              \
+                                                                \
+                                                                \
+    DECLARE_WQ_ENTRY(__entry);                                  \
+    proc_t *p = current;                                        \
+    if (!(locked))                                              \
+        acquire(&(wq)->wq_lock);                                \
+                                                                \
+    do {                                                        \
+        acquire(&p->lock);                                      \
+        if ((interruptible) && p->sig_pending) {                \
+            release(&p->lock);                                  \
+            __ret = -EINTR;                                     \
+            goto out;                                           \
+        }                                                       \
+        p->wait_channel = (wq);                                 \
+        p->__state = SLEEPING;                                  \
+        if (list_empty(&__entry.head))                          \
+            __add_to_waitqueue(wq, &__entry);                   \
+        release(&(wq)->wq_lock);                                \
+        sched();                                                \
+        p->wait_channel = NULL;                                 \
+        release(&p->lock);                                      \
+        acquire(&(wq)->wq_lock);                                \
+    } while (!(condition));                                     \
+    out:                                                        \
+    __rm_from_waitqueue(wq, &__entry);                          \
+    if (!(locked))                                              \
+        release(&(wq)->wq_lock);                                \
+    __ret;                                                      \
 })
 
 

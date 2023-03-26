@@ -55,5 +55,12 @@ typedef struct wq_entry wq_entry_t;
 
 typedef void (*kthread_callback_t)(proc_t *);
 
+
+/// @brief Generic type to describe a buffer
+typedef struct buf_desc {
+    char *buf;
+    int size;
+} buf_desc_t;
+
 #endif
 
