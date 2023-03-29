@@ -4,7 +4,6 @@
 #include "mm/trapframe.h"
 #include "mm/mmap.h"
 #include "kernel/thread_group.h"
-#include "kernel/signal.h"
 
 #define __MODULE_NAME__ CLONE
 #include "debug.h"
@@ -16,7 +15,6 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
     struct proc *np;
     mm_t *newmm;
     fdtable_t *newfdtbl;
-    signal_t *newsig;
     tg_t *newtg;
     utf_t *newtf;
 
@@ -58,14 +56,6 @@ int do_clone(proc_t *p, uint64_t stack, int flags, uint64_t ptid, uint64_t tls, 
             goto bad;
     }
     proc_settg(np, newtg);
-
-    if ((flags & CLONE_SIGHAND)) {
-        newsig = p->signal;
-    } else {
-        if ((newsig = sig_clone(p->signal)) == NULL)
-            goto bad;
-    }
-    proc_setsig(np, newsig);
 
     if ((flags & CLONE_PARENT_SETTID)) {
         if (copy_to_user(ptid, &np->pid, sizeof(int)) == -1) {

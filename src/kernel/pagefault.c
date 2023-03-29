@@ -6,7 +6,6 @@
 #include "mm/mmap.h"
 #include "mm/trapframe.h"
 #include "kernel/proc.h"
-#include "kernel/signal.h"
 
 #define __MODULE_NAME__ PAGEFAULT
 
@@ -115,10 +114,6 @@ static int do_cow_page(uint64_t address, pte_t *pte) {
  */
 int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
     if (!have_prot(fault, vma)) {
-        // ERROR("have no prot");
-        if (p->signaling)
-            ER();
-        sig_send(p, SIGSEGV);
         return 1;
     }
     pte_t *pte, entry;

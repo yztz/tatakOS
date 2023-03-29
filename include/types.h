@@ -45,8 +45,6 @@ typedef struct kstat kstat_t;
 typedef struct mmlayout mm_t;
 typedef struct page_t page_t;
 typedef struct proc proc_t;
-typedef struct signal signal_t;
-typedef uint64_t sigset_t;
 typedef struct thread_group tg_t;
 typedef struct utrapframe utf_t;
 typedef struct vma vma_t;

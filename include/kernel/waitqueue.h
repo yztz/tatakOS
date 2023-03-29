@@ -64,7 +64,7 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
 #define DECLARE_WQ_ENTRY(name) wq_entry_t name = {.private=current, .head=LIST_HEAD_INIT((name).head), .func=auto_remove_callback}
 
 
-#define __wait_event_timeout(wq, condition, interruptible, locked, timeout) ({ \
+#define __wait_event_timeout(wq, condition, locked, timeout) ({ \
     __label__ out;                                              \
     int __ret = timeout;                                        \
                                                                 \
@@ -75,11 +75,6 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
                                                                 \
     do {                                                        \
         acquire(&p->lock);                                      \
-        if ((interruptible) && p->sig_pending) {                \
-            release(&p->lock);                                  \
-            __ret = -EINTR;                                     \
-            goto out;                                           \
-        }                                                       \
         p->wait_channel = (wq);                                 \
         p->__state = SLEEPING;                                  \
         if (list_empty(&__entry.head))                          \
@@ -101,8 +96,7 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
     __ret;                                                      \
 })
 
-#define __wait_event(wq, condition, interruptible, locked) ({   \
-    __label__ out;                                              \
+#define __wait_event(wq, condition, locked) ({   \
     int __ret = 0;                                              \
                                                                 \
                                                                 \
@@ -113,11 +107,6 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
                                                                 \
     do {                                                        \
         acquire(&p->lock);                                      \
-        if ((interruptible) && p->sig_pending) {                \
-            release(&p->lock);                                  \
-            __ret = -EINTR;                                     \
-            goto out;                                           \
-        }                                                       \
         p->wait_channel = (wq);                                 \
         p->__state = SLEEPING;                                  \
         if (list_empty(&__entry.head))                          \
@@ -128,25 +117,17 @@ static void auto_remove_callback(wq_t *wq, wq_entry_t *entry) {
         release(&p->lock);                                      \
         acquire(&(wq)->wq_lock);                                \
     } while (!(condition));                                     \
-    out:                                                        \
     __rm_from_waitqueue(wq, &__entry);                          \
     if (!(locked))                                              \
         release(&(wq)->wq_lock);                                \
     __ret;                                                      \
 })
 
-
-#define wait_event_interruptible_locked(wq, condition) \
-    ((condition) ? 0 : (__wait_event(wq, condition, 1, 1)));
-
-#define wait_event_timeout_interruptible_locked(wq, condition, timeout) \
-    ((condition) ? 0 : (__wait_event_timeout(wq, condition, 1, 1, timeout)));
-
 #define wait_event_locked(wq, condition) \
-    ((condition) ? 0 : (__wait_event(wq, condition, 0, 1)));
+    ((condition) ? 0 : (__wait_event(wq, condition, 1)));
 
-#define wait_event_timeout_locked(wq, condition) \
-    ((condition) ? 0 : (__wait_event_timeout(wq, condition, 0, 1, timeout)));
+#define wait_event_timeout_locked(wq, condition, timeout) \
+    ((condition) ? 0 : (__wait_event_timeout(wq, condition, 1, timeout)));
 
 static inline void __wq_wakeup(wq_t *self) {
     wq_entry_t *entry, *tmp;

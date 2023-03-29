@@ -137,19 +137,6 @@ int filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len)
   return len - rest;
 }
 
-// Get metadata about file f.
-// addr is a user virtual address, pointing to a struct stat.
-int filestat(struct file *f, struct kstat *stat) {
-  
-  if(f->type == FD_ENTRY) {
-    elock(f->ep);
-    estat(f->ep, stat);
-    eunlock(f->ep);
-  } else {
-    panic("unknown ft");
-  }
-  return 0;
-}
 
 // Read from file f.
 // addr is a user virtual address.

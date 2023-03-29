@@ -3,7 +3,6 @@
 #include "kernel/proc.h"
 #include "kernel/sched.h"
 #include "kernel/syscall.h"
-#include "kernel/signal.h"
 #include "mm/trapframe.h"
 
 // #define QUIET
@@ -100,8 +99,6 @@ void usertrap(void) {
 
     if (p->killed)
         exit(-1);
-
-    sig_handle(p->signal);
 
     usertrapret();
 }

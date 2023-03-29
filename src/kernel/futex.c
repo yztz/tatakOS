@@ -31,9 +31,9 @@ uint64_t futex_sleep(wq_t *futex_queue, void *chan, timespec_t *time) {
 
     if(time) {
         int timeout = time->ts_sec * 1000 + time->ts_nsec / 1000000;
-        res = wait_event_timeout_interruptible_locked(futex_queue, p->futex_chan == NULL, timeout);
+        res = wait_event_timeout_locked(futex_queue, p->futex_chan == NULL, timeout);
     } else {
-        res = wait_event_interruptible_locked(futex_queue, p->futex_chan == NULL);
+        res = wait_event_locked(futex_queue, p->futex_chan == NULL);
     }
 
     assert(current->state == RUNNING);

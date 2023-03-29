@@ -53,16 +53,8 @@ struct proc {
     struct context context;
     /// @brief file open table
     fdtable_t *fdtable;
-    /// @brief signal info
-    signal_t *signal;
     /// @brief thread group info, we get 'pid' from here
     tg_t *tg;
-    /// @brief pending signal
-    sigset_t sig_pending;
-    /// @brief ignored signal
-    sigset_t sig_mask;
-    /// @brief signal handling state
-    int signaling;
     /// @brief for state queue linklist
     list_head_t state_head;
     /// @brief for thread group linklist
@@ -92,7 +84,6 @@ uint64          growproc(uint64_t n);
 int             wakeup(void *);
 
 void            proc_setmm(proc_t *p, mm_t *mm);
-void            proc_setsig(proc_t *p, signal_t *sig);
 void            proc_settg(proc_t *p, tg_t *tg);
 void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
 void            proc_settf(proc_t *p, utf_t *tf);
@@ -105,7 +96,6 @@ void            freeproc(struct proc *p);
 int             get_proc_cnt();
 void            wake_up_process(proc_t *p);
 void            wake_up_process_locked(proc_t *p);
-void            sig_send(proc_t *p, int signum);
 int             freechild();
 
 

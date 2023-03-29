@@ -1,7 +1,6 @@
 #include "common.h"
 #include "driver/timer.h"
 #include "kernel/sched.h"
-#include "kernel/signal.h"
 #include "kernel/taskqueue.h"
 #include "kernel/thread_group.h"
 #include "kernel/futex.h"
@@ -116,9 +115,6 @@ proc_t *proc_new(kthread_callback_t callback) {
 
     p->pid = get_next_pid();
     p->killed = 0;
-    p->sig_pending = 0;
-    p->sig_mask = 0;
-    p->signaling = 0;
     p->set_tid_addr = 0;
     p->clear_tid_addr = 0;
     p->parent = NULL;
@@ -165,7 +161,6 @@ bad:
 void freeproc(struct proc *p) {
     fdtbl_free(&p->fdtable);
     mmap_free(&p->mm);
-    sig_free(&p->signal);
     tg_free(&p->tg);
     tf_free(&p->trapframe);
 
@@ -237,7 +232,6 @@ void user0_init() {
     proc_t *p;
     mm_t *mm;
     fdtable_t *fdtable;
-    signal_t *sig;
     tg_t *tg;
     utf_t *tf;
 
@@ -249,7 +243,6 @@ void user0_init() {
 
     if ((mm = mmap_new()) == NULL ||
         (fdtable = fdtbl_new()) == NULL ||
-        (sig = sig_new()) == NULL ||
         (tg = tg_new(p)) == NULL ||
         (tf = tf_new(p)) == NULL) {
         panic("alloc");
@@ -257,7 +250,6 @@ void user0_init() {
 
     proc_switchmm(p, mm);
     proc_setfdtbl(p, fdtable);
-    proc_setsig(p, sig);
     proc_settg(p, tg);
     proc_settf(p, tf);
 
@@ -341,7 +333,6 @@ void exit(int status) {
     if (thrdcnt == 0) {
         // Parent might be sleeping in wait().
         wakeup(p->parent);
-        sig_send(p->parent, SIGCHLD);
     }
 
     acquire(&p->lock);
@@ -365,25 +356,6 @@ extern int __futex_wake(wq_t *, void *, int, int, void *, int);
     // Jump into the scheduler, never to return.
     sched();
     panic("zombie exit");
-}
-
-void sig_send(proc_t *p, int signum) {
-    acquire(&p->lock);
-    if (signum == SIGKILL) {
-        p->killed = 1;
-    }
-    p->sig_pending |= (1L << (signum - 1));
-    // wakeup
-    if (p->wait_channel) {
-        release(&p->lock);
-        wq_wakeup(p->wait_channel);
-    } else if (p->state == SLEEPING) { // maybe delete in future
-        wake_up_process_locked(p);
-        release(&p->lock);
-    } else {
-        release(&p->lock);
-    }
-    
 }
 
 
@@ -473,10 +445,6 @@ void proc_setmm(proc_t *p, mm_t *newmm) {
     p->mm = newmm;
 }
 
-void proc_setsig(proc_t *p, signal_t *newsig) {
-    sig_ref(newsig);
-    p->signal = newsig;
-}
 
 void proc_settg(proc_t *p, tg_t *tg) {
     tg_ref(tg);

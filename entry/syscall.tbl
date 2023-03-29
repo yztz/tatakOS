@@ -8,11 +8,6 @@
 93     exit      sys_exit  
 98     futex     sys_futex
 101    nanosleep sys_nanosleep
-129    kill      sys_kill
-134    rt_sigaction     sys_rt_sigaction
-135    rt_sigprocmask   sys_rt_sigprocmask
-137    rt_sigtimedwait  sys_rt_sigtimedwait
-139    rt_sigreturn  sys_rt_sigreturn
 172    getpid    sys_getpid
 220    clone     sys_clone
 221    exec      sys_exec

@@ -2,7 +2,6 @@
 #include "elf.h"
 #include "fs/fs.h"
 #include "kernel/proc.h"
-#include "kernel/signal.h"
 #include "mm/vm.h"
 #include "mm/alloc.h"
 #include "mm/mmap.h"
@@ -170,7 +169,6 @@ int exec(char *path, char *argv[]) {
 
     tf_reset(proc_get_tf(p), elfentry, ustack);
     mmap_free(&oldmm);
-    sig_reset(p->signal);
 
     // 保存新的进程名称
     for (last = s = path; *s; s++)

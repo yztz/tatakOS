@@ -7,7 +7,6 @@ obj-y += pagefault.o
 obj-y += proc.o
 obj-y += scavenger.o
 obj-y += sched.o
-obj-y += signal.o
 obj-y += sys.o
 obj-y += syscall.o
 obj-y += sysfile.o
