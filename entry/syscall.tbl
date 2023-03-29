@@ -27,7 +27,6 @@
 56     openat    sys_openat
 57     close     sys_close
 59     pipe2     sys_pipe2
-61     getdents64 sys_getdents64
 62     lseek     sys_lseek
 63     read      sys_read
 64     write     sys_write
