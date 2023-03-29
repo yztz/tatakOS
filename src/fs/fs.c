@@ -1,3 +1,21 @@
+/**
+ * @file fs.c
+ * @author YangZongzhen
+ * @brief Admittedly, `entry` is a poor design, a byproduct of rapid iteration. 
+ *        In theory it plays the same role as the `inode` in linux, 
+ *        but in practice it is ambiguous with the upper and lower interfaces, 
+ *        confusing the relationship between abstract file objects (`inode`) and 
+ *        concrete file objects (`fat_entry`).
+ * 
+ *        But it is well-intentioned, designed to broker file manipulation to a concrete file system (fat32), 
+ *        while taking on the functions of page cache and file exclusive access.
+ * 
+ * @version 0.1
+ * @date 2023-03-29
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #include "common.h"
 #include "fs/fs.h"
 #include "fs/stat.h"
@@ -130,7 +148,7 @@ static entry_t *eget(entry_t *parent, uint32_t clus_offset, dir_item_t *item, co
   parent->ref++;
   
   /* 只有当entry的类型为FILE时，才需要i_mapping，否则为DIR时不需要 */
-  if(item->attr == FAT_ATTR_FILE) {
+  if(item->attr == FAT_ATTR_ARCHIVE) {
     entry->i_mapping  = kzalloc(sizeof(struct address_space));
     entry->i_mapping->host = entry;
   }
@@ -218,7 +236,7 @@ static void __eput(entry_t *entry) {
       releasesleep(&entry->lock);
       acquire(&entry->fat->cache_lock);
 
-      if(entry->raw.attr == FAT_ATTR_FILE) {
+      if(entry->raw.attr == FAT_ATTR_ARCHIVE) {
         free_mapping(entry);
       }
         
@@ -234,7 +252,7 @@ static void __eput(entry_t *entry) {
     // #endif
 
     // /* 如果为普通文件，则写回。（为目录则不写回） */
-    if(entry->raw.attr == FAT_ATTR_FILE){
+    if(entry->raw.attr == FAT_ATTR_ARCHIVE){
         // /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
         // free_mapping(entry);
 
@@ -359,7 +377,7 @@ entry_t *create(entry_t *from, char *path, short type) {
   dir_item_t item;
   uint32_t offset;
   fat_create_entry(fat, dp->clus_start, name, 
-          type == T_DIR ? FAT_ATTR_DIR : FAT_ATTR_FILE, &item, &offset);
+          type == T_DIR ? FAT_ATTR_DIRECTORY : FAT_ATTR_ARCHIVE, &item, &offset);
 
   ep = eget(dp, offset, &item, name);
   eunlockput(dp);

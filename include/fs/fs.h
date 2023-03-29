@@ -7,8 +7,8 @@
 #include "list.h"
 #include "radix-tree.h"
 
-#define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIR) > 0)
-#define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_FILE) > 0)
+#define E_ISDIR(entry) (((entry)->raw.attr & FAT_ATTR_DIRECTORY) > 0)
+#define E_ISFILE(entry) (((entry)->raw.attr & FAT_ATTR_ARCHIVE) > 0)
 #define E_FILESIZE(entry) ((entry)->raw.size)
 
 typedef struct address_space {
