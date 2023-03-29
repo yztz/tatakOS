@@ -53,8 +53,20 @@
 #define IS_FAT_CLUS_END(clus) ((clus) >= 0x0FFFFFF8) // 簇结束标识
 #define FAT_CLUS_END 0x0FFFFFFF // 簇结束标识
 #define FAT_CLUS_FREE 0x0       // 空闲簇
-#define __FAT_LFN_ATTR 0xF      // 长文件名标识
-#define FAT_IS_LFN(attr) ((attr) == __FAT_LFN_ATTR)
+
+#define FAT_ATTR_LONG_NAME  (FAT_ATTR_READ_ONLY |   \
+                             FAT_ATTR_HIDDEN |      \
+                             FAT_ATTR_SYSTEM |      \
+                             FAT_ATTR_VOLUME_ID)
+
+#define FAT_ATTR_LONG_NAME_MASK (FAT_ATTR_READ_ONLY |   \
+                             FAT_ATTR_HIDDEN |          \
+                             FAT_ATTR_SYSTEM |          \
+                             FAT_ATTR_VOLUME_ID |       \
+                             FAT_ATTR_DIRECTORY |       \
+                             FAT_ATTR_ARCHIVE)
+
+#define FAT_IS_LFN(attr) (((attr) & FAT_ATTR_LONG_NAME_MASK) == FAT_ATTR_LONG_NAME)
 
 #define FAT_NAME_END 0x0
 #define FAT_NAME_FREE 0xe5
@@ -99,10 +111,9 @@ typedef struct travs_meta {
 /**
  * @brief The handler to handle fat entry.
  *        There are 4 params given:
- *          1. item - raw dir entry item
- *          2. meta - metadata
- *          3. p1   - first custom param
- *          4. p2   - second custom param
+ *          1. item  - raw dir entry item
+ *          2. meta  - metadata
+ *          3. param - custom param
  *        Returning FR_OK/FR_ERR means end, or FR_CONTINUE to continue.
  */
 typedef FR_t (*entry_handler_t)(dir_item_t *item, travs_meta_t *meta, void *param);
@@ -125,9 +136,15 @@ static FR_t fat_travs_phy_dir(fat32_t *fat, uint32_t dir_clus,
                           entry_handler_t handler, 
                           void *param);
 
-
-char *DOT = ".          ";
-char *DOTDOT = "..         ";
+static inline uint8_t cal_checksum(char* shortname) {
+    if (shortname == NULL)
+        return -1;
+    uint8_t sum = 0;
+    for (int i = FAT_SFN_LENGTH; i != 0; i--) {
+        sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *shortname++;
+    }
+    return sum;
+}
 
 /*  解析fat dbr */
 void fat_parse_hdr(fat32_t *fat, struct fat_boot_sector* dbr) {
@@ -167,7 +184,7 @@ static entry_t *get_root(fat32_t *fat) {
     root->fat = fat;
     root->nlink = 1;
     root->parent = NULL;
-    root->raw.attr = FAT_ATTR_DIR;
+    root->raw.attr = FAT_ATTR_DIRECTORY;
     root->name[0] = '/';
     root->clus_start = fat->root_cluster;
 
@@ -302,7 +319,7 @@ static inline FR_t fat_alloc_cluster(fat32_t *fat, uint32_t *news, int n) {
 }
 
 
-int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
+int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off, int n) {
     if(cclus == 0 || n == 0) // todo:空文件怎么办？
         return 0;
     debug("cclus is %d", cclus);
@@ -357,7 +374,7 @@ int (fat_write)(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t o
  * 注意：反向分配不利于发挥页面缓存的性能以及多块连读的策略 
  * 但是在算法实现上会比较简洁明了且高效
  */
-FR_t (__fat_alloc_cluster_reversed_order)(fat32_t *fat, uint32_t *news, int n) {
+FR_t __fat_alloc_cluster_reversed_order(fat32_t *fat, uint32_t *news, int n) {
     const int entry_per_sect = BPS(fat) / 4;
     uint32_t sect = fat->fat_start_sector;
     int cnt = n - 1;
@@ -410,7 +427,7 @@ static inline void update_next_freeclus(fat32_t *fat, uint32_t freeclus) {
  * 注意：正向分配有利于发挥页面缓存的性能以及适应多块连读的策略 
  * 但是在算法实现上会比较繁琐（有时候需要同时持有两个块的锁）
  */
-FR_t (__fat_alloc_cluster_order)(fat32_t *fat, uint32_t *news, int n) {
+FR_t __fat_alloc_cluster_order(fat32_t *fat, uint32_t *news, int n) {
     assert(n > 0);
     const int entry_per_sect = BPS(fat) / 4;
     // 将下个空闲簇号作为参考值来减少遍历时间
@@ -527,42 +544,47 @@ static FR_t get_next_shortname_order(dir_item_t *item, travs_meta_t *meta, void 
  * @brief generate shortname for the given name
  * 
  * @note 假设扩展名是合法的，否则将被截断
- * @param shortname: 生成的短文件名
- * @param name     : 输入原始文件名
+ * @param shortname 生成的短文件名
+ * @param name  输入原始文件名
  * @return 若文件名是合法短文件名则返回1，否则返回0
  */
-int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *shortname, char *name) {
-    char *ext = NULL;
+int generate_shortname(fat32_t *fat, uint32_t dir_clus, char *dst, const char *src) {
+    const char *ext = NULL;
     int ret = 1;
+    const int slen = strlen(src);
 
-    memset(shortname, ' ', FAT_SFN_LENGTH);
+    char buf[FAT_SFN_LENGTH];
     
-     // 转换大写
-    to_upper(name);
-    
-    for(int i = strlen(name) - 1; i >= 0; i--) {
-        if(*(name + i) == '.') {
-            *(name + i) = '\0';
-            ext = name + i + 1;
+    // find extention name
+    for(int i = slen - 1; i >= 0; i--) {
+        if(*(src + i) == '.') {
+            ext = src + i + 1;
             break;
         }
     }
-   
-    // 拷贝
-    int len = strlen(name);
-    if(len > 8) {
-        strncpy(shortname, name, 6);
-        *(shortname + 6) = '~';
-        *(shortname + 7) = '1';
-        fat_travs_phy_dir(fat, dir_clus, 0, 0, NULL, get_next_shortname_order, shortname);
-        // *(shortname + 7) = '0' + id;
+    // length of name/ext
+    const int nlen = ext ? ext - src - 1 : slen;
+    const int elen = ext ? strlen(ext) : 0;
+    
+    // copy name
+    for (int i = 0; i < nlen; i++) {
+        buf[i] = toupper(src[i]);
+    }
+    if(nlen > 8) {
+        *(buf + 6) = '~';
+        *(buf + 7) = '1';
+        fat_travs_phy_dir(fat, dir_clus, 0, 0, NULL, get_next_shortname_order, buf);
         ret = 0;
     } else {
-        strncpy(shortname, name, len);
+        memset(buf + nlen, ' ', 8 - nlen);
     }
-    // 拷贝扩展名
-    if(ext) {
-        strncpy(shortname + 8, ext, min(strlen(ext), 3));
+
+    // copy extension
+    for (int i = 0; i < min(3, elen); i++) {
+        buf[i + 8] = toupper(ext[i]);
+    }
+    if(elen < 3) {
+        memset(buf + 8 + elen, ' ', 3 - elen);
     }
 
     return ret;
@@ -645,68 +667,22 @@ FR_t fat_trunc(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t 
     return FR_OK;
 }
 
-
-
-static void zero_clus(fat32_t *fat, uint32_t clus) {
-    uint32_t start_sec = clus2datsec(fat, clus);
-    for(int i = 0; i < SPC(fat); i++) {
-        blk_buf_t *b = bread(fat->dev, start_sec + i);
-        memset(b->data, 0, BPS(fat));
-        bwrite(b);
-        brelse(b);
-    }
-}
-
-
 static void generate_dot(fat32_t *fat, uint32_t parent_clus, uint32_t curr_clus) {
     dir_item_t item;
     uint32_t sect = clus2datsec(fat, curr_clus);
-    item.attr = FAT_ATTR_DIR;
+    item.attr = FAT_ATTR_DIRECTORY;
     // Note: .与..中只保存了簇号
     blk_buf_t *b = bread(fat->dev, sect);
-    strncpy((char *)item.name, DOT, FAT_SFN_LENGTH);
+    strncpy((char *)item.name, FAT_DOT, FAT_SFN_LENGTH);
     item.startl = curr_clus & FAT_CLUS_LOW_MASK;
     item.starth = curr_clus >> 16;
     *(dir_item_t *)(b->data) = item;
 
-    strncpy((char *)item.name, DOTDOT, FAT_SFN_LENGTH);
+    strncpy((char *)item.name, FAT_DOTDOT, FAT_SFN_LENGTH);
     item.startl = parent_clus & FAT_CLUS_LOW_MASK;
     item.starth = parent_clus >> 16;
     *(dir_item_t *)(b->data + sizeof(dir_item_t)) = item;
     brelse(b);
-}
-
-static void fillname(dir_slot_t *slot, char *buf, int len) {
-    static char fill[] = {0xff, 0xff, 0xff, 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
-    uint8_t *n;
-    int p = 0;
-    uint8_t fillch = 0;
-    refill:
-    // 存在非对齐访问问题
-    while(p < len && p < 5) {
-        n = slot->name0_4;
-        n[p*2] = buf[p];
-        n[p*2+1] = fillch;
-        p++;
-    }
-    while(p < len && p < 11) {
-        n = slot->name5_10;
-        n[(p - 5)*2] = buf[p];
-        n[(p - 5)*2+1] = fillch;
-        p++;
-    }
-    while(p < len && p < 13) {
-        n = slot->name11_12;
-        n[(p - 11)*2] = buf[p];
-        n[(p - 11)*2+1] = fillch;
-        p++;
-    }
-    if(len < 13) {
-        len = 13;
-        buf = fill;
-        fillch = 0xff;
-        goto refill;
-    }
 }
 
 
@@ -738,7 +714,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *__he
     }
 
     // 一个空的目录项
-    if(item->name[0] == FAT_NAME_END || item->name[0] == FAT_NAME_FREE) {
+    if (item->name[0] == FAT_NAME_END || item->name[0] == FAT_NAME_FREE) {
         (*cnt)++;
         if(*cnt == need) { // 满足我们的写入需求了
             int end = meta->item_no - need + 1;
@@ -749,22 +725,16 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *__he
             debug("copy short item");
             *item = *helper->item; 
             // 复制长目录项
-            char *p = (char *)helper->longname;
             int id = 1;
-            int len = helper->length;
-            for(dir_slot_t *slot = (dir_slot_t *)item - 1; slot >= slot_end; slot--) {
+            for(dir_slot_t *slot = (dir_slot_t *)item - 1; slot >= slot_end; slot--, id++) {
                 debug("copy long item id: %d rest text: %s", id, p);
                 slot->alias_checksum = helper->checksum;
-                slot->id = id++;
+                slot->id = id;
                 slot->attr = 0xf;
                 if(slot == slot_end) { // 最后一个
                     slot->id |= FAT_LFN_END_MASK;
-                    fillname(slot, p, len);
-                } else {
-                    fillname(slot, p, 13);
-                    p+=13;
-                    len-=13;
-                }
+                } 
+                fillname(slot, helper);
             }
             if(meta->offset == 0)
                 panic("something happened");
@@ -785,12 +755,13 @@ static FR_t fat_alloc_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, 
     
     int len = strlen(cname) + 1;
     int entry_need = (len + FAT_LFN_LENGTH) / FAT_LFN_LENGTH + 1;
-    strncpy(name, cname, MAX_FILE_NAME);
-    int unused(snflag) = generate_shortname(fat, dir_clus, (char *)item->name, name);
+    // strncpy(name, cname, MAX_FILE_NAME);
+    int unused(snflag) = 
+        generate_shortname(fat, dir_clus, (char *)item->name, name);
     debug("short name gened: %s", item->name);
     uint8_t checksum = cal_checksum((char *)item->name);
     
-    DEFINE_ALLOC_HELPER(helper, cname, len, entry_need, item, checksum);
+    DEFINE_ALLOC_HELPER(helper, cname, entry_need, item, checksum);
 
     if(fat_travs_phy_dir(fat, dir_clus, 0, 1, offset, entry_alloc_handler, &helper) == FR_ERR)
         panic("fat_alloc_entry: fail");
@@ -857,7 +828,7 @@ FR_t fat_create_entry(fat32_t *fat, uint32_t dir_clus, const char *cname, uint8_
 
     FR_t ret = fat_alloc_entry(fat, dir_clus, cname, item, offset);
 
-    if(ret == FR_OK && attr == FAT_ATTR_DIR) { // 如果是目录，创建'.'与'..'
+    if(ret == FR_OK && FAT_IS_DIR(attr)) { // 如果是目录，创建'.'与'..'
         generate_dot(fat, dir_clus, clus);
     }
 
@@ -870,36 +841,22 @@ FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t
 }
 
 
-static inline void copy_shotname(char *dst, dir_item_t *item) {
+static void copy_shortname(char *dst, dir_item_t *item) {
     uint8_t lcase = item->lcase;
     const char *item_name = (const char *)item->name;
-    int ext_flag = 0;
     int body_lcase = lcase & FAT_NAME_BODY_L_CASE;
     int ext_lcase = lcase & FAT_NAME_EXT_L_CASE;
-    char c;
     
     for (int i = 0; i < 8; i++) {
-        c = *item_name++;
+        char c = *item_name++;
         if (c == ' ') continue;
-        if (body_lcase) {
-            *dst++ = tolower(c);
-        } else {
-            *dst++ = c;
-        }
+        *dst++ = body_lcase ? tolower(c) : c;
     }
-
+    if (*item_name != ' ') *dst++ = '.';
     for (int i = 0; i < 3; i++) {
         char c = *item_name++;
         if (c == ' ') break;
-        if (!ext_flag) {
-            *dst++ = '.';
-            ext_flag = 1;
-        }
-        if (ext_lcase) {
-            *dst++ = tolower(c);
-        } else {
-            *dst++ = c;
-        }
+        *dst++ = ext_lcase ? tolower(c) : c;
     }
     *dst = '\0';
 }
@@ -907,13 +864,13 @@ static inline void copy_shotname(char *dst, dir_item_t *item) {
 static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) {
     travs_helper_t *helper = (travs_helper_t *)__helper;
     // 结束遍历 
-    if(item->name[0] == FAT_NAME_END) {
+    if (item->name[0] == FAT_NAME_END) {
         return FR_ERR;
     }
-    if(item->name[0] == FAT_NAME_FREE) {
+    if (item->name[0] == FAT_NAME_FREE) {
         return FR_CONTINUE;
     }
-    if(FAT_IS_LFN(item->attr)) { // 长文件名标识
+    if (FAT_IS_LFN(item->attr)) { // 长文件名标识
         dir_slot_t *slot = (dir_slot_t *)item;
         int id = FAT_LFN_ID(slot->id);
         if(FAT_LFN_END(slot->id)) { // 找到最后一段了
@@ -937,7 +894,7 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) 
         }
 
         if(helper->checksum == 0) { // 之前没有碰到长文件目录项
-            copy_shotname(helper->buf, item);
+            copy_shortname(helper->buf, item);
             helper->is_shortname = 1;
         } else {
             assert(helper->p);
@@ -978,7 +935,7 @@ FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_
 
 
 
-struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
+bio_vec_t *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     bio_vec_t *first_bio_vec = NULL, *cur_bio_vec = NULL;
     /* sector counts in a cluster */
     uint32 spc = SPC(fat);
@@ -1008,7 +965,7 @@ struct bio_vec *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     // 计算簇内起始扇区号
     sect = clus2datsec(fat, cclus) + sec_off_num % spc;
 
-    while(!IS_FAT_CLUS_END(cclus) && sec_total_num > 0){
+    while(!IS_FAT_CLUS_END(cclus) && sec_total_num > 0) {
         if(cur_bio_vec == NULL){
             cur_bio_vec = kzalloc(sizeof(bio_vec_t));
             first_bio_vec = cur_bio_vec;

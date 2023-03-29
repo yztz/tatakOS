@@ -14,14 +14,21 @@
 #define FAT_CLUS_LOW_MASK  ((1<<16) - 1)
 #define FAT_CLUS_HIGH_MASK (~FAT_CLUS_LOW_MASK)
 
-#define FAT_ATTR_DIR 0b10000
-#define FAT_ATTR_FILE 0b100000
+#define FAT_ATTR_READ_ONLY  0x01
+#define FAT_ATTR_HIDDEN     0x02
+#define FAT_ATTR_SYSTEM     0x04
+#define FAT_ATTR_VOLUME_ID  0x08
+#define FAT_ATTR_DIRECTORY  0x10
+#define FAT_ATTR_ARCHIVE    0x20
 
-#define FAT_IS_DIR(attr) ((attr) & FAT_ATTR_DIR)
-#define FAT_IS_FILE(attr) ((attr) & FAT_ATTR_FILE)
+#define FAT_IS_DIR(attr) ((attr) & FAT_ATTR_DIRECTORY)
+#define FAT_IS_FILE(attr) ((attr) & FAT_ATTR_ARCHIVE)
 
 #define FAT_NAME_BODY_L_CASE 0x08
 #define FAT_NAME_EXT_L_CASE 0x10
+
+#define FAT_DOT     ".          "
+#define FAT_DOTDOT  "..         "
 
 
 // 获取目录项中的簇号
