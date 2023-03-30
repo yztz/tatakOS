@@ -39,77 +39,77 @@ struct ktrapframe {
 };
 
 struct utrapframe {
-  /*   0 */ uint64 proc;
-  /*   8 */ uint64 kernel_sp;     ///< top of process's kernel stack
-  /*  16 */ uint64 kernel_trap;   ///< usertrap()
-  /*  24 */ uint64 epc;           ///< saved user program counter
-  /*  32 */ uint64 kernel_hartid; ///< saved kernel tp
-  /*  40 */ uint64 ra;
-  /*  48 */ uint64 sp;
-  /*  56 */ uint64 gp;
-  /*  64 */ uint64 tp;
-  /*  72 */ uint64 t0;
-  /*  80 */ uint64 t1;
-  /*  88 */ uint64 t2;
-  /*  96 */ uint64 s0;
-  /* 104 */ uint64 s1;
-  /* 112 */ uint64 a0;
-  /* 120 */ uint64 a1;
-  /* 128 */ uint64 a2;
-  /* 136 */ uint64 a3;
-  /* 144 */ uint64 a4;
-  /* 152 */ uint64 a5;
-  /* 160 */ uint64 a6;
-  /* 168 */ uint64 a7;
-  /* 176 */ uint64 s2;
-  /* 184 */ uint64 s3;
-  /* 192 */ uint64 s4;
-  /* 200 */ uint64 s5;
-  /* 208 */ uint64 s6;
-  /* 216 */ uint64 s7;
-  /* 224 */ uint64 s8;
-  /* 232 */ uint64 s9;
-  /* 240 */ uint64 s10;
-  /* 248 */ uint64 s11;
-  /* 256 */ uint64 t3;
-  /* 264 */ uint64 t4;
-  /* 272 */ uint64 t5;
-  /* 280 */ uint64 t6;
+  /*   0 */ uint64_t proc;
+  /*   8 */ uint64_t kernel_sp;     ///< top of process's kernel stack
+  /*  16 */ uint64_t kernel_trap;   ///< usertrap()
+  /*  24 */ uint64_t epc;           ///< saved user program counter
+  /*  32 */ uint64_t kernel_hartid; ///< saved kernel tp
+  /*  40 */ uint64_t ra;
+  /*  48 */ uint64_t sp;
+  /*  56 */ uint64_t gp;
+  /*  64 */ uint64_t tp;
+  /*  72 */ uint64_t t0;
+  /*  80 */ uint64_t t1;
+  /*  88 */ uint64_t t2;
+  /*  96 */ uint64_t s0;
+  /* 104 */ uint64_t s1;
+  /* 112 */ uint64_t a0;
+  /* 120 */ uint64_t a1;
+  /* 128 */ uint64_t a2;
+  /* 136 */ uint64_t a3;
+  /* 144 */ uint64_t a4;
+  /* 152 */ uint64_t a5;
+  /* 160 */ uint64_t a6;
+  /* 168 */ uint64_t a7;
+  /* 176 */ uint64_t s2;
+  /* 184 */ uint64_t s3;
+  /* 192 */ uint64_t s4;
+  /* 200 */ uint64_t s5;
+  /* 208 */ uint64_t s6;
+  /* 216 */ uint64_t s7;
+  /* 224 */ uint64_t s8;
+  /* 232 */ uint64_t s9;
+  /* 240 */ uint64_t s10;
+  /* 248 */ uint64_t s11;
+  /* 256 */ uint64_t t3;
+  /* 264 */ uint64_t t4;
+  /* 272 */ uint64_t t5;
+  /* 280 */ uint64_t t6;
   char resv[8];
 /* float registers below*/
-  /* 296 */ uint64 f0;
-  /* 304 */ uint64 f1;
-  /* 312 */ uint64 f2;
-  /* 320 */ uint64 f3;
-  /* 328 */ uint64 f4;
-  /* 336 */ uint64 f5;
-  /* 344 */ uint64 f6;
-  /* 352 */ uint64 f7;
-  /* 360 */ uint64 f8;
-  /* 368 */ uint64 f9;
-  /* 376 */ uint64 f10;
-  /* 384 */ uint64 f11;
-  /* 392 */ uint64 f12;
-  /* 400 */ uint64 f13;
-  /* 408 */ uint64 f14;
-  /* 416 */ uint64 f15;
-  /* 424 */ uint64 f16;
-  /* 432 */ uint64 f17;
-  /* 440 */ uint64 f18;
-  /* 448 */ uint64 f19;
-  /* 456 */ uint64 f20;
-  /* 464 */ uint64 f21;
-  /* 472 */ uint64 f22;
-  /* 480 */ uint64 f23;
-  /* 488 */ uint64 f24;
-  /* 496 */ uint64 f25;
-  /* 504 */ uint64 f26;
-  /* 512 */ uint64 f27;
-  /* 520 */ uint64 f28;
-  /* 528 */ uint64 f29;
-  /* 536 */ uint64 f30;
-  /* 544 */ uint64 f31;
-  /* 552 */ uint64 fcsr;
+  /* 296 */ uint64_t f0;
+  /* 304 */ uint64_t f1;
+  /* 312 */ uint64_t f2;
+  /* 320 */ uint64_t f3;
+  /* 328 */ uint64_t f4;
+  /* 336 */ uint64_t f5;
+  /* 344 */ uint64_t f6;
+  /* 352 */ uint64_t f7;
+  /* 360 */ uint64_t f8;
+  /* 368 */ uint64_t f9;
+  /* 376 */ uint64_t f10;
+  /* 384 */ uint64_t f11;
+  /* 392 */ uint64_t f12;
+  /* 400 */ uint64_t f13;
+  /* 408 */ uint64_t f14;
+  /* 416 */ uint64_t f15;
+  /* 424 */ uint64_t f16;
+  /* 432 */ uint64_t f17;
+  /* 440 */ uint64_t f18;
+  /* 448 */ uint64_t f19;
+  /* 456 */ uint64_t f20;
+  /* 464 */ uint64_t f21;
+  /* 472 */ uint64_t f22;
+  /* 480 */ uint64_t f23;
+  /* 488 */ uint64_t f24;
+  /* 496 */ uint64_t f25;
+  /* 504 */ uint64_t f26;
+  /* 512 */ uint64_t f27;
+  /* 520 */ uint64_t f28;
+  /* 528 */ uint64_t f29;
+  /* 536 */ uint64_t f30;
+  /* 544 */ uint64_t f31;
+  /* 552 */ uint64_t fcsr;
   struct utrapframe *sigtf; ///< save copy when handling signals
 };
 

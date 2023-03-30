@@ -22,7 +22,7 @@ void trap_init(void) {
  */
 void trap_init_hart(void) {
     // setup trap vector
-    write_csr(stvec, (uint64)kernelvec);
+    write_csr(stvec, (uint64_t)kernelvec);
     // enable interrupt
     write_csr(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
     // reset timer
@@ -33,10 +33,10 @@ void trap_init_hart(void) {
  * @brief handle an interrupt, exception, or system call from user space.
  */
 void usertrap(void) {
-    uint64 sstatus = read_csr(sstatus);
-    uint64 scause = read_csr(scause);
-    uint64 sepc = read_csr(sepc);
-    uint64 stval = read_csr(stval);
+    uint64_t sstatus = read_csr(sstatus);
+    uint64_t scause = read_csr(scause);
+    uint64_t sepc = read_csr(sepc);
+    uint64_t stval = read_csr(stval);
     struct proc *p = current;
 
     if ((sstatus & SSTATUS_SPP) != 0) {
@@ -53,7 +53,7 @@ void usertrap(void) {
 
     // send interrupts and exceptions to kerneltrap(),
     // since we're now in the kernel.
-    write_csr(stvec, (uint64)kernelvec);
+    write_csr(stvec, (uint64_t)kernelvec);
 
     // save user program counter.
     p->trapframe->epc = sepc;
@@ -129,7 +129,7 @@ void usertrapret(void) {
     // set up trapframe values that uservec will need when
     // the process next re-enters the kernel.
     p->trapframe->kernel_sp = p->kstack + KSTACK_SZ; // process's kernel stack
-    p->trapframe->kernel_trap = (uint64)usertrap;
+    p->trapframe->kernel_trap = (uint64_t)usertrap;
     p->trapframe->kernel_hartid = cpuid();         // hartid for cpuid()
     // restore float registers
     tf_flrestore(p->trapframe);
@@ -153,10 +153,10 @@ void usertrapret(void) {
  * @param context kernel trapframe on kernel stack
  */
 void kerneltrap(ktf_t *context) {
-    uint64 scause = read_csr(scause);
-    uint64 sepc = read_csr(sepc);
-    uint64 sstatus = read_csr(sstatus);
-    uint64 stval = read_csr(stval);
+    uint64_t scause = read_csr(scause);
+    uint64_t sepc = read_csr(sepc);
+    uint64_t sstatus = read_csr(sstatus);
+    uint64_t stval = read_csr(stval);
     proc_t *p = current;
 
     if ((sstatus & SSTATUS_SPP) == 0)

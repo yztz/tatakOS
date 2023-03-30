@@ -49,7 +49,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 #define ROUND_COUNT_LARGE(sz) ROUND_COUNT_SPEC(sz, PGSPEC_LARGE)
 
 /* Shift a physical address to the right place for a PTE. */
-#define PA2PTE_SPEC(pa, level) (((((uint64)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
+#define PA2PTE_SPEC(pa, level) (((((uint64_t)pa) >> (12 + (level) * 9 ))) << (10 + (level) * 9))
 #define PA2PTE(pa) PA2PTE_SPEC(pa, PGSPEC_NORMAL)
 
 #define PTE2PA(pte) (((pte) >> 10) << 12)
@@ -58,7 +58,7 @@ zero: We don't use bit 39 so that bits 63-40 must be same with bit 39(zero).
 /* Extract the three 9-bit page table indices from a virtual address. */
 #define PXMASK          0x1FF // 9 bits
 #define PXSHIFT(level)  (PGSHIFT+(9*(level)))
-#define PX(level, va) ((((uint64) (va)) >> PXSHIFT(level)) & PXMASK)
+#define PX(level, va) ((((uint64_t) (va)) >> PXSHIFT(level)) & PXMASK)
 
 #define PTE_FLAGS(pte) ((pte) & 0x3FF)
 #define PTE_V (1L << 0) // valid
@@ -172,7 +172,7 @@ void reset_page(page_t *page);
  * @param spec page specification
  * @return int 
  */
-int __map_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int prot, int spec);
+int __map_pages(pagetable_t pagetable, uint64_t va, uint64_t size, uint64_t pa, int prot, int spec);
 /**
  * @brief Remove mappings starting from va. va must be
  *        page-aligned. The mappings must exist.
@@ -184,7 +184,7 @@ int __map_pages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int pr
  * @param do_free free the memory
  * @param spec page specification
  */
-void __unmap_pages(pagetable_t pagetable, uint64 va, uint64 size, int do_free, int spec);
+void __unmap_pages(pagetable_t pagetable, uint64_t va, uint64_t size, int do_free, int spec);
 
 
 /**
@@ -195,9 +195,9 @@ void __unmap_pages(pagetable_t pagetable, uint64 va, uint64 size, int do_free, i
  */
 void freewalk(pagetable_t pagetable);
 
-pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec);
+pte_t *__walk(pagetable_t pagetable, uint64_t va, int alloc, int pg_spec);
 
-static inline pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
+static inline pte_t *walk(pagetable_t pagetable, uint64_t va, int alloc) {
     return __walk(pagetable, va, alloc, PGSPEC_NORMAL);
 }
 

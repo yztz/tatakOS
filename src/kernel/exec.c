@@ -22,7 +22,7 @@ static inline uint32_t elf_map_prot(uint32_t prot) {
         after loading...
     */
 
-    // uint32 ans = 0;
+    // uint32_t ans = 0;
     // if(prot & PF_R) ans |= PROT_READ;
     // if(prot & PF_W) ans |= PROT_WRITE;
     // if(prot & PF_X) ans |= PROT_EXEC;
@@ -38,7 +38,7 @@ static inline int is_elf(struct elfhdr *hdr) {
     return strncmp((char *)hdr->ident, ELF_MAGIC, ELF_MAGIC_SIZE) == 0;
 }
 
-static int loadseg(mm_t *mm, uint64 va, entry_t *ip, uint offset, uint sz) {
+static int loadseg(mm_t *mm, uint64_t va, entry_t *ip, uint offset, uint sz) {
     if (reade(ip, 1, va, offset, sz) != sz)
         return -1;
     return 0;
@@ -72,7 +72,7 @@ int exec(char *path, char *argv[]) {
     elock(ep);
 
     // 检查ELF文件头部
-    if (reade(ep, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf) || !is_elf(&elf)) {
+    if (reade(ep, 0, (uint64_t)&elf, 0, sizeof(elf)) != sizeof(elf) || !is_elf(&elf)) {
         eunlock(ep);
         goto bad;
     }
@@ -80,7 +80,7 @@ int exec(char *path, char *argv[]) {
     uint64_t elfentry = elf.entry;
     // 加载程序
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
-        if (reade(ep, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph)) {
+        if (reade(ep, 0, (uint64_t)&ph, off, sizeof(ph)) != sizeof(ph)) {
             eunlock(ep);
             goto bad;
         }
@@ -116,13 +116,13 @@ int exec(char *path, char *argv[]) {
 
 
     //////////////STACK & HEAP////////////////
-    uint64 ustack, ustackbase;
+    uint64_t ustack, ustackbase;
 
     if (mmap_map_heap(newmm) == NULL) {
         goto bad;
     }
 
-    uint64 ustack_size = oldmm->ustack ? oldmm->ustack->len : USTACKSIZE;
+    uint64_t ustack_size = oldmm->ustack ? oldmm->ustack->len : USTACKSIZE;
     if (mmap_map_stack(newmm, ustack_size) == NULL) {
         goto bad;
     }
@@ -131,11 +131,11 @@ int exec(char *path, char *argv[]) {
     ustack = ustackbase + ustack_size;
 
     // 参数个数
-    uint64 argc;
+    uint64_t argc;
     // 参数字符串指针数组 第一个位置将被用来存储argc
-    uint64 argcv[MAXARG + 1 + 1]; // +1 -> argc, +1 -> '\0'
+    uint64_t argcv[MAXARG + 1 + 1]; // +1 -> argc, +1 -> '\0'
     // 不包含argc的参数字符串指针数组
-    uint64 *argvs = argcv + 1;
+    uint64_t *argvs = argcv + 1;
 
     // 复制参数字符串
     for (argc = 0; argv[argc]; argc++) {
@@ -156,7 +156,7 @@ int exec(char *path, char *argv[]) {
     argc += 2;
 
 
-    ustack -= sizeof(uint64) * argc;
+    ustack -= sizeof(uint64_t) * argc;
     ustack -= ustack % 16; // riscv sp必须16字节对齐
 
     if (ustack < ustackbase) {
@@ -164,8 +164,8 @@ int exec(char *path, char *argv[]) {
     }
 
     // 复制参数字符串地址
-    ustack -= sizeof(uint64) * argc;
-    copy_to_user(ustack, argcv, sizeof(uint64) * argc);
+    ustack -= sizeof(uint64_t) * argc;
+    copy_to_user(ustack, argcv, sizeof(uint64_t) * argc);
 
     tf_reset(proc_get_tf(p), elfentry, ustack);
     mmap_free(&oldmm);

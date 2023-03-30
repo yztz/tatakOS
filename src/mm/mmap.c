@@ -30,7 +30,7 @@
 */
 
 /* vma */
-extern int vma_resize(vma_t *vma, uint64 newsize);
+extern int vma_resize(vma_t *vma, uint64_t newsize);
 extern vma_t *vma_new(mm_t *mm,
         struct file *fp, 
         off_t foff, 
@@ -45,7 +45,7 @@ extern void vma_print(vma_t *vma);
 
 
 
-vma_t *__vma_find_greater(mm_t *mm, uint64 addr) {
+vma_t *__vma_find_greater(mm_t *mm, uint64_t addr) {
     vma_t *ans;
     list_for_each_entry(ans, &mm->vma_head, head) {
         if(addr < ans->addr + ans->len) {
@@ -55,7 +55,7 @@ vma_t *__vma_find_greater(mm_t *mm, uint64 addr) {
     return NULL;
 }
 
-vma_t *__vma_find_less(mm_t *mm, uint64 addr) {
+vma_t *__vma_find_less(mm_t *mm, uint64_t addr) {
     vma_t *ans = NULL;
     vma_t *vma;
     list_for_each_entry(vma, &mm->vma_head, head) {
@@ -67,7 +67,7 @@ vma_t *__vma_find_less(mm_t *mm, uint64 addr) {
     return ans;
 }
 
-vma_t *__vma_find_strict(mm_t *mm, uint64 addr) {
+vma_t *__vma_find_strict(mm_t *mm, uint64_t addr) {
     vma_t *ans = __vma_find_greater(mm, addr);
     return ans && ans->addr <= addr ? ans : NULL;
 }

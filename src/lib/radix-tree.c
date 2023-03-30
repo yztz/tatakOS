@@ -140,7 +140,7 @@ void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
 int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item)
 {
 	struct radix_tree_node *node = NULL, *tmp, **slot;
-	uint32 height, shift;
+	uint32_t height, shift;
 	// int error;
 
 

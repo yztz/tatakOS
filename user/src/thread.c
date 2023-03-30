@@ -9,8 +9,7 @@ void thread_fn(void *arg) {
     int *l = (int *)arg;
     printf("Thread ID %d Starts.\n", gettid());
     for (int i = 0; i < TIMES; i++) {
-        int a = *l;
-        *l = a;
+        *l = *l + 1;
     }
     printf("Thread ID %d Ends.\n", gettid());
 }

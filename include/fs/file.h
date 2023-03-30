@@ -33,9 +33,9 @@ struct file *filealloc(void);
 struct file *filealloc(void);
 void        fileclose(struct file*);
 struct file *filedup(struct file*);
-int         fileread(struct file*, uint64, int n);
+int         fileread(struct file*, uint64_t, int n);
 int         filestat(struct file *f, struct kstat *stat);
-int         filewrite(struct file *f, uint64 addr, int n);
+int         filewrite(struct file *f, uint64_t addr, int n);
 void        file_print(file_t *self);
 int         filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len);
 

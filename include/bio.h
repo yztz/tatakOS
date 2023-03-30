@@ -39,7 +39,7 @@ struct bio {
     /// @brief the first bio_vec
     struct bio_vec *bi_io_vec;
     /// @brief bio's r/w type
-    uint8 bi_rw;
+    int bi_rw;
     /// @brief device number
     uint bi_dev;
 };
@@ -52,7 +52,7 @@ struct bio_vec {
     /// @brief the number of the first sector
     sector_t bv_start_num;
     /// @brief the counts of sectors
-    uint32 bv_count;
+    uint32_t bv_count;
     /// @brief the pointer of next bio segment
     struct bio_vec *bv_next;
     /// @brief the address to begin read/write

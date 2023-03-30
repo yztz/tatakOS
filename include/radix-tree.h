@@ -24,10 +24,11 @@
 					  RADIX_TREE_MAP_SHIFT))
 
 /**
- * 当高度为0且node != NULL，表示里面存储的是一个页指针(index 为0)，否则为一个rdt node指针。
+ * @brief 当高度为0且node != NULL，表示里面存储的是一个页指针(index 为0)，否则为一个rdt node指针。
+ * 
  */
 typedef struct radix_tree_root {
-    uint8 height;
+    unsigned int height;
     struct radix_tree_node *rnode;
     /* 因为现在只有index为0的页时直接存入rnode，所以设置了一个tags位 */
     uint64_t tags;
@@ -42,7 +43,7 @@ typedef struct radix_tree_node {
     unsigned int	count;
     /* 虽然是rdt node的指针，但是叶子指向具体的页地址 */
     struct radix_tree_node *slots[RADIX_TREE_MAP_SIZE];
-    uint64 tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
+    uint64_t tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
 } radix_tree_node_t;
 
 /// @brief record the path frome root to leaf, seems only used in tag clear
@@ -61,7 +62,7 @@ typedef struct rw_page {
     uint64_t pa;
     uint64_t pg_id;
     struct rw_page *next;
-}rw_page_t;
+} rw_page_t;
 
 
 /**
@@ -72,12 +73,12 @@ typedef struct rw_page_list {
     rw_page_t *head;
     rw_page_t *tail;
     uint64_t nr_pages;
-}rw_page_list_t;
+} rw_page_list_t;
 
 void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index);
 int radix_tree_insert(struct radix_tree_root *root, unsigned long index, void *item);
 static int radix_tree_extend(struct radix_tree_root *root, unsigned long index);
-uint64 radix_tree_maxindex(uint height);
+uint64_t radix_tree_maxindex(uint height);
 static struct radix_tree_node *radix_tree_node_alloc();
 void radix_tree_tag_set(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);
 void radix_tree_tag_clear(radix_tree_root_t *root, uint64_t pg_id, uint tag_type);

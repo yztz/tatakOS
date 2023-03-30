@@ -24,7 +24,7 @@ typedef struct address_space {
 
 
 struct linux_dirent64 {
-    uint64        d_ino;
+    uint64_t      d_ino;
     off_t         d_off;
     unsigned short  d_reclen;
     unsigned char   d_type;

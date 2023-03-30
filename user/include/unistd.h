@@ -22,7 +22,7 @@ pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, uns
 int exec(char *);
 int execve(const char *, char *const [], char *const []);
 int waitpid(int, int *, int);
-int64 get_time();
+int64_t get_time();
 int sys_get_time(TimeVal *ts, int tz); // syscall ID: 169; tz 表示时区，这里无需考虑，始终为0; 返回值：正确返回 0，错误返回 -1。
 int times(void *mytimes);
 int sleep(unsigned long long);

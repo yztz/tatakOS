@@ -70,7 +70,7 @@ uint64_t sys_gettimeofday(void) {
 
 
 
-uint64 sys_clock_gettime(void) {
+uint64_t sys_clock_gettime(void) {
     // int clockid;
     uint64_t addr;
 

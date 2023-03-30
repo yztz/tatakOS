@@ -60,14 +60,14 @@ static void printint(int xx, int base, int sign)
     out(stdout, buf + i, 16 - i);
 }
 
-static void printptr(uint64 x)
+static void printptr(uint64_t x)
 {
     int i = 0, j;
     char buf[32 + 1];
     buf[i++] = '0';
     buf[i++] = 'x';
-    for (j = 0; j < (sizeof(uint64) * 2); j++, x <<= 4)
-        buf[i++] = digits[x >> (sizeof(uint64) * 8 - 4)];
+    for (j = 0; j < (sizeof(uint64_t) * 2); j++, x <<= 4)
+        buf[i++] = digits[x >> (sizeof(uint64_t) * 8 - 4)];
     buf[i] = 0;
     out(stdout, buf, i);
 }
@@ -104,7 +104,7 @@ void printf(const char *fmt, ...)
             printint(va_arg(ap, int), 16, 1);
             break;
         case 'p':
-            printptr(va_arg(ap, uint64));
+            printptr(va_arg(ap, uint64_t));
             break;
         case 's':
             if ((a = va_arg(ap, char *)) == 0)

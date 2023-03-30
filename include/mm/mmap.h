@@ -42,13 +42,13 @@
 /// @brief Process memory area (consecutive, page-aligned)
 struct vma {
     /// @brief map address, page-aligned
-    uint64 addr;
+    uint64_t addr;
     /// @brief real map address
-    uint64 raddr;
+    uint64_t raddr;
     /// @brief map length, page-aligned
-    uint64 len;
+    uint64_t len;
     /// @brief real map length, <= len
-    uint64 rlen;
+    uint64_t rlen;
     /// @brief page index offset, in pages
     off_t offset;
     /// @brief map flags
@@ -125,7 +125,7 @@ vma_t *vma_exist(mm_t *mm, uint64_t addr, uint64_t len);
  * @param addr 
  * @return vma_t* 
  */
-vma_t *__vma_find_greater(mm_t *mm, uint64 addr);
+vma_t *__vma_find_greater(mm_t *mm, uint64_t addr);
 
 /**
  * @brief Find the **last** vma whose **start** address is less than addr.
@@ -134,7 +134,7 @@ vma_t *__vma_find_greater(mm_t *mm, uint64 addr);
  * @param addr 
  * @return vma_t* 
  */
-vma_t *__vma_find_less(mm_t *mm, uint64 addr);
+vma_t *__vma_find_less(mm_t *mm, uint64_t addr);
 
 
 /**
@@ -145,7 +145,7 @@ vma_t *__vma_find_less(mm_t *mm, uint64 addr);
  * @param addr 
  * @return vma_t* 
  */
-vma_t *__vma_find_strict(mm_t *mm, uint64 addr);
+vma_t *__vma_find_strict(mm_t *mm, uint64_t addr);
 
 /**
  * @brief map heap (program break)

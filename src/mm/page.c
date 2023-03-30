@@ -36,7 +36,7 @@ void page_init(void) {
 }
 
 
-pte_t *__walk(pagetable_t pagetable, uint64 va, int alloc, int pg_spec) {
+pte_t *__walk(pagetable_t pagetable, uint64_t va, int alloc, int pg_spec) {
     if(va >= MAXVA) {
         panic("walk");
     }
@@ -65,7 +65,7 @@ void freewalk(pagetable_t pagetable) {
         pte_t pte = pagetable[i];
         if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0) { // 目录节点
             // this PTE points to a lower-level page table.
-            uint64 child = PTE2PA(pte);
+            uint64_t child = PTE2PA(pte);
             freewalk((pagetable_t)child);
             pagetable[i] = 0;
         } else if (pte & PTE_V) { // 叶子节点
@@ -78,14 +78,14 @@ void freewalk(pagetable_t pagetable) {
 }
 
 
-int __map_pages(pagetable_t pagetable, uint64 __va, uint64 size, uint64 pa, int prot, int spec) {
+int __map_pages(pagetable_t pagetable, uint64_t __va, uint64_t size, uint64_t pa, int prot, int spec) {
     prot = riscv_map_prot(prot);
     
-    uint64 begin = PGROUNDDOWN_SPEC(__va, spec);
-    uint64 end = PGROUNDUP_SPEC(__va + size, spec);
-    uint64 pagesize = PGSIZE_SPEC(spec);
+    uint64_t begin = PGROUNDDOWN_SPEC(__va, spec);
+    uint64_t end = PGROUNDUP_SPEC(__va + size, spec);
+    uint64_t pagesize = PGSIZE_SPEC(spec);
 
-    uint64 va;
+    uint64_t va;
     for(va = begin; va < end; va+=pagesize, pa+=pagesize) {
         pte_t *pte;
         // No PTE found
@@ -111,13 +111,13 @@ int __map_pages(pagetable_t pagetable, uint64 __va, uint64 size, uint64 pa, int 
 
 
 // IMPROVE ME: ASID
-void __unmap_pages(pagetable_t pagetable, uint64 __va, uint64 size, int do_free, int spec) {
-    uint64 begin = PGROUNDDOWN_SPEC(__va, spec);
-    uint64 end = PGROUNDUP_SPEC(__va + size, spec);
-    uint64 pagesize = PGSIZE_SPEC(spec);
+void __unmap_pages(pagetable_t pagetable, uint64_t __va, uint64_t size, int do_free, int spec) {
+    uint64_t begin = PGROUNDDOWN_SPEC(__va, spec);
+    uint64_t end = PGROUNDUP_SPEC(__va + size, spec);
+    uint64_t pagesize = PGSIZE_SPEC(spec);
     int need_flush = get_pgtbl() == pagetable;
 
-    uint64 va;
+    uint64_t va;
     for(va = begin; va < end; va+=pagesize) {
         pte_t *pte;
         // No PTE found
@@ -131,7 +131,7 @@ void __unmap_pages(pagetable_t pagetable, uint64 __va, uint64 size, int do_free,
             panic("uvmunmap: not a leaf");
         }
         if(do_free){
-            uint64 pa = PTE2PA(*pte);
+            uint64_t pa = PTE2PA(*pte);
             put_page(pa);
         }
 
@@ -144,7 +144,7 @@ void __unmap_pages(pagetable_t pagetable, uint64 __va, uint64 size, int do_free,
 }
 
 void pte_print(pte_t *pte) {
-  uint64 pa = PTE2PA(*pte);
+  uint64_t pa = PTE2PA(*pte);
   char rwxuvc[7];
   rwxuvc[0] = *pte & PTE_R ? 'r' : '-';
   rwxuvc[1] = *pte & PTE_W ? 'w' : '-';

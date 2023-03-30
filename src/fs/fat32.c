@@ -488,8 +488,8 @@ FR_t __fat_alloc_cluster_order(fat32_t *fat, uint32_t *news, int n) {
 FR_t fat_destory_clus_chain(fat32_t *fat, uint32_t clus, int keepfirst) {
     if(clus == FAT_CLUS_FREE) return FR_ERR;
 
-    uint32 cclus = clus;
-    uint32 idx = 0;
+    uint32_t cclus = clus;
+    uint32_t idx = 0;
 
     while(!IS_FAT_CLUS_END(cclus)) {
         uint32_t *pclus;
@@ -720,7 +720,7 @@ static FR_t entry_alloc_handler(dir_item_t *item, travs_meta_t *meta, void *__he
             int end = meta->item_no - need + 1;
             dir_slot_t *slot_end = (dir_slot_t *)item - need + 1;
             if(end < 0) panic("entry_alloc: item no");
-            assert((uint64)slot_end >= (uint64)meta->buf->data);
+            assert((uint64_t)slot_end >= (uint64_t)meta->buf->data);
             // 复制短目录项
             debug("copy short item");
             *item = *helper->item; 
@@ -938,11 +938,11 @@ FR_t fat_dirlookup(fat32_t *fat, uint32_t dir_clus, const char *cname, dir_item_
 bio_vec_t *fat_get_sectors(fat32_t *fat, uint32_t cclus, int off, int n) {
     bio_vec_t *first_bio_vec = NULL, *cur_bio_vec = NULL;
     /* sector counts in a cluster */
-    uint32 spc = SPC(fat);
+    uint32_t spc = SPC(fat);
     /* the total number of sectors to get, need up align*/
-    uint32 sec_total_num = (n + BPS(fat)-1) / BPS(fat);
-    uint32 sec_off_num;
-    uint32 sect;
+    uint32_t sec_total_num = (n + BPS(fat)-1) / BPS(fat);
+    uint32_t sec_off_num;
+    uint32_t sect;
 
 
     if(off & ~PGMASK)

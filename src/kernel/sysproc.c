@@ -13,7 +13,7 @@
 #define __MODULE_NAME__ SYS_PROC
 #include "debug.h"
 
-uint64 sys_exit(void) {
+uint64_t sys_exit(void) {
     int n;
     if (argint(0, &n) < 0)
         return -1;
@@ -21,21 +21,21 @@ uint64 sys_exit(void) {
     return 0;  // not reached
 }
 
-uint64 sys_getpid(void) {
-  return current->tg->tg_id;
+uint64_t sys_getpid(void) {
+    return myproc()->tg->tg_id;
 }
 
-uint64 sys_gettid(void) {
-  return current->pid;
+uint64_t sys_getppid(void) {
+    return myproc()->parent->pid;
 }
 
-uint64 sys_fork(void) {
-  return do_clone(myproc(), 0, 0, 0, 0, 0);
+uint64_t sys_fork(void) {
+    return do_clone(myproc(), 0, 0, 0, 0, 0);
 }
 
-uint64 sys_set_tid_address(void) {
+uint64_t sys_set_tid_address(void) {
     proc_t *p = myproc();
-    uint64 tidaddr;
+    uint64_t tidaddr;
 
     if (argaddr(0, &tidaddr) < 0) {
         return -1;
@@ -47,12 +47,18 @@ uint64 sys_set_tid_address(void) {
 }
 
 
-uint64 sys_clone(void) {
-  uint64 stack;
-  int flags;
-  uint64_t ptid;
-  uint64_t tls;
-  uint64_t ctid;
+uint64_t sys_gettid(void) {
+    return myproc()->pid;
+}
+
+
+
+uint64_t sys_clone(void) {
+    uint64_t stack;
+    int flags;
+    uint64_t ptid;
+    uint64_t tls;
+    uint64_t ctid;
 
     // debug("clone: enter");
     if (argint(0, &flags) < 0 || argaddr(1, &stack) < 0 ||
@@ -62,15 +68,14 @@ uint64 sys_clone(void) {
     return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 
-uint64 sys_wait() {
-    uint64 p;
+uint64_t sys_wait(void) {
+    uint64_t p;
     if (argaddr(0, &p) < 0)
         return -1;
     return waitpid(-1, p, 0);
 }
 
-
-uint64 sys_wait4() {
+uint64_t sys_wait4(void) {
     int pid;
     uint64_t status;
     int options; // ignored
@@ -84,7 +89,7 @@ uint64 sys_wait4() {
 
 }
 
-uint64 sys_brk() {
+uint64_t sys_brk(void) {
     uint64_t brkaddr;
 
     if (argaddr(0, &brkaddr) < 0)
@@ -94,7 +99,7 @@ uint64 sys_brk() {
     return growproc(brkaddr);
 }
 
-uint64 sys_nanosleep() {
+uint64_t sys_nanosleep(void) {
     timespec_t time;
     uint64_t addr;
     proc_t *p = myproc();
@@ -104,10 +109,27 @@ uint64 sys_nanosleep() {
     if (copy_from_user(&time, addr, sizeof(timespec_t)) == -1)
         return -1;
 
-  uint64_t timeout = time.ts_sec * 1000 + time.ts_nsec / 1000000;
-  acquire(&p->lock);
-  pstate_migrate(p, SLEEPING);
-  sched_timeout(timeout);
-  release(&p->lock);
-  return 0;
+    uint64_t timeout = time.ts_sec * 1000 + time.ts_nsec / 1000000;
+    acquire(&p->lock);
+    pstate_migrate(p, SLEEPING);
+    sched_timeout(timeout);
+    release(&p->lock);
+    return 0;
+}
+
+uint64_t sys_sched_yield(void) {
+    yield();
+    return 0;
+}
+
+
+// return how many clock tick interrupts have occurred
+// since start.
+uint64_t sys_uptime(void) {
+    uint xticks;
+
+    acquire(&tickslock);
+    xticks = ticks;
+    release(&tickslock);
+    return xticks;
 }

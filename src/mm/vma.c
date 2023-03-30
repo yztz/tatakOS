@@ -77,7 +77,7 @@ vma_t *vma_clone(mm_t *newmm, vma_t *vma) {
 
 
 
-static int __vma_resize_reverse(vma_t *vma, uint64 newsize) {
+static int __vma_resize_reverse(vma_t *vma, uint64_t newsize) {
     uint64_t cursize = vma->len;
     mm_t *mm = vma->mm;
     newsize = PGROUNDUP_SPEC(vma->raddr + newsize, vma->page_spec) - vma->addr;
@@ -96,7 +96,7 @@ static int __vma_resize_reverse(vma_t *vma, uint64 newsize) {
     return 0;
 }
 
-static int __vma_resize(vma_t *vma, uint64 newsize) {
+static int __vma_resize(vma_t *vma, uint64_t newsize) {
     uint64_t cursize = vma->len;
     mm_t *mm = vma->mm;
     newsize = PGROUNDUP_SPEC(vma->raddr + newsize, vma->page_spec) - vma->addr;
@@ -114,7 +114,7 @@ static int __vma_resize(vma_t *vma, uint64 newsize) {
 }
 
 
-int vma_resize(vma_t *vma, uint64 newsize) {
+int vma_resize(vma_t *vma, uint64_t newsize) {
     if (vma->flags & MAP_STACK) {
         return __vma_resize_reverse(vma, newsize);
     } else {

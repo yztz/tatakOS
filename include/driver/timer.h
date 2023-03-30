@@ -71,6 +71,6 @@ void remove_timer(timer_t *timer);
 
 
 extern struct spinlock tickslock;
-extern uint64 ticks;
+extern uint64_t ticks;
 
 #endif

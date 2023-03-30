@@ -29,14 +29,14 @@ struct elfhdr {
 
 /// @brief rogram section header
 struct proghdr {
-    uint32 type;
-    uint32 flags;
-    uint64 off;
-    uint64 vaddr;
-    uint64 paddr;
-    uint64 filesz;
-    uint64 memsz;
-    uint64 align;
+    uint32_t type;
+    uint32_t flags;
+    uint64_t off;
+    uint64_t vaddr;
+    uint64_t paddr;
+    uint64_t filesz;
+    uint64_t memsz;
+    uint64_t align;
 };
 
 // ref: linux elf.h

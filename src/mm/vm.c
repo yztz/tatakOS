@@ -34,9 +34,9 @@ void kvm_init(void) {
     }
 
     // map kernel text executable and read-only.
-    mmap_map_io(public_map, KERN_BASE, (uint64)etext - KERN_BASE, KERN_BASE, PROT_READ | PROT_EXEC, PGSPEC_NORMAL);
+    mmap_map_io(public_map, KERN_BASE, (uint64_t)etext - KERN_BASE, KERN_BASE, PROT_READ | PROT_EXEC, PGSPEC_NORMAL);
     // map kernel data and the physical RAM we'll make use of.
-    mmap_map_io(public_map, (uint64)etext, MEM_END - (uint64)etext, (uint64)etext, PROT_READ | PROT_WRITE, PGSPEC_NORMAL);
+    mmap_map_io(public_map, (uint64_t)etext, MEM_END - (uint64_t)etext, (uint64_t)etext, PROT_READ | PROT_WRITE, PGSPEC_NORMAL);
 
     debug("init success!");
 }
@@ -76,9 +76,9 @@ void erasekvm(pagetable_t pagetable) {
 }
 
 int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma) {
-    uint64 va;
+    uint64_t va;
     int pg_spec = vma->page_spec;
-    uint64 page_szie = PGSIZE_SPEC(pg_spec);
+    uint64_t page_szie = PGSIZE_SPEC(pg_spec);
 
     for (va = vma->addr; va < vma->addr + vma->len; va+=page_szie) {
         pte_t *pte;
@@ -86,7 +86,7 @@ int uvmcopy(pagetable_t old, pagetable_t new, vma_t *vma) {
             continue;
         if ((*pte & PTE_V) == 0)
             continue;
-        uint64 pa = PTE2PA(*pte);
+        uint64_t pa = PTE2PA(*pte);
 
         *pte |= PTE_COW;  // mark cow
         *pte &= ~PTE_W; // read only

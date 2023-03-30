@@ -68,7 +68,7 @@ struct console {
 //
 // user write()s to the console go here.
 //
-int consolewrite(int user_src, uint64 src, int n) {
+int consolewrite(int user_src, uint64_t src, int n) {
 #define CONS_OUT_BUF 128
     char buf[CONS_OUT_BUF];
     int i;
@@ -90,7 +90,7 @@ int consolewrite(int user_src, uint64 src, int n) {
 // user_dist indicates whether dst is a user
 // or kernel address.
 //
-int consoleread(int user_dst, uint64 dst, int n) {
+int consoleread(int user_dst, uint64_t dst, int n) {
     uint target;
     char c;
 

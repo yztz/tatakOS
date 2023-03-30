@@ -8,22 +8,22 @@
  * @brief Saved registers for kernel context switches.
  */
 struct context {
-    uint64 ra;
-    uint64 sp;
+    uint64_t ra;
+    uint64_t sp;
 
     // callee-saved
-    uint64 s0;
-    uint64 s1;
-    uint64 s2;
-    uint64 s3;
-    uint64 s4;
-    uint64 s5;
-    uint64 s6;
-    uint64 s7;
-    uint64 s8;
-    uint64 s9;
-    uint64 s10;
-    uint64 s11;
+    uint64_t s0;
+    uint64_t s1;
+    uint64_t s2;
+    uint64_t s3;
+    uint64_t s4;
+    uint64_t s5;
+    uint64_t s6;
+    uint64_t s7;
+    uint64_t s8;
+    uint64_t s9;
+    uint64_t s10;
+    uint64_t s11;
 };
 
 /**

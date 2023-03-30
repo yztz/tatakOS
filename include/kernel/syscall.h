@@ -8,7 +8,7 @@
  * 
  * @return int 
  */
-int  argint(int, int*);
+int argint(int, int*);
 
 /**
  * @brief Fetch the nth word-sized system call argument as a null-terminated string.
@@ -16,7 +16,7 @@ int  argint(int, int*);
  * 
  * @return int string length if OK (including nul), -1 if error.
  */
-int  argstr(int, char*, int);
+int argstr(int, char*, int);
 
 
 /**
@@ -25,7 +25,7 @@ int  argstr(int, char*, int);
  * 
  * @return int 
  */
-int  argaddr(int, uint64 *);
+int argaddr(int, uint64_t *);
 
 
 /**
@@ -33,19 +33,19 @@ int  argaddr(int, uint64 *);
  * 
  * @return int length of string, not including nul, or -1 for error.
  */
-int  fetchstr(uint64, char*, int);
+int fetchstr(uint64_t, char*, int);
 
 /**
- * @brief Fetch the uint64 at addr from the current process.
+ * @brief Fetch the uint64_t at addr from the current process.
  * 
  * @return int 
  */
-int  fetchaddr(uint64, uint64*);
+int fetchaddr(uint64_t, uint64_t*);
 
 /**
- * @brief Retrieve an argument as a uint64.
+ * @brief Retrieve an argument as a uint64_t.
 */
-int arglong(int n, uint64 *ip);
+int arglong(int n, uint64_t *ip);
 
 void syscall();
 
