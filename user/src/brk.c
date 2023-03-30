@@ -4,16 +4,6 @@
 #include "string.h"
 
 
-/*
- * 测试通过时应输出：
- * "Before alloc,heap pos: [num]"
- * "After alloc,heap pos: [num+64]"
- * "Alloc again,heap pos: [num+128]"
- * 
- * Linux 中brk(0)只返回0，此处与Linux表现不同，应特殊说明。
- * 这里应该返回当前的堆顶吗？
- */
-/* 根据意思， 调用的是brk，而不是sbrk */
 void test_brk(){
     
     intptr_t cur_pos, alloc_pos, alloc_pos_1;

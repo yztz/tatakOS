@@ -42,6 +42,7 @@ void pstate_migrate(proc_t *p, int newstate) {
     if (oldstate == newstate) return;
     assert(pstatelist[newstate]);
 
+    // we have not set queue for running process
     if (p->state != RUNNING) {
         pstate_list_lock(oldstate);
         pstate_list_delete(oldstate, p);
@@ -124,7 +125,7 @@ void sched(void) {
     mycpu()->intena = intena;
 }
 
-void yield(void) {
+void yield() {
     struct proc *p = myproc();
     acquire(&p->lock);
     pstate_migrate(p, RUNNABLE);

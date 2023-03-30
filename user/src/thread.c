@@ -3,42 +3,32 @@
 #include "stdio.h"
 #include "unistd.h"
 
-#define TIMES 200
-int a = 0;
-int b = 0;
+#define TIMES 2000000
 
-void thread1_fn(void *arg) {
+void thread_fn(void *arg) {
+    int *l = (int *)arg;
+    printf("Thread ID %d Starts.\n", gettid());
     for (int i = 0; i < TIMES; i++) {
-        a--;
+        int a = *l;
+        *l = a;
     }
-    sleep(1);
-}
-
-void thread2_fn(void *arg) {
-    for (int i = 0; i < TIMES; i++) {
-        b++;
-    }
-    sleep(2);
+    printf("Thread ID %d Ends.\n", gettid());
 }
 
 int main() {
     int ret;
     thread_t thread1;
     thread_t thread2;
+    int local = 0;
 
-    ret = thread_create(&thread1, thread1_fn, NULL);
+    ret = thread_create(&thread1, thread_fn, &local);
     assert(ret == 0);
-    ret = thread_create(&thread2, thread2_fn, NULL);
+    ret = thread_create(&thread2, thread_fn, &local);
     assert(ret == 0);
-
-    for (int i = 0; i < TIMES; i++) {
-        a++;
-    }
 
     thread_join(&thread1);
     thread_join(&thread2);
 
-    printf("The value of a is %d\n", a);
-    printf("The value of b is %d\n", b);
+    printf("The value of l is %d\n", local);
     return 0;
 }

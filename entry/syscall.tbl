@@ -9,6 +9,7 @@
 98     futex     sys_futex
 101    nanosleep sys_nanosleep
 172    getpid    sys_getpid
+178    gettid    sys_gettid
 220    clone     sys_clone
 221    exec      sys_exec
 260    wait4     sys_wait4

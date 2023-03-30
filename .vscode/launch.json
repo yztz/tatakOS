@@ -47,7 +47,7 @@
             "name": "user(gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/user_prog/entry-static.exe",
+            "program": "${workspaceFolder}/build/user_prog/thread",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

@@ -13,11 +13,12 @@ ssize_t write(int, const void *, size_t);
 
 int close(int);
 pid_t getpid(void);
+pid_t gettid(void);
 pid_t getppid(void);
 int sched_yield(void);
 void exit(int);
 pid_t fork(void);
-pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void *tls, void *ctid);
+pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void* ptid, void *tls, void *ctid);
 int exec(char *);
 int execve(const char *, char *const [], char *const []);
 int waitpid(int, int *, int);

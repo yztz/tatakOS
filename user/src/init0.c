@@ -9,8 +9,9 @@ void __run(char *argv[]);
 #define test() run("lab"STR(LAB_ID))
 
 void main() {
-    run("welcome");
-    test();
+    // run("welcome");
+    run("thread");
+    // test();
     halt();
 }
 

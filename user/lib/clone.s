@@ -25,7 +25,7 @@ __clone:
 	ret
 
 	# Child
-1:      ld a1, 0(sp)
+1:  ld a1, 0(sp)
 	ld a0, 8(sp)
 	jalr a1
 

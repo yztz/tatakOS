@@ -22,7 +22,11 @@ uint64 sys_exit(void) {
 }
 
 uint64 sys_getpid(void) {
-  return myproc()->pid;
+  return current->tg->tg_id;
+}
+
+uint64 sys_gettid(void) {
+  return current->pid;
 }
 
 uint64 sys_fork(void) {
@@ -58,7 +62,7 @@ uint64 sys_clone(void) {
     return do_clone(myproc(), stack, flags, ptid, tls, ctid);
 }
 
-uint64 sys_wait(void) {
+uint64 sys_wait() {
     uint64 p;
     if (argaddr(0, &p) < 0)
         return -1;
@@ -66,7 +70,7 @@ uint64 sys_wait(void) {
 }
 
 
-uint64 sys_wait4(void) {
+uint64 sys_wait4() {
     int pid;
     uint64_t status;
     int options; // ignored
@@ -80,7 +84,7 @@ uint64 sys_wait4(void) {
 
 }
 
-uint64 sys_brk(void) {
+uint64 sys_brk() {
     uint64_t brkaddr;
 
     if (argaddr(0, &brkaddr) < 0)
@@ -90,7 +94,7 @@ uint64 sys_brk(void) {
     return growproc(brkaddr);
 }
 
-uint64 sys_nanosleep(void) {
+uint64 sys_nanosleep() {
     timespec_t time;
     uint64_t addr;
     proc_t *p = myproc();

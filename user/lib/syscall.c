@@ -33,6 +33,11 @@ pid_t getpid(void)
     return syscall(SYS_getpid);
 }
 
+pid_t gettid(void)
+{
+    return syscall(SYS_gettid);
+}
+
 pid_t getppid(void)
 {
     return syscall(SYS_getppid);
@@ -48,12 +53,12 @@ pid_t fork(void)
     return syscall(SYS_clone, 0, 0, 0, 0, 0);
 }
 
-pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void *tls, void *ctid)
+pid_t clone(int (*fn)(void *arg), void *arg, void *stack, size_t stack_size, unsigned long flags, void* ptid, void *tls, void *ctid)
 {
     if (stack)
 	    stack += stack_size;
     // __clone(func, stack, flags, arg, ptid, tls, ctid)
-    return __clone(fn, stack, flags, arg, NULL, tls, ctid);
+    return __clone(fn, stack, flags, arg, ptid, tls, ctid);
     //return syscall(SYS_clone, fn, stack, flags, NULL, NULL, NULL);
 }
 void exit(int code)
