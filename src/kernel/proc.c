@@ -143,8 +143,8 @@ proc_t *proc_new(kthread_callback_t callback) {
     // call chain:
     // (sched) -> newproc_callback_stage0 -> newproc_callback_stage1 -> callback
     //             (pass the `callback`)     (release process lock)     (finally)
-    p->context.ra = (uint64)newproc_callback_stage0;
-    p->context.s1 = (uint64)callback;
+    p->context.ra = (uint64_t)newproc_callback_stage0;
+    p->context.s1 = (uint64_t)callback;
 
     // kernel stack
     p->context.sp = p->kstack + KSTACK_SZ;
@@ -274,7 +274,7 @@ void user0_init() {
     release(&p->lock);
 }
 
-uint64 growproc(uint64_t newbreak) {
+uint64_t growproc(uint64_t newbreak) {
     struct proc *p = myproc();
     if (newbreak == 0) {
         return PROGRAM_BREAK(p->mm);
@@ -413,7 +413,7 @@ int freechild() {
 }
 
 
-int waitpid(int cid, uint64 addr, int options) {
+int waitpid(int cid, uint64_t addr, int options) {
     proc_t *p = current;
 
     acquire(&wait_lock);

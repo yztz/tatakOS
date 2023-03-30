@@ -106,7 +106,7 @@ uint64_t sys_pselect(void) {
     return ans;
 }
 
-uint64 sys_ppoll(void) {
+uint64_t sys_ppoll(void) {
     uint64_t pfdaddr;
     int nfds;
     uint64_t tsaddr;

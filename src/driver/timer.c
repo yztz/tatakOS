@@ -11,7 +11,7 @@
 
 static uint64_t *clint_mtime;
 struct spinlock tickslock;
-uint64 ticks;
+uint64_t ticks;
 
 // WAIT_QUEUE_INIT(timer_waiters);
 
@@ -45,13 +45,6 @@ int usleep(uint64_t usec) {
     return 0;
 }
 
-// void wait_tick() {
-//     uint64_t now = get_time();
-//     acquire(&timer_waiters.wq_lock);
-//     wait_event_locked(&timer_waiters, get_time() > now);
-//     release(&timer_waiters.wq_lock);
-// }
-
 
 void set_timer(timer_t *timer, timer_callback_t callback, int timeout, void *param) {
     timer->callback = callback;
@@ -75,8 +68,6 @@ void remove_timer(timer_t *timer) {
 void clockintr() {
     acquire(&tickslock);
     ticks++;
-    // wakeup(&ticks);
-    // wq_wakeup(&timer_waiters);
 
     acquire(&timer_lock);
     timer_t *cur, *n;

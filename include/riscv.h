@@ -49,27 +49,27 @@
 
 extern void push_off(void);
 extern void pop_off(void);
-  /* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
+/* 在特权级1.9版本中，SUM位为PUM为，其功能位与SUM作用相反 */
 static inline void enable_sum() {
-  push_off();
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-  set_csr(sstatus, SSTATUS_SUM);
-  #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
-  // clear_csr(sstatus, SSTATUS_SUM);
-  #else 
-  #error "enable_sum"
-  #endif
+    push_off();
+#if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+    set_csr(sstatus, SSTATUS_SUM);
+#elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
+    // clear_csr(sstatus, SSTATUS_SUM);
+#else 
+#error "enable_sum"
+#endif
 }
 
 static inline void disable_sum() {
-  #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-  clear_csr(sstatus, SSTATUS_SUM);
-  #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
-  // set_csr(sstatus, SSTATUS_SUM);
-  #else 
-  #error "disable_sum"
-  #endif
-  pop_off();
+#if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
+    clear_csr(sstatus, SSTATUS_SUM);
+#elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
+    // set_csr(sstatus, SSTATUS_SUM);
+#else 
+#error "disable_sum"
+#endif
+    pop_off();
 }
 
 // Supervisor Interrupt Enable
@@ -87,7 +87,7 @@ static inline void disable_sum() {
 // use riscv's sv39 page table scheme.
 #define SATP_SV39 (8L << 60)
 
-#define set_pgtbl(pagetable) write_csr(satp, (SATP_SV39 | (((uint64)(pagetable)) >> 12)))
+#define set_pgtbl(pagetable) write_csr(satp, (SATP_SV39 | (((uint64_t)(pagetable)) >> 12)))
 #define get_pgtbl() ((pagetable_t)(read_csr(satp) << 12))
 
 
@@ -104,46 +104,46 @@ static inline void intr_off() {
 
 // are device interrupts enabled?
 static inline int intr_get() {
-  return (read_csr(sstatus) & SSTATUS_SIE);
+    return (read_csr(sstatus) & SSTATUS_SIE);
 }
 
 // read and write tp, the thread pointer, which holds
 // this core's hartid (core number), the index into cpus[].
-static inline uint64 r_tp() {
-  uint64 x;
-  asm volatile("mv %0, tp" : "=r" (x) );
-  return x;
+static inline uint64_t r_tp() {
+    uint64_t x;
+    asm volatile("mv %0, tp" : "=r" (x));
+    return x;
 }
 
-static inline uint64 r_sp() {
-  uint64 x;
-  asm volatile("mv %0, sp" : "=r" (x) );
-  return x;
+static inline uint64_t r_sp() {
+    uint64_t x;
+    asm volatile("mv %0, sp" : "=r" (x));
+    return x;
 }
 
-static inline uint64 r_fp() {
-  uint64 x;
-  asm volatile("mv %0, fp" : "=r" (x) );
-  return x;
+static inline uint64_t r_fp() {
+    uint64_t x;
+    asm volatile("mv %0, fp" : "=r" (x));
+    return x;
 }
 
-static inline void w_tp(uint64 x) {
-  asm volatile("mv tp, %0" : : "r" (x));
+static inline void w_tp(uint64_t x) {
+    asm volatile("mv tp, %0" : : "r" (x));
 }
 
-static inline uint64 r_ra() {
-  uint64 x;
-  asm volatile("mv %0, ra" : "=r" (x) );
-  return x;
+static inline uint64_t r_ra() {
+    uint64_t x;
+    asm volatile("mv %0, ra" : "=r" (x));
+    return x;
 }
 
 // flush the TLB.
 static inline void sfence_vma(void) {
-    __asm__ __volatile__ ("fence\nfence.i\nsfence.vma" : : : "memory");
+    __asm__ __volatile__("fence\nfence.i\nsfence.vma" : : : "memory");
 }
 
 static inline void sfence_vma_addr(uint64_t addr) {
-    __asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
+    __asm__ __volatile__("sfence.vma %0" : : "r" (addr) : "memory");
 }
 
 
@@ -157,12 +157,13 @@ static void inline set_current(struct proc *p) {
     write_csr(sscratch, p);
 }
 
-char *riscv_cause2str(uint64 scause);
+char *riscv_cause2str(uint64_t scause);
+
 /**
  * @brief Convert system prot to riscv prot
- * 
- * @param linux_prot 
- * @return uint32_t 
+ *
+ * @param linux_prot
+ * @return uint32_t
  */
 uint32_t riscv_map_prot(uint32_t linux_prot);
 

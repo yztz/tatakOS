@@ -61,7 +61,7 @@ sudo umount $dst
 struct disk_rw_struct{
 	const uchar *data;
 	int disk;
-	uint64 sectorno;
+	uint64_t sectorno;
 };
 ```
 
@@ -416,8 +416,8 @@ if ctx.mstatus.mpp() == MPP::User{
 使用下列代码，打印内存中的值：
 
 ```c
-uint64* temp = (uint64*)pa;
-printf(green("%x"), *(uint64*)((uint64)temp + 0xaf8)); 
+* temp = (*)pa;
+printf(green("%x"), *(*)(()temp + 0xaf8)); 
 ```
 
 其中`0xaf8`为`init.asm`中的地址值，发现此地址中为0！所以产生了非法指令的情况！为什么是0呢？为什么？！为什么？！
@@ -427,12 +427,12 @@ printf(green("%x"), *(uint64*)((uint64)temp + 0xaf8));
 ```c
 /*********************************************************/
   if(1){
-    uint64* temp = (uint64*)pa;
-    // printf(green("%08x"), *(uint64*)((uint64)temp + 0xb7c)); 
+    * temp = (*)pa;
+    // printf(green("%08x"), *(*)(()temp + 0xb7c)); 
     for(int j = i; j < i+n; j += 4){
       printf(yellow("%x: "), j);
 
-      printf(green("%08x\n"), *(uint64*)((uint64)temp + j)); 
+      printf(green("%08x\n"), *(*)(()temp + j)); 
     }
   }
 //这里有错误，除了temp前的uint64，其他都改为uint32!这里使用了08x打印高8位，所以看上去没错？
@@ -453,7 +453,7 @@ printf(green("%x"), *(uint64*)((uint64)temp + 0xaf8));
     for(i = 0; i < ph.filesz; i+=4){
         printf(yellow("%x: "), i);
         f_read_off(&f, (void *)buf, 4, &br, ph.off+i);
-        printf("%08x\n", *(uint32*)buf);
+        printf("%08x\n", *(uint32_t*)buf);
     }
 
     for(;;);

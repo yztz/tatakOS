@@ -141,11 +141,11 @@ void _plic_complete(plic_irq_t source, plic_irq_mode_t mode) {
     uint64_t core_id = cpuid();
     if (mode & S_MODE) {
         writel(source, PLIC_SCLAIM(core_id));
-        // *(uint32*)PLIC_SCLAIM(core_id) = source;
+        // *(uint32_t*)PLIC_SCLAIM(core_id) = source;
     }
     if (mode & M_MODE) {
         writel(source, PLIC_MCLAIM(core_id));
-        // *(uint32*)PLIC_MCLAIM(core_id) = source;
+        // *(uint32_t*)PLIC_MCLAIM(core_id) = source;
     }
     
 }

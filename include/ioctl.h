@@ -45,13 +45,13 @@
 /// @brief window size
 struct winsize {
     /// @brief rows, in character
-    uint16 ws_row;
+    uint16_t ws_row;
     /// @brief columns, in characters
-    uint16 ws_col;
+    uint16_t ws_col;
     /// @brief horizontal size, pixels (unused)
-    uint16 ws_xpixel;
+    uint16_t ws_xpixel;
     /// @brief vertical size, pixels (unused)
-    uint16 ws_ypixel;
+    uint16_t ws_ypixel;
 };
 
 

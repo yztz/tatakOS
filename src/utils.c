@@ -9,21 +9,21 @@
 #include "radix-tree.h"
 
 void backtrace() {
-    uint64 fp, top;
+    uint64_t fp, top;
     fp = r_fp();
     top = PGROUNDUP(fp);
     while (fp < top) {
-        kprintf("%p\n", *(uint64*)(fp - 8));
-        fp = *(uint64*)(fp - 16);
+        kprintf("%p\n", *(uint64_t*)(fp - 8));
+        fp = *(uint64_t*)(fp - 16);
     }
 }
 
-void backtrace_fp(uint64 fp) {
-    uint64 top;
+void backtrace_fp(uint64_t fp) {
+    uint64_t top;
     top = PGROUNDUP(fp);
     while (fp < top) {
-        kprintf("%p\n", *(uint64*)(fp - 8));
-        fp = *(uint64*)(fp - 16);
+        kprintf("%p\n", *(uint64_t*)(fp - 8));
+        fp = *(uint64_t*)(fp - 16);
     }
 }
 
@@ -105,7 +105,7 @@ void print_pa(pagetable_t pagetable, uint64_t start, uint64_t end) {
 
 }
 
-void _kprintf_radix_tree(struct radix_tree_node* node, uint8 height, uint8 c_h) {
+void _kprintf_radix_tree(struct radix_tree_node* node, uint8_t height, uint8_t c_h) {
     kprintf(bl("count: %-3d, dirty tags: %5p\n"), node->count, node->tags[0][0]);
     for (int i = 0; i < (1 << RADIX_TREE_MAP_SHIFT); i++) {
         if (node->slots[i] != NULL) {

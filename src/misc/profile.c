@@ -6,8 +6,8 @@
 #define PROFILE_DEF
 #define PROFILE_CALL
 
-#define profile(func, ...) uint64 counter_##func = 0;
-#define profile_void(func, ...) uint64 counter_##func = 0;
+#define profile(func, ...) uint64_t counter_##func = 0;
+#define profile_void(func, ...) uint64_t counter_##func = 0;
 
 #include "generated/profile_gen.h"
 

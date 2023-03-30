@@ -23,7 +23,7 @@ void *vm_alloc(size_t size) {
     return (void *)ret;
 }
 
-uint64 ioremap(uint64_t pa, size_t size) {
+uint64_t ioremap(uint64_t pa, size_t size) {
     uint64_t rpa = PGROUNDDOWN_LARGE(pa);
     uint64_t end = PGROUNDUP_LARGE(pa + size);
     uint64_t rsize = end -  rpa;

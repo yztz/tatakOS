@@ -1,11 +1,11 @@
 #include "device.h"
 #include "common.h"
 
-int devnull_read(int user_dst, uint64 dst, int n) {
+int devnull_read(int user_dst, uint64_t dst, int n) {
     return 0;
 }
 
-int devnull_write(int user_src, uint64 src, int n) {
+int devnull_write(int user_src, uint64_t src, int n) {
     return n;
 }
 

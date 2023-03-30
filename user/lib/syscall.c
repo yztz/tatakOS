@@ -81,7 +81,7 @@ int times(void *mytimes)
 	return syscall(SYS_times, mytimes);
 }
 
-int64 get_time()
+int64_t get_time()
 {
     TimeVal time;
     int err = sys_get_time(&time, 0);

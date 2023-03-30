@@ -6,13 +6,13 @@ typedef int bool;
 
 /* Explicitly-sized versions of integer types */
 typedef char int8;
-typedef unsigned char uint8;
+typedef unsigned char uint8_t;
 typedef short int16;
-typedef unsigned short uint16;
+typedef unsigned short uint16_t;
 typedef int int32;
-typedef unsigned int uint32;
-typedef long long int64;
-typedef unsigned long long uint64;
+typedef unsigned int uint32_t;
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
 typedef unsigned int uint;
 
 #define ULONG_MAX (0xffffffffffffffffULL)
@@ -29,8 +29,8 @@ typedef unsigned int uint;
  * uintptr_t to represent the numerical values of addresses.
  * */
 #if __riscv_xlen == 64
-typedef int64 intptr_t;
-typedef uint64 uintptr_t;
+typedef int64_t intptr_t;
+typedef uint64_t uintptr_t;
 #elif __riscv_xlen == 32
 typedef int32_t intptr_t;
 typedef uint32_t uintptr_t;
@@ -64,61 +64,55 @@ typedef __builtin_va_list va_list;
 
 #define AT_FDCWD -100
 
-typedef struct
-{
-    uint64 sec;  // 自 Unix 纪元起的秒数
-    uint64 usec; // 微秒数
+typedef struct {
+    uint64_t sec;  // 自 Unix 纪元起的秒数
+    uint64_t usec; // 微秒数
 } TimeVal;
 
-typedef struct
-{
-    uint64 dev;    // 文件所在磁盘驱动器号，不考虑
-    uint64 ino;    // inode 文件所在 inode 编号
-    uint32 mode;   // 文件类型
-    uint32 nlink;  // 硬链接数量，初始为1
-    uint64 pad[7]; // 无需考虑，为了兼容性设计
+typedef struct {
+    uint64_t dev;    // 文件所在磁盘驱动器号，不考虑
+    uint64_t ino;    // inode 文件所在 inode 编号
+    uint32_t mode;   // 文件类型
+    uint32_t nlink;  // 硬链接数量，初始为1
+    uint64_t pad[7]; // 无需考虑，为了兼容性设计
 } Stat;
 
 typedef unsigned int mode_t;
 typedef long int off_t;
 
 struct kstat {
-        uint64 st_dev;
-        uint64 st_ino;
-        mode_t st_mode;
-        uint32 st_nlink;
-        uint32 st_uid;
-        uint32 st_gid;
-        uint64 st_rdev;
-        unsigned long __pad;
-        off_t st_size;
-        uint32 st_blksize;
-        int __pad2;
-        uint64 st_blocks;
-        long st_atime_sec;
-        long st_atime_nsec;
-        long st_mtime_sec;
-        long st_mtime_nsec;
-        long st_ctime_sec;
-        long st_ctime_nsec;
-        unsigned __unused[2];
+    uint64_t st_dev;
+    uint64_t st_ino;
+    mode_t st_mode;
+    uint32_t st_nlink;
+    uint32_t st_uid;
+    uint32_t st_gid;
+    uint64_t st_rdev;
+    unsigned long __pad;
+    off_t st_size;
+    uint32_t st_blksize;
+    int __pad2;
+    uint64_t st_blocks;
+    long st_atime_sec;
+    long st_atime_nsec;
+    long st_mtime_sec;
+    long st_mtime_nsec;
+    long st_ctime_sec;
+    long st_ctime_nsec;
+    unsigned __unused[2];
 };
 
 
 
 struct linux_dirent64 {
-        uint64        d_ino;
-        int64         d_off;
-        unsigned short  d_reclen;
-        unsigned char   d_type;
-        char            d_name[];
+    uint64_t        d_ino;
+    int64_t         d_off;
+    unsigned short  d_reclen;
+    unsigned char   d_type;
+    char            d_name[];
 };
 
 
-typedef struct {
-    uint64 hit;
-    uint64 miss;
-} cache_rate_t;
 
 // for mmap
 #define PROT_NONE 0

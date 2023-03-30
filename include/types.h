@@ -8,22 +8,18 @@
 #define NULL ((void *)0)
 
 typedef unsigned char uchar;
-typedef uint8_t uint8;
-typedef uint16_t uint16;
 typedef unsigned int uint;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
 
 typedef long off_t;
 
 
-typedef uint64 pde_t;
-typedef uint64 pte_t;
-typedef uint64 *pagetable_t;
+typedef uint64_t pde_t;
+typedef uint64_t pte_t;
+typedef uint64_t *pagetable_t;
 typedef pte_t *pte_addr_t;
 
-typedef uint64 pgoff_t;
-typedef uint64 sector_t;
+typedef uint64_t pgoff_t;
+typedef uint64_t sector_t;
 
 
 /* Coupled Types 

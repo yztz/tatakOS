@@ -170,9 +170,9 @@ struct termios {
     /// @brief 区域模式标志或本地模式标志或局部模式
     uint c_lflag;
     /// @brief 行控制line discipline
-    uint8 c_line;
+    uint8_t c_line;
     /// @brief 控制字符特性
-    uint8 c_cc[8];
+    uint8_t c_cc[8];
 };
 
 

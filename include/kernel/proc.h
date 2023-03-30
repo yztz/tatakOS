@@ -44,7 +44,7 @@ struct proc {
     /// @brief memory map
     mm_t *mm;
     /// @brief kernel stack address
-    uint64 kstack;
+    uint64_t kstack;
     /// @brief U-mode before-trap state
     utf_t *trapframe;
     /// @brief S-mode before-trap state, which is stored in the kernel stack
@@ -85,28 +85,28 @@ struct proc {
     char name[64];
 };
 
-void            exit(int);
+void       exit(int);
 
-uint64          growproc(uint64_t n);
+uint64_t   growproc(uint64_t n);
 
-int             wakeup(void *);
+int        wakeup(void *);
 
-void            proc_setmm(proc_t *p, mm_t *mm);
-void            proc_setsig(proc_t *p, signal_t *sig);
-void            proc_settg(proc_t *p, tg_t *tg);
-void            proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
-void            proc_settf(proc_t *p, utf_t *tf);
+void       proc_setmm(proc_t *p, mm_t *mm);
+void       proc_setsig(proc_t *p, signal_t *sig);
+void       proc_settg(proc_t *p, tg_t *tg);
+void       proc_setfdtbl(proc_t *p, fdtable_t *fdtbl);
+void       proc_settf(proc_t *p, utf_t *tf);
 
-proc_t *        proc_new(kthread_callback_t);
-void            proc_switchmm(proc_t *p, mm_t *newmm);
-utf_t *         proc_get_tf(proc_t *p);
-proc_t*         kthread_create(char *name, kthread_callback_t);
-void            freeproc(struct proc *p);
-int             get_proc_cnt();
-void            wake_up_process(proc_t *p);
-void            wake_up_process_locked(proc_t *p);
-void            sig_send(proc_t *p, int signum);
-int             freechild();
+proc_t *   proc_new(kthread_callback_t);
+void       proc_switchmm(proc_t *p, mm_t *newmm);
+utf_t *    proc_get_tf(proc_t *p);
+proc_t*    kthread_create(char *name, kthread_callback_t);
+void       freeproc(struct proc *p);
+int        get_proc_cnt();
+void       wake_up_process(proc_t *p);
+void       wake_up_process_locked(proc_t *p);
+void       sig_send(proc_t *p, int signum);
+int        freechild();
 
 
 /**
@@ -127,7 +127,7 @@ void sleep(void *chan, struct spinlock *lock);
  * @param options some other options, not used now
  * @return int child pid. -1 means no children.
  */
-int waitpid(int cid, uint64 addr, int options);
+int waitpid(int cid, uint64_t addr, int options);
 
 /**
  * @brief Get current process context

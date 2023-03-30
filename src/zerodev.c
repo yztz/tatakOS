@@ -3,7 +3,7 @@
 #include "str.h"
 #include "mm/vm.h"
 
-int devzero_read(int user_dst, uint64 dst, int n) {
+int devzero_read(int user_dst, uint64_t dst, int n) {
     if(!user_dst) {
         memset((void *)dst, 0, n);
     } else {
@@ -12,7 +12,7 @@ int devzero_read(int user_dst, uint64 dst, int n) {
     return n;
 }
 
-int devzero_write(int user_src, uint64 src, int n) {
+int devzero_write(int user_src, uint64_t src, int n) {
     return 0;
 }
 

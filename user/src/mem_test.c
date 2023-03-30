@@ -8,11 +8,11 @@
 #define PGSIZE 4096
 
 void test_mem(){
-    uint64 cur_pos;
+    uint64_t cur_pos;
     syscall(NR_memuse);
     cur_pos = brk(0);
     while((cur_pos = brk((void *)(cur_pos + PGSIZE))) != -1) {
-        *(uint32 *)(cur_pos - PGSIZE) = 0xabcd;
+        *(uint32_t *)(cur_pos - PGSIZE) = 0xabcd;
     }
     syscall(NR_memuse);
 }

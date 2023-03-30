@@ -4,9 +4,9 @@
 #define DIVIDER() {kprintf("\n---------------------------------\n");}
 
 void mm_test() {
-    uint64 mem1 = (uint64_t)kmalloc(257);
+    uint64_t mem1 = (uint64_t)kmalloc(257);
     DIVIDER();
-    uint64 mem2 = (uint64_t)kmalloc(257);
+    uint64_t mem2 = (uint64_t)kmalloc(257);
     DIVIDER();
     kprintf("mem1 addr is %p\n", mem1);
     kprintf("mem2 addr is %p\n", mem2);

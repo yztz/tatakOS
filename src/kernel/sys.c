@@ -50,7 +50,7 @@ uint64_t sys_sysinfo(void) {
 }
 
 
-uint64 sys_timetag(void) {
+uint64_t sys_timetag(void) {
     return ticks;
 }
 
@@ -204,7 +204,7 @@ uint64_t sys_prctl(void) {
     return 0;
 }
 
-uint64 sys_clock_gettime(void) {
+uint64_t sys_clock_gettime(void) {
     // int clockid;
     uint64_t addr;
     // debug("Get Time");
@@ -241,7 +241,7 @@ struct statfs gstat = {
 };
 
 
-uint64 sys_statfs64(void) {
+uint64_t sys_statfs64(void) {
     char buf[MAXPATH];
     uint64_t ustat;
 

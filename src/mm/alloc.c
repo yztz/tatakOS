@@ -95,7 +95,7 @@ void *kzalloc(size_t size) {
 }
 
 
-#define is_frag(addr) ((uint64)addr & ~PGMASK)
+#define is_frag(addr) ((uint64_t)addr & ~PGMASK)
 
 void  kfree(void *addr) {
     //todo: do more checks...

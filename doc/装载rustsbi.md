@@ -12,7 +12,7 @@
 
 ## 时钟
 
-由于时钟设置被rustsbi接管了，我们要设置时钟来触发周期性的时钟中断需要通过sbi标准函数`set_timer(uint64 s_time)`，这里主要的问题有两个：
+由于时钟设置被rustsbi接管了，我们要设置时钟来触发周期性的时钟中断需要通过sbi标准函数`set_timer( s_time)`，这里主要的问题有两个：
 
 ### 1. 这个参数的意义是什么？
 
@@ -23,12 +23,12 @@
 为什么这么说呢？请观察如下代码:
 ```C
 #define RESET_TIMER() \
-    sbi_set_timer(*(uint64 *)CLINT_MTIME + CLOCK_FREQ)
+    sbi_set_timer(*( *)CLINT_MTIME + CLOCK_FREQ)
 
 void trapinithart(void)
 {
   // 设置中断向量
-  w_stvec((uint64)kernelvec);
+  w_stvec(()kernelvec);
   // 使能中断
   w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
   // 重置计时器

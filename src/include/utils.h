@@ -61,7 +61,7 @@ struct radix_tree_root;
 
 
 void backtrace();
-void backtrace_fp(uint64 fp);
+void backtrace_fp(uint64_t fp);
 void print_sbiret(sbiret_t ret);
 int  luaO_log2 (unsigned int x);
 void print_dir_item(struct dir_item *item);

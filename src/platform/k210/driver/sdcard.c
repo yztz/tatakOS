@@ -179,7 +179,7 @@ uint8_t (sd_get_dataresponse)(void)
 	}
 	/*!< Wait null data */
 	sd_read_data(&response, 1);
-	uint64 i = 0xfffff;
+	uint64_t i = 0xfffff;
 	while (response == 0) {
 		if(i-- == 0) panic("wait too long");
 		sd_read_data(&response, 1);

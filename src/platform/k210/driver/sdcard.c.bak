@@ -26,27 +26,27 @@ void SD_HIGH_SPEED_ENABLE(void) {
     // spi_set_clk_rate(SPI_DEVICE_0, 10000000);
 }
 
-static void sd_lowlevel_init(uint8 spi_index) {
+static void sd_lowlevel_init(uint8_t spi_index) {
     gpiohs_set_drive_mode(7, GPIO_DM_OUTPUT);
     // spi_set_clk_rate(SPI_DEVICE_0, 200000);     /*set clk rate*/
 }
 
-static void sd_write_data(uint8 const *data_buff, uint32 length) {
+static void sd_write_data(uint8_t const *data_buff, uint32_t length) {
     spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_send_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 }
 
-static void sd_read_data(uint8 *data_buff, uint32 length) {
+static void sd_read_data(uint8_t *data_buff, uint32_t length) {
     spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
     spi_receive_data_standard(SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 }
 
-static void sd_write_data_dma(uint8 const *data_buff, uint32 length) {
+static void sd_write_data_dma(uint8_t const *data_buff, uint32_t length) {
     spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
 	spi_send_data_standard_dma(DMAC_CHANNEL0, SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 }
 
-static void sd_read_data_dma(uint8 *data_buff, uint32 length) {
+static void sd_read_data_dma(uint8_t *data_buff, uint32_t length) {
     spi_init(SPI_DEVICE_0, SPI_WORK_MODE_0, SPI_FF_STANDARD, 8, 0);
 	spi_receive_data_standard_dma(-1, DMAC_CHANNEL0, SPI_DEVICE_0, SPI_CHIP_SELECT_3, NULL, 0, data_buff, length);
 }
@@ -58,20 +58,20 @@ static void sd_read_data_dma(uint8 *data_buff, uint32 length) {
  * @param  Crc: The CRC.
  * @retval None
  */
-static void sd_send_cmd(uint8 cmd, uint32 arg, uint8 crc) {
-	uint8 frame[6];
+static void sd_send_cmd(uint8_t cmd, uint32_t arg, uint8_t crc) {
+	uint8_t frame[6];
 	frame[0] = (cmd | 0x40);
-	frame[1] = (uint8)(arg >> 24);
-	frame[2] = (uint8)(arg >> 16);
-	frame[3] = (uint8)(arg >> 8);
-	frame[4] = (uint8)(arg);
+	frame[1] = (uint8_t)(arg >> 24);
+	frame[2] = (uint8_t)(arg >> 16);
+	frame[3] = (uint8_t)(arg >> 8);
+	frame[4] = (uint8_t)(arg);
 	frame[5] = (crc);
 	SD_CS_LOW();
 	sd_write_data(frame, 6);
 }
 
 static void sd_end_cmd(void) {
-	uint8 frame[1] = {0xFF};
+	uint8_t frame[1] = {0xFF};
 	/*!< SD chip select high */
 	SD_CS_HIGH();
 	/*!< Send the Cmd bytes */
@@ -97,9 +97,9 @@ static void sd_end_cmd(void) {
 /*
  * Read sdcard response in R1 type. 
  */
-static uint8 sd_get_response_R1(void) {
-	uint8 result;
-	uint16 timeout = 0xff;
+static uint8_t sd_get_response_R1(void) {
+	uint8_t result;
+	uint16_t timeout = 0xff;
 
 	while (timeout--) {
 		sd_read_data(&result, 1);
@@ -115,7 +115,7 @@ static uint8 sd_get_response_R1(void) {
  * Read the rest of R3 response 
  * Be noticed: frame should be at least 4-byte long 
  */
-static void sd_get_response_R3_rest(uint8 *frame) {
+static void sd_get_response_R3_rest(uint8_t *frame) {
 	sd_read_data(frame, 4);
 }
 
@@ -123,7 +123,7 @@ static void sd_get_response_R3_rest(uint8 *frame) {
  * Read the rest of R7 response 
  * Be noticed: frame should be at least 4-byte long 
  */
-static void sd_get_response_R7_rest(uint8 *frame) {
+static void sd_get_response_R7_rest(uint8_t *frame) {
 	sd_read_data(frame, 4);
 }
 
@@ -132,7 +132,7 @@ static int switch_to_SPI_mode(void) {
 
 	while (--timeout) {
 		sd_send_cmd(SD_CMD0, 0, 0x95);
-		uint64 result = sd_get_response_R1();
+		uint64_t result = sd_get_response_R1();
 		sd_end_cmd();
 
 		if (0x01 == result) break;
@@ -147,13 +147,13 @@ static int switch_to_SPI_mode(void) {
 
 // verify supply voltage range 
 static int verify_operation_condition(void) {
-	uint64 result;
+	uint64_t result;
 
 	// Stores the response reversely. 
 	// That means 
 	// frame[2] - VCA 
 	// frame[3] - Check Pattern 
-	uint8 frame[4];
+	uint8_t frame[4];
 
 	sd_send_cmd(SD_CMD8, 0x01aa, 0x87);
 	result = sd_get_response_R1();
@@ -175,8 +175,8 @@ static int verify_operation_condition(void) {
 // read OCR register to check if the voltage range is valid 
 // this step is not mandotary, but I advise to use it 
 static int read_OCR(void) {
-	uint64 result = 0;
-	uint8 ocr[4];
+	uint64_t result = 0;
+	uint8_t ocr[4];
 
 	int timeout;
 
@@ -203,7 +203,7 @@ static int read_OCR(void) {
 
 // send ACMD41 to tell sdcard to finish initializing 
 static int set_SDXC_capacity(void) {
-	uint8 result = 0xff;
+	uint8_t result = 0xff;
 
 	int timeout = 0xfff;
 	while (--timeout) {
@@ -235,8 +235,8 @@ static int is_standard_sd = 0;
 // check OCR register to see the type of sdcard, 
 // thus determine whether block size is suitable to buffer size
 static int check_block_size(void) {
-	uint8 result = 0xff;
-	uint8 ocr[4];
+	uint8_t result = 0xff;
+	uint8_t ocr[4];
 
 	int timeout = 0xff;
 	while (timeout --) {
@@ -294,7 +294,7 @@ static int check_block_size(void) {
  *         - 0: Sequence succeed
  */
 static int sd_init(void) {
-	uint8 frame[10];
+	uint8_t frame[10];
 
 	sd_lowlevel_init(0);
 	//SD_CS_HIGH();
@@ -332,10 +332,10 @@ void sdcard_init(void) {
 	
 }
 
-void sdcard_read_sector(uint8 *buf, int sectorno) {
-	uint8 result;
-	uint32 address;
-	uint8 dummy_crc[2];
+void sdcard_read_sector(uint8_t *buf, int sectorno) {
+	uint8_t result;
+	uint32_t address;
+	uint8_t dummy_crc[2];
 
 	if (is_standard_sd) {
 		address = sectorno << 9;
@@ -374,10 +374,10 @@ void sdcard_read_sector(uint8 *buf, int sectorno) {
 	// leave critical section!
 }
 
-void sdcard_write_sector(uint8 *buf, int sectorno) {
-	uint32 address;
-	static uint8 const START_BLOCK_TOKEN = 0xfe;
-	uint8 dummy_crc[2] = {0xff, 0xff};
+void sdcard_write_sector(uint8_t *buf, int sectorno) {
+	uint32_t address;
+	static uint8_t const START_BLOCK_TOKEN = 0xfe;
+	uint8_t dummy_crc[2] = {0xff, 0xff};
 
 	#ifdef DEBUG
 	printf("sdcard_write_sector()\n");
@@ -406,7 +406,7 @@ void sdcard_write_sector(uint8 *buf, int sectorno) {
 	sd_write_data(dummy_crc, 2);
 
 	// waiting for sdcard to finish programming 
-	uint8 result;
+	uint8_t result;
 	int timeout = 0xfff;
 	while (--timeout) {
 		sd_read_data(&result, 1);
@@ -431,7 +431,7 @@ void sdcard_write_sector(uint8 *buf, int sectorno) {
 	sd_end_cmd();
 
 	// send SD_CMD13 to check if writing is correctly done 
-	uint8 error_code = 0xff;
+	uint8_t error_code = 0xff;
 	sd_send_cmd(SD_CMD13, 0, 0);
 	result = sd_get_response_R1();
 	sd_read_data(&error_code, 1);
@@ -450,7 +450,7 @@ void sdcard_write_sector(uint8 *buf, int sectorno) {
 
 // A simple test for sdcard read/write test 
 void test_sdcard(void) {
-	uint8 buf[BSIZE];
+	uint8_t buf[BSIZE];
 
 	for (int sec = 0; sec < 5; sec ++) {
 		for (int i = 0; i < BSIZE; i ++) {

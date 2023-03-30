@@ -10,9 +10,9 @@
  */
 struct device {
     /// @brief read dev
-    int (*read)(int, uint64, int);
+    int (*read)(int, uint64_t, int);
     /// @brief write dev
-    int (*write)(int, uint64, int);
+    int (*write)(int, uint64_t, int);
 };
 
 #define CONSOLE 1

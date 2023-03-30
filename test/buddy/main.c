@@ -24,7 +24,7 @@ char* end;
 #define PGSIZE PGSIZE_SPEC(0)
 #define PGROUNDUP_SPEC(sz, sepc) \
     (((sz) + (PGSIZE_SPEC(sepc)) - 1) & ~((PGSIZE_SPEC(sepc)) - 1))
-#define PGROUNDUP(sz) PGROUNDUP_SPEC((uint64)sz, 0)
+#define PGROUNDUP(sz) PGROUNDUP_SPEC(()sz, 0)
 
 #define ROUND_COUNT_SPEC(sz, spec) \
     (PGROUNDUP_SPEC(sz, spec) / PGSIZE_SPEC(spec))
@@ -34,7 +34,7 @@ char* end;
 #define IS_POW2(n) ((n & (n - 1)) == 0)
 
 #define MEM_SIZE (4 * 1024 * 1024) // 4M
-uint64 KERNBASE;
+ KERNBASE;
 
 #define PAGE_NUMS (MEM_SIZE / PGSIZE)
 #define PG_TO_NR(va) (((uint64_t)(va)-KERNBASE) / PGSIZE)
@@ -293,7 +293,7 @@ int main() {
       if(c == '+') {
         size_t size;
         scanf("%ld", &size);
-        addr = (uint64)buddy_alloc(size);
+        addr = ()buddy_alloc(size);
         printf("addr is: %#lx\n", addr);
       } else if(c == '-') {
         scanf("%lx", &addr);

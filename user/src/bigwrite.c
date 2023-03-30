@@ -6,8 +6,6 @@
 #include "stddef.h"
 #include "stdlib.h"
 
-typedef uint64 uint64_t;
-
 struct timespec {
 	uint64_t ts_sec;        /* 秒 */
 	uint64_t ts_nsec;       /* 纳秒 */

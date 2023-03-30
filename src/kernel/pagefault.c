@@ -20,7 +20,7 @@ extern int filemap_nopage(pte_t *pte, vma_t *area, uint64_t address);
 
 /* 复制COW页 */
 static inline int cow_copy(uint64_t va, pte_t *pte) {
-    uint64 pa = PTE2PA(*pte);
+    uint64_t pa = PTE2PA(*pte);
     if (page_refcnt(pa) == 1) { // 如果页引用数为1，则直接设置为可写，取消COW标志
         *pte |= PTE_W;
         *pte &= ~PTE_COW;
@@ -53,7 +53,7 @@ typedef enum {
     PF_UNKNOWN,
 } pagefault_t;
 
-static pagefault_t get_pagefault(uint64 scause) {
+static pagefault_t get_pagefault(uint64_t scause) {
     // 地址翻译与访问顺序为：VMA ---> MMU ---> PMA ---> PMP ---> ACCESSED
     // 在特权级1.12下，所有与MMU相关的错误都将触发xx_page_fault
     // 而对于PMP(Physical Memory Protection)相关的错误，都将触发xx_access_fault。
@@ -62,13 +62,13 @@ static pagefault_t get_pagefault(uint64 scause) {
     // debug("%s\n", riscv_cause2str(scause));
     switch (scause) {
         // #if PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_12
-    case EXCP_STORE_PAGE_FAULT:return PF_STORE;
+        case EXCP_STORE_PAGE_FAULT:return PF_STORE;
         // #elif PRIVILEGE_VERSION == PRIVILEGE_VERSION_1_9
-    case EXCP_STORE_FAULT:return PF_STORE;
+        case EXCP_STORE_FAULT:return PF_STORE;
         // #endif
-    case EXCP_LOAD_PAGE_FAULT:return PF_LOAD;
-    case EXCP_LOAD_FAULT:return PF_LOAD;
-    default:return PF_UNKNOWN;
+        case EXCP_LOAD_PAGE_FAULT:return PF_LOAD;
+        case EXCP_LOAD_FAULT:return PF_LOAD;
+        default:return PF_UNKNOWN;
     }
 }
 
@@ -113,7 +113,7 @@ static int do_cow_page(uint64_t address, pte_t *pte) {
 /**
  * @return 处理失败返回-1，成功返回1
  */
-int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64 rva) {
+int __handle_pagefault(pagefault_t fault, proc_t *p, vma_t *vma, uint64_t rva) {
     if (!have_prot(fault, vma)) {
         // ERROR("have no prot");
         if (p->signaling)
