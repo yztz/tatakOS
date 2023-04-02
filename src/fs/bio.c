@@ -8,21 +8,34 @@
 #include "utils.h"
 #include "driver/disk.h"
 #include "mm/alloc.h"
+    
+#define __MODULE_NAME__ BLOCK_IO
+#include "debug.h"
 
-static bio_t *buf_to_bio(blk_buf_t *b, int rw) {
-    bio_t *bio = kzalloc(sizeof(bio_t));
-    bio_vec_t *bio_vec = kzalloc(sizeof(bio_vec_t));
 
-    bio_vec->bv_buff = (void *)b->data;
-    bio_vec->bv_count = 1;
-    bio_vec->bv_start_num = b->blockno;
-    bio_vec->bv_next = NULL;
+void free_bio(bio_t *bio) {
+    bio_vec_t *cur_bio_vec = bio->bi_io_vec;
+    while (cur_bio_vec) {
+        bio_vec_t *t = cur_bio_vec;
+        cur_bio_vec = t->bv_next;
+        kfree(t);
+    }
+    kfree(bio);
+}
 
-    bio->bi_dev = b->dev;
-    bio->bi_io_vec = bio_vec;
-    bio->bi_rw = rw;
 
-    return bio;
+void __submit_bio(bio_t *bio) {
+    bio_vec_t *cur_bio_vec;
+    cur_bio_vec = bio->bi_io_vec;
+    while (cur_bio_vec) {
+        disk_io(cur_bio_vec, bio->bi_rw);
+        cur_bio_vec = cur_bio_vec->bv_next;
+    }
+}
+
+void submit_bio(bio_t *bio) {
+    __submit_bio(bio);
+    free_bio(bio);
 }
 
 struct {
@@ -80,6 +93,7 @@ static blk_buf_t *bget(uint dev, uint blockno) {
             b->dev = dev;
             b->blockno = blockno;
             b->valid = 0;
+            b->dirty = 0;
             b->refcnt = 1;
             release(&bcache.lock);
             acquiresleep(&b->lock);
@@ -89,18 +103,44 @@ static blk_buf_t *bget(uint dev, uint blockno) {
     panic("bget: no buffers");
 }
 
+/**
+ * @brief sync block between memory and disk
+ * @note possible states:
+ * 
+ *      | vaild | dirty |  description  |
+ *      | ----- | ----- | ------------- |
+ *      |   0   |   0   | disk is newer |
+ *      |   0   |   1   |    illegal    |
+ *      |   1   |   0   |  synchronized |
+ *      |   1   |   1   |  mem is newer |
+ * 
+ * @param b 
+ */
+static void bsync(blk_buf_t *b) {
+    if (b->valid && !b->dirty) return;
+
+    bio_vec_t vec = {.bv_buff=b->data, .bv_count=1, .bv_start_num=b->blockno, .bv_next=NULL};
+    bio_t bio = {.bi_dev=b->dev,.bi_io_vec=&vec};
+
+    if (!b->valid) {
+        assert(!b->dirty);
+        bio.bi_rw = BIO_READ;
+        
+    } else if (b->dirty) {
+        bio.bi_rw = BIO_WRITE;
+    }
+
+    __submit_bio(&bio);
+    b->valid = 1;
+    b->dirty = 0;
+}
+
 blk_buf_t *bread(uint dev, uint blockno) {
     blk_buf_t *b;
 
     b = bget(dev, blockno);
 
-    if (!b->valid) {
-        bio_t *bio = buf_to_bio(b, BIO_READ);
-        submit_bio(bio);
-
-        b->valid = 1;
-        b->dirty = 0;
-    }
+    bsync(b);
     return b;
 }
 
@@ -116,13 +156,7 @@ void brelse(blk_buf_t *b) {
     if (!holdingsleep(&b->lock))
         panic("brelse");
 
-    if (b->dirty == 1) {
-
-        bio_t *bio = buf_to_bio(b, BIO_WRITE);
-        submit_bio(bio);
-
-        b->dirty = 0;
-    }
+    bsync(b);
 
     releasesleep(&b->lock);
 
@@ -139,23 +173,3 @@ void brelse(blk_buf_t *b) {
 }
 
 
-void free_bio(bio_t *bio) {
-    bio_vec_t *cur_bio_vec = bio->bi_io_vec;
-    while (cur_bio_vec) {
-        bio_vec_t *t = cur_bio_vec;
-        cur_bio_vec = t->bv_next;
-        kfree(t);
-    }
-    kfree(bio);
-}
-
-
-void submit_bio(bio_t *bio) {
-    bio_vec_t *cur_bio_vec;
-    cur_bio_vec = bio->bi_io_vec;
-    while (cur_bio_vec) {
-        disk_io(cur_bio_vec, bio->bi_rw);
-        cur_bio_vec = cur_bio_vec->bv_next;
-    }
-    free_bio(bio);
-}
