@@ -2,6 +2,7 @@ stages:
   - sync
 
 sync_labs:
+  image: curlimages/curl
   stage: sync
   only: 
     - template
