@@ -6,11 +6,9 @@
 void __run(char *argv[]);
 
 #define run(name, ...) {char *__cmd[] = {name, ##__VA_ARGS__, 0};__run(__cmd);}
-#define test() run("lab"STR(LAB_ID))
 
 void main() {
     run("welcome");
-    test();
     halt();
 }
 
