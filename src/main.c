@@ -21,8 +21,6 @@ static inline void check_bad_core() {
 
 extern void bcache_init();
 extern void console_init();
-extern void devnull_init();
-extern void devzero_init();
 extern void fs_init();
 extern void kvm_init();
 extern void kvm_init_hart();

@@ -29,14 +29,13 @@ struct file {
 
 
 
-struct file *filealloc(void);
-struct file *filealloc(void);
-void        fileclose(struct file*);
-struct file *filedup(struct file*);
-int         fileread(struct file*, uint64_t, int n);
-int         filestat(struct file *f, struct kstat *stat);
-int         filewrite(struct file *f, uint64_t addr, int n);
+file_t *    filealloc(void);
+file_t *    filealloc(void);
+void        fileclose(file_t *);
+file_t *    filedup(file_t *);
+int         fileread(file_t *, uint64_t, int n);
+int         filestat(file_t *, struct kstat *stat);
+int         filewrite(file_t *, uint64_t addr, int n);
 void        file_print(file_t *self);
-int         filesend(struct file *infile, struct file *outfile, off_t *poff, size_t len);
 
 #endif
