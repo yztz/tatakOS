@@ -93,51 +93,6 @@ int filewrite(file_t *f, uint64_t addr, int n) {
     return __filewrite(f, 1, addr, n);
 }
 
-int filesend(file_t *infile, file_t *outfile, off_t *poff, size_t len) {
-    // only support entry rw now...
-    if (infile->type != FD_ENTRY)
-        return -1;
-
-    if (len == 0)
-        return 0;
-
-    // 目前暂时采用缓存区的办法，后续可以使用pagecahce来加速
-    const int SEND_SIZE = PGSIZE;
-    // static char buf[PGSIZE];
-    char *buf = kmalloc(PGSIZE);
-    off_t off;
-    int rest = len;
-
-    entry_t *ie = infile->ep;
-
-    elock(ie);
-    off = poff ? *poff : infile->off;
-    while (rest > 0) {
-        int ret1 = reade(ie, 0, (uint64_t)buf, off, SEND_SIZE);
-        eunlock(ie);
-        int ret2 = __filewrite(outfile, 0, (uint64_t)buf, ret1);
-        elock(ie);
-        rest -= ret1;
-        off += ret1;
-        if (ret1 < SEND_SIZE || ret1 != ret2)
-            break;
-    }
-
-    kfree(buf);
-
-    // 更新offset
-    if (!poff) {
-        infile->off += len - rest;
-    } else {
-        *poff = off;
-    }
-
-    eunlock(ie);
-
-    return len - rest;
-}
-
-
 // Read from file f.
 // addr is a user virtual address.
 int fileread(file_t *f, uint64_t addr, int n) {

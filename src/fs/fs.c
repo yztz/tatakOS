@@ -174,29 +174,13 @@ static void __eput(entry_t *entry) {
       goto no_writeback;
     }
 
-    /* 可以把entry和immaping解除，entry回收利用，imapping写回后释放，或者动态分配
-    一个新的entry，用来保留信息，原entry回收 */
-
-    // 函数调用读写io时需要进程切换，所以要释放锁，io单独搞一个进程则可避免
-    // #ifdef TODO
-    // todo("give write back to a new thread, the current process not sched, so release and acquire is not use")
-    // #endif
 
     // /* 如果为普通文件，则写回。（为目录则不写回） */
     if(entry->raw.attr == FAT_ATTR_ARCHIVE){
-        // /* 释放文件在内存中的映射， 包括释放address space 结构体， radix tree， 已经映射的物理页 */
-        // free_mapping(entry);
-
-        /* 简单粗糙的做法，唤醒内核写回线程 */
-        // wakeup_bdflush(1);
-        // background_writeout(1);
-
         release(&entry->fat->cache_lock);
           /* 只单写一个entry，不要写其他entry */
         if(entry->dirty) {
           writeback_single_entry_idx(entry - pool);
-          /* (entry - pool)/sizeof(entry_t)是错的！*/
-          // pdflush_operation(writeback_single_entry_idx, (entry - pool));
         }
         acquire(&entry->fat->cache_lock);
 
@@ -238,7 +222,6 @@ void eunlockput(entry_t *entry) {
 
 #include "common.h"
 
-// 我们不需要考虑特殊处理.与..因为他们也作为实际的目录项而存在
 // caller hold parent lock
 static entry_t *dirlookup(entry_t *parent, const char *name) {
   dir_item_t item;
