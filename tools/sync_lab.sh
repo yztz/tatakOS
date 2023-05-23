@@ -10,7 +10,7 @@ fi
 
 if [[ "$action" == "pull" ]]; then
   # 执行 pull 操作
-  git branch | grep "lab" | xargs -r git pull lab
+  git branch | grep "lab" | xargs -r -I {} git fetch lab {}:{}
 elif [[ "$action" == "push" ]]; then
   # 执行 push 操作
   git branch | grep "lab" | xargs -r git push lab
