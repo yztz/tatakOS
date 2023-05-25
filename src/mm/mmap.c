@@ -174,7 +174,6 @@ static vma_t *__mmap_map_fixed(
     // so it is not completed, just like shit.
     if(addr + len != inter_vma->addr + inter_vma->len || addr < inter_vma->addr) {
         debug("fixed map must be mapped inner an existed map: addr %#lx len %#lx prot %#b", addr, len, prot);
-        release(&mm->mm_lock);
         return NULL;
     }
     inter_vma->len = addr - inter_vma->addr;
