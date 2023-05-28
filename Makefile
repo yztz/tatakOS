@@ -187,11 +187,9 @@ $(MNT_DIR):
 
 $(fs.img): user
 	$(V)dd if=/dev/zero of=$@ bs=1M count=257
-	$(V)mformat -i $@ -F -c 8 ::
+	$(V)mkfs.vfat -F 32 -s 8 $@
 	$(V)mcopy -i $@ $(U_PROG_DIR)/* ::
-# 似乎可以截断以减少体积...因为我们用不到后面的簇
 	$(V)truncate $(fs.img) -s 30M
-
 
 user: $(syscall)
 	$(V)mkdir -p $(U_PROG_DIR)
