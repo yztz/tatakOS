@@ -1,7 +1,7 @@
 SHELL = /bin/bash
 MAKEFLAGS += --no-print-directory
 
-#===========================CONFIG=================================#
+#===========================CONFIG================================#
 # CPU NUMS(qemu)
 CPUS ?= 1
 # platform [qemu|k210]
