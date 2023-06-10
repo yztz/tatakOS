@@ -20,7 +20,15 @@
         {
             "label": "build compile commands",
             "type": "shell",
-            "command": "make compile_commands platform=qemu"
+            "command": "make compile_commands platform=qemu",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": false
+            }
         },
         {
             "label": "restart LSP",
@@ -29,6 +37,6 @@
             "runOptions": {
                 "runOn": "folderOpen"
             }
-        },
+        }
     ]
 }
