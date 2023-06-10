@@ -20,15 +20,15 @@
         {
             "label": "build compile commands",
             "type": "shell",
-            "command": "make compile_commands platform=qemu",
-            "runOptions": {
-                "runOn": "folderOpen"
-            }
+            "command": "make compile_commands platform=qemu"
         },
         {
             "label": "restart LSP",
             "command": "${command:clangd.restart}",
-            "dependsOn": "build compile commands"
+            "dependsOn": "build compile commands",
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
         },
     ]
 }
