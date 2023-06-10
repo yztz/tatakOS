@@ -103,9 +103,8 @@ QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 #===========================RULES BEGIN============================#
 all: kernel
 	$(OBJCOPY) $(BUILD_ROOT)/kernel -S -O binary $(BUILD_ROOT)/kernel.bin
-	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/k210.bin
-	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/k210.bin bs=128k seek=1
-	mv $(BUILD_ROOT)/k210.bin os.bin
+	$(OBJCOPY) bootloader/sbi-k210 -S -O binary $(BUILD_ROOT)/os.bin
+	dd if=$(BUILD_ROOT)/kernel.bin of=$(BUILD_ROOT)/os.bin bs=128k seek=1
 
 run: kernel
 ifeq ("$(debug)", "on")
@@ -162,7 +161,6 @@ clean:
 	-$(V)rm -rf $(BUILD_ROOT)
 	-$(V)rm -rf $(SCRIPT)/mkfs
 	-$(V)rm -rf $(GEN_HEADER_DIR)
-	-$(V)rm -rf os.bin
 	-$(V)rm -rf sbi-qemu
 	-$(V)rm -rf kernel-qemu
 	-$(V)rm -rf $K/include/generated
@@ -212,6 +210,12 @@ sdcard: $(fs.img)
 attach:
 	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(serial-port) 115200
 
-.PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt sdcard
+__compile_commands: kernel user clean
+
+compile_commands:
+	bear -- make __compile_commands
+	sed -i 's/"-fstrict-volatile-bitfields",//g' compile_commands.json
+
+.PHONY: qemu clean all user kernel entry sbi-k210 fs.img mnt sdcard compile_commands __compile_commands
 
 #===========================RULES END==============================#

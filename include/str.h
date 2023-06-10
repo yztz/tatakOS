@@ -1,6 +1,8 @@
 #ifndef _H_STR_
 #define _H_STR_
 
+#include "types.h"
+
 int             memcmp(const void*, const void*, uint);
 void*           memmove(void* dst, const void* src, uint n);
 void*           memcpy(void* dst, const void* src, uint n);

@@ -9,3 +9,5 @@ include/generated
 src/include/generated
 lmbench_all.asm
 sync_all.sh
+.cache
+compile_commands.json

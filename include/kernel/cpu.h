@@ -2,7 +2,7 @@
 #define _H_CPU_
 
 #include "types.h"
-#include "platform.h"
+#include "riscv.h"
 
 /**
  * @brief Saved registers for kernel context switches.

@@ -1,6 +1,7 @@
 #ifndef WRITEBACK_H
 #define WRITEBACK_H
 
+#include "types.h"
 
 /**
  * @brief A control structure which tells the writeback code what to do.  These are

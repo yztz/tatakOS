@@ -11,7 +11,6 @@
 #define _H_PLATFORM_
 
 #include "device.h"
-#include "riscv.h"
 
 #define PRIVILEGE_VERSION_1_9  1
 #define PRIVILEGE_VERSION_1_12 2

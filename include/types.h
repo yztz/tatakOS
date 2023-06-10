@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include "gcc_attr.h"
 
-#define NULL ((void *)0)
-
 typedef unsigned char uchar;
 typedef unsigned int uint;
 

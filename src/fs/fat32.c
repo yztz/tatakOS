@@ -877,14 +877,17 @@ static FR_t travs_handler(dir_item_t *item, travs_meta_t *meta, void *__helper) 
             helper->next = id - 1;
             helper->checksum = slot->alias_checksum;
             char *buf = helper->buf + helper->next * FAT_LFN_LENGTH;
-            helper->p = buf + extractname(slot, buf) + 1; //  使p指向文件名末尾
+            int len = extractname(slot, buf);
+            assert(len > 0);
+            helper->p = buf + len + 1; //  使p指向文件名末尾
         } else { // 不是最后一段
             if(helper->next != FAT_LFN_ID(slot->id) || helper->checksum != slot->alias_checksum) { // 不匹配
                 travs_helper_reset(helper);
                 return FR_CONTINUE;
             }
             helper->next--;
-            extractname(slot, helper->buf + helper->next * FAT_LFN_LENGTH);
+            int len = extractname(slot, helper->buf + helper->next * FAT_LFN_LENGTH);
+            assert(len > 0);
         }
         
         return FR_CONTINUE;

@@ -2,6 +2,7 @@
 #define _H_PIPE_
 
 #include "types.h"
+#include "atomic/spinlock.h"
 
 
 struct pipe {

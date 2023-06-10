@@ -15,6 +15,20 @@
             "type": "shell",
             "command": "make kernel platform=qemu debug=off",
             "args": [],
-        }
+        }, 
+
+        {
+            "label": "build compile commands",
+            "type": "shell",
+            "command": "make compile_commands platform=qemu",
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "restart LSP",
+            "command": "${command:clangd.restart}",
+            "dependsOn": "build compile commands"
+        },
     ]
 }

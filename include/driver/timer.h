@@ -1,7 +1,8 @@
 #ifndef _H_TIMER_
 #define _H_TIMER_
 
-#include"types.h"
+#include "types.h"
+#include "list.h"
 
 /**
  * @brief Init the CLINT timer

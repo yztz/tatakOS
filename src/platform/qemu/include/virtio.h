@@ -10,6 +10,11 @@
 
 // virtio mmio control registers, mapped starting at 0x10001000.
 // from qemu virtio_mmio.h
+#ifndef _H_VIRTIO_
+#define _H_VIRTIO_
+
+#include "types.h"
+
 #define VIRTIO_MMIO_MAGIC_VALUE		0x000 // 0x74726976
 #define VIRTIO_MMIO_VERSION		0x004 // version; 1 is legacy
 #define VIRTIO_MMIO_DEVICE_ID		0x008 // device type; 1 is net, 2 is disk
@@ -95,3 +100,6 @@ struct virtio_blk_req {
     uint32_t reserved;
     uint64_t sector;
 };
+
+
+#endif
