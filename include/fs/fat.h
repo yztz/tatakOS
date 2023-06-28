@@ -301,6 +301,7 @@ int fat_write(fat32_t *fat, uint32_t cclus, int user, uint64_t buffer, off_t off
 FR_t fat_update(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 FR_t fat_unlink(fat32_t *fat, uint32_t dir_clus, uint32_t offset, dir_item_t *item);
 FR_t fat_rename(fat32_t *fat, uint32_t dir_clus, uint32_t dir_offset, dir_item_t* item, const char *newname, uint32_t *offset);
+int fat_read_dents(fat32_t *fat, uint32_t clus_start, off_t *offset, char *buf, int n);
 /**
  * @brief 根据文件的偏移和长度找到对应的磁盘块号(sector)，并且分段，每段包含一组连续的sectors，
  * 使用一个bio_vec结构体表示。

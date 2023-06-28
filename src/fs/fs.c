@@ -63,7 +63,6 @@ slash:
   return buf;
 }
 
-
 char *namepath(entry_t *entry, char *buf) {
   char *end = __namepath(entry, buf);
   if(end == buf || end == buf + 1) return end;
@@ -72,44 +71,9 @@ char *namepath(entry_t *entry, char *buf) {
   return end;
 }
 
-/* 没什么实际意义，仅仅用来保存状态 */
-struct dents_state {
-  buf_desc_t desc;
-  off_t *offset;
-};
-
-FR_t dents_handler(dir_item_t *item, const char *name, off_t offset, void *__state) {
-  const int dirent_size = sizeof(struct linux_dirent64);
-  struct dents_state *state = (struct dents_state *) __state;
-  struct linux_dirent64 *dirent = (struct linux_dirent64 *) state->desc.buf;
-
-  if(strncmp(name, ". ", 2) == 0 || strncmp(name, "..  ", 4) == 0)
-    return FR_CONTINUE;
-
-  int namelen = strlen(name) + 1;
-  int total_size = ALIGN(dirent_size + namelen, 8); // 保证8字节对齐
-  // debug("total size is %d desc size is %d", total_size, desc->size);
-  if(total_size > state->desc.size) 
-    return FR_OK;
-
-  dirent->d_ino = offset << 32 | FAT_FETCH_CLUS(item);
-  dirent->d_off = offset;
-  dirent->d_reclen = total_size;
-  dirent->d_type = FAT_IS_DIR(item->attr) ? T_DIR : T_FILE; 
-
-  strncpy(dirent->d_name, name, namelen);
-  state->desc.buf += total_size;
-  state->desc.size -= total_size;
-  *(state->offset) = offset + sizeof(*item);
-
-  return FR_CONTINUE;
-}
-
 // caller holds lock
 int read_dents(entry_t *entry, off_t *offset, char *buf, int n) {
-  struct dents_state state = {{.buf = buf, .size = n}, .offset = offset};
-  fat_travs_logical_dir(fat, entry->clus_start, *offset, dents_handler, &state);
-  return n - state.desc.size;
+  return fat_read_dents(entry->fat, entry->clus_start, offset, buf, n);
 }
 
 
