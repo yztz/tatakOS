@@ -20,7 +20,7 @@ set(CMAKE_CXX_COMPILER      ${PREFIX}g++)
 set(CMAKE_OBJCOPY           ${PREFIX}objcopy)
 set(CMAKE_OBJDUMP           ${PREFIX}objdump)
 set(CMAKE_RANLIB            ${PREFIX}ranlib)
-set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall")
+set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall -Wl,--no-relax")
 set(CMAKE_ASM_FLAGS         ${CMAKE_C_FLAGS})
 set(CMAKE_C_LINK_FLAGS      "${LINK_FLAGS} -nostdlib")
 
